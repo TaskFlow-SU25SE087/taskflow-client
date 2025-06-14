@@ -1,0 +1,168 @@
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Bell, ChevronDown, HelpCircle, Search, LogOut, Settings, User, FolderKanban, Plus, Layout } from 'lucide-react'
+import { FiMenu } from 'react-icons/fi'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuGroup,
+  DropdownMenuLabel
+} from '@/components/ui/dropdown-menu'
+import { useCurrentProject } from '@/hooks/useCurrentProject'
+import { useNavigate } from 'react-router-dom'
+import { useProjects } from '@/hooks/useProjects'
+import { useAuth } from '@/hooks/useAuth'
+import Avatar from 'boring-avatars'
+
+interface NavbarProps {
+  isSidebarOpen: boolean
+  toggleSidebar: () => void
+}
+
+export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
+  const { projects } = useProjects()
+  const { currentProject, setCurrentProjectId } = useCurrentProject()
+  const navigate = useNavigate()
+  const { logout } = useAuth()
+  const { user } = useAuth()
+
+  const handleProjectSelect = (projectId: string) => {
+    setCurrentProjectId(projectId)
+    navigate('/board')
+  }
+
+  const handleLogout = () => {
+    logout()
+    navigate('/')
+  }
+
+  return (
+    <div className='sticky top-0 z-10 w-full bg-white border-b border-gray-300'>
+      <div className='px-4 py-3 flex items-center justify-between'>
+        <div className='flex items-center gap-2'>
+          {!isSidebarOpen && (
+            <Button
+              variant='ghost'
+              size='icon'
+              className='text-gray-500 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0'
+              onClick={toggleSidebar}
+            >
+              <FiMenu className='h-5 w-5' />
+            </Button>
+          )}
+
+          {/* Projects Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant='ghost'
+                className='gap-2 font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'
+              >
+                Projects
+                <ChevronDown className='h-4 w-4 text-gray-500' />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className='w-64'>
+              <DropdownMenuLabel className='text-lg'>Your Projects</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                {projects.map((project) => (
+                  <DropdownMenuItem
+                    key={project.id}
+                    onClick={() => handleProjectSelect(project.id)}
+                    className={`cursor-pointer gap-2 ${currentProject?.id === project.id ? 'bg-gray-100' : ''}`}
+                  >
+                    <Layout className='h-4 w-4' />
+                    <span className={currentProject?.id === project.id ? 'font-medium' : ''}>{project.title}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={() => navigate('/projects')}
+                className='gap-2 text-gray-600 hover:text-gray-900'
+              >
+                <FolderKanban className='h-4 w-4 cursor-pointer' />
+                View all projects
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigate('/projects/new')}
+                className='gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+              >
+                <Plus className='h-4 w-4 cursor-pointer' />
+                Create new project
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Teams Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant='ghost'
+                className='gap-2 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'
+              >
+                Teams
+                <ChevronDown className='h-4 w-4' />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className='w-56'>
+              <DropdownMenuItem className='cursor-not-allowed opacity-50'>Coming soon...</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        <div className='flex items-center gap-4'>
+          <div className='relative'>
+            <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
+            <Input
+              placeholder='Search For Anything...'
+              className='w-[400px] rounded-lg bg-gray-100 pl-10 focus-visible:ring-offset-0 focus-visible:ring-0'
+            />
+          </div>
+          <div className='text-gray-500 px-2 hover:bg-transparent cursor-pointer'>
+            <HelpCircle className='h-5 w-5' />
+          </div>
+          <div className='text-gray-500 px-2 hover:bg-transparent cursor-pointer'>
+            <Bell className='h-5 w-5' />
+          </div>
+
+          {/* Profile Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <div className='cursor-pointer relative h-8 w-fit flex items-center gap-2 px-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'>
+                <Avatar size='32px' variant='beam' name={user?.id} />
+                <div className='text-sm text-left'>
+                  <div className='font-medium'>{user?.name}</div>
+                  <div className='text-xs text-gray-500'>{user?.email}</div>
+                </div>
+                <ChevronDown className='h-4 w-4 text-gray-500' />
+              </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className='w-56' align='end'>
+              <DropdownMenuItem className='gap-2 text-gray-600 hover:text-gray-900'>
+                <User className='h-4 w-4' />
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem className='gap-2 text-gray-600 hover:text-gray-900'>
+                <Settings className='h-4 w-4' />
+                Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className='gap-2 text-red-600 hover:text-red-700 hover:bg-red-50'
+              >
+                <LogOut className='h-4 w-4' />
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </div>
+  )
+}
