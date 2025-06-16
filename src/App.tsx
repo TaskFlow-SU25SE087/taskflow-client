@@ -1,28 +1,31 @@
+import { ProtectedRoute } from '@/components/ProtectedRoute'
+import { Toaster } from '@/components/ui/toaster'
+import { AuthProvider } from '@/hooks/useAuthContext.tsx'
 import HomePage from '@/pages/home/HomePage'
 import LoginPage from '@/pages/home/LoginPage'
-import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom'
 import SignUpPage from '@/pages/home/SignupPage'
-import { AuthProvider } from '@/components/AuthProvider'
-import { useAuth } from './hooks/useAuth'
-import { ProtectedRoute } from '@/components/ProtectedRoute'
+import ProjectBoard from '@/pages/projects/ProjectBoard'
 import ProjectCreate from '@/pages/projects/ProjectCreate'
 import ProjectList from '@/pages/projects/ProjectList'
-import ProjectBoard from './pages/projects/ProjectBoard'
-import ProjectBacklog from './pages/projects/ProjectBacklog'
-import { Toaster } from '@/components/ui/toaster'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { useAuth } from './hooks/useAuth'
+import GitCommits from './pages/github/GitCommits'
+import GitIssues from './pages/github/GitIssues'
 import AboutPage from './pages/home/AboutPage'
 import ContactPage from './pages/home/ContactPage'
-import GitCommits from './pages/github/GitCommits'
-import ProjectTimeline from './pages/projects/ProjectTimeline'
+import OtpPage from './pages/home/OtpPage'
+import VerifyEmailPage from './pages/home/VerifyEmailPage'
+import ProjectBacklog from './pages/projects/ProjectBacklog'
 import ProjectReports from './pages/projects/ProjectReports'
-import GitIssues from './pages/github/GitIssues'
+import ProjectTimeline from './pages/projects/ProjectTimeline'
 
 const AuthRedirect = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isOtpVerified } = useAuth()
+  const location = useLocation()
 
-  // If user is already authenticated, redirect to projects page
-  if (isAuthenticated) {
-    return <Navigate to='/projects' replace />
+  // If user is authenticated and OTP verified, redirect to projects page from public routes
+  if (isAuthenticated && isOtpVerified && location.pathname !== '/projects') {
+    return <Navigate to='/projects' state={{ from: location }} replace />
   }
 
   return children
@@ -74,6 +77,24 @@ function App() {
             element={
               <AuthRedirect>
                 <SignUpPage />
+              </AuthRedirect>
+            }
+          />
+
+          <Route
+            path='verify-email'
+            element={
+              <AuthRedirect>
+                <VerifyEmailPage />
+              </AuthRedirect>
+            }
+          />
+
+          <Route
+            path='verify-otp'
+            element={
+              <AuthRedirect>
+                <OtpPage />
               </AuthRedirect>
             }
           />

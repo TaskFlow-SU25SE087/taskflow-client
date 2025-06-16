@@ -1,40 +1,55 @@
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Link } from 'react-router-dom'
-import { Mail } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
+import { Mail } from 'lucide-react'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 export default function SignUpPage() {
   const { register, error } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [email, setEmail] = useState('')
-  const [username, setUsername] = useState('')
+  const [fullName, setFullName] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
 
   const validateForm = () => {
+    if (!email) {
+      setFormError('Email is required')
+      return false
+    }
+
+    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      setFormError('Invalid email address format')
+      return false
+    }
+
+    if (!fullName) {
+      setFormError('Full name is required')
+      return false
+    }
+
+    if (!password) {
+      setFormError('Password is required')
+      return false
+    }
+
+    if (password.length < 6 || password.length > 100) {
+      setFormError('Password must be between 6 and 100 characters')
+      return false
+    }
+
+    if (!confirmPassword) {
+      setFormError('Confirm password is required')
+      return false
+    }
+
     if (password !== confirmPassword) {
       setFormError('Passwords do not match')
-      return false
-    }
-
-    if (password.length < 6) {
-      setFormError('Password must be at least 6 characters long')
-      return false
-    }
-
-    if (!email.includes('@')) {
-      setFormError('Please enter a valid email address')
-      return false
-    }
-
-    if (!username.trim()) {
-      setFormError('Username is required')
       return false
     }
 
@@ -50,8 +65,13 @@ export default function SignUpPage() {
       setIsSubmitting(false)
       return
     }
-    await register(username, email, password)
-    setIsSubmitting(false)
+    try {
+      await register(email, fullName, password, confirmPassword)
+    } catch (error: any) {
+      setFormError(error.message || 'Failed to register')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleGmailSignUp = () => {
@@ -99,15 +119,15 @@ export default function SignUpPage() {
             </div>
 
             <div className='space-y-2'>
-              <Label htmlFor='username' className='text-sm font-medium text-gray-700'>
-                Username
+              <Label htmlFor='fullName' className='text-sm font-medium text-gray-700'>
+                Full Name
               </Label>
               <Input
-                id='username'
+                id='fullName'
                 type='text'
-                placeholder='Choose a username'
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                placeholder='Enter your full name'
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
                 required
                 className='w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lavender-700 focus:border-transparent'
               />

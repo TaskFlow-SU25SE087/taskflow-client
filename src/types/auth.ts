@@ -1,11 +1,8 @@
 import { ProjectMember } from './project'
 
 export interface AuthResponse {
-  id: string
-  token: string
-  name: string
-  email: string
-  role: string
+  accessToken: string
+  refreshToken: string
 }
 
 export interface User {
@@ -19,6 +16,7 @@ export interface User {
   feedbacks: any[] // Not clear yet
   projectMembers: ProjectMember[]
 }
+
 export interface ApiError {
   message: string
   status?: number

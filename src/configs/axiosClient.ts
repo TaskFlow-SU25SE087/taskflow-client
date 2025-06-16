@@ -1,12 +1,12 @@
-import axios, { AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios'
+import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 
 const axiosClient = axios.create({
-  baseURL: 'http://localhost:5149',
+  baseURL: 'http://localhost:5041',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
   },
-  withCredentials: true
+  withCredentials: false
 })
 
 // Request

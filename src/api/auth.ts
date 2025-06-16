@@ -1,28 +1,33 @@
 import axiosClient from '@/configs/axiosClient'
 import { AuthResponse } from '@/types/auth'
 
-const ENDPOINT = '/api/Auth'
+const ENDPOINT = '/auth'
 
 export const authApi = {
-  login: async (email: string, password: string): Promise<AuthResponse> => {
+  login: async (username: string, password: string): Promise<AuthResponse> => {
     try {
-      const response = await axiosClient.post<AuthResponse>(`${ENDPOINT}/login`, {
-        email,
+      const response = await axiosClient.post<{
+        code: number
+        message: string
+        data: {
+          accessToken: string
+          refreshToken: string
+        }
+      }>(`${ENDPOINT}/login`, {
+        username,
         password
       })
 
-      const { id, token, name, email: userEmail, role } = response.data
+      const { accessToken, refreshToken } = response.data.data
 
-      axiosClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      // Store tokens
+      axiosClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+      localStorage.setItem('refreshToken', refreshToken)
 
       return {
-        id,
-        token,
-        name,
-        email: userEmail,
-        role
+        accessToken,
+        refreshToken
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message)
@@ -31,24 +36,137 @@ export const authApi = {
     }
   },
 
-  register: async (name: string, email: string, password: string): Promise<AuthResponse> => {
+  register: async (email: string, fullName: string, password: string, confirmPassword: string): Promise<AuthResponse> => {
     try {
-      const response = await axiosClient.post<AuthResponse>(`${ENDPOINT}/register`, {
-        name,
-        email,
-        password
+      const formData = new FormData();
+      formData.append('Email', email);
+      formData.append('FullName', fullName);
+      formData.append('Password', password);
+      formData.append('ConfirmPassword', confirmPassword);
+
+      console.log('Register request payload:', {
+        Email: email,
+        FullName: fullName,
+        Password: password,
+        ConfirmPassword: confirmPassword
+      });
+      console.log('Request URL:', `${ENDPOINT}/register`);
+      console.log('Request headers:', {
+        'Content-Type': 'multipart/form-data'
+      });
+
+      const response = await axiosClient.post<{
+        code: number
+        message: string
+        data: {
+          accessToken: string
+          refreshToken: string
+        }
+      }>(`${ENDPOINT}/register`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       })
 
-      const { id, token, name: username, email: userEmail, role } = response.data
-      return {
-        id,
-        token,
-        name: username,
-        email: userEmail,
-        role
-      }
+      console.log('Register response:', response.data);
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { accessToken, refreshToken } = response.data.data
+
+      // Store tokens
+      axiosClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+      localStorage.setItem('refreshToken', refreshToken)
+
+      return {
+        accessToken,
+        refreshToken
+      }
+    } catch (error: any) {
+      console.error('Register error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        message: error.message,
+        fullError: error,
+        responseData: error.response?.data,
+        requestData: error.config?.data,
+        validationErrors: error.response?.data?.errors,
+        responseHeaders: error.response?.headers,
+        requestHeaders: error.config?.headers,
+        requestURL: error.config?.url
+      });
+      
+      if (error.response?.data?.errors) {
+        const errorMessages = Object.entries(error.response.data.errors)
+          .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
+          .join('\n');
+        throw new Error(errorMessages);
+      }
+      
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      
+      throw new Error('Registration failed. Please try again.');
+    }
+  },
+
+  refreshToken: async (accessToken: string, refreshToken: string): Promise<AuthResponse> => {
+    try {
+      const response = await axiosClient.post<{
+        code: number
+        message: string
+        data: {
+          accessToken: string
+          refreshToken: string
+        }
+      }>(`${ENDPOINT}/refresh-token`, {
+        accessToken,
+        refreshToken
+      })
+
+      const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data.data
+
+      // Update tokens
+      axiosClient.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`
+      localStorage.setItem('refreshToken', newRefreshToken)
+
+      return {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken
+      }
+    } catch (error: any) {
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message)
+      }
+      throw error
+    }
+  },
+
+  verifyEmail: async (token: string): Promise<void> => {
+    try {
+      const response = await axiosClient.post<{
+        code: number
+        message: string
+        data: boolean
+      }>(`${ENDPOINT}/verify-email?token=${token}`)
+
+      if (response.data.code !== 200) {
+        throw new Error(response.data.message)
+      }
+    } catch (error: any) {
+      console.error('Verify email error:', error.response?.data)
+      throw error
+    }
+  },
+
+  resendVerificationEmail: async (): Promise<boolean> => {
+    try {
+      const response = await axiosClient.post<{
+        code: number
+        message: string
+        data: boolean
+      }>(`${ENDPOINT}/send-mail-again`)
+
+      return response.data.data
     } catch (error: any) {
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message)
@@ -59,6 +177,22 @@ export const authApi = {
 
   logout: () => {
     delete axiosClient.defaults.headers.common['Authorization']
-    sessionStorage.removeItem('auth_user')
-  }
+    localStorage.removeItem('refreshToken')
+  },
+
+  verifyOtp: async (otp: string): Promise<void> => {
+    try {
+      const response = await axiosClient.post<{
+        code: number
+        message: string
+      }>(`${ENDPOINT}/verify-email?token=${otp}`)
+
+      if (response.data.code !== 200) {
+        throw new Error(response.data.message)
+      }
+    } catch (error: any) {
+      console.error('Verify OTP error:', error.response?.data)
+      throw error
+    }
+  },
 }
