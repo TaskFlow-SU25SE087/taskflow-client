@@ -16,6 +16,8 @@ export interface User {
   feedbacks?: any[]
   projectMembers?: ProjectMember[]
   phoneNumber?: string
+  username: string
+  avatar?: string
 }
 
 export interface ApiError {

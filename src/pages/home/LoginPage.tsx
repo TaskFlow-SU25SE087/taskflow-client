@@ -1,14 +1,14 @@
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 
 export default function LoginPage() {
   const { login, error } = useAuth()
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -16,7 +16,7 @@ export default function LoginPage() {
     e.preventDefault()
     setIsSubmitting(true)
     try {
-      await login(email, password)
+      await login(username, password)
     } catch (error) {
       console.error('Login error:', error)
     } finally {
@@ -44,15 +44,15 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className='space-y-6'>
             {error && <div className='p-3 bg-red-100 border border-red-400 text-red-700 rounded'>{error}</div>}
             <div className='space-y-2'>
-              <Label htmlFor='email' className='text-sm font-medium text-gray-700'>
-                Email
+              <Label htmlFor='username' className='text-sm font-medium text-gray-700'>
+                Username
               </Label>
               <Input
-                id='email'
+                id='username'
                 type='text'
-                placeholder='Enter your email'
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                placeholder='Enter your username'
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
                 disabled={isSubmitting}
                 className='w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lavender-700 focus:border-transparent'

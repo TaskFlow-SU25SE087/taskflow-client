@@ -8,7 +8,7 @@ interface AuthContextType {
   user: User | null
   isOtpVerified: boolean
   isAuthenticated: boolean
-  login: (email: string, password: string) => Promise<void>
+  login: (username: string, password: string) => Promise<void>
   register: (email: string, fullName: string, password: string, confirmPassword: string) => Promise<void>
   logout: () => void
   error: string | null
@@ -44,10 +44,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []) // Empty dependency array to run only once on mount
 
-  const login = async (email: string, password: string) => {
+  const login = async (username: string, password: string) => {
     try {
       console.log('Starting login process...')
-      const response = await authApi.login(email, password)
+      const response = await authApi.login(username, password)
       console.log('Login response:', response)
       const { accessToken, refreshToken } = response
 
@@ -56,9 +56,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('refreshToken', refreshToken)
 
       // Store user info
-      sessionStorage.setItem('auth_user', JSON.stringify({ email })) // Only store email in session storage for simplification
+      sessionStorage.setItem('auth_user', JSON.stringify({ username })) // Only store username in session storage for simplification
       sessionStorage.setItem('otp_verified', 'true')
-      setUser({ email: email, fullName: '', id: '', role: '', phoneNumber: '' }) // Simplified User object for initial state, removed avatar as it's not in User interface
+      setUser({ email: '', fullName: '', id: '', role: '', phoneNumber: '', username: username }) // Simplified User object for initial state, added username
       setIsOtpVerified(true)
 
       console.log('Login successful, redirecting to OTP page...')
