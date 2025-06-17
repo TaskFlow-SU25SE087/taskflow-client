@@ -27,7 +27,7 @@ export default function OtpPage() {
         variant: 'default'
       })
       setTimeout(() => {
-        navigate('/projects')
+        navigate('/add-info')
       }, 200)
     } catch (error: any) {
       toast({

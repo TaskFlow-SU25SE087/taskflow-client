@@ -7,14 +7,15 @@ export interface AuthResponse {
 
 export interface User {
   id: string
-  name: string
+  fullName: string
   email: string
-  password: string
-  role: string
-  status: string
+  password?: string
+  role?: string
+  status?: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  feedbacks: any[] // Not clear yet
-  projectMembers: ProjectMember[]
+  feedbacks?: any[]
+  projectMembers?: ProjectMember[]
+  phoneNumber?: string
 }
 
 export interface ApiError {

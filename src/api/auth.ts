@@ -1,5 +1,5 @@
 import axiosClient from '@/configs/axiosClient'
-import { AuthResponse } from '@/types/auth'
+import { AuthResponse, User } from '@/types/auth'
 
 const ENDPOINT = '/auth'
 
@@ -193,6 +193,44 @@ export const authApi = {
     } catch (error: any) {
       console.error('Verify OTP error:', error.response?.data)
       throw error
+    }
+  },
+
+  addUsername: async (username: string, avatar: File | null, phoneNumber: string): Promise<User> => {
+    try {
+      const formData = new FormData();
+      formData.append('Username', username);
+      if (avatar) {
+        formData.append('Avatar', avatar);
+      }
+      if (phoneNumber) {
+        formData.append('PhoneNumber', phoneNumber);
+      }
+
+      const response = await axiosClient.post<{
+        code: number;
+        message: string;
+        data: {
+          id: string;
+          avatar: string;
+          fullName: string;
+          role: string;
+          email: string;
+          phoneNumber: string;
+        };
+      }>(`${ENDPOINT}/add-username`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.data.code !== 200) {
+        throw new Error(response.data.message);
+      }
+      return response.data.data;
+    } catch (error: any) {
+      console.error('Add username error:', error.response?.data);
+      throw error;
     }
   },
 }

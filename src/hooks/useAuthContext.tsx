@@ -1,10 +1,11 @@
 import { authApi } from '@/api/auth'
 import axiosClient from '@/configs/axiosClient'
+import { User } from '@/types/auth'
 import { createContext, ReactNode, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 interface AuthContextType {
-  user: { email: string; token: string; } | null
+  user: User | null
   isOtpVerified: boolean
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
@@ -14,12 +15,13 @@ interface AuthContextType {
   resendVerificationEmail: () => Promise<void>
   verifyEmail: (token: string) => Promise<void>
   verifyOtp: (otp: string) => Promise<void>
+  addUsername: (username: string, avatar: File | null, phoneNumber: string) => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<{ email: string; token: string; } | null>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isOtpVerified, setIsOtpVerified] = useState(false)
   const navigate = useNavigate()
@@ -54,13 +56,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('refreshToken', refreshToken)
 
       // Store user info
-      const userInfo = {
-        email,
-        token: accessToken
-      }
-      sessionStorage.setItem('auth_user', JSON.stringify(userInfo))
+      sessionStorage.setItem('auth_user', JSON.stringify({ email })) // Only store email in session storage for simplification
       sessionStorage.setItem('otp_verified', 'true')
-      setUser(userInfo)
+      setUser({ email: email, fullName: '', id: '', role: '', phoneNumber: '' }) // Simplified User object for initial state, removed avatar as it's not in User interface
       setIsOtpVerified(true)
 
       console.log('Login successful, redirecting to OTP page...')
@@ -87,13 +85,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('refreshToken', refreshToken)
 
       // Store user info
-      const userInfo = {
-        email,
-        token: accessToken
-      }
-      sessionStorage.setItem('auth_user', JSON.stringify(userInfo))
+      sessionStorage.setItem('auth_user', JSON.stringify({ email })) // Only store email in session storage for simplification
       sessionStorage.setItem('otp_verified', 'false')
-      setUser(userInfo)
+      setUser({ email: email, fullName: '', id: '', role: '', phoneNumber: '' }) // Simplified User object for initial state, removed avatar as it's not in User interface
       setIsOtpVerified(false)
 
       console.log('Registration successful, redirecting to OTP page...')
@@ -130,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await authApi.verifyEmail(token)
       setTimeout(() => {
-        navigate('/login', { replace: true })
+        navigate('/add-info', { replace: true })
       }, 200) // Add a small delay for toast to appear
     } catch (error: any) {
       setError(error.message || 'Failed to verify email')
@@ -145,10 +139,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsOtpVerified(true)
       sessionStorage.setItem('otp_verified', 'true')
       setTimeout(() => {
-        navigate('/projects', { replace: true })
+        navigate('/add-info', { replace: true })
       }, 200) // Add a small delay for toast to appear
     } catch (error: any) {
       setError(error.message || 'Failed to verify OTP')
+      throw error
+    }
+  }
+
+  const addUsername = async (username: string, avatar: File | null, phoneNumber: string) => {
+    try {
+      console.log('Starting addUsername process...')
+      setError(null)
+      const updatedUser = await authApi.addUsername(username, avatar, phoneNumber)
+      console.log('Add username response:', updatedUser)
+      setUser(updatedUser)
+      sessionStorage.setItem('auth_user', JSON.stringify(updatedUser))
+      setIsOtpVerified(true)
+      sessionStorage.setItem('otp_verified', 'true')
+      console.log('Add username successful, redirecting to /projects/new...')
+      setTimeout(() => {
+        navigate('/projects/new', { replace: true })
+      }, 200)
+    } catch (error: any) {
+      console.error('Add username error:', error)
+      setError(error.message || 'Failed to add username')
       throw error
     }
   }
@@ -165,7 +180,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error,
         resendVerificationEmail,
         verifyEmail,
-        verifyOtp
+        verifyOtp,
+        addUsername
       }}
     >
       {children}

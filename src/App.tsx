@@ -12,6 +12,7 @@ import { useAuth } from './hooks/useAuth'
 import GitCommits from './pages/github/GitCommits'
 import GitIssues from './pages/github/GitIssues'
 import AboutPage from './pages/home/AboutPage'
+import AddUserInfoPage from './pages/home/AddUserInfoPage'
 import ContactPage from './pages/home/ContactPage'
 import OtpPage from './pages/home/OtpPage'
 import VerifyEmailPage from './pages/home/VerifyEmailPage'
@@ -20,11 +21,14 @@ import ProjectReports from './pages/projects/ProjectReports'
 import ProjectTimeline from './pages/projects/ProjectTimeline'
 
 const AuthRedirect = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isOtpVerified } = useAuth()
+  const { isAuthenticated, isOtpVerified, user } = useAuth()
   const location = useLocation()
 
-  // If user is authenticated and OTP verified, redirect to projects page from public routes
-  if (isAuthenticated && isOtpVerified && location.pathname !== '/projects') {
+  // Kiểm tra đã hoàn tất hồ sơ (ví dụ: có username và phoneNumber)
+  const isProfileCompleted = user && user.fullName && user.phoneNumber
+
+  // Nếu đã xác thực và hoàn tất hồ sơ, redirect sang /projects
+  if (isAuthenticated && isOtpVerified && isProfileCompleted && location.pathname !== '/projects') {
     return <Navigate to='/projects' state={{ from: location }} replace />
   }
 
@@ -95,6 +99,15 @@ function App() {
             element={
               <AuthRedirect>
                 <OtpPage />
+              </AuthRedirect>
+            }
+          />
+
+          <Route
+            path='/add-info'
+            element={
+              <AuthRedirect>
+                <AddUserInfoPage />
               </AuthRedirect>
             }
           />
