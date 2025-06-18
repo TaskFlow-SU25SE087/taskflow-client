@@ -8,6 +8,7 @@ interface AuthContextType {
   user: User | null
   isOtpVerified: boolean
   isAuthenticated: boolean
+  authLoading: boolean
   login: (username: string, password: string) => Promise<void>
   register: (email: string, fullName: string, password: string, confirmPassword: string) => Promise<void>
   logout: () => void
@@ -17,6 +18,7 @@ interface AuthContextType {
   verifyOtp: (otp: string) => Promise<void>
   addUsername: (username: string, avatar: File | null, phoneNumber: string) => Promise<void>
   activate: (email: string, username: string, newPassword: string, confirmPassword: string, tokenResetPassword: string) => Promise<void>
+  getCurrentUser: () => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null)
@@ -25,18 +27,73 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isOtpVerified, setIsOtpVerified] = useState(false)
+  const [authLoading, setAuthLoading] = useState(true)
   const navigate = useNavigate()
 
   // Initialize auth state from session storage
   useEffect(() => {
     const storedUser = sessionStorage.getItem('auth_user')
     const storedOtpStatus = sessionStorage.getItem('otp_verified')
+    const storedAccessToken = sessionStorage.getItem('accessToken')
+    console.log('[AuthProvider] useEffect mount:')
+    console.log('  storedUser:', storedUser)
+    console.log('  storedOtpStatus:', storedOtpStatus)
+    console.log('  storedAccessToken:', storedAccessToken)
+    if (storedAccessToken) {
+      axiosClient.defaults.headers.common['Authorization'] = `Bearer ${storedAccessToken}`
+      // Decode accessToken để lấy lại user info
+      try {
+        const tokenPayload = JSON.parse(atob(storedAccessToken.split('.')[1]))
+        const currentUser = {
+          id: tokenPayload.ID || '',
+          email: tokenPayload.Email || '',
+          fullName: tokenPayload.FullName || '',
+          role: tokenPayload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || '',
+          phoneNumber: '',
+          username: tokenPayload.Username || ''
+        }
+        setUser(currentUser)
+        sessionStorage.setItem('auth_user', JSON.stringify(currentUser))
+        setIsOtpVerified(true)
+      } catch (e) {
+        setUser(null)
+        setIsOtpVerified(false)
+        sessionStorage.removeItem('auth_user')
+        sessionStorage.removeItem('accessToken')
+      }
+    }
+    setAuthLoading(false)
     
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser)
         setUser(parsedUser)
         setIsOtpVerified(storedOtpStatus === 'true')
+        
+        // If we have a stored user, try to get the latest user info including role
+        if (storedOtpStatus === 'true' && parsedUser.username) {
+          // Check if we have a token
+          const authUserString = sessionStorage.getItem('auth_user')
+          if (authUserString) {
+            try {
+              const authUser = JSON.parse(authUserString)
+              if (authUser.token) {
+                // Try to get current user info
+                authApi.getCurrentUser()
+                  .then(currentUser => {
+                    setUser(currentUser)
+                    sessionStorage.setItem('auth_user', JSON.stringify(currentUser))
+                    console.log('Updated user info from server:', currentUser)
+                  })
+                  .catch(error => {
+                    console.warn('Could not update user info from server:', error)
+                  })
+              }
+            } catch (error) {
+              console.error('Error parsing auth user:', error)
+            }
+          }
+        }
       } catch (error) {
         console.error('Error parsing stored user:', error)
         sessionStorage.removeItem('auth_user')
@@ -44,6 +101,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
   }, []) // Empty dependency array to run only once on mount
+
+  useEffect(() => {
+    console.log('[AuthProvider] user:', user)
+    console.log('[AuthProvider] authLoading:', authLoading)
+  }, [user, authLoading])
 
   const login = async (username: string, password: string) => {
     try {
@@ -55,16 +117,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Store tokens
       axiosClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
       localStorage.setItem('refreshToken', refreshToken)
+      sessionStorage.setItem('accessToken', accessToken)
 
-      // Store user info
-      sessionStorage.setItem('auth_user', JSON.stringify({ username })) // Only store username in session storage for simplification
-      sessionStorage.setItem('otp_verified', 'true')
-      setUser({ email: '', fullName: '', id: '', role: '', phoneNumber: '', username: username }) // Simplified User object for initial state, added username
-      setIsOtpVerified(true)
+      // Get current user information including role from JWT token
+      let currentUser: User | null = null
+      try {
+        // Decode JWT token to get user info
+        const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]))
+        
+        currentUser = {
+          id: tokenPayload.ID || '',
+          email: tokenPayload.Email || '',
+          fullName: tokenPayload.FullName || '',
+          role: tokenPayload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || '',
+          phoneNumber: '',
+          username: username
+        }
+        
+        setUser(currentUser)
+        sessionStorage.setItem('auth_user', JSON.stringify(currentUser))
+        sessionStorage.setItem('otp_verified', 'true')
+        setIsOtpVerified(true)
+      } catch (userError) {
+        console.warn('Could not decode JWT token, using basic user info:', userError)
+        // Fallback to basic user info
+        currentUser = { email: '', fullName: '', id: '', role: '', phoneNumber: '', username: username }
+        setUser(currentUser)
+        sessionStorage.setItem('auth_user', JSON.stringify(currentUser))
+        sessionStorage.setItem('otp_verified', 'true')
+        setIsOtpVerified(true)
+      }
 
-      console.log('Login successful, redirecting to OTP page...')
+      console.log('Login successful, redirecting...')
       setTimeout(() => {
-        navigate('/projects', { replace: true })
+        // Check if user is admin and redirect accordingly
+        if (currentUser && (currentUser.role === 0 || currentUser.role === '0' || currentUser.role === 'Admin' || currentUser.role === 'admin')) {
+          navigate('/admin/users', { replace: true })
+        } else {
+          navigate('/projects', { replace: true })
+        }
       }, 200) // Add a small delay for toast to appear
     } catch (error: any) {
       console.error('Login error:', error)
@@ -84,11 +175,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Store tokens
       axiosClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
       localStorage.setItem('refreshToken', refreshToken)
+      sessionStorage.setItem('accessToken', accessToken)
 
       // Store user info
       sessionStorage.setItem('auth_user', JSON.stringify({ email })) // Only store email in session storage for simplification
       sessionStorage.setItem('otp_verified', 'false')
-      setUser({ email: email, fullName: '', id: '', role: '', phoneNumber: '' }) // Simplified User object for initial state, removed avatar as it's not in User interface
+      setUser({ email: email, fullName: '', id: '', role: '', phoneNumber: '', username: '' }) // Simplified User object for initial state, removed avatar as it's not in User interface
       setIsOtpVerified(false)
 
       console.log('Registration successful, redirecting to OTP page...')
@@ -108,6 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsOtpVerified(false)
     sessionStorage.removeItem('auth_user')
     sessionStorage.removeItem('otp_verified')
+    sessionStorage.removeItem('accessToken')
     navigate('/login', { replace: true })
   }
 
@@ -151,6 +244,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const addUsername = async (username: string, avatar: File | null, phoneNumber: string) => {
     try {
       console.log('Starting addUsername process...')
+      console.log('Current authorization header:', axiosClient.defaults.headers.common['Authorization'])
+      console.log('Access token from session storage:', sessionStorage.getItem('accessToken'))
+      
       setError(null)
       const updatedUser = await authApi.addUsername(username, avatar, phoneNumber)
       console.log('Add username response:', updatedUser)
@@ -158,9 +254,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionStorage.setItem('auth_user', JSON.stringify(updatedUser))
       setIsOtpVerified(true)
       sessionStorage.setItem('otp_verified', 'true')
-      console.log('Add username successful, redirecting to /projects/new...')
+      console.log('Add username successful, redirecting...')
       setTimeout(() => {
-        navigate('/projects/new', { replace: true })
+        // Check if user is admin and redirect accordingly
+        if (updatedUser && (updatedUser.role === 0 || updatedUser.role === '0' || updatedUser.role === 'Admin' || updatedUser.role === 'admin')) {
+          navigate('/admin/users', { replace: true })
+        } else {
+          navigate('/projects/new', { replace: true })
+        }
       }, 200)
     } catch (error: any) {
       console.error('Add username error:', error)
@@ -178,12 +279,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const getCurrentUser = async () => {
+    try {
+      const currentUser = await authApi.getCurrentUser()
+      console.log('🔍 API getCurrentUser response:', currentUser)
+      console.log('🔍 API response role:', currentUser?.role)
+      console.log('🔍 API response role type:', typeof currentUser?.role)
+      setUser(currentUser)
+      sessionStorage.setItem('auth_user', JSON.stringify(currentUser))
+      sessionStorage.setItem('otp_verified', 'true')
+      setIsOtpVerified(true)
+    } catch (error: any) {
+      console.error('Error getting current user:', error)
+      setError(error.message || 'Failed to get current user')
+      throw error
+    }
+  }
+
   return (
     <AuthContext.Provider
       value={{
         user,
         isOtpVerified,
         isAuthenticated: !!user,
+        authLoading,
         login,
         register,
         logout,
@@ -192,7 +311,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         verifyEmail,
         verifyOtp,
         addUsername,
-        activate
+        activate,
+        getCurrentUser
       }}
     >
       {children}

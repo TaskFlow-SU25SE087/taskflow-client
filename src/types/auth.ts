@@ -10,7 +10,7 @@ export interface User {
   fullName: string
   email: string
   password?: string
-  role?: string
+  role?: string | number
   status?: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   feedbacks?: any[]

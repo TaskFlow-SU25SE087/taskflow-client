@@ -12,18 +12,13 @@ const axiosClient = axios.create({
 // Request
 axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const authUserString = sessionStorage.getItem('auth_user')
-
-    if (authUserString) {
-      try {
-        const authUser = JSON.parse(authUserString)
-        if (authUser.token) {
-          config.headers.Authorization = `Bearer ${authUser.token}`
-        }
-      } catch (error) {
-        console.error('Error parsing auth_user from session storage:', error)
-      }
+    // Get access token from session storage
+    const accessToken = sessionStorage.getItem('accessToken')
+    
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`
     }
+    
     return config
   },
   (error: AxiosError) => {

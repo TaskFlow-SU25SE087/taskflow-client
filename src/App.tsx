@@ -1,6 +1,8 @@
+import AdminProtectedRoute from '@/components/AdminProtectedRoute'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from '@/hooks/useAuthContext.tsx'
+import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import ActivateAccountPage from '@/pages/home/ActivateAccountPage'
 import ForgotPasswordPage from '@/pages/home/ForgotPasswordPage'
 import HomePage from '@/pages/home/HomePage'
@@ -194,6 +196,16 @@ function App() {
               <ProtectedRoute>
                 <GitIssues />
               </ProtectedRoute>
+            }
+          />
+
+          {/* Admin routes */}
+          <Route
+            path='/admin/users'
+            element={
+              <AdminProtectedRoute>
+                <AdminUsersPage />
+              </AdminProtectedRoute>
             }
           />
         </Routes>

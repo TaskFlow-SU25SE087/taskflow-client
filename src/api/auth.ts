@@ -207,6 +207,13 @@ export const authApi = {
         formData.append('PhoneNumber', phoneNumber);
       }
 
+      console.log('Sending addUsername request with data:', {
+        username,
+        hasAvatar: !!avatar,
+        phoneNumber,
+        formDataEntries: Array.from(formData.entries())
+      });
+
       const response = await axiosClient.post<{
         code: number;
         message: string;
@@ -231,6 +238,20 @@ export const authApi = {
       return response.data.data;
     } catch (error: any) {
       console.error('Add username error:', error.response?.data);
+      
+      // Log detailed error information
+      if (error.response?.data?.errors) {
+        console.error('Validation errors:', error.response.data.errors);
+        const errorMessages = Object.entries(error.response.data.errors)
+          .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
+          .join('\n');
+        throw new Error(`Validation failed:\n${errorMessages}`);
+      }
+      
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      
       throw error;
     }
   },
@@ -269,6 +290,33 @@ export const authApi = {
       }
       
       throw new Error('Account activation failed. Please try again.');
+    }
+  },
+
+  getCurrentUser: async (): Promise<User> => {
+    try {
+      const response = await axiosClient.get<{
+        code: number;
+        message: string;
+        data: {
+          id: string;
+          avatar: string;
+          fullName: string;
+          role: string;
+          email: string;
+          phoneNumber: string;
+          username: string;
+        };
+      }>(`${ENDPOINT}/me`);
+
+      if (response.data.code !== 200) {
+        throw new Error(response.data.message);
+      }
+
+      return response.data.data;
+    } catch (error: any) {
+      console.error('Get current user error:', error.response?.data);
+      throw error;
     }
   },
 }

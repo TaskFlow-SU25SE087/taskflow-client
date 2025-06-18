@@ -1,21 +1,21 @@
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Bell, ChevronDown, HelpCircle, Search, LogOut, Settings, User, FolderKanban, Plus, Layout } from 'lucide-react'
-import { FiMenu } from 'react-icons/fi'
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
   DropdownMenuGroup,
-  DropdownMenuLabel
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { useCurrentProject } from '@/hooks/useCurrentProject'
-import { useNavigate } from 'react-router-dom'
-import { useProjects } from '@/hooks/useProjects'
+import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/useAuth'
+import { useCurrentProject } from '@/hooks/useCurrentProject'
+import { useProjects } from '@/hooks/useProjects'
 import Avatar from 'boring-avatars'
+import { Bell, ChevronDown, FolderKanban, HelpCircle, Layout, LogOut, Plus, Search, Settings, Shield, User } from 'lucide-react'
+import { FiMenu } from 'react-icons/fi'
+import { useNavigate } from 'react-router-dom'
 
 interface NavbarProps {
   isSidebarOpen: boolean
@@ -136,7 +136,7 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
               <div className='cursor-pointer relative h-8 w-fit flex items-center gap-2 px-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'>
                 <Avatar size='32px' variant='beam' name={user?.id} />
                 <div className='text-sm text-left'>
-                  <div className='font-medium'>{user?.name}</div>
+                  <div className='font-medium'>{user?.fullName}</div>
                   <div className='text-xs text-gray-500'>{user?.email}</div>
                 </div>
                 <ChevronDown className='h-4 w-4 text-gray-500' />
@@ -151,6 +151,18 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
                 <Settings className='h-4 w-4' />
                 Settings
               </DropdownMenuItem>
+              {(user?.role === 'Admin' || user?.role === 'admin' || user?.role === 0 || user?.role === '0') && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => navigate('/admin/users')}
+                    className='gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                  >
+                    <Shield className='h-4 w-4' />
+                    Admin Panel
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogout}

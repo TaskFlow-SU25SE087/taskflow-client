@@ -2,8 +2,15 @@ import { useAuth } from '@/hooks/useAuth'
 import { Navigate, useLocation } from 'react-router-dom'
 
 export function ProtectedRoute({ children }: { children: JSX.Element }) {
-  const { user } = useAuth()
+  const { user, authLoading } = useAuth()
   const location = useLocation()
+
+  console.log('[ProtectedRoute] user:', user)
+  console.log('[ProtectedRoute] authLoading:', authLoading)
+
+  if (authLoading) {
+    return <div>Loading...</div>
+  }
 
   // If not logged in, redirect to login
   if (!user) {
