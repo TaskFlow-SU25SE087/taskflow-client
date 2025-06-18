@@ -217,6 +217,7 @@ export const authApi = {
           role: string;
           email: string;
           phoneNumber: string;
+          username: string;
         };
       }>(`${ENDPOINT}/add-username`, formData, {
         headers: {
@@ -231,6 +232,43 @@ export const authApi = {
     } catch (error: any) {
       console.error('Add username error:', error.response?.data);
       throw error;
+    }
+  },
+
+  activate: async (email: string, username: string, newPassword: string, confirmPassword: string, tokenResetPassword: string): Promise<string> => {
+    try {
+      const response = await axiosClient.post<{
+        code: number;
+        message: string;
+        data: string;
+      }>(`${ENDPOINT}/activate`, {
+        email,
+        username,
+        newPassword,
+        confirmPassword,
+        tokenResetPassword
+      });
+
+      if (response.data.code !== 200) {
+        throw new Error(response.data.message);
+      }
+
+      return response.data.data;
+    } catch (error: any) {
+      console.error('Activate account error:', error.response?.data);
+      
+      if (error.response?.data?.errors) {
+        const errorMessages = Object.entries(error.response.data.errors)
+          .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
+          .join('\n');
+        throw new Error(errorMessages);
+      }
+      
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      
+      throw new Error('Account activation failed. Please try again.');
     }
   },
 }

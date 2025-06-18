@@ -16,6 +16,7 @@ interface AuthContextType {
   verifyEmail: (token: string) => Promise<void>
   verifyOtp: (otp: string) => Promise<void>
   addUsername: (username: string, avatar: File | null, phoneNumber: string) => Promise<void>
+  activate: (email: string, username: string, newPassword: string, confirmPassword: string, tokenResetPassword: string) => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null)
@@ -168,6 +169,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const activate = async (email: string, username: string, newPassword: string, confirmPassword: string, tokenResetPassword: string) => {
+    try {
+      await authApi.activate(email, username, newPassword, confirmPassword, tokenResetPassword)
+    } catch (error: any) {
+      setError(error.message || 'Failed to activate account')
+      throw error
+    }
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -181,7 +191,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         resendVerificationEmail,
         verifyEmail,
         verifyOtp,
-        addUsername
+        addUsername,
+        activate
       }}
     >
       {children}

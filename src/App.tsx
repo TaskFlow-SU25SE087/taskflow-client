@@ -1,6 +1,8 @@
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from '@/hooks/useAuthContext.tsx'
+import ActivateAccountPage from '@/pages/home/ActivateAccountPage'
+import ForgotPasswordPage from '@/pages/home/ForgotPasswordPage'
 import HomePage from '@/pages/home/HomePage'
 import LoginPage from '@/pages/home/LoginPage'
 import SignUpPage from '@/pages/home/SignupPage'
@@ -77,6 +79,14 @@ function App() {
             }
           />
           <Route
+            path='forgot-password'
+            element={
+              <AuthRedirect>
+                <ForgotPasswordPage />
+              </AuthRedirect>
+            }
+          />
+          <Route
             path='signup'
             element={
               <AuthRedirect>
@@ -99,6 +109,15 @@ function App() {
             element={
               <AuthRedirect>
                 <OtpPage />
+              </AuthRedirect>
+            }
+          />
+
+          <Route
+            path='activate'
+            element={
+              <AuthRedirect>
+                <ActivateAccountPage />
               </AuthRedirect>
             }
           />
