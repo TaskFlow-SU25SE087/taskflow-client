@@ -1,13 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useState } from 'react'
-import { useToast } from '@/hooks/use-toast'
 import { projectApi } from '@/api/projects'
-import { useNavigate } from 'react-router-dom'
 import axiosClient from '@/configs/axiosClient'
+import { useToast } from '@/hooks/use-toast'
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 export function useProjectCreate() {
   const [step, setStep] = useState(0)
   const [boardName, setBoardName] = useState('')
+  const [description, setDescription] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [projectId, setProjectId] = useState<string>('')
   const [memberEmail, setMemberEmail] = useState('')
@@ -42,18 +43,31 @@ export function useProjectCreate() {
     if (step === 0 && boardName.trim()) {
       setIsLoading(true)
       try {
-        await projectApi.createProject(boardName.trim()).then((project) => {
-          console.log('WHEN CREATED: ', project.projectId)
-          setProjectId(project.projectId)
+        await projectApi.createProject(boardName.trim(), description.trim()).then((response) => {
+          console.log('WHEN CREATED: ', response.data.id)
+          setProjectId(response.data.id)
           setIsProjectCreated(true)
           setStep(1)
         })
-      } catch (error) {
-        toast({
-          title: 'Project creation failed',
-          description: 'Unable to create the project. Please try again.',
-          variant: 'destructive'
-        })
+      } catch (error: any) {
+        console.error('Project creation error:', error)
+        
+        // Handle specific backend database errors
+        if (error.response?.data?.message?.includes('Color') || 
+            error.response?.data?.message?.includes('Tags') ||
+            error.response?.data?.message?.includes('NULL')) {
+          toast({
+            title: 'Lỗi hệ thống',
+            description: 'Có lỗi xảy ra khi tạo dự án. Vui lòng thử lại sau hoặc liên hệ quản trị viên.',
+            variant: 'destructive'
+          })
+        } else {
+          toast({
+            title: 'Project creation failed',
+            description: 'Unable to create the project. Please try again.',
+            variant: 'destructive'
+          })
+        }
       } finally {
         setIsLoading(false)
       }
@@ -72,6 +86,8 @@ export function useProjectCreate() {
     step,
     boardName,
     setBoardName,
+    description,
+    setDescription,
     isLoading,
     memberEmail,
     setMemberEmail,

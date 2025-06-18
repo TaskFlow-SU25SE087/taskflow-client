@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
-import Cookies from 'js-cookie'
-import { Project } from '@/types/project'
-import { useNavigate } from 'react-router-dom'
 import { projectApi } from '@/api/projects'
+import { Project } from '@/types/project'
+import Cookies from 'js-cookie'
+import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 const CURRENT_PROJECT_COOKIE = 'current_project_id'
 
@@ -15,7 +15,21 @@ export const useCurrentProject = () => {
     async (projectId: string) => {
       try {
         const response = await projectApi.getProjectById(projectId)
-        setCurrentProject(response)
+        // Convert ProjectDetail to Project format for backward compatibility
+        const project: Project = {
+          id: response.data.id,
+          title: response.data.title,
+          description: response.data.description,
+          ownerId: response.data.ownerId,
+          createdAt: response.data.createdAt,
+          lastUpdate: response.data.lastUpdate,
+          analysisResults: [],
+          boards: response.data.boards,
+          projectMembers: [],
+          sprints: [],
+          taskPs: []
+        }
+        setCurrentProject(project)
       } catch (error) {
         console.error('Failed to fetch project:', error)
         // If project fetch fails, clear the cookie
