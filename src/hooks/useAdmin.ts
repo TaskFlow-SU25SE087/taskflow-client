@@ -70,6 +70,45 @@ export const useAdmin = () => {
     }
   }
 
+  // Fetch all users across all pages
+  const fetchAllUsers = async (): Promise<AdminUser[]> => {
+    setLoading(true)
+    setError(null)
+    let allUsers: AdminUser[] = []
+    let page = 1
+    let totalPages = 1
+    try {
+      do {
+        const response: AdminUsersResponse = await adminApi.getUsers({ page })
+        if (response.code === 0 || response.code === 200) {
+          allUsers = allUsers.concat(response.data.items)
+          totalPages = response.data.totalPages
+          page++
+        } else {
+          setError(response.message || 'Failed to fetch users')
+          toast({
+            title: 'Error',
+            description: response.message || 'Failed to fetch users',
+            variant: 'destructive'
+          })
+          break
+        }
+      } while (page <= totalPages)
+      return allUsers
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch users'
+      setError(errorMessage)
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive'
+      })
+      return []
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     fetchUsers()
   }, [])
@@ -81,6 +120,7 @@ export const useAdmin = () => {
     pagination,
     fetchUsers,
     addFileAccount,
-    refetch: () => fetchUsers(pagination.pageNumber)
+    refetch: () => fetchUsers(pagination.pageNumber),
+    fetchAllUsers
   }
 } 

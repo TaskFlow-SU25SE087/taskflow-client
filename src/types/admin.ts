@@ -5,7 +5,10 @@ export interface AdminUser {
   role: string | number
   email: string
   phoneNumber: string
+  studentId: string | null
+  term: string | null
   isActive: boolean
+  isPermanentlyBanned: boolean
 }
 
 export interface AdminUsersResponse {

@@ -3,9 +3,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useAuth } from '@/hooks/useAuth'
 import {
-    Home,
-    LogOut,
-    Shield
+  Home,
+  LogOut,
+  Shield
 } from 'lucide-react'
 import { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'

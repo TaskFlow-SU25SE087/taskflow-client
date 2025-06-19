@@ -3,26 +3,29 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem
 } from '@/components/ui/dropdown-menu'
 import { AdminUser } from '@/types/admin'
-import { Hash, Mail, Phone, Shield, User } from 'lucide-react'
+import { Mail, Phone, User } from 'lucide-react'
 
 interface AdminUserCardProps {
   user: AdminUser
   onEdit?: (user: AdminUser) => void
   onDelete?: (userId: string) => void
   onToggleStatus?: (userId: string, isActive: boolean) => void
+  onBan?: (userId: string) => void
+  onUnban?: (userId: string) => void
 }
 
 export default function AdminUserCard({ 
   user, 
   onEdit, 
   onDelete, 
-  onToggleStatus
+  onToggleStatus,
+  onBan,
+  onUnban
 }: AdminUserCardProps) {
   const getInitials = (fullName: string) => {
     return fullName
@@ -60,11 +63,7 @@ export default function AdminUserCard({
             </div>
           </div>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <User className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
+           
             <DropdownMenuContent align="end">
               {onEdit && (
                 <DropdownMenuItem onClick={() => onEdit(user)}>
@@ -94,7 +93,7 @@ export default function AdminUserCard({
       <CardContent className="space-y-4">
         {/* User ID */}
         <div className="flex items-center space-x-2 text-sm">
-          <Hash className="h-4 w-4 text-muted-foreground" />
+          <span className="font-semibold">ID:</span>
           <span className="font-mono text-xs bg-muted px-2 py-1 rounded">
             {user.id}
           </span>
@@ -112,25 +111,50 @@ export default function AdminUserCard({
           <span>{user.phoneNumber || 'Not provided'}</span>
         </div>
 
-        {/* Avatar URL */}
-        {user.avatar && (
-          <div className="flex items-center space-x-2 text-sm">
-            <Shield className="h-4 w-4 text-muted-foreground" />
-            <span className="break-all text-xs text-muted-foreground">
-              Avatar: {user.avatar}
-            </span>
-          </div>
-        )}
+        {/* Student ID */}
+        <div className="flex items-center space-x-2 text-sm">
+          <span className="font-semibold">Student ID:</span>
+          <span>{user.studentId || 'Not provided'}</span>
+        </div>
+
+        {/* Term */}
+        <div className="flex items-center space-x-2 text-sm">
+          <span className="font-semibold">Term:</span>
+          <span>{user.term || 'Not provided'}</span>
+        </div>
 
         {/* Status and Role Badges */}
         <div className="flex items-center justify-between pt-2 border-t">
           <div className="flex items-center space-x-2">
-            <Badge variant={user.isActive ? "default" : "destructive"}>
-              {user.isActive ? 'Active' : 'Inactive'}
-            </Badge>
+            {user.isPermanentlyBanned ? (
+              <span className="inline-block px-2 py-1 rounded text-white bg-red-600 text-xs font-semibold">Banned</span>
+            ) : (
+              <span
+                className={
+                  user.isActive
+                    ? 'inline-block px-2 py-1 rounded text-green-600 bg-green-100 text-xs font-semibold'
+                    : 'inline-block px-2 py-1 rounded text-red-600 bg-red-100 text-xs font-semibold'
+                }
+              >
+                {user.isActive ? 'Active' : 'Inactive'}
+              </span>
+            )}
             <Badge variant="outline">
               {formatRole(user.role)}
             </Badge>
+            {user.isPermanentlyBanned ? (
+              <Button size="sm" variant="destructive" disabled>
+                Ban
+              </Button>
+            ) : user.isActive ? (
+              <Button size="sm" variant="destructive" onClick={() => onBan && onBan(user.id)}>
+                Ban
+              </Button>
+            ) : (
+              <Button size="sm" variant="default" onClick={() => onUnban && onUnban(user.id)}>
+                Unban
+              </Button>
+            )}
           </div>
         </div>
       </CardContent>

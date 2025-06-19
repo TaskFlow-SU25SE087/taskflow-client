@@ -34,5 +34,15 @@ export const adminApi = {
     }
     
     return response.data.data
+  },
+
+  banUser: async (userId: string) => {
+    const response = await axiosClient.patch(`${ENDPOINT}/users/ban/${userId}`)
+    return response.data
+  },
+
+  unbanUser: async (userId: string) => {
+    const response = await axiosClient.patch(`${ENDPOINT}/users/unban/${userId}`)
+    return response.data
   }
 } 

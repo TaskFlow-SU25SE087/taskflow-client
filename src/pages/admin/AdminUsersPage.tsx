@@ -1,3 +1,4 @@
+import { adminApi } from '@/api/admin'
 import AdminLayout from '@/components/admin/AdminLayout'
 import AdminPagination from '@/components/admin/AdminPagination'
 import AdminUserCard from '@/components/admin/AdminUserCard'
@@ -8,13 +9,15 @@ import { Input } from '@/components/ui/input'
 import { useAdmin } from '@/hooks/useAdmin'
 import { Loader2, Users } from 'lucide-react'
 import { useState } from 'react'
+import * as XLSX from 'xlsx'
 
 export default function AdminUsersPage() {
-  const { users, loading, error, pagination, fetchUsers, addFileAccount } = useAdmin()
+  const { users, loading, error, pagination, fetchUsers, addFileAccount, fetchAllUsers, refetch } = useAdmin()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRole, setSelectedRole] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [showFileUpload, setShowFileUpload] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const handlePageChange = (page: number) => {
     fetchUsers(page)
@@ -25,6 +28,64 @@ export default function AdminUsersPage() {
       await addFileAccount(file)
     } catch (error) {
       console.error('Error uploading file:', error)
+    }
+  }
+
+  const handleExportExcel = async () => {
+    setExporting(true)
+    try {
+      const allUsers = await fetchAllUsers()
+      if (allUsers.length === 0) {
+        setExporting(false)
+        return
+      }
+      const filteredAllUsers = allUsers.filter(user => {
+        const matchesSearch = user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                             user.email.toLowerCase().includes(searchTerm.toLowerCase())
+        const matchesRole = selectedRole === 'all' || user.role === selectedRole
+        const matchesStatus = selectedStatus === 'all' || 
+                             (selectedStatus === 'active' && user.isActive) ||
+                             (selectedStatus === 'inactive' && !user.isActive)
+        return matchesSearch && matchesRole && matchesStatus
+      })
+      if (filteredAllUsers.length === 0) {
+        setExporting(false)
+        return
+      }
+      const data = filteredAllUsers.map(user => ({
+        ID: user.id,
+        'Full Name': user.fullName,
+        Email: user.email,
+        'Phone Number': user.phoneNumber,
+        'Student ID': user.studentId,
+        Term: user.term,
+        Role: user.role,
+        Status: user.isActive ? 'Active' : 'Inactive',
+      }))
+      const worksheet = XLSX.utils.json_to_sheet(data)
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Users')
+      XLSX.writeFile(workbook, 'users.xlsx')
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  const handleBanUser = async (userId: string) => {
+    try {
+      await adminApi.banUser(userId)
+      await refetch()
+    } catch (err) {
+      console.error('Ban user failed', err)
+    }
+  }
+
+  const handleUnbanUser = async (userId: string) => {
+    try {
+      await adminApi.unbanUser(userId)
+      await refetch()
+    } catch (err) {
+      console.error('Unban user failed', err)
     }
   }
 
@@ -104,6 +165,9 @@ export default function AdminUsersPage() {
             <span className="hidden md:inline">Import Users</span>
             <span className="md:hidden">Import</span>
           </Button>
+          <Button variant="outline" className="ml-2" onClick={handleExportExcel} disabled={exporting}>
+            {exporting ? 'Exporting...' : 'Export Excel'}
+          </Button>
         </div>
       </div>
       {showFileUpload && (
@@ -131,6 +195,8 @@ export default function AdminUsersPage() {
             <AdminUserCard
               key={user.id}
               user={user}
+              onBan={handleBanUser}
+              onUnban={handleUnbanUser}
             />
           ))}
         </div>
