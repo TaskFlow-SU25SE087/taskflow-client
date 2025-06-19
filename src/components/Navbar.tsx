@@ -143,7 +143,10 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent className='w-56' align='end'>
-              <DropdownMenuItem className='gap-2 text-gray-600 hover:text-gray-900'>
+              <DropdownMenuItem
+                onClick={() => navigate('/profile')}
+                className='gap-2 text-gray-600 hover:text-gray-900'
+              >
                 <User className='h-4 w-4' />
                 Profile
               </DropdownMenuItem>

@@ -14,6 +14,7 @@ interface ProjectEditMenuProps {
 
 export function ProjectEditMenu({ project, onProjectUpdated, trigger }: ProjectEditMenuProps) {
   const [title, setTitle] = useState(project.title)
+  const [description, setDescription] = useState(project.description || '')
   const [isOpen, setIsOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
@@ -29,7 +30,7 @@ export function ProjectEditMenu({ project, onProjectUpdated, trigger }: ProjectE
         originalTitle: project.title
       })
 
-      const response = await projectApi.updateProject(project.id, title)
+      const response = await projectApi.updateProject(project.id, title, description)
       
       console.log('Update response:', response)
       
@@ -59,13 +60,17 @@ export function ProjectEditMenu({ project, onProjectUpdated, trigger }: ProjectE
     if (open) {
       // Reset form khi mở dialog
       setTitle(project.title)
+      setDescription(project.description || '')
     }
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className='sm:max-w-[425px]'>
+      <DialogContent className='sm:max-w-[425px]' aria-describedby="edit-project-desc">
+        <span id="edit-project-desc" className="sr-only">
+          Edit the project name. The description will not be changed.
+        </span>
         <DialogHeader>
           <DialogTitle>Edit Project Name</DialogTitle>
         </DialogHeader>
@@ -83,20 +88,21 @@ export function ProjectEditMenu({ project, onProjectUpdated, trigger }: ProjectE
               disabled={isSubmitting}
             />
           </div>
+          <div className='space-y-2'>
+            <label htmlFor='description' className='text-sm font-medium'>
+              Project Description
+            </label>
+            <textarea
+              id='description'
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder='Project description'
+              disabled={isSubmitting}
+              className='w-full border rounded p-2'
+            />
+          </div>
           
-          {project.description && (
-            <div className='p-3 bg-gray-50 rounded-md'>
-              <p className='text-sm text-gray-600 mb-2'>
-                <strong>Current Description:</strong>
-              </p>
-              <p className='text-sm text-gray-700'>
-                {project.description}
-              </p>
-              <p className='text-xs text-gray-500 mt-2'>
-                ⚠️ Description editing is not supported by the current API.
-              </p>
-            </div>
-          )}
+       
           
           <div className='flex justify-end space-x-2'>
             <Button 

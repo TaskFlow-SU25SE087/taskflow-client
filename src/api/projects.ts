@@ -116,10 +116,11 @@ export const projectApi = {
   updateProject: async (projectId: string, title: string, description?: string): Promise<ProjectUpdateResponse> => {
     const requestData = {
       projectId,
-      title
+      title,
+      description: description ?? ''
     }
     
-    console.log('Sending update request (title only):', requestData)
+    console.log('Sending update request:', requestData)
     
     const response = await axiosClient.put<ProjectUpdateResponse>(`${ENDPOINT}/update`, requestData)
     

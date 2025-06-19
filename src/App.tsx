@@ -19,6 +19,7 @@ import AboutPage from './pages/home/AboutPage'
 import AddUserInfoPage from './pages/home/AddUserInfoPage'
 import ContactPage from './pages/home/ContactPage'
 import OtpPage from './pages/home/OtpPage'
+import UserProfilePage from './pages/home/UserProfilePage'
 import VerifyEmailPage from './pages/home/VerifyEmailPage'
 import ProjectBacklog from './pages/projects/ProjectBacklog'
 import ProjectReports from './pages/projects/ProjectReports'
@@ -206,6 +207,15 @@ function App() {
               <AdminProtectedRoute>
                 <AdminUsersPage />
               </AdminProtectedRoute>
+            }
+          />
+
+          <Route
+            path='/profile'
+            element={
+              <ProtectedRoute>
+                <UserProfilePage />
+              </ProtectedRoute>
             }
           />
         </Routes>
