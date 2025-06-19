@@ -19,6 +19,7 @@ import AboutPage from './pages/home/AboutPage'
 import AddUserInfoPage from './pages/home/AddUserInfoPage'
 import ContactPage from './pages/home/ContactPage'
 import OtpPage from './pages/home/OtpPage'
+import ResetPasswordPage from './pages/home/ResetPasswordPage'
 import UserProfilePage from './pages/home/UserProfilePage'
 import VerifyEmailPage from './pages/home/VerifyEmailPage'
 import ProjectBacklog from './pages/projects/ProjectBacklog'
@@ -132,6 +133,11 @@ function App() {
                 <AddUserInfoPage />
               </AuthRedirect>
             }
+          />
+
+          <Route
+            path='/reset-password'
+            element={<ResetPasswordPage />}
           />
 
           {/* Protected routes require authentication */}
