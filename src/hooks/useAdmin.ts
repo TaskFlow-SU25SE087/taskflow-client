@@ -57,7 +57,7 @@ export const useAdmin = () => {
         description: 'File uploaded successfully. Users will be imported.',
         variant: 'default'
       })
-      await fetchUsers(pagination.pageNumber)
+      await fetchUsers(1)
       return result
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to upload file'
@@ -77,13 +77,16 @@ export const useAdmin = () => {
     let allUsers: AdminUser[] = []
     let page = 1
     let totalPages = 1
+    let maxLoop = 100; // Prevent infinite loop
     try {
       do {
         const response: AdminUsersResponse = await adminApi.getUsers({ page })
         if (response.code === 0 || response.code === 200) {
+          if (!response.data.items.length) break; // Stop if no more users
           allUsers = allUsers.concat(response.data.items)
           totalPages = response.data.totalPages
           page++
+          if (page > maxLoop) break; // Prevent infinite loop
         } else {
           setError(response.message || 'Failed to fetch users')
           toast({

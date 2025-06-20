@@ -2,6 +2,7 @@ import AdminProtectedRoute from '@/components/AdminProtectedRoute'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from '@/hooks/useAuthContext.tsx'
+import AdminDashboard from '@/pages/admin/AdminDashboard'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import ActivateAccountPage from '@/pages/home/ActivateAccountPage'
 import ForgotPasswordPage from '@/pages/home/ForgotPasswordPage'
@@ -212,6 +213,15 @@ function App() {
             element={
               <AdminProtectedRoute>
                 <AdminUsersPage />
+              </AdminProtectedRoute>
+            }
+          />
+
+          <Route
+            path='/admin/dashboard'
+            element={
+              <AdminProtectedRoute>
+                <AdminDashboard />
               </AdminProtectedRoute>
             }
           />

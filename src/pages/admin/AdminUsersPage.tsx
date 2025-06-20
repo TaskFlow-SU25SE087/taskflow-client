@@ -16,6 +16,7 @@ export default function AdminUsersPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRole, setSelectedRole] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
+  const [selectedSemester, setSelectedSemester] = useState<string>('all')
   const [showFileUpload, setShowFileUpload] = useState(false)
   const [exporting, setExporting] = useState(false)
 
@@ -46,7 +47,8 @@ export default function AdminUsersPage() {
         const matchesStatus = selectedStatus === 'all' || 
                              (selectedStatus === 'active' && user.isActive) ||
                              (selectedStatus === 'inactive' && !user.isActive)
-        return matchesSearch && matchesRole && matchesStatus
+        const matchesSemester = selectedSemester === 'all' || user.term === selectedSemester
+        return matchesSearch && matchesRole && matchesStatus && matchesSemester
       })
       if (filteredAllUsers.length === 0) {
         setExporting(false)
@@ -96,36 +98,51 @@ export default function AdminUsersPage() {
     const matchesStatus = selectedStatus === 'all' || 
                          (selectedStatus === 'active' && user.isActive) ||
                          (selectedStatus === 'inactive' && !user.isActive)
-    
-    return matchesSearch && matchesRole && matchesStatus
+    const matchesSemester = selectedSemester === 'all' || user.term === selectedSemester
+    return matchesSearch && matchesRole && matchesStatus && matchesSemester
   })
 
   const roles = Array.from(new Set(users.map(user => user.role)))
+  const semesters = Array.from(new Set(users.map(user => user.term).filter(Boolean)))
 
   if (loading) {
     return (
       <AdminLayout title="User Management" description="Manage all users in the system">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+          <div className="flex flex-1 gap-2 items-center">
+            <Input
+              placeholder="Search by name or email"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="max-w-xs"
+              disabled
+            />
+            <select disabled className="border rounded px-2 py-1 text-sm">
+              <option>All Roles</option>
+            </select>
+            <select disabled className="border rounded px-2 py-1 text-sm">
+              <option>All Status</option>
+            </select>
+            <select disabled className="border rounded px-2 py-1 text-sm">
+              <option>All Semesters</option>
+            </select>
+          </div>
+          <div>
+            <Button variant="outline" disabled>
+              <span className="hidden md:inline">Import Users</span>
+              <span className="md:hidden">Import</span>
+            </Button>
+            <Button variant="outline" className="ml-2" disabled>
+              Export Excel
+            </Button>
+          </div>
+        </div>
         <div className="flex items-center justify-center min-h-64">
           <div className="flex items-center space-x-2">
             <Loader2 className="h-6 w-6 animate-spin" />
             <span>Loading users...</span>
           </div>
         </div>
-      </AdminLayout>
-    )
-  }
-
-  if (error) {
-    return (
-      <AdminLayout title="User Management" description="Manage all users in the system">
-        <Card className="w-full max-w-md mx-auto">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className="text-destructive mb-4">{error}</p>
-              <Button onClick={() => fetchUsers()}>Retry</Button>
-            </div>
-          </CardContent>
-        </Card>
       </AdminLayout>
     )
   }
@@ -159,6 +176,16 @@ export default function AdminUsersPage() {
             <option value="active">Active</option>
             <option value="inactive">Inactive</option>
           </select>
+          <select
+            value={selectedSemester}
+            onChange={e => setSelectedSemester(e.target.value)}
+            className="border rounded px-2 py-1 text-sm"
+          >
+            <option value="all">All Semesters</option>
+            {semesters.map(term => (
+              <option key={term} value={term as string}>{term}</option>
+            ))}
+          </select>
         </div>
         <div>
           <Button variant="outline" onClick={() => setShowFileUpload(v => !v)}>
@@ -175,14 +202,23 @@ export default function AdminUsersPage() {
           <FileUpload onFileUpload={handleFileUpload} />
         </div>
       )}
-      {filteredUsers.length === 0 ? (
+      {error ? (
+        <Card className="w-full max-w-md mx-auto">
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <p className="text-destructive mb-4">{error}</p>
+              <Button onClick={() => fetchUsers()}>Retry</Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : filteredUsers.length === 0 ? (
         <Card>
           <CardContent className="pt-6">
             <div className="text-center py-8">
               <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
               <h3 className="text-lg font-semibold mb-2">No users found</h3>
               <p className="text-muted-foreground">
-                {searchTerm || selectedRole !== 'all' || selectedStatus !== 'all'
+                {searchTerm || selectedRole !== 'all' || selectedStatus !== 'all' || selectedSemester !== 'all'
                   ? 'Try adjusting your filters'
                   : 'No users available'}
               </p>
@@ -201,8 +237,7 @@ export default function AdminUsersPage() {
           ))}
         </div>
       )}
-      {/* Pagination */}
-      {pagination.totalPages > 1 && (
+      {pagination.totalPages > 1 && !error && (
         <div className="flex justify-center mt-8">
           <AdminPagination
             currentPage={pagination.pageNumber}

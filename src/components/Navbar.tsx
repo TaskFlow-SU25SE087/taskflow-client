@@ -166,6 +166,13 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
+                    onClick={() => navigate('/admin/dashboard')}
+                    className='gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                  >
+                    <Layout className='h-4 w-4' />
+                    Admin Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
                     onClick={() => navigate('/admin/users')}
                     className='gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                   >

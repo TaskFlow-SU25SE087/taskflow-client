@@ -118,7 +118,16 @@ export default function FileUpload({
             >
               browse
             </button>
+            .
           </p>
+          <Button
+            type="button"
+            onClick={handleBrowseClick}
+            variant="outline"
+            className="mb-2"
+          >
+            Choose File
+          </Button>
           <p className="text-xs text-muted-foreground">
             Supported formats: {acceptedFileTypes} (Max {maxFileSize}MB)
           </p>
