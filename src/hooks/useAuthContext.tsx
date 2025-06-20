@@ -69,29 +69,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const parsedUser = JSON.parse(storedUser)
         setUser(parsedUser)
         setIsOtpVerified(storedOtpStatus === 'true')
-        
-        // If we have a stored user, try to get the latest user info including role
-        if (storedOtpStatus === 'true' && parsedUser.username) {
-          // Check if we have a token
-          const authUserString = sessionStorage.getItem('auth_user')
-          if (authUserString) {
+        // Nếu user thiếu fullName, tự động lấy lại từ API /user/{userId}
+        if (storedOtpStatus === 'true' && (!parsedUser.fullName || parsedUser.fullName === '')) {
+          // Lấy userId từ token
+          let userId = '';
+          if (storedAccessToken) {
             try {
-              const authUser = JSON.parse(authUserString)
-              if (authUser.token) {
-                // Try to get current user info
-                authApi.getCurrentUser()
-                  .then(currentUser => {
-                    setUser(currentUser)
-                    sessionStorage.setItem('auth_user', JSON.stringify(currentUser))
-                    console.log('Updated user info from server:', currentUser)
-                  })
-                  .catch(error => {
-                    console.warn('Could not update user info from server:', error)
-                  })
-              }
-            } catch (error) {
-              console.error('Error parsing auth user:', error)
-            }
+              const tokenPayload = JSON.parse(atob(storedAccessToken.split('.')[1]));
+              userId = tokenPayload.ID;
+            } catch (e) { userId = ''; }
+          }
+          if (userId) {
+            authApi.getUserById(userId)
+              .then(currentUser => {
+                setUser({ ...parsedUser, ...currentUser })
+                sessionStorage.setItem('auth_user', JSON.stringify({ ...parsedUser, ...currentUser }))
+                console.log('Auto-fetched user info from /user/{userId}:', currentUser)
+              })
+              .catch(error => {
+                console.warn('Could not auto-fetch user info from /user/{userId}:', error)
+              })
           }
         }
       } catch (error) {

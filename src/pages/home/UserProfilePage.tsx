@@ -4,7 +4,9 @@ import { Label } from '@/components/ui/label';
 import axiosClient from '@/configs/axiosClient';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
+import { ArrowLeft, Camera } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface UserProfileData {
   id: string;
@@ -20,6 +22,7 @@ interface UserProfileData {
 export default function UserProfilePage() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<UserProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [editData, setEditData] = useState({
@@ -34,7 +37,7 @@ export default function UserProfilePage() {
   useEffect(() => {
     if (!user?.id) return;
     setLoading(true);
-    axiosClient.get(`/api/UserProfile/${user.id}`)
+    axiosClient.get(`/user/${user.id}`)
       .then(res => {
         setProfile(res.data.data);
         setEditData({
@@ -84,12 +87,16 @@ export default function UserProfilePage() {
     }
     setSaving(true);
     try {
-      const res = await axiosClient.put(`/api/UserProfile/${user.id}`, {
-        model: {
-          fullName: editData.fullName,
-          phoneNumber: editData.phoneNumber,
-          avatar: editData.avatar,
-        }
+      const formData = new FormData();
+      formData.append('FullName', editData.fullName);
+      formData.append('PhoneNumber', editData.phoneNumber);
+      if (avatarFile) {
+        formData.append('Avatar', avatarFile);
+      }
+      const res = await axiosClient.put(`/user/update/${user.id}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
       setProfile(res.data.data);
       setEditData({
@@ -111,14 +118,34 @@ export default function UserProfilePage() {
 
   return (
     <div className="max-w-lg mx-auto mt-10 p-6 bg-white rounded shadow">
+      <button
+        type="button"
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-4"
+      >
+        <ArrowLeft className="w-5 h-5" />
+        Back
+      </button>
       <h2 className="text-2xl font-bold mb-6">User Profile</h2>
       <div className="flex flex-col items-center mb-6">
-        <img
-          src={avatarPreview}
-          alt="Avatar"
-          className="w-24 h-24 rounded-full object-cover border mb-2"
-          onError={e => (e.currentTarget.src = '/public/logo.png')}
-        />
+        <div className="relative w-24 h-24 mb-2">
+          <img
+            src={avatarPreview}
+            alt="Avatar"
+            className="w-24 h-24 rounded-full object-cover border"
+            onError={e => (e.currentTarget.src = '/public/logo.png')}
+          />
+          <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-gray-200 rounded-full p-0.5 cursor-pointer border border-gray-400 hover:bg-gray-300 transition flex items-center justify-center" style={{ minWidth: '24px', minHeight: '24px' }}>
+            <Camera className="w-5 h-5 text-gray-700" />
+            <input
+              id="avatar-upload"
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
+          </label>
+        </div>
         <span className="text-xs text-gray-500">Avatar preview</span>
       </div>
       <form onSubmit={handleSave} className="space-y-4">
@@ -135,11 +162,6 @@ export default function UserProfilePage() {
           <Input name="phoneNumber" value={editData.phoneNumber} onChange={handleChange} />
         </div>
         <div>
-          <Label>Avatar</Label>
-          <Input type="file" accept="image/*" onChange={handleAvatarChange} />
-          <Input name="avatar" value={editData.avatar} onChange={handleChange} className="mt-2" placeholder="Or paste image URL" />
-        </div>
-        <div>
           <Label>Role</Label>
           <Input value={profile.role} disabled />
         </div>
@@ -151,7 +173,7 @@ export default function UserProfilePage() {
           <Label>Term</Label>
           <Input value={profile.term} disabled />
         </div>
-        <Button type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save Changes'}</Button>
+        <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white w-full">{saving ? 'Saving...' : 'Save Changes'}</Button>
       </form>
     </div>
   );

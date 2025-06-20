@@ -319,4 +319,39 @@ export const authApi = {
       throw error;
     }
   },
+
+  getUserById: async (userId: string): Promise<User> => {
+    try {
+      const response = await axiosClient.get<{
+        code: number;
+        message: string;
+        data: {
+          id: string;
+          avatar: string;
+          fullName: string;
+          role: string;
+          email: string;
+          phoneNumber: string;
+          studentId?: string;
+          term?: string;
+        };
+      }>(`/user/${userId}`);
+      if (response.data.code !== 0 && response.data.code !== 200) {
+        throw new Error(response.data.message);
+      }
+      const userData = response.data.data;
+      return {
+        id: userData.id,
+        avatar: userData.avatar,
+        fullName: userData.fullName,
+        role: userData.role,
+        email: userData.email,
+        phoneNumber: userData.phoneNumber,
+        username: '',
+      };
+    } catch (error: any) {
+      console.error('Get user by id error:', error.response?.data);
+      throw error;
+    }
+  },
 }

@@ -29,6 +29,8 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
   const { logout } = useAuth()
   const { user } = useAuth()
 
+  console.log('user in Navbar:', user)
+
   const handleProjectSelect = (projectId: string) => {
     setCurrentProjectId(projectId)
     navigate('/board')
@@ -123,6 +125,7 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
               className='w-[400px] rounded-lg bg-gray-100 pl-10 focus-visible:ring-offset-0 focus-visible:ring-0'
             />
           </div>
+        
           <div className='text-gray-500 px-2 hover:bg-transparent cursor-pointer'>
             <HelpCircle className='h-5 w-5' />
           </div>
@@ -134,11 +137,16 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <div className='cursor-pointer relative h-8 w-fit flex items-center gap-2 px-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'>
-                <Avatar size='32px' variant='beam' name={user?.id} />
-                <div className='text-sm text-left'>
-                  <div className='font-medium'>{user?.fullName}</div>
-                  <div className='text-xs text-gray-500'>{user?.email}</div>
-                </div>
+                {user?.avatar ? (
+                  <img
+                    src={user.avatar}
+                    alt="avatar"
+                    className="w-8 h-8 rounded-full object-cover"
+                  />
+                ) : (
+                  <Avatar size='32px' variant='beam' name={user?.id || 'unknown'} />
+                )}
+                <span className='ml-2 font-medium text-black'>{user?.fullName || user?.email || 'No name'}</span>
                 <ChevronDown className='h-4 w-4 text-gray-500' />
               </div>
             </DropdownMenuTrigger>
