@@ -23,23 +23,18 @@ interface ProjectUpdateResponse {
   }
 }
 
+interface ProjectListItem {
+  id: string
+  title: string
+  description: string
+  lastUpdate: string
+  role: string
+}
+
 interface ProjectListResponse {
   code: number
   message: string
-  data: {
-    items: Array<{
-      id: string
-      title: string
-      description: string
-      ownerId: string
-      lastUpdate: string
-      role: string
-    }>
-    totalItems: number
-    totalPages: number
-    pageNumber: number
-    pageSize: number
-  }
+  data: ProjectListItem[]
 }
 
 interface ProjectDetailResponse {
@@ -85,8 +80,8 @@ interface ProjectDetailResponse {
 }
 
 export const projectApi = {
-  getProjects: async (userId: string) => {
-    const response = await axiosClient.get<Project[]>(`${ENDPOINT}/uid=${userId}/all`)
+  getProjects: async (): Promise<ProjectListResponse> => {
+    const response = await axiosClient.get<ProjectListResponse>(`${ENDPOINT}`)
     return response.data
   },
 
@@ -113,19 +108,14 @@ export const projectApi = {
     return response.data
   },
 
-  updateProject: async (projectId: string, title: string, description?: string): Promise<ProjectUpdateResponse> => {
-    const requestData = {
-      projectId,
-      title,
-      description: description ?? ''
-    }
-    
-    console.log('Sending update request:', requestData)
-    
-    const response = await axiosClient.put<ProjectUpdateResponse>(`${ENDPOINT}/update`, requestData)
-    
-    console.log('Update response received:', response.data)
-    
+  updateProject: async (projectId: string, title: string, description: string): Promise<ProjectUpdateResponse> => {
+    const formData = new FormData()
+    formData.append('ProjectId', projectId)
+    formData.append('Title', title)
+    formData.append('Description', description)
+    const response = await axiosClient.put<ProjectUpdateResponse>(`${ENDPOINT}/${projectId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
     return response.data
   },
 

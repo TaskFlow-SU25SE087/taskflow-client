@@ -11,9 +11,6 @@ export function useProjects() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'name'>('newest')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(0)
-  const [totalItems, setTotalItems] = useState(0)
   const { user } = useAuth()
 
   useEffect(() => {
@@ -22,33 +19,22 @@ export function useProjects() {
         if (!user?.id) {
           throw new Error('User not authenticated')
         }
-        const response = await projectApi.getProjectList(currentPage)
-        setProjects(response.data.items)
-        setTotalPages(response.data.totalPages)
-        setTotalItems(response.data.totalItems)
+        const response = await projectApi.getProjects()
+        // Map lại để đảm bảo có ownerId
+        const mapped = response.data.map((project: any) => ({
+          ...project,
+          ownerId: project.ownerId ?? '',
+        }))
+        setProjects(mapped)
       } catch (error) {
         console.error('Error fetching projects:', error)
-        // Fallback to old API if new one fails
-        try {
-          const data = await projectApi.getProjects(user.id)
-          setProjects(data.map(project => ({
-            id: project.id,
-            title: project.title,
-            description: project.description,
-            ownerId: project.ownerId || '',
-            lastUpdate: project.lastUpdate || new Date().toISOString(),
-            role: 'Member' // Default role
-          })))
-        } catch (fallbackError) {
-          console.error('Fallback API also failed:', fallbackError)
-        }
       } finally {
         setIsLoading(false)
       }
     }
 
     fetchProjects()
-  }, [user, currentPage])
+  }, [user])
 
   const filteredAndSortedProjects = useMemo(() => {
     let result = [...projects]
@@ -62,10 +48,6 @@ export function useProjects() {
     return result
   }, [projects, searchQuery])
 
-  const goToPage = (page: number) => {
-    setCurrentPage(page)
-  }
-
   return {
     projects: filteredAndSortedProjects,
     isLoading,
@@ -74,10 +56,6 @@ export function useProjects() {
     filterStatus,
     setFilterStatus,
     sortBy,
-    setSortBy,
-    currentPage,
-    totalPages,
-    totalItems,
-    goToPage
+    setSortBy
   }
 }

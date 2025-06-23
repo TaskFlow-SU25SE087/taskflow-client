@@ -93,7 +93,7 @@ export default function UserProfilePage() {
       if (avatarFile) {
         formData.append('Avatar', avatarFile);
       }
-      const res = await axiosClient.put(`/user/update/${user.id}`, formData, {
+      const res = await axiosClient.put(`/${user.id}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
