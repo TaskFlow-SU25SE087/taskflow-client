@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import axiosClient from '@/configs/axiosClient';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
 import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
@@ -11,16 +11,19 @@ export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email') || '';
   const token = searchParams.get('token') || '';
+  const firstLogin = searchParams.get('firstLogin') === 'true';
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { resetPassword, activate } = useAuth() as any;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPassword || !confirmPassword) {
-      toast({ title: 'Error', description: 'Please enter all password fields.', variant: 'destructive' });
+    if (!newPassword || !confirmPassword || (firstLogin && !username)) {
+      toast({ title: 'Error', description: 'Please enter all required fields.', variant: 'destructive' });
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -33,15 +36,18 @@ export default function ResetPasswordPage() {
     }
     setIsLoading(true);
     try {
-      await axiosClient.post('/api/Auth/reset-password', {
-        email,
-        tokenResetPassword: token,
-        newPassword,
-      });
-      toast({ title: 'Success', description: 'Password reset successfully! Please log in.' });
+      if (firstLogin) {
+        // Gọi API activate (kích hoạt tài khoản lần đầu)
+        await activate(email, username, newPassword, confirmPassword, token);
+        toast({ title: 'Success', description: 'Account activated and password set! Please log in.' });
+      } else {
+        // Gọi API resetPassword (bình thường)
+        await resetPassword(email, newPassword, confirmPassword, token);
+        toast({ title: 'Success', description: 'Password reset successfully! Please log in.' });
+      }
       navigate('/login');
-    } catch {
-      toast({ title: 'Error', description: 'Password reset failed.', variant: 'destructive' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err?.message || 'Password reset failed.', variant: 'destructive' });
     } finally {
       setIsLoading(false);
     }
@@ -52,6 +58,19 @@ export default function ResetPasswordPage() {
       <div className="w-full max-w-md bg-white rounded shadow-lg p-8">
         <h2 className="text-2xl font-bold mb-6 text-center">Reset Password</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {firstLogin && (
+            <div>
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                type="text"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                required={firstLogin}
+                placeholder="Enter your username"
+              />
+            </div>
+          )}
           <div>
             <Label htmlFor="newPassword">New Password</Label>
             <Input

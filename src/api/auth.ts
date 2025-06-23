@@ -44,17 +44,6 @@ export const authApi = {
       formData.append('Password', password);
       formData.append('ConfirmPassword', confirmPassword);
 
-      console.log('Register request payload:', {
-        Email: email,
-        FullName: fullName,
-        Password: password,
-        ConfirmPassword: confirmPassword
-      });
-      console.log('Request URL:', `${ENDPOINT}/register`);
-      console.log('Request headers:', {
-        'Content-Type': 'multipart/form-data'
-      });
-
       const response = await axiosClient.post<{
         code: number
         message: string
@@ -68,8 +57,6 @@ export const authApi = {
         }
       })
 
-      console.log('Register response:', response.data);
-
       const { accessToken, refreshToken } = response.data.data
 
       // Store tokens
@@ -81,30 +68,15 @@ export const authApi = {
         refreshToken
       }
     } catch (error: any) {
-      console.error('Register error details:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        message: error.message,
-        fullError: error,
-        responseData: error.response?.data,
-        requestData: error.config?.data,
-        validationErrors: error.response?.data?.errors,
-        responseHeaders: error.response?.headers,
-        requestHeaders: error.config?.headers,
-        requestURL: error.config?.url
-      });
-      
       if (error.response?.data?.errors) {
         const errorMessages = Object.entries(error.response.data.errors)
           .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
           .join('\n');
         throw new Error(errorMessages);
       }
-      
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
       }
-      
       throw new Error('Registration failed. Please try again.');
     }
   },
@@ -118,7 +90,7 @@ export const authApi = {
           accessToken: string
           refreshToken: string
         }
-      }>(`${ENDPOINT}/refresh-token`, {
+      }>(`${ENDPOINT}/token/refresh`, {
         accessToken,
         refreshToken
       })
@@ -147,13 +119,12 @@ export const authApi = {
         code: number
         message: string
         data: boolean
-      }>(`${ENDPOINT}/verify-email?token=${token}`)
+      }>(`${ENDPOINT}/email/verify?token=${token}`)
 
-      if (response.data.code !== 200) {
+      if (response.data.code !== 0 && response.data.code !== 200) {
         throw new Error(response.data.message)
       }
     } catch (error: any) {
-      console.error('Verify email error:', error.response?.data)
       throw error
     }
   },
@@ -164,7 +135,7 @@ export const authApi = {
         code: number
         message: string
         data: boolean
-      }>(`${ENDPOINT}/send-mail-again`)
+      }>(`${ENDPOINT}/email/resend`)
 
       return response.data.data
     } catch (error: any) {
@@ -185,13 +156,12 @@ export const authApi = {
       const response = await axiosClient.post<{
         code: number
         message: string
-      }>(`${ENDPOINT}/verify-email?token=${otp}`)
+      }>(`${ENDPOINT}/email/verify?token=${otp}`)
 
-      if (response.data.code !== 200) {
+      if (response.data.code !== 0 && response.data.code !== 200) {
         throw new Error(response.data.message)
       }
     } catch (error: any) {
-      console.error('Verify OTP error:', error.response?.data)
       throw error
     }
   },
@@ -207,13 +177,6 @@ export const authApi = {
         formData.append('PhoneNumber', phoneNumber);
       }
 
-      console.log('Sending addUsername request with data:', {
-        username,
-        hasAvatar: !!avatar,
-        phoneNumber,
-        formDataEntries: Array.from(formData.entries())
-      });
-
       const response = await axiosClient.post<{
         code: number;
         message: string;
@@ -226,32 +189,26 @@ export const authApi = {
           phoneNumber: string;
           username: string;
         };
-      }>(`${ENDPOINT}/add-username`, formData, {
+      }>(`${ENDPOINT}/username`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      if (response.data.code !== 200) {
+      if (response.data.code !== 0 && response.data.code !== 200) {
         throw new Error(response.data.message);
       }
       return response.data.data;
     } catch (error: any) {
-      console.error('Add username error:', error.response?.data);
-      
-      // Log detailed error information
       if (error.response?.data?.errors) {
-        console.error('Validation errors:', error.response.data.errors);
         const errorMessages = Object.entries(error.response.data.errors)
           .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
           .join('\n');
         throw new Error(`Validation failed:\n${errorMessages}`);
       }
-      
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
       }
-      
       throw error;
     }
   },
@@ -262,7 +219,7 @@ export const authApi = {
         code: number;
         message: string;
         data: string;
-      }>(`${ENDPOINT}/activate`, {
+      }>(`${ENDPOINT}/account/activate`, {
         email,
         username,
         newPassword,
@@ -270,26 +227,54 @@ export const authApi = {
         tokenResetPassword
       });
 
-      if (response.data.code !== 200) {
+      if (response.data.code !== 0 && response.data.code !== 200) {
         throw new Error(response.data.message);
       }
 
       return response.data.data;
     } catch (error: any) {
-      console.error('Activate account error:', error.response?.data);
-      
       if (error.response?.data?.errors) {
         const errorMessages = Object.entries(error.response.data.errors)
           .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
           .join('\n');
         throw new Error(errorMessages);
       }
-      
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
       }
-      
       throw new Error('Account activation failed. Please try again.');
+    }
+  },
+
+  resetPassword: async (email: string, newPassword: string, confirmPassword: string, tokenResetPassword: string): Promise<string> => {
+    try {
+      const response = await axiosClient.post<{
+        code: number;
+        message: string;
+        data: string;
+      }>(`${ENDPOINT}/account/reset-password`, {
+        email,
+        newPassword,
+        confirmPassword,
+        tokenResetPassword
+      });
+
+      if (response.data.code !== 0 && response.data.code !== 200) {
+        throw new Error(response.data.message);
+      }
+
+      return response.data.data;
+    } catch (error: any) {
+      if (error.response?.data?.errors) {
+        const errorMessages = Object.entries(error.response.data.errors)
+          .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
+          .join('\n');
+        throw new Error(errorMessages);
+      }
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw new Error('Reset password failed. Please try again.');
     }
   },
 
@@ -309,13 +294,12 @@ export const authApi = {
         };
       }>(`${ENDPOINT}/me`);
 
-      if (response.data.code !== 200) {
+      if (response.data.code !== 0 && response.data.code !== 200) {
         throw new Error(response.data.message);
       }
 
       return response.data.data;
     } catch (error: any) {
-      console.error('Get current user error:', error.response?.data);
       throw error;
     }
   },
@@ -350,7 +334,6 @@ export const authApi = {
         username: '',
       };
     } catch (error: any) {
-      console.error('Get user by id error:', error.response?.data);
       throw error;
     }
   },

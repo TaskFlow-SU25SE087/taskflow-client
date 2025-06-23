@@ -15,11 +15,11 @@ export const useAdmin = () => {
   })
   const { toast } = useToast()
 
-  const fetchUsers = async (page: number = 1) => {
+  const fetchUsers = async (page: number = 1, pageSize: number = 10) => {
     setLoading(true)
     setError(null)
     try {
-      const response: AdminUsersResponse = await adminApi.getUsers({ page })
+      const response: AdminUsersResponse = await adminApi.getUsers({ page, pageSize })
       if (response.code === 0 || response.code === 200) {
         setUsers(response.data.items)
         setPagination({
@@ -49,9 +49,9 @@ export const useAdmin = () => {
     }
   }
 
-  const addFileAccount = async (file: File) => {
+  const importUsers = async (file: File) => {
     try {
-      const result = await adminApi.addFileAccount(file)
+      const result = await adminApi.importUsers(file)
       toast({
         title: 'Success',
         description: 'File uploaded successfully. Users will be imported.',
@@ -113,7 +113,7 @@ export const useAdmin = () => {
   }
 
   useEffect(() => {
-    fetchUsers()
+    fetchUsers(1, 10)
   }, [])
 
   return {
@@ -122,8 +122,8 @@ export const useAdmin = () => {
     error,
     pagination,
     fetchUsers,
-    addFileAccount,
-    refetch: () => fetchUsers(pagination.pageNumber),
+    importUsers,
+    refetch: () => fetchUsers(pagination.pageNumber, pagination.pageSize || 10),
     fetchAllUsers
   }
 } 

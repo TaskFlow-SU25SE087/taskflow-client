@@ -25,4 +25,5 @@ export interface AdminUsersResponse {
 
 export interface AdminUsersParams {
   page?: number
+  pageSize?: number
 } 

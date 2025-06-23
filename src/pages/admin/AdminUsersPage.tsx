@@ -12,21 +12,22 @@ import { useState } from 'react'
 import * as XLSX from 'xlsx'
 
 export default function AdminUsersPage() {
-  const { users, loading, error, pagination, fetchUsers, addFileAccount, fetchAllUsers, refetch } = useAdmin()
+  const { users, loading, error, pagination, fetchUsers, importUsers, fetchAllUsers, refetch } = useAdmin()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRole, setSelectedRole] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [selectedSemester, setSelectedSemester] = useState<string>('all')
   const [showFileUpload, setShowFileUpload] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [pageSize, setPageSize] = useState(10)
 
   const handlePageChange = (page: number) => {
-    fetchUsers(page)
+    fetchUsers(page, pageSize)
   }
 
   const handleFileUpload = async (file: File) => {
     try {
-      await addFileAccount(file)
+      await importUsers(file)
     } catch (error) {
       console.error('Error uploading file:', error)
     }
@@ -76,7 +77,7 @@ export default function AdminUsersPage() {
   const handleBanUser = async (userId: string) => {
     try {
       await adminApi.banUser(userId)
-      await refetch()
+      await fetchUsers(pagination.pageNumber, pageSize)
     } catch (err) {
       console.error('Ban user failed', err)
     }
@@ -85,7 +86,7 @@ export default function AdminUsersPage() {
   const handleUnbanUser = async (userId: string) => {
     try {
       await adminApi.unbanUser(userId)
-      await refetch()
+      await fetchUsers(pagination.pageNumber, pageSize)
     } catch (err) {
       console.error('Unban user failed', err)
     }

@@ -9,13 +9,16 @@ export const adminApi = {
     if (params?.page) {
       queryParams.append('page', params.page.toString())
     }
+    if (params?.pageSize) {
+      queryParams.append('pageSize', params.pageSize.toString())
+    }
     
     const url = `${ENDPOINT}/users${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
     const response = await axiosClient.get<AdminUsersResponse>(url)
     return response.data
   },
 
-  addFileAccount: async (file: File): Promise<boolean> => {
+  importUsers: async (file: File): Promise<boolean> => {
     const formData = new FormData()
     formData.append('file', file)
     
@@ -23,7 +26,7 @@ export const adminApi = {
       code: number
       message: string
       data: boolean
-    }>(`${ENDPOINT}/users/add-file-account`, formData, {
+    }>(`${ENDPOINT}/users/import`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -37,12 +40,12 @@ export const adminApi = {
   },
 
   banUser: async (userId: string) => {
-    const response = await axiosClient.patch(`${ENDPOINT}/users/ban/${userId}`)
+    const response = await axiosClient.patch(`${ENDPOINT}/users/${userId}/ban`)
     return response.data
   },
 
   unbanUser: async (userId: string) => {
-    const response = await axiosClient.patch(`${ENDPOINT}/users/unban/${userId}`)
+    const response = await axiosClient.patch(`${ENDPOINT}/users/${userId}/unban`)
     return response.data
   }
 } 

@@ -19,6 +19,7 @@ interface AuthContextType {
   addUsername: (username: string, avatar: File | null, phoneNumber: string) => Promise<void>
   activate: (email: string, username: string, newPassword: string, confirmPassword: string, tokenResetPassword: string) => Promise<void>
   getCurrentUser: () => Promise<void>
+  resetPassword: (email: string, newPassword: string, confirmPassword: string, tokenResetPassword: string) => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null)
@@ -293,6 +294,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const resetPassword = async (email: string, newPassword: string, confirmPassword: string, tokenResetPassword: string) => {
+    try {
+      await authApi.resetPassword(email, newPassword, confirmPassword, tokenResetPassword)
+    } catch (error: any) {
+      setError(error.message || 'Failed to reset password')
+      throw error
+    }
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -309,7 +319,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         verifyOtp,
         addUsername,
         activate,
-        getCurrentUser
+        getCurrentUser,
+        resetPassword,
       }}
     >
       {children}
