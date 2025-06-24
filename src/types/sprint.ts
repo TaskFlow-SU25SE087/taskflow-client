@@ -4,8 +4,10 @@ import { TaskP } from './task'
 export interface Sprint {
   id: string
   name: string
-  startDate: Date | null
-  endDate: Date | null
+  description: string
+  startDate: string
+  endDate: string
+  status: number
   projectId: string
   project: Project
   taskPs: TaskP[]

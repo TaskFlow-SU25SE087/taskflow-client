@@ -1,3 +1,4 @@
+import { sprintApi } from '@/api/sprints'
 import { Navbar } from '@/components/Navbar'
 import ProjectTagManager from '@/components/projects/ProjectTagManager'
 import { Sidebar } from '@/components/Sidebar'
@@ -17,6 +18,8 @@ import { TaskP } from '@/types/task'
 import { Filter, Search, Share2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
+const { getSprintTasks, addTaskToSprint, fetchSprints } = sprintApi
+
 export default function ProjectBacklog() {
   const { tasks, refreshTasks, isTaskLoading: tasksLoading } = useTasks()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
@@ -31,9 +34,7 @@ export default function ProjectBacklog() {
     sprints,
     isLoading: sprintsLoading,
     createSprint,
-    getSprintTasks,
-    addTaskToSprint,
-    fetchSprints
+    refreshSprints
   } = useSprints(currentProject?.id)
 
   const [sprintTasks, setSprintTasks] = useState<Record<string, TaskP[]>>({})
@@ -63,10 +64,15 @@ export default function ProjectBacklog() {
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
-  const handleCreateSprint = async ({ name }: { name: string }) => {
+  const handleCreateSprint = async (data: {
+    name: string
+    description: string
+    startDate: string
+    endDate: string
+  }) => {
     if (!currentProject) return
     try {
-      await createSprint(currentProject.id, name)
+      await createSprint(data)
       toast({
         title: 'Success',
         description: 'Sprint created successfully'
@@ -113,10 +119,12 @@ export default function ProjectBacklog() {
     if (contentRef.current) {
       setScrollPosition(contentRef.current.scrollTop)
     }
-    await fetchSprints(currentProject?.id)
+    await refreshSprints()
+    // Wait for sprints to update before loading tasks
+    const updatedSprints = sprints.length ? sprints : []
     const tasksMap: Record<string, TaskP[]> = {}
     await Promise.all(
-      sprints.map(async (sprint) => {
+      updatedSprints.map(async (sprint) => {
         const tasks = await getSprintTasks(sprint.id)
         tasksMap[sprint.id] = tasks
       })
@@ -263,6 +271,7 @@ export default function ProjectBacklog() {
               projectId={currentProject?.id || ''}
               onTaskCreated={handleTaskUpdate}
               onTaskUpdate={handleTaskUpdate}
+              sprint={undefined} // Backlog không có sprint, truyền undefined
             />
           </div>
         </div>

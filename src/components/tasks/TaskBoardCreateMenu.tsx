@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { boardApi } from '@/api/boards'
+import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
-import { Loader2, SquarePlus } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { boardApi } from '@/api/boards'
+import { Loader2, SquarePlus } from 'lucide-react'
+import { useState } from 'react'
 
 interface TaskBoardCreateMenuProps {
   isOpen: boolean

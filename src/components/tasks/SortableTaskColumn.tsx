@@ -1,7 +1,7 @@
+import { TaskP } from '@/types/task'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { TaskColumn } from './TaskColumn'
-import { TaskP } from '@/types/task'
 
 interface SortableTaskColumnProps {
   id: string

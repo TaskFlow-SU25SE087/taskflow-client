@@ -1,99 +1,87 @@
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useState } from 'react'
 
-interface SprintCreateMenuProps {
-  onCreateSprint: (data: { name: string; description: string; startDate: string; endDate: string }) => Promise<void>
+interface SprintEditMenuProps {
+  sprint: {
+    id: string
+    name: string
+    description: string
+    startDate: string
+    endDate: string
+    status: number
+  }
+  onUpdateSprint: (data: { name: string; description: string; startDate: string; endDate: string; status: number }) => Promise<void>
 }
 
-export function SprintCreateMenu({ onCreateSprint }: SprintCreateMenuProps) {
+export function SprintEditMenu({ sprint, onUpdateSprint }: SprintEditMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
-  const [status, setStatus] = useState('0') // NotStarted mặc định
+  const [name, setName] = useState(sprint.name)
+  const [description, setDescription] = useState(sprint.description)
+  const [startDate, setStartDate] = useState(sprint.startDate?.slice(0, 10) || '')
+  const [endDate, setEndDate] = useState(sprint.endDate?.slice(0, 10) || '')
+  const [status, setStatus] = useState(String(sprint.status))
 
   const toISOString = (date: string) => {
     if (!date) return ''
-    // Nếu date đã có 'T', giữ nguyên, còn lại thì chuyển sang ISO
     return date.includes('T') ? date : new Date(date + 'T00:00:00').toISOString()
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim()) {
-      // Có thể dùng toast ở đây nếu muốn
-      return
-    }
-    await onCreateSprint({
+    if (!name.trim()) return
+    await onUpdateSprint({
       name,
       description,
       startDate: toISOString(startDate),
       endDate: toISOString(endDate),
-      status: Number(status) // gửi số lên backend
+      status: Number(status)
     })
     setIsOpen(false)
-    setName('')
-    setDescription('')
-    setStartDate('')
-    setEndDate('')
-    setStatus('NotStarted')
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className='bg-lavender-500 hover:bg-lavender-700 text-white'>Create Sprint</Button>
+        <Button variant="outline" size="sm">Edit</Button>
       </DialogTrigger>
       <DialogContent className='sm:max-w-[425px]'>
         <DialogHeader>
-          <DialogTitle>Create New Sprint</DialogTitle>
-          <DialogDescription>Set up a new sprint for your project. Add a name and date range.</DialogDescription>
+          <DialogTitle>Edit Sprint</DialogTitle>
+          <DialogDescription>Update sprint details.</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className='space-y-4'>
           <div className='space-y-2'>
             <Label htmlFor='name'>Sprint Name</Label>
-            <Input id='name' value={name} onChange={(e) => setName(e.target.value)} placeholder='Sprint 1' required />
+            <Input id='name' value={name} onChange={e => setName(e.target.value)} required />
           </div>
           <div className='space-y-2'>
             <Label htmlFor='description'>Description</Label>
-            <Input
-              id='description'
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder='Sprint description'
-            />
+            <Input id='description' value={description} onChange={e => setDescription(e.target.value)} />
           </div>
           <div className='space-y-2'>
             <Label htmlFor='startDate'>Start Date</Label>
-            <Input
-              id='startDate'
-              type='date'
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              required
-            />
+            <Input id='startDate' type='date' value={startDate} onChange={e => setStartDate(e.target.value)} required />
           </div>
           <div className='space-y-2'>
             <Label htmlFor='endDate'>End Date</Label>
-            <Input id='endDate' type='date' value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
+            <Input id='endDate' type='date' value={endDate} onChange={e => setEndDate(e.target.value)} required />
           </div>
           <div className='space-y-2'>
             <Label htmlFor='status'>Status</Label>
             <select
               id='status'
               value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              onChange={e => setStatus(e.target.value)}
               className='w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-lavender-500'
               required
             >
@@ -109,7 +97,7 @@ export function SprintCreateMenu({ onCreateSprint }: SprintCreateMenuProps) {
               Cancel
             </Button>
             <Button type='submit' className='bg-lavender-500 hover:bg-lavender-700'>
-              Create Sprint
+              Save
             </Button>
           </div>
         </form>

@@ -1,19 +1,19 @@
-import { useState } from 'react'
-import { Trash2 } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
 import { boardApi } from '@/api/boards'
 import {
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogAction
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/hooks/use-toast'
+import { Trash2 } from 'lucide-react'
+import { useState } from 'react'
 
 interface BoardDeleteButtonProps {
   projectId: string

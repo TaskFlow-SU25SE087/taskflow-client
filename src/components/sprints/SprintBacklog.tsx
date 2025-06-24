@@ -1,9 +1,10 @@
-import { TaskP } from '@/types/task'
-import { TaskList } from '../tasks/TaskList'
 import { Button } from '@/components/ui/button'
+import { SprintStatusMap } from '@/constants/sprintStatus'
+import { TaskP } from '@/types/task'
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react'
 import { useState } from 'react'
 import TaskCreateMenu from '../tasks/TaskCreateMenu'
+import { TaskList } from '../tasks/TaskList'
 
 interface SprintBacklogProps {
   tasks: TaskP[]
@@ -11,9 +12,10 @@ interface SprintBacklogProps {
   projectId: string
   onTaskCreated: () => void
   onTaskUpdate: () => void
+  sprint?: { status: string } // Thêm prop sprint nếu có
 }
 
-export function SprintBacklog({ tasks, onMoveTask, projectId, onTaskCreated, onTaskUpdate }: SprintBacklogProps) {
+export function SprintBacklog({ tasks, onMoveTask, projectId, onTaskCreated, onTaskUpdate, sprint }: SprintBacklogProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
 
@@ -32,6 +34,11 @@ export function SprintBacklog({ tasks, onMoveTask, projectId, onTaskCreated, onT
           <div>
             <div className='flex items-center gap-2'>
               <h3 className='font-semibold text-lg'>Backlog</h3>
+              {sprint && (
+                <span className='ml-2 text-xs rounded px-2 py-1 bg-gray-100 text-gray-600'>
+                  {SprintStatusMap[sprint.status] || sprint.status}
+                </span>
+              )}
               <span className='text-gray-500 text-sm'>
                 ({tasks.length} {tasks.length === 1 ? 'task' : 'tasks'})
               </span>

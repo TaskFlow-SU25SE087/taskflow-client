@@ -1,6 +1,6 @@
+import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import { horizontalListSortingStrategy, SortableContext } from '@dnd-kit/sortable'
 import { ReactNode } from 'react'
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
-import { arrayMove, SortableContext, horizontalListSortingStrategy } from '@dnd-kit/sortable'
 
 interface BoardDragDropWrapperProps {
   children: ReactNode

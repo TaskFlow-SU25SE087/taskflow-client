@@ -1,14 +1,15 @@
+import { Button } from '@/components/ui/button'
+import { useToast } from '@/hooks/use-toast'
+import { useSprints } from '@/hooks/useSprints'
 import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
 import { format } from 'date-fns'
-import { ChevronDown, ChevronRight, PlayCircle, CheckCircle, Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { CheckCircle, ChevronDown, ChevronRight, PlayCircle, Plus } from 'lucide-react'
 import { useState } from 'react'
-import { TaskList } from '../tasks/TaskList'
 import TaskCreateMenu from '../tasks/TaskCreateMenu'
+import { TaskList } from '../tasks/TaskList'
+import { SprintEditMenu } from './SprintEditMenu'
 import { SprintStartMenu } from './SprintStartMenu'
-import { useSprints } from '@/hooks/useSprints'
-import { useToast } from '@/hooks/use-toast'
 
 interface SprintBoardProps {
   sprint: Sprint
@@ -32,27 +33,24 @@ export function SprintBoard({
   const [isExpanded, setIsExpanded] = useState(true)
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
   const [isStartDialogOpen, setIsStartDialogOpen] = useState(false)
-  const { startSprint, completeSprint } = useSprints(projectId)
+  const { startSprint, completeSprint, updateSprint } = useSprints(projectId)
   const { toast } = useToast()
 
+  // Map backend status string to UI status
+  const statusMap: Record<string, { label: string; color: string }> = {
+    NotStarted: { label: 'Not Started', color: 'bg-gray-200 text-gray-700' },
+    InProgress: { label: 'In Progress', color: 'bg-blue-100 text-blue-700' },
+    Completed: { label: 'Completed', color: 'bg-green-100 text-green-700' },
+    OnHold: { label: 'On Hold', color: 'bg-yellow-100 text-yellow-700' },
+    Cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-700' }
+  }
+
   const getSprintStatus = () => {
-    const now = new Date()
-    const startDate = sprint.startDate ? new Date(sprint.startDate) : null
-    const endDate = sprint.endDate ? new Date(sprint.endDate) : null
-
-    if (!startDate || !endDate) {
-      return <span className='text-lavender-500 text-sm font-medium'>Future Sprint</span>
-    }
-
-    if (now >= startDate && now <= endDate) {
-      return <span className='text-lavender-500 text-sm font-medium'>Active Sprint</span>
-    }
-
-    if (now > endDate) {
-      return <span className='text-gray-600 text-sm font-medium'>Completed</span>
-    }
-
-    return <span className='text-lavender-500 text-sm font-medium'>Future Sprint</span>
+    const status = typeof sprint.status === 'string' ? sprint.status : String(sprint.status)
+    const map = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-600' }
+    return (
+      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${map.color}`}>{map.label}</span>
+    )
   }
 
   const isActiveSprint = () => {
@@ -119,6 +117,20 @@ export function SprintBoard({
               <span className='text-gray-500 text-sm'>
                 ({tasks.length} {tasks.length === 1 ? 'task' : 'tasks'})
               </span>
+              <SprintEditMenu
+                sprint={{
+                  id: sprint.id,
+                  name: sprint.name,
+                  description: sprint.description || '',
+                  startDate: sprint.startDate || '',
+                  endDate: sprint.endDate || '',
+                  status: typeof sprint.status === 'number' ? sprint.status : Number(sprint.status) || 0
+                }}
+                onUpdateSprint={async (data) => {
+                  await updateSprint(sprint.id, { ...data, status: String(data.status) })
+                  onSprintUpdate()
+                }}
+              />
             </div>
             <div className='flex items-center gap-3 text-sm text-gray-500'>
               {getSprintStatus()}
