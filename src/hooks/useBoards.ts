@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
-import { Board } from '@/types/board'
 import { boardApi } from '@/api/boards'
+import { Board } from '@/types/board'
+import { useEffect, useState } from 'react'
 import { useCurrentProject } from './useCurrentProject'
 
 export const useBoards = () => {
@@ -10,26 +10,25 @@ export const useBoards = () => {
   const { currentProject } = useCurrentProject()
 
   useEffect(() => {
-    const fetchBoards = async () => {
-      if (!currentProject) return
-      setIsLoading(true)
-      try {
-        const fetchedBoards = await boardApi.getAllBoardsByProjectId(currentProject.id)
+    console.log('useBoards useEffect: currentProject', currentProject)
+    if (!currentProject?.id) return
+    setIsLoading(true)
+    boardApi.getAllBoardsByProjectId(currentProject.id)
+      .then((fetchedBoards) => {
         setBoards(fetchedBoards)
         setError(null)
-      } catch (error) {
+      })
+      .catch((error) => {
         setError(error as Error)
         console.error('Failed to fetch boards:', error)
-      } finally {
+      })
+      .finally(() => {
         setIsLoading(false)
-      }
-    }
-
-    fetchBoards()
-  }, [currentProject])
+      })
+  }, [currentProject?.id])
 
   const refreshBoards = async () => {
-    if (!currentProject) return
+    if (!currentProject || !currentProject.id) return
     setIsLoading(true)
     try {
       const updatedBoards = await boardApi.getAllBoardsByProjectId(currentProject.id)
@@ -43,10 +42,13 @@ export const useBoards = () => {
     }
   }
 
+  console.log('Boards in useBoards hook:', boards);
+
   return {
     boards,
     isLoading,
     error,
-    refreshBoards
+    refreshBoards,
+    setBoards // thêm setBoards để cập nhật ngay trên FE
   }
 }

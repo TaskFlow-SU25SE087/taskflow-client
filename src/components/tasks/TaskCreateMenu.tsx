@@ -1,13 +1,14 @@
-import { useState } from 'react'
+import { sprintApi } from '@/api/sprints'
+import { taskApi } from '@/api/tasks'
+import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
-import { Plus, Loader2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { taskApi } from '@/api/tasks'
-import { sprintApi } from '@/api/sprints'
+import { useTags } from '@/hooks/useTags'
 import { useTasks } from '@/hooks/useTasks'
+import { Loader2, Plus } from 'lucide-react'
+import { useState } from 'react'
 
 interface CreateTaskDialogProps {
   isOpen: boolean
@@ -28,8 +29,16 @@ export default function TaskCreateMenu({
 }: CreateTaskDialogProps) {
   const { toast } = useToast()
   const { refreshTasks } = useTasks()
+  const { tags } = useTags()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [title, setTitle] = useState('')
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
+
+  const handleTagChange = (tagId: string) => {
+    setSelectedTagIds((prev) =>
+      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
+    )
+  }
 
   const handleSubmit = async () => {
     if (!title.trim()) {
@@ -43,7 +52,7 @@ export default function TaskCreateMenu({
 
     setIsSubmitting(true)
     try {
-      const createdTask = await taskApi.createTask(projectId, title)
+      const createdTask = await taskApi.createTask(projectId, title /*, selectedTagIds*/)
       if (sprintId) {
         await sprintApi.addTaskToSprint(sprintId, createdTask.id)
       }
@@ -56,6 +65,7 @@ export default function TaskCreateMenu({
       onTaskCreated()
       onOpenChange(false)
       setTitle('')
+      setSelectedTagIds([])
     } catch (error) {
       console.error(error)
       toast({
@@ -102,7 +112,21 @@ export default function TaskCreateMenu({
               }}
             />
           </div>
-
+          <div className='space-y-2'>
+            <Label className='text-sm font-medium'>Tags</Label>
+            <div className='flex flex-wrap gap-2'>
+              {tags.map(tag => (
+                <label key={tag.id} className='flex items-center gap-1'>
+                  <input
+                    type='checkbox'
+                    checked={selectedTagIds.includes(tag.id)}
+                    onChange={() => handleTagChange(tag.id)}
+                  />
+                  <span style={{ color: tag.color }}>{tag.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
           <div className='flex justify-end gap-3 pt-4'>
             <Button
               variant='outline'

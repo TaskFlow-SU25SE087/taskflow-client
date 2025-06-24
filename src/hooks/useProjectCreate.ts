@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
+import { projectMemberApi } from '@/api/projectMembers'
 import { projectApi } from '@/api/projects'
 import axiosClient from '@/configs/axiosClient'
 import { useToast } from '@/hooks/use-toast'
@@ -14,6 +15,7 @@ export function useProjectCreate() {
   const [memberEmail, setMemberEmail] = useState('')
   const [addedEmails, setAddedEmails] = useState<string[]>([])
   const [isProjectCreated, setIsProjectCreated] = useState(false)
+  const [inviteLinks, setInviteLinks] = useState<{email: string, token: string}[]>([])
   const navigate = useNavigate()
   const { toast } = useToast()
 
@@ -43,22 +45,33 @@ export function useProjectCreate() {
     if (step === 0 && boardName.trim()) {
       setIsLoading(true)
       try {
-        await projectApi.createProject(boardName.trim(), description.trim()).then((response) => {
+        await projectApi.createProject(boardName.trim(), description.trim()).then(async (response) => {
           console.log('WHEN CREATED: ', response.data.id)
           setProjectId(response.data.id)
           setIsProjectCreated(true)
           setStep(1)
+          if (addedEmails.length > 0) {
+            const results = await Promise.all(
+              addedEmails.map(email => projectMemberApi.addMember(response.data.id, email))
+            )
+            setInviteLinks(results)
+            toast({
+              title: 'Đã mời thành viên',
+              description: `Đã gửi lời mời cho ${addedEmails.length} thành viên.`
+            })
+          }
         })
       } catch (error: any) {
-        console.error('Project creation error:', error)
-        
-        // Handle specific backend database errors
-        if (error.response?.data?.message?.includes('Color') || 
-            error.response?.data?.message?.includes('Tags') ||
-            error.response?.data?.message?.includes('NULL')) {
+        if (error.response?.data?.code === 3004) {
           toast({
-            title: 'Lỗi hệ thống',
-            description: 'Có lỗi xảy ra khi tạo dự án. Vui lòng thử lại sau hoặc liên hệ quản trị viên.',
+            title: 'Project limit reached',
+            description: 'You have reached the maximum number of projects allowed. Please delete old projects or contact the administrator for support.',
+            variant: 'destructive'
+          })
+        } else if (error.response?.data?.errors?.description) {
+          toast({
+            title: 'Validation error',
+            description: error.response.data.errors.description[0],
             variant: 'destructive'
           })
         } else {
@@ -95,6 +108,8 @@ export function useProjectCreate() {
     isProjectCreated,
     handleContinue,
     handleBack,
-    handleAddMember
+    handleAddMember,
+    inviteLinks,
+    projectId
   }
 }

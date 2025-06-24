@@ -1,54 +1,76 @@
 import axiosClient from '@/configs/axiosClient'
 import { TaskP } from '@/types/task'
 
-const ENDPOINT = '/api/Task'
-
 export const taskApi = {
-  getTasks: async (): Promise<TaskP[]> => {
-    const response = await axiosClient.get<TaskP[]>(`${ENDPOINT}`)
-    return response.data
-  },
-
-  getTaskById: async (taskId: string): Promise<TaskP> => {
-    const response = await axiosClient.get<TaskP>(`${ENDPOINT}/${taskId}`)
-    return response.data
-  },
-
-  getSprintIdFromTaskId: async (taskId: string): Promise<string> => {
-    const response = await axiosClient.get<string>(`${ENDPOINT}/getSprintIdFromTaskId/taskId=${taskId}`)
-    return response.data
-  },
-
+  // Get all tasks for a project
   getTasksFromProject: async (projectId: string): Promise<TaskP[]> => {
-    const response = await axiosClient.get<TaskP[]>(`${ENDPOINT}/getTasksFromProject/projectId=${projectId}`)
-    return response.data
+    const response = await axiosClient.get(`/projects/${projectId}/task`)
+    return response.data.data
   },
 
-  createTask: async (projectId: string, title: string): Promise<{ id: string; message: string }> => {
-    const response = await axiosClient.post(`${ENDPOINT}/${projectId}`, { title })
-    return response.data
+  // Get a single task by ID (if needed, adjust endpoint as per backend)
+  getTaskById: async (projectId: string, taskId: string): Promise<TaskP> => {
+    const response = await axiosClient.get(`/projects/${projectId}/task/${taskId}`)
+    return response.data.data
   },
 
-  updateTaskStatus: async (taskId: string, newStatus: string): Promise<TaskP> => {
-    const response = await axiosClient.put<TaskP>(`${ENDPOINT}/taskId=${taskId}/updateStatus`, newStatus, {
-      headers: { 'Content-Type': 'application/json' }
+  // Create a new task for a project
+  createTask: async (
+    projectId: string,
+    data: {
+      title: string
+      description?: string
+      priority: string
+      deadline: string
+      file?: File | null
+    }
+  ) => {
+    const formData = new FormData()
+    formData.append('Title', data.title)
+    if (data.description) formData.append('Description', data.description)
+    formData.append('Priority', data.priority)
+    formData.append('Deadline', data.deadline)
+    if (data.file) formData.append('File', data.file)
+    const response = await axiosClient.post(`/projects/${projectId}/task`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
     })
-    return response.data
+    return response.data.data
   },
 
-  changeTaskBoard: async (taskId: string, boardId: string): Promise<TaskP> => {
-    const response = await axiosClient.put<TaskP>(`${ENDPOINT}/taskId=${taskId}/changeBoard/brd=${boardId}`)
-    return response.data
-  },
-
-  assignTask: async (taskId: string, email: string): Promise<TaskP> => {
-    const response = await axiosClient.post<TaskP>(`${ENDPOINT}/assign/taskId=${taskId}`, {
-      email
+  // Update a task
+  updateTask: async (
+    projectId: string,
+    taskId: string,
+    data: {
+      title?: string
+      description?: string
+      priority?: string
+      deadline?: string
+      status?: string
+      file?: File | null
+    }
+  ) => {
+    const formData = new FormData()
+    if (data.title) formData.append('Title', data.title)
+    if (data.description) formData.append('Description', data.description)
+    if (data.priority) formData.append('Priority', data.priority)
+    if (data.deadline) formData.append('Deadline', data.deadline)
+    if (data.status) formData.append('Status', data.status)
+    if (data.file) formData.append('File', data.file)
+    const response = await axiosClient.put(`/projects/${projectId}/task/update/${taskId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
     })
-    return response.data
+    return response.data.data
   },
 
-  deleteTask: async (taskId: string): Promise<void> => {
-    await axiosClient.delete(`${ENDPOINT}/delete/taskid=${taskId}`)
+  // Delete a task
+  deleteTask: async (projectId: string, taskId: string): Promise<void> => {
+    await axiosClient.delete(`/projects/${projectId}/task/delete/${taskId}`)
+  },
+
+  // Get all tasks of a sprint
+  getSprintTasks: async (projectId: string, sprintId: string): Promise<TaskP[]> => {
+    const response = await axiosClient.get(`/projects/${projectId}/sprint/${sprintId}/tasks`)
+    return response.data.data
   }
 }

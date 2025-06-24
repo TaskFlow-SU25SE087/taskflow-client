@@ -2,10 +2,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Loader } from '@/components/ui/loader'
 import { useActivateAccount } from '@/hooks/useActivateAccount'
+import { useProjectMembers } from '@/hooks/useProjectMembers'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 
 export default function ActivateAccountPage() {
   const [email, setEmail] = useState('')
@@ -19,6 +21,9 @@ export default function ActivateAccountPage() {
   const { activateAccount, isLoading, error, clearError } = useActivateAccount()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const location = useLocation()
+  const { verifyJoin, loading } = useProjectMembers()
+  const [success, setSuccess] = useState(false)
 
   // Get token from URL params if available
   const tokenFromUrl = searchParams.get('token')
@@ -32,6 +37,20 @@ export default function ActivateAccountPage() {
       setEmail(emailFromUrl)
     }
   }, [tokenFromUrl, emailFromUrl])
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const token = params.get('token')
+    const projectId = params.get('projectId')
+    if (token && projectId) {
+      verifyJoin(projectId, token)
+        .then(() => {
+          setSuccess(true)
+          setTimeout(() => navigate(`/projects/${projectId}`), 2000)
+        })
+        .catch(() => setSuccess(false))
+    }
+  }, [location, navigate, verifyJoin])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -54,6 +73,8 @@ export default function ActivateAccountPage() {
       setTokenResetPassword('')
     }
   }
+
+  if (loading) return <Loader />
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">

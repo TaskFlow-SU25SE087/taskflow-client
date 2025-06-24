@@ -65,63 +65,63 @@ export function ProjectEditMenu({ project, onProjectUpdated, trigger }: ProjectE
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className='sm:max-w-[425px]' aria-describedby="edit-project-desc">
-        <span id="edit-project-desc" className="sr-only">
-          Edit the project name. The description will not be changed.
-        </span>
-        <DialogHeader>
-          <DialogTitle>Edit Project Name</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className='space-y-4'>
-          <div className='space-y-2'>
-            <label htmlFor='title' className='text-sm font-medium'>
-              Project Name *
-            </label>
-            <Input
-              id='title'
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder='Project name'
-              required
-              disabled={isSubmitting}
-            />
-          </div>
-          <div className='space-y-2'>
-            <label htmlFor='description' className='text-sm font-medium'>
-              Project Description
-            </label>
-            <textarea
-              id='description'
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder='Project description'
-              disabled={isSubmitting}
-              className='w-full border rounded p-2'
-            />
-          </div>
-          
-       
-          
-          <div className='flex justify-end space-x-2'>
-            <Button 
-              type='button' 
-              variant='outline' 
-              onClick={() => setIsOpen(false)}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button 
-              type='submit'
-              disabled={isSubmitting || !title.trim()}
-            >
-              {isSubmitting ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+        <DialogContent className='sm:max-w-[425px]' aria-describedby="edit-project-desc">
+          <span id="edit-project-desc" className="sr-only">
+            Edit the project name. The description will not be changed.
+          </span>
+          <DialogHeader>
+            <DialogTitle>Edit Project Name</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className='space-y-4'>
+            <div className='space-y-2'>
+              <label htmlFor='title' className='text-sm font-medium'>
+                Project Name *
+              </label>
+              <Input
+                id='title'
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder='Project name'
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+            <div className='space-y-2'>
+              <label htmlFor='description' className='text-sm font-medium'>
+                Project Description
+              </label>
+              <textarea
+                id='description'
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder='Project description'
+                disabled={isSubmitting}
+                className='w-full border rounded p-2'
+              />
+            </div>
+            
+            <div className='flex justify-end space-x-2'>
+              <Button 
+                type='button' 
+                variant='outline' 
+                onClick={() => setIsOpen(false)}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type='submit'
+                disabled={isSubmitting || !title.trim()}
+              >
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

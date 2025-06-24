@@ -1,10 +1,10 @@
-import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Loader2, Users } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
 import { projectMemberApi } from '@/api/projectMembers'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useToast } from '@/hooks/use-toast'
 import { AxiosError } from 'axios'
+import { Loader2, Users } from 'lucide-react'
+import { useState } from 'react'
 
 interface ProjectInviteDialogProps {
   isOpen: boolean
@@ -59,7 +59,7 @@ export function ProjectInviteDialog({ isOpen, onClose, projectId, onMemberAdded 
     try {
       await Promise.all(
         addedEmails.map(async (email) => {
-          await projectMemberApi.addMember(projectId, email, 'Member')
+          await projectMemberApi.addMember(projectId, email)
         })
       )
       toast({

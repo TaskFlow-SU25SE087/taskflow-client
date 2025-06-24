@@ -1,29 +1,38 @@
 import axiosClient from '@/configs/axiosClient'
 import { Board } from '@/types/board'
 
-const ENDPOINT = '/api/board'
-
 export const boardApi = {
   getAllBoardsByProjectId: async (projectId: string): Promise<Board[]> => {
-    const response = await axiosClient.get<Board[]>(`${ENDPOINT}/projectId=${projectId}/all`)
-    return response.data
+    const response = await axiosClient.get(`/project/${projectId}`)
+    console.log('[boardApi] Full project response:', response.data)
+    if (response.data && response.data.data && response.data.data.boards) {
+      console.log('[boardApi] boards:', response.data.data.boards)
+    } else {
+      console.warn('[boardApi] boards not found in response:', response.data)
+    }
+    const boards = (response.data.data.boards || []).filter((b: Board) => b.isActive)
+    // Sort by order ascending
+    boards.sort((a: Board, b: Board) => a.order - b.order)
+    return boards
   },
 
-  createBoard: async (projectId: string, status: string): Promise<Board> => {
-    const response = await axiosClient.post<Board>(`${ENDPOINT}/projectId=${projectId}/new`, { status })
-    return response.data
+  createBoard: async (projectId: string, name: string, description: string): Promise<boolean> => {
+    const response = await axiosClient.post(`/projects/${projectId}/boards`, { name, description })
+    return response.data.data
   },
 
-  addTaskToBoard: async (boardId: string, taskId: string): Promise<void> => {
-    await axiosClient.put(`${ENDPOINT}/board/${boardId}/task/${taskId}/AddTaskToBoard`)
+  editBoard: async (projectId: string, boardId: string, name: string, description: string): Promise<boolean> => {
+    const response = await axiosClient.put(`/projects/${projectId}/boards/${boardId}`, { name, description })
+    return response.data.data
   },
 
-  editBoardStatus: async (boardId: string, updatedStatus: Partial<Board>): Promise<Board> => {
-    const response = await axiosClient.put<Board>(`${ENDPOINT}/${boardId}`, updatedStatus)
-    return response.data
+  deleteBoard: async (projectId: string, boardId: string): Promise<boolean> => {
+    const response = await axiosClient.delete(`/projects/${projectId}/boards/${boardId}`)
+    return response.data.data
   },
 
-  deleteBoard: async (boardId: string): Promise<void> => {
-    await axiosClient.delete(`${ENDPOINT}/${boardId}`)
+  updateBoardOrder: async (projectId: string, boards: {id: string, order: number}[]): Promise<boolean> => {
+    const response = await axiosClient.put(`/projects/${projectId}/boards/order`, boards)
+    return response.data.data
   }
 }

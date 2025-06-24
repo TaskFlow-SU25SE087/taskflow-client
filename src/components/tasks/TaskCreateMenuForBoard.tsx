@@ -1,18 +1,19 @@
-import { useState, useEffect } from 'react'
+import { boardApi } from '@/api/boards'
+import { sprintApi } from '@/api/sprints'
+import { taskApi } from '@/api/tasks'
+import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
-import { Plus, Loader2 } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
-import { taskApi } from '@/api/tasks'
-import { sprintApi } from '@/api/sprints'
-import { useTasks } from '@/hooks/useTasks'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Sprint } from '@/types/sprint'
-import { Board } from '@/types/board'
-import { boardApi } from '@/api/boards'
+import { useToast } from '@/hooks/use-toast'
 import { useBoards } from '@/hooks/useBoards'
+import { useTags } from '@/hooks/useTags'
+import { useTasks } from '@/hooks/useTasks'
+import { Board } from '@/types/board'
+import { Sprint } from '@/types/sprint'
+import { Loader2, Plus } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 interface CreateTaskDialogProps {
   isOpen: boolean
@@ -39,6 +40,8 @@ export default function TaskCreateMenuForBoard({
   const [title, setTitle] = useState('')
   const [sprints, setSprints] = useState<Sprint[]>([])
   const [selectedSprintId, setSelectedSprintId] = useState<string>('')
+  const { tags } = useTags()
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
 
   useEffect(() => {
     if (boards && boardId) {
@@ -77,6 +80,12 @@ export default function TaskCreateMenuForBoard({
     }
   }, [isOpen, projectId, toast])
 
+  const handleTagChange = (tagId: string) => {
+    setSelectedTagIds((prev) =>
+      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
+    )
+  }
+
   const handleSubmit = async () => {
     if (!title.trim()) {
       toast({
@@ -107,7 +116,7 @@ export default function TaskCreateMenuForBoard({
 
     setIsSubmitting(true)
     try {
-      const createdTask = await taskApi.createTask(projectId, title)
+      const createdTask = await taskApi.createTask(projectId, title /*, selectedTagIds*/)
       await sprintApi.addTaskToSprint(selectedSprintId, createdTask.id)
       await boardApi.addTaskToBoard(board.id, createdTask.id)
 
@@ -119,6 +128,7 @@ export default function TaskCreateMenuForBoard({
       onTaskCreated()
       onOpenChange(false)
       setTitle('')
+      setSelectedTagIds([])
     } catch (error) {
       console.error(error)
       toast({
@@ -182,6 +192,22 @@ export default function TaskCreateMenuForBoard({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className='space-y-2'>
+            <Label className='text-sm font-medium'>Tags</Label>
+            <div className='flex flex-wrap gap-2'>
+              {tags.map(tag => (
+                <label key={tag.id} className='flex items-center gap-1'>
+                  <input
+                    type='checkbox'
+                    checked={selectedTagIds.includes(tag.id)}
+                    onChange={() => handleTagChange(tag.id)}
+                  />
+                  <span style={{ color: tag.color }}>{tag.name}</span>
+                </label>
+              ))}
+            </div>
           </div>
 
           <div className='flex justify-end gap-3 pt-4'>

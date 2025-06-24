@@ -1,23 +1,31 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ChevronDown, Filter, Link2, Pencil, Plus, Search } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useCurrentProject } from '@/hooks/useCurrentProject'
-import { useBoards } from '@/hooks/useBoards'
-import { Sidebar } from '@/components/Sidebar'
-import { Navbar } from '@/components/Navbar'
-import { TaskColumn } from '@/components/tasks/TaskColumn'
-import { useToast } from '@/hooks/use-toast'
 import { projectMemberApi } from '@/api/projectMembers'
-import { ProjectMember } from '@/types/project'
+import { boardApi } from '@/api/boards'
+import { Navbar } from '@/components/Navbar'
 import { ProjectEditMenu } from '@/components/projects/ProjectEditMenu'
 import { ProjectInviteDialog } from '@/components/projects/ProjectInviteDialog'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Loader } from '@/components/ui/loader'
-import { TaskP } from '@/types/task'
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
+import { ProjectMemberList } from '@/components/projects/ProjectMemberList'
+import ProjectTagManager from '@/components/projects/ProjectTagManager'
+import { Sidebar } from '@/components/Sidebar'
 import TaskBoardCreateMenu from '@/components/tasks/TaskBoardCreateMenu'
+import { TaskColumn } from '@/components/tasks/TaskColumn'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Loader } from '@/components/ui/loader'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
+import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/hooks/useAuth'
+import { useBoards } from '@/hooks/useBoards'
+import { useCurrentProject } from '@/hooks/useCurrentProject'
+import { useProjectMembers } from '@/hooks/useProjectMembers'
+import { ProjectMember } from '@/types/project'
+import { TaskP } from '@/types/task'
+import { ChevronDown, Filter, Link2, Pencil, Plus, Search } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { BoardDragDropWrapper } from '@/components/tasks/BoardDragDropWrapper'
+import { SortableTaskColumn } from '@/components/tasks/SortableTaskColumn'
+import { arrayMove } from '@dnd-kit/sortable'
 
 interface MemberAvatarProps {
   name: string
@@ -92,7 +100,7 @@ function MemberAvatarGroup({ members }: MemberAvatarGroupProps) {
     <div className='flex -space-x-3'>
       {members.slice(0, 4).map((member, index) => {
         const { bg, text } = getAvatarColor(index)
-        return <MemberAvatar key={member.userId} name={member.user.name} background={bg} textColor={text} />
+        return <MemberAvatar key={member.userId} name={member.user.fullName} background={bg} textColor={text} />
       })}
       {members.length > 4 && <MemberAvatar name={`+${members.length - 4}`} background='#FFFFFF' textColor='#DFDFDF' />}
     </div>
@@ -101,7 +109,7 @@ function MemberAvatarGroup({ members }: MemberAvatarGroupProps) {
 
 export default function ProjectBoard() {
   const navigate = useNavigate()
-  const { boards, isLoading: isBoardLoading, error: boardError, refreshBoards } = useBoards()
+  const { boards, isLoading: isBoardLoading, error: boardError, refreshBoards, setBoards } = useBoards()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -111,13 +119,13 @@ export default function ProjectBoard() {
   const [isBoardDialogOpen, setIsBoardDialogOpen] = useState(false)
 
   const { toast } = useToast()
+  const { addMember, leaveProject, removeMember, verifyJoin, loading: memberLoading, error: memberError } = useProjectMembers()
+  const { user } = useAuth()
 
   console.log(boards)
 
   useEffect(() => {
-    if (!currentProject) {
-      return navigate('/board')
-    }
+    if (!currentProject || !currentProject.id) return;
     const fetchMembers = async () => {
       try {
         const members = await projectMemberApi.getMembersByProjectId(currentProject.id)
@@ -137,11 +145,11 @@ export default function ProjectBoard() {
   useEffect(() => {
     if (searchQuery && boards) {
       const filtered = boards.flatMap((board) =>
-        board.taskPs.filter((task) => task.description.toLowerCase().includes(searchQuery.toLowerCase()))
+        board.tasks.filter((task) => task.description.toLowerCase().includes(searchQuery.toLowerCase()))
       )
       setFilteredTasks(filtered)
     } else {
-      setFilteredTasks(boards?.flatMap((board) => board.taskPs) || [])
+      setFilteredTasks(boards?.flatMap((board) => board.tasks) || [])
     }
   }, [searchQuery, boards])
 
@@ -175,6 +183,34 @@ export default function ProjectBoard() {
     }
   }
 
+  const handleLeaveProject = async () => {
+    if (!currentProject?.id) return
+    try {
+      await leaveProject(currentProject.id)
+      toast({
+        title: 'Rời dự án thành công',
+        description: 'Bạn đã rời khỏi dự án này.'
+      })
+      navigate('/projects')
+    } catch (err) {
+      toast({
+        title: 'Lỗi',
+        description: memberError || 'Không thể rời dự án',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handleBoardDragEnd = async (oldIndex: number, newIndex: number) => {
+    if (!boards || !currentProject?.id) return
+    const newBoards = arrayMove(boards, oldIndex, newIndex)
+    setBoards(newBoards) // cập nhật ngay trên FE
+    // Gửi order mới lên backend
+    const orderPayload = newBoards.map((b, idx) => ({ id: b.id, order: idx }))
+    await boardApi.updateBoardOrder(currentProject.id, orderPayload)
+    refreshBoards()
+  }
+
   if (isLoading || isBoardLoading || !currentProject) {
     return (
       <div className='flex h-screen bg-gray-100'>
@@ -190,6 +226,9 @@ export default function ProjectBoard() {
   if (boardError) {
     return <div>Error loading boards: {boardError.message}</div>
   }
+
+  // Log giá trị boards để debug
+  console.log('Boards in ProjectBoard:', boards);
 
   return (
     <div className='flex h-screen bg-gray-100'>
@@ -231,11 +270,29 @@ export default function ProjectBoard() {
                   <Plus className='h-4 w-4' />
                   <span className='font-medium'>Invite</span>
                 </Button>
+                <Button
+                  variant='outline'
+                  className='ml-2 text-red-600 border-red-200 hover:bg-red-50'
+                  onClick={handleLeaveProject}
+                  disabled={memberLoading}
+                >
+                  {memberLoading ? 'Đang rời...' : 'Rời dự án'}
+                </Button>
               </div>
-
               <MemberAvatarGroup members={projectMembers} />
             </div>
+            <div className='mt-4'>
+              <ProjectMemberList
+                projectId={currentProject.id}
+                members={projectMembers}
+                onMemberRemoved={handleMemberAdded}
+                currentUserId={user?.id || ''}
+                isOwnerOrAdmin={['Owner', 'Admin', '0', '0'].includes(String(currentProject.role || ''))}
+              />
+            </div>
           </div>
+
+          <ProjectTagManager />
 
           <div className='pb-6 flex items-center justify-between'>
             <div className='flex items-center gap-4'>
@@ -265,19 +322,30 @@ export default function ProjectBoard() {
 
           <div className='min-h-0 flex-1'>
             <ScrollArea className='w-full whitespace-nowrap rounded-md'>
-              <div className='inline-flex gap-6 p-1'>
-                {boards.map((board) => (
-                  <TaskColumn
-                    key={board.status}
-                    title={board.status}
-                    tasks={searchQuery ? filteredTasks.filter((task) => task.status === board.status) : board.taskPs}
-                    color={getBoardColor(board.status)}
-                    onTaskCreated={refreshBoards}
-                    status={board.status}
-                    boardId={board.id}
-                  />
-                ))}
-              </div>
+              <BoardDragDropWrapper
+                boardIds={boards.map((b) => b.id)}
+                onDragEnd={handleBoardDragEnd}
+              >
+                <div className='inline-flex gap-6 p-1'>
+                  {boards && boards.length > 0 ? (
+                    boards.map((board) => (
+                      <SortableTaskColumn
+                        key={board.id}
+                        id={board.id}
+                        title={board.name}
+                        description={board.description}
+                        tasks={board.tasks}
+                        color={getBoardColor(board.name)}
+                        onTaskCreated={refreshBoards}
+                        status={board.name}
+                        boardId={board.id}
+                      />
+                    ))
+                  ) : (
+                    <div className='text-gray-400 text-lg p-8'>No boards found for this project.</div>
+                  )}
+                </div>
+              </BoardDragDropWrapper>
               <ScrollBar orientation='horizontal' />
             </ScrollArea>
           </div>

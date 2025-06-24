@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { useProjectCreate } from '@/hooks/useProjectCreate'
-import { ArrowLeft, ArrowRight, Layout, Loader2, Trello, Users } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Copy, Layout, Loader2, Trello, Users } from 'lucide-react'
+import { useState } from 'react'
 
 export default function ProjectCreate() {
   const {
@@ -16,8 +17,20 @@ export default function ProjectCreate() {
     isProjectCreated,
     handleContinue,
     handleBack,
-    handleAddMember
+    handleAddMember,
+    inviteLinks,
+    projectId
   } = useProjectCreate()
+
+  const [showInvitePopup, setShowInvitePopup] = useState(false)
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
+
+  const FE_BASE_URL = window.location.origin
+
+  // Hiển thị popup khi có inviteLinks
+  if (isProjectCreated && inviteLinks.length > 0 && !showInvitePopup) {
+    setShowInvitePopup(true)
+  }
 
   const inputStyle = `w-full bg-transparent text-foreground placeholder-gray-400 text-lg 
     border-b-2 border-gray-200 focus:border-lavender-700 
@@ -180,6 +193,38 @@ export default function ProjectCreate() {
           </div>
         </div>
       </div>
+
+      {showInvitePopup && (
+        <div className='fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50'>
+          <div className='bg-white rounded-lg shadow-lg p-6 min-w-[350px] max-w-[90vw]'>
+            <h2 className='text-xl font-bold mb-4'>Link mời thành viên</h2>
+            <ul className='space-y-2 mb-4'>
+              {inviteLinks.map((item, idx) => {
+                const link = `${FE_BASE_URL}/activate-account?token=${item.token}&projectId=${projectId}`
+                return (
+                  <li key={item.email} className='flex items-center gap-2'>
+                    <span className='truncate max-w-[180px]' title={item.email}>{item.email}</span>
+                    <input className='flex-1 border px-2 py-1 rounded text-xs' value={link} readOnly />
+                    <Button
+                      size='icon'
+                      variant='outline'
+                      onClick={() => {
+                        navigator.clipboard.writeText(link)
+                        setCopiedIndex(idx)
+                        setTimeout(() => setCopiedIndex(null), 1200)
+                      }}
+                    >
+                      <Copy className='h-4 w-4' />
+                    </Button>
+                    {copiedIndex === idx && <span className='text-green-600 text-xs ml-1'>Đã copy!</span>}
+                  </li>
+                )
+              })}
+            </ul>
+            <Button onClick={() => setShowInvitePopup(false)} className='w-full'>Đóng</Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

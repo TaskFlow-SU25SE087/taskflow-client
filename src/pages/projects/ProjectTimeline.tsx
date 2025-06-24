@@ -1,17 +1,18 @@
-import { useState, useEffect } from 'react'
-import { Search, Calendar, ArrowLeft, ArrowRight } from 'lucide-react'
+import { Navbar } from '@/components/Navbar'
+import ProjectTagManager from '@/components/projects/ProjectTagManager'
+import { Sidebar } from '@/components/Sidebar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Loader } from '@/components/ui/loader'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
-import { Sidebar } from '@/components/Sidebar'
-import { Navbar } from '@/components/Navbar'
-import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns'
-import { cn } from '@/lib/utils'
 import { useSprints } from '@/hooks/useSprints'
+import { cn } from '@/lib/utils'
 import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
-import { Loader } from '@/components/ui/loader'
+import { addMonths, eachDayOfInterval, endOfMonth, format, startOfMonth } from 'date-fns'
+import { ArrowLeft, ArrowRight, Calendar, Search } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 interface SprintWithTasks extends Sprint {
   tasks: TaskP[]
@@ -282,6 +283,8 @@ export default function ProjectTimeline() {
               </Select>
             </div>
           </div>
+
+          <ProjectTagManager />
 
           <div className='flex-1 overflow-y-auto overflow-x-auto bg-white border-t border-gray-200'>
             <div className='min-w-[1200px] relative pb-6'>

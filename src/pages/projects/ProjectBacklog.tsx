@@ -1,20 +1,21 @@
-import { useState, useEffect, useRef } from 'react'
-import { Button } from '@/components/ui/button'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Sidebar } from '@/components/Sidebar'
 import { Navbar } from '@/components/Navbar'
-import { useCurrentProject } from '@/hooks/useCurrentProject'
-import { Filter, Search, Share2 } from 'lucide-react'
-import { Input } from '@/components/ui/input'
-import { TaskP } from '@/types/task'
-import { SprintBoard } from '@/components/sprints/SprintBoard'
+import ProjectTagManager from '@/components/projects/ProjectTagManager'
+import { Sidebar } from '@/components/Sidebar'
 import { SprintBacklog } from '@/components/sprints/SprintBacklog'
+import { SprintBoard } from '@/components/sprints/SprintBoard'
 import { SprintCreateMenu } from '@/components/sprints/SprintCreateMenu'
 import { SprintSelector } from '@/components/sprints/SprintSelector'
-import { toast } from '@/hooks/use-toast'
-import { useTasks } from '@/hooks/useTasks'
-import { useSprints } from '@/hooks/useSprints'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Loader } from '@/components/ui/loader'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { toast } from '@/hooks/use-toast'
+import { useCurrentProject } from '@/hooks/useCurrentProject'
+import { useSprints } from '@/hooks/useSprints'
+import { useTasks } from '@/hooks/useTasks'
+import { TaskP } from '@/types/task'
+import { Filter, Search, Share2 } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
 export default function ProjectBacklog() {
   const { tasks, refreshTasks, isTaskLoading: tasksLoading } = useTasks()
@@ -240,6 +241,8 @@ export default function ProjectBacklog() {
               </Select>
             </div>
           </div>
+
+          <ProjectTagManager />
 
           <div className='space-y-6'>
             {filteredSprints.map((sprint) => (

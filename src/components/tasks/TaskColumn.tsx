@@ -5,6 +5,8 @@ import { Inbox } from 'lucide-react'
 import { TaskP } from '@/types/task'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useState } from 'react'
+import { BoardDeleteButton } from './BoardDeleteButton'
+import { BoardEditMenu } from './BoardEditMenu'
 
 interface TaskColumnProps {
   title: string
@@ -35,15 +37,33 @@ export function TaskColumn({ title, tasks, color, onTaskCreated, boardId }: Task
             <span className='font-medium'>{title}</span>
             <span className='bg-gray-300 px-2 py-0.5 rounded-full text-sm'>{tasks.length}</span>
           </div>
-          {currentProject && (
-            <TaskCreateMenuForBoard
-              isOpen={isAddingTask}
-              onOpenChange={setIsAddingTask}
-              projectId={currentProject.id}
-              onTaskCreated={onTaskCreated}
-              boardId={boardId}
-            />
-          )}
+          <div className='flex items-center gap-2'>
+            {currentProject && (
+              <TaskCreateMenuForBoard
+                isOpen={isAddingTask}
+                onOpenChange={setIsAddingTask}
+                projectId={currentProject.id}
+                onTaskCreated={onTaskCreated}
+                boardId={boardId}
+              />
+            )}
+            {currentProject && (
+              <BoardEditMenu
+                projectId={currentProject.id}
+                boardId={boardId}
+                currentName={title}
+                currentDescription={''}
+                onEdited={onTaskCreated}
+              />
+            )}
+            {currentProject && (
+              <BoardDeleteButton
+                projectId={currentProject.id}
+                boardId={boardId}
+                onDeleted={onTaskCreated}
+              />
+            )}
+          </div>
         </div>
         <div className='px-6'>
           <div style={{ backgroundColor: color }} className='h-1 w-full rounded-full mb-4'></div>

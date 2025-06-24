@@ -25,6 +25,7 @@ export default function TaskBoardCreateMenu({
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [status, setStatus] = useState('')
+  const [description, setDescription] = useState('')
 
   const handleSubmit = async () => {
     if (!status.trim()) {
@@ -35,11 +36,9 @@ export default function TaskBoardCreateMenu({
       })
       return
     }
-
     setIsSubmitting(true)
     try {
-      await boardApi.createBoard(projectId, status.trim())
-
+      await boardApi.createBoard(projectId, status.trim(), description.trim())
       toast({
         title: 'Success',
         description: 'Board created successfully'
@@ -47,6 +46,7 @@ export default function TaskBoardCreateMenu({
       onBoardCreated()
       onOpenChange(false)
       setStatus('')
+      setDescription('')
     } catch (error) {
       console.error(error)
       toast({
@@ -89,6 +89,18 @@ export default function TaskBoardCreateMenu({
                   handleSubmit()
                 }
               }}
+            />
+          </div>
+          <div className='space-y-2'>
+            <Label htmlFor='description' className='text-sm font-medium'>
+              Description
+            </Label>
+            <Input
+              id='description'
+              placeholder='Enter board description (optional)'
+              className='h-11'
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             />
           </div>
 

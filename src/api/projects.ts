@@ -1,5 +1,5 @@
 import axiosClient from '@/configs/axiosClient'
-import { Project } from '@/types/project'
+import { Project, Tag } from '@/types/project'
 
 const ENDPOINT = '/project'
 
@@ -129,5 +129,31 @@ export const projectApi = {
   deleteProject: async (projectId: string): Promise<boolean> => {
     const response = await axiosClient.delete<boolean>(`${ENDPOINT}/delete/projectId=${projectId}`)
     return response.data
+  }
+}
+
+export const tagApi = {
+  getAllTagsByProjectId: async (projectId: string): Promise<Tag[]> => {
+    const response = await axiosClient.get(`/project/${projectId}/tag`)
+    return response.data.data
+  },
+
+  createTag: async (projectId: string, tag: { name: string; description: string; color: string }): Promise<Tag> => {
+    const response = await axiosClient.post(`/project/${projectId}/tag`, tag)
+    return response.data.data
+  },
+
+  updateTag: async (
+    projectId: string,
+    tagId: string,
+    tag: { name: string; description: string; color: string }
+  ): Promise<Tag> => {
+    const response = await axiosClient.put(`/project/${projectId}/tag/${tagId}`, tag)
+    return response.data.data
+  },
+
+  deleteTag: async (projectId: string, tagId: string): Promise<boolean> => {
+    const response = await axiosClient.delete(`/project/${projectId}/tag/${tagId}`)
+    return response.data.data
   }
 }
