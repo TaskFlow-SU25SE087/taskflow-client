@@ -12,6 +12,9 @@ import SignUpPage from '@/pages/home/SignupPage'
 import ProjectBoard from '@/pages/projects/ProjectBoard'
 import ProjectCreate from '@/pages/projects/ProjectCreate'
 import ProjectList from '@/pages/projects/ProjectList'
+import ProjectMembers from '@/pages/projects/ProjectMembers'
+import ProjectMemberVerify from '@/pages/projects/ProjectMemberVerify'
+import LegacyProjectMemberVerify from '@/pages/projects/LegacyProjectMemberVerify'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import GitCommits from './pages/github/GitCommits'
@@ -233,6 +236,26 @@ function App() {
                 <UserProfilePage />
               </ProtectedRoute>
             }
+          />
+          <Route
+            path='/members'
+            element={
+              <ProtectedRoute>
+                <ProjectMembers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path='/projects/:projectId/members/verify-join'
+            element={<ProjectMemberVerify />}
+          />
+          <Route
+            path='/project/:projectId/members/verify-join'
+            element={<ProjectMemberVerify />}
+          />
+          <Route
+            path='/project/member/verify-join'
+            element={<LegacyProjectMemberVerify />}
           />
         </Routes>
       </AuthProvider>

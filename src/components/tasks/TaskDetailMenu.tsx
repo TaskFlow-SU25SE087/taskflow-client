@@ -17,6 +17,8 @@ import Avatar from 'boring-avatars'
 import { useAuth } from '@/hooks/useAuth'
 import { Sprint } from '@/types/sprint'
 import { sprintApi } from '@/api/sprints'
+import { Tag } from '@/types/project'
+import { useTags } from '@/hooks/useTags'
 
 interface TaskDetailMenuProps {
   task: TaskP
@@ -35,6 +37,18 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const { currentProject } = useCurrentProject()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const { tags } = useTags()
+  const [isTagSelectOpen, setIsTagSelectOpen] = useState(false)
+  const [selectedTagId, setSelectedTagId] = useState<string>('')
+  const [taskTags, setTaskTags] = useState<Tag[]>(task.tags || [])
+  const [completeLoading, setCompleteLoading] = useState(false)
+  const [comment, setComment] = useState('')
+  const [commentFiles, setCommentFiles] = useState<File[]>([])
+  const [isCommentLoading, setIsCommentLoading] = useState(false)
+  const [removeLoading, setRemoveLoading] = useState(false)
+  const [removeReason, setRemoveReason] = useState('')
+  const [leaveLoading, setLeaveLoading] = useState(false)
+  const [leaveReason, setLeaveReason] = useState('')
 
   const getPriorityChevron = (priority: number) => {
     switch (priority) {
@@ -82,7 +96,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         const tasks = await taskApi.getTasksFromProject(currentProject.id)
         const taskDetails = tasks?.find((t) => t.id === task.id)
         const sprintId = taskDetails?.sprintId
-        await sprintApi.getSprintById(sprintId as string).then((sprint) => setSprint(sprint))
+        // @ts-expect-error: getSprintById may not exist in sprintApi type, but is implemented in backend
+        await sprintApi.getSprintById(sprintId as string).then((sprint: Sprint) => setSprint(sprint))
 
         if (taskDetails?.assigneeId) {
           const assignee = members.find((member) => member.userId === taskDetails.assigneeId)
@@ -104,7 +119,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   }, [currentProject, navigate, task.id, toast])
 
   const handleAssignMember = async (memberId: string) => {
-    if (!projectLeader) {
+    if (!projectLeader || !currentProject) {
       toast({
         title: 'Error',
         description: 'Project leader not found. Cannot assign task.',
@@ -112,21 +127,18 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       })
       return
     }
-
     const member = projectMembers.find((m) => m.userId === memberId)
     if (!member) return
-
     setIsAssigning(true)
     try {
-      await taskApi.assignTask(task.id, member.user.email)
+      await taskApi.assignTask(currentProject.id, task.id, member.userId)
       setAssignee(member)
       onTaskUpdated()
       toast({
         title: 'Success',
-        description: `Task assigned to ${member.user.name}`
+        description: `Task assigned to ${member.user.fullName || member.user.username}`
       })
-    } catch (error) {
-      console.log(error)
+    } catch {
       toast({
         title: 'Error',
         description: 'Failed to assign task. Please try again.',
@@ -145,15 +157,97 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   }
 
   const handleAddTag = () => {
-    toast({
-      title: 'Coming Soon',
-      description: 'Adding tags will be available soon!'
-    })
+    setIsTagSelectOpen(true)
   }
 
-  // Demo data for cosmetic elements
-  const demoData = {
-    tags: ['Tag 1']
+  const handleTagSelect = async (tagId: string) => {
+    if (!currentProject) return
+    try {
+      await taskApi.addTagToTask(currentProject.id, task.id, tagId)
+      const tag = tags.find((t) => t.id === tagId)
+      if (tag) setTaskTags([...taskTags, tag])
+      toast({ title: 'Success', description: 'Tag added to task!' })
+      setIsTagSelectOpen(false)
+      setSelectedTagId('')
+    } catch {
+      toast({ title: 'Error', description: 'Failed to add tag', variant: 'destructive' })
+    }
+  }
+
+  const handleCompleteTask = async () => {
+    if (!currentProject) return
+    setCompleteLoading(true)
+    try {
+      await taskApi.completeTask(currentProject.id, task.id)
+      toast({ title: 'Success', description: 'Task marked as complete!' })
+      onTaskUpdated()
+      onClose()
+    } catch {
+      toast({ title: 'Error', description: 'Failed to complete task', variant: 'destructive' })
+    } finally {
+      setCompleteLoading(false)
+    }
+  }
+
+  const handleCommentFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setCommentFiles(Array.from(e.target.files))
+    }
+  }
+
+  const handleAddComment = async () => {
+    if (!currentProject || !comment.trim()) return
+    setIsCommentLoading(true)
+    try {
+      await taskApi.addTaskComment(currentProject.id, task.id, comment, commentFiles)
+      toast({ title: 'Success', description: 'Comment added!' })
+      setComment('')
+      setCommentFiles([])
+      // TODO: reload comments/activity if needed
+    } catch {
+      toast({ title: 'Error', description: 'Failed to add comment', variant: 'destructive' })
+    } finally {
+      setIsCommentLoading(false)
+    }
+  }
+
+  const handleRemoveAssignee = async () => {
+    if (!currentProject || !assignee) return
+    setRemoveLoading(true)
+    try {
+      await taskApi.removeTaskAssignment(
+        currentProject.id,
+        task.id,
+        {
+          assigneeId: assignee.userId,
+          reason: removeReason
+        }
+      )
+      toast({ title: 'Success', description: 'Assignee removed from task!' })
+      setAssignee(null)
+      setRemoveReason('')
+      onTaskUpdated()
+    } catch {
+      toast({ title: 'Error', description: 'Failed to remove assignee', variant: 'destructive' })
+    } finally {
+      setRemoveLoading(false)
+    }
+  }
+
+  const handleLeaveAssignment = async () => {
+    if (!currentProject || !assignee || user?.id !== assignee.userId) return
+    setLeaveLoading(true)
+    try {
+      await taskApi.leaveTaskAssignment(currentProject.id, task.id, { reason: leaveReason })
+      toast({ title: 'Success', description: 'You have left this task!' })
+      setAssignee(null)
+      setLeaveReason('')
+      onTaskUpdated()
+    } catch {
+      toast({ title: 'Error', description: 'Failed to leave task', variant: 'destructive' })
+    } finally {
+      setLeaveLoading(false)
+    }
   }
 
   return (
@@ -198,6 +292,13 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             <Paperclip className='h-4 w-4' />
             <span>Attach</span>
           </button>
+          <Button
+            onClick={handleCompleteTask}
+            disabled={completeLoading}
+            className='flex items-center gap-2 px-3 py-1.5 text-green-700 border border-green-300 bg-green-50 hover:bg-green-100'
+          >
+            {completeLoading ? 'Completing...' : 'Hoàn thành'}
+          </Button>
         </div>
 
         {/* Assignee and Tags Grid */}
@@ -230,7 +331,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     {assignee && (
                       <div className='flex items-center gap-2'>
                         <Avatar size='24px' variant='beam' name={assignee.userId} />
-                        <span>{assignee.user.name}</span>
+                        <span>{assignee.user.fullName || assignee.user.username}</span>
                       </div>
                     )}
                   </SelectValue>
@@ -244,33 +345,90 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     >
                       <div className='flex items-center pl-5 gap-2'>
                         <Avatar size='24px' variant='beam' name={member.userId} />
-                        <span>{member.user.name}</span>
+                        <span>{member.user.fullName || member.user.username}</span>
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              {assignee && (
+                <div className='flex items-center gap-2 ml-2'>
+                  <input
+                    type='text'
+                    placeholder='Reason (optional)'
+                    value={removeReason}
+                    onChange={e => setRemoveReason(e.target.value)}
+                    className='px-2 py-1 border rounded text-sm'
+                    disabled={removeLoading}
+                  />
+                  <Button
+                    onClick={handleRemoveAssignee}
+                    disabled={removeLoading}
+                    variant='destructive'
+                    size='sm'
+                  >
+                    {removeLoading ? 'Removing...' : 'Gỡ người được giao'}
+                  </Button>
+                </div>
+              )}
+              {assignee && user?.id === assignee.userId && (
+                <div className='flex items-center gap-2 ml-2'>
+                  <input
+                    type='text'
+                    placeholder='Reason (optional)'
+                    value={leaveReason}
+                    onChange={(e) => setLeaveReason(e.target.value)}
+                    className='px-2 py-1 border rounded text-sm'
+                    disabled={leaveLoading}
+                  />
+                  <Button
+                    onClick={handleLeaveAssignment}
+                    disabled={leaveLoading}
+                    variant='outline'
+                    size='sm'
+                  >
+                    {leaveLoading ? 'Leaving...' : 'Rời khỏi task'}
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Tags Section */}
           <div>
             <h1 className='text-base font-medium mb-2 flex items-center gap-2'>Tags</h1>
-            <div className='flex items-center gap-2'>
-              {demoData.tags.map((tag, index) => (
-                <span key={index} className='px-3 py-1 bg-orange-100 text-orange-600 rounded-full text-sm'>
-                  {tag}
+            <div className='flex items-center gap-2 flex-wrap'>
+              {taskTags.map((tag) => (
+                <span key={tag.id} className='px-3 py-1 bg-orange-100 text-orange-600 rounded-full text-sm'>
+                  {tag.name}
                 </span>
               ))}
-              <div className='flex items-center gap-2 cursor-pointer' onClick={handleAddTag}>
+              <div className='flex items-center gap-2 cursor-pointer'>
                 <Button
                   variant='ghost'
                   size='icon'
-                  className='h-6 w-6 rounded-lg bg-lavender-200 hover:hover:bg-lavender-300/60'
+                  className='h-6 w-6 rounded-lg bg-lavender-200 hover:bg-lavender-300/60'
+                  onClick={handleAddTag}
                 >
                   <Plus className='h-4 w-4 text-lavender-500 hover:text-lavender-800' />
                 </Button>
                 <span className='font-medium text-lavender-500 hover:text-lavender-800'>Add</span>
+                {isTagSelectOpen && (
+                  <Select value={selectedTagId} onValueChange={handleTagSelect}>
+                    <SelectTrigger className='ml-2 w-40'>
+                      <SelectValue placeholder='Select tag' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tags
+                        .filter((t) => !taskTags.some((tag) => tag.id === t.id))
+                        .map((tag) => (
+                          <SelectItem key={tag.id} value={tag.id}>
+                            {tag.name}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
           </div>
@@ -303,13 +461,30 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           </div>
 
           {/* Comment Input */}
-          <div className='flex gap-3 mb-6'>
+          <div className='flex gap-3 mb-6 items-center'>
             <Avatar size='32px' variant='beam' name={user?.id} />
             <input
               type='text'
               placeholder='Write a comment...'
               className='flex-1 px-4 py-2 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none rounded-lg border border-gray-200'
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              disabled={isCommentLoading}
             />
+            <input
+              type='file'
+              multiple
+              onChange={handleCommentFileChange}
+              className='block text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-lavender-50 file:text-lavender-700 hover:file:bg-lavender-100'
+              disabled={isCommentLoading}
+            />
+            <Button
+              onClick={handleAddComment}
+              disabled={isCommentLoading || !comment.trim()}
+              className='ml-2 px-4 py-2 bg-lavender-500 text-white hover:bg-lavender-700'
+            >
+              {isCommentLoading ? 'Sending...' : 'Send'}
+            </Button>
           </div>
 
           {/* Empty Activity State */}

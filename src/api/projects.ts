@@ -129,17 +129,53 @@ export const projectApi = {
   deleteProject: async (projectId: string): Promise<boolean> => {
     const response = await axiosClient.delete<boolean>(`${ENDPOINT}/delete/projectId=${projectId}`)
     return response.data
+  },
+
+  addMemberToProject: async (projectId: string, email: string): Promise<boolean> => {
+    const response = await axiosClient.post(`/project/${projectId}/members/add`, { email })
+    return response.data.data
+  },
+
+  leaveProject: async (projectId: string): Promise<boolean> => {
+    const response = await axiosClient.post(`/project/${projectId}/members/leave`)
+    return response.data.data
+  },
+
+  removeProjectMember: async (projectId: string, userId: string): Promise<boolean> => {
+    const response = await axiosClient.delete(`/project/${projectId}/members/remove/${userId}`)
+    return response.data.data
+  },
+
+  verifyJoinProject: async (projectId: string, token: string): Promise<boolean> => {
+    const response = await axiosClient.get(`/project/${projectId}/members/verify-join`, { params: { token } })
+    return response.data.data
+  },
+
+  // Legacy: verify join by token only, return projectId
+  verifyJoinProjectLegacy: async (token: string): Promise<{ projectId: string } | null> => {
+    // Giả sử backend có endpoint /project/member/verify-join?token=...
+    const response = await axiosClient.get(`/project/member/verify-join`, { params: { token } })
+    // Backend nên trả về { code, message, data: { projectId } }
+    if (response.data && response.data.data && response.data.data.projectId) {
+      return { projectId: response.data.data.projectId }
+    }
+    return null
+  },
+
+  getProjectMembers: async (projectId: string): Promise<any[]> => {
+    const response = await axiosClient.get(`/project/${projectId}/members/list`)
+    return response.data.data
   }
 }
 
 export const tagApi = {
   getAllTagsByProjectId: async (projectId: string): Promise<Tag[]> => {
-    const response = await axiosClient.get(`/project/${projectId}/tag`)
+    const response = await axiosClient.get(`/projects/${projectId}/tags`)
     return response.data.data
   },
 
   createTag: async (projectId: string, tag: { name: string; description: string; color: string }): Promise<Tag> => {
-    const response = await axiosClient.post(`/project/${projectId}/tag`, tag)
+    const response = await axiosClient.post(`/projects/${projectId}/tags`, tag)
     return response.data.data
   },
 
@@ -148,12 +184,12 @@ export const tagApi = {
     tagId: string,
     tag: { name: string; description: string; color: string }
   ): Promise<Tag> => {
-    const response = await axiosClient.put(`/project/${projectId}/tag/${tagId}`, tag)
+    const response = await axiosClient.put(`/projects/${projectId}/tags/${tagId}`, tag)
     return response.data.data
   },
 
   deleteTag: async (projectId: string, tagId: string): Promise<boolean> => {
-    const response = await axiosClient.delete(`/project/${projectId}/tag/${tagId}`)
+    const response = await axiosClient.delete(`/projects/${projectId}/tags/${tagId}`)
     return response.data.data
   }
 }
