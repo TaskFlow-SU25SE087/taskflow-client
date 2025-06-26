@@ -1,4 +1,3 @@
-import { TaskCard } from '@/components/tasks/TaskCard'
 import TaskCreateMenuForBoard from '@/components/tasks/TaskCreateMenuForBoard'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
@@ -7,6 +6,7 @@ import { Inbox } from 'lucide-react'
 import { useState } from 'react'
 import { BoardDeleteButton } from './BoardDeleteButton'
 import { BoardEditMenu } from './BoardEditMenu'
+import { SortableTaskCard } from './SortableTaskCard'
 
 interface TaskColumnProps {
   title: string
@@ -57,11 +57,7 @@ export function TaskColumn({ title, tasks, color, onTaskCreated, boardId }: Task
               />
             )}
             {currentProject && (
-              <BoardDeleteButton
-                projectId={currentProject.id}
-                boardId={boardId}
-                onDeleted={onTaskCreated}
-              />
+              <BoardDeleteButton projectId={currentProject.id} boardId={boardId} onDeleted={onTaskCreated} />
             )}
           </div>
         </div>
@@ -77,7 +73,7 @@ export function TaskColumn({ title, tasks, color, onTaskCreated, boardId }: Task
           <ScrollArea className='h-full px-6'>
             <div className='space-y-4 pb-4'>
               {tasks.map((task) => (
-                <TaskCard key={task.id} task={task} />
+                <SortableTaskCard key={task.id} task={task} />
               ))}
             </div>
           </ScrollArea>

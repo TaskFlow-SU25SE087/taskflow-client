@@ -1,4 +1,3 @@
-import { boardApi } from '@/api/boards'
 import { sprintApi } from '@/api/sprints'
 import { taskApi } from '@/api/tasks'
 import { Button } from '@/components/ui/button'
@@ -42,6 +41,10 @@ export default function TaskCreateMenuForBoard({
   const [selectedSprintId, setSelectedSprintId] = useState<string>('')
   const { tags } = useTags()
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
+  const [priority, setPriority] = useState('Medium')
+  const [deadline, setDeadline] = useState('')
+  const [description, setDescription] = useState('')
+  const [file, setFile] = useState<File | null>(null)
 
   useEffect(() => {
     if (boards && boardId) {
@@ -95,7 +98,6 @@ export default function TaskCreateMenuForBoard({
       })
       return
     }
-
     if (!selectedSprintId) {
       toast({
         title: 'Validation Error',
@@ -104,7 +106,6 @@ export default function TaskCreateMenuForBoard({
       })
       return
     }
-
     if (!board) {
       toast({
         title: 'Error',
@@ -113,13 +114,23 @@ export default function TaskCreateMenuForBoard({
       })
       return
     }
-
+    if (!deadline) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please select a deadline',
+        variant: 'destructive'
+      })
+      return
+    }
     setIsSubmitting(true)
     try {
-      const createdTask = await taskApi.createTask(projectId, title /*, selectedTagIds*/)
-      await sprintApi.addTaskToSprint(selectedSprintId, createdTask.id)
-      await boardApi.addTaskToBoard(board.id, createdTask.id)
-
+      await taskApi.createTask(projectId, {
+        title,
+        description,
+        priority,
+        deadline,
+        file
+      })
       toast({
         title: 'Success',
         description: 'Task created successfully'
@@ -128,6 +139,8 @@ export default function TaskCreateMenuForBoard({
       onTaskCreated()
       onOpenChange(false)
       setTitle('')
+      setDescription('')
+      setFile(null)
       setSelectedTagIds([])
     } catch (error) {
       console.error(error)
@@ -192,6 +205,16 @@ export default function TaskCreateMenuForBoard({
                 ))}
               </SelectContent>
             </Select>
+            {/* Show selected sprint time in English */}
+            {selectedSprintId && (() => {
+              const sprint = sprints.find((s) => s.id === selectedSprintId)
+              if (!sprint) return null
+              return (
+                <div className='text-xs text-gray-500 mt-1'>
+                  Time: {sprint.startDate ? new Date(sprint.startDate).toLocaleDateString('en-GB') : '...'} - {sprint.endDate ? new Date(sprint.endDate).toLocaleDateString('en-GB') : '...'}
+                </div>
+              )
+            })()}
           </div>
 
           <div className='space-y-2'>
@@ -208,6 +231,58 @@ export default function TaskCreateMenuForBoard({
                 </label>
               ))}
             </div>
+          </div>
+
+          <div className='space-y-2'>
+            <Label htmlFor='priority' className='text-sm font-medium'>
+              Priority
+            </Label>
+            <Select value={priority} onValueChange={setPriority}>
+              <SelectTrigger className='h-11'>
+                <SelectValue placeholder='Select priority' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='Low'>Low</SelectItem>
+                <SelectItem value='Medium'>Medium</SelectItem>
+                <SelectItem value='High'>High</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className='space-y-2'>
+            <Label htmlFor='deadline' className='text-sm font-medium'>
+              Deadline
+            </Label>
+            <Input
+              id='deadline'
+              type='date'
+              className='h-11'
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+            />
+          </div>
+
+          <div className='space-y-2'>
+            <Label htmlFor='description' className='text-sm font-medium'>
+              Description
+            </Label>
+            <Input
+              id='description'
+              placeholder='Enter task description'
+              className='h-11'
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </div>
+          <div className='space-y-2'>
+            <Label htmlFor='file' className='text-sm font-medium'>
+              Attach File
+            </Label>
+            <Input
+              id='file'
+              type='file'
+              className='h-11'
+              onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
+            />
           </div>
 
           <div className='flex justify-end gap-3 pt-4'>

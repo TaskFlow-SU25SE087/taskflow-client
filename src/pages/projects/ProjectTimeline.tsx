@@ -13,6 +13,7 @@ import { TaskP } from '@/types/task'
 import { addMonths, eachDayOfInterval, endOfMonth, format, startOfMonth } from 'date-fns'
 import { ArrowLeft, ArrowRight, Calendar, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { sprintApi } from '@/api/sprints'
 
 interface SprintWithTasks extends Sprint {
   tasks: TaskP[]
@@ -138,7 +139,7 @@ function SprintRow({ sprint, currentDate }: { sprint: SprintWithTasks; currentDa
       <div className='p-4'>
         <h3 className='font-medium text-gray-900'>{sprint.name}</h3>
         <p className='text-sm text-gray-500 mt-1'>
-          {format(sprintStartDate, 'MMM d')} - {format(sprintEndDate, 'MMM d')}
+          {format(sprintStartDate, 'dd/MM/yyyy')} - {format(sprintEndDate, 'dd/MM/yyyy')}
         </p>
         <p className='text-xs text-gray-500 mt-1'>{sprint.tasks.length} task(s)</p>
       </div>
@@ -207,7 +208,7 @@ export default function ProjectTimeline() {
   const { currentProject, isLoading: projectLoading } = useCurrentProject()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [sprintsWithTasks, setSprintsWithTasks] = useState<SprintWithTasks[]>([])
-  const { sprints, isLoading: sprintsLoading, getSprintTasks } = useSprints(currentProject?.id)
+  const { sprints, isLoading: sprintsLoading } = useSprints(currentProject?.id)
 
   useEffect(() => {
     const loadSprintTasks = async () => {
@@ -215,7 +216,7 @@ export default function ProjectTimeline() {
 
       const sprintsData = await Promise.all(
         sprints.map(async (sprint) => {
-          const tasks = await getSprintTasks(sprint.id)
+          const tasks = await sprintApi.getSprintTasks(sprint.id)
           return {
             ...sprint,
             tasks
@@ -226,7 +227,7 @@ export default function ProjectTimeline() {
     }
 
     loadSprintTasks()
-  }, [sprints, getSprintTasks])
+  }, [sprints])
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen)

@@ -45,6 +45,7 @@ export const taskApi = {
       title?: string
       description?: string
       priority?: string
+      boardId?: string
     }
   ) => {
     const response = await axiosClient.put(`/projects/${projectId}/tasks/update/${taskId}`, data)
@@ -139,5 +140,13 @@ export const taskApi = {
       { headers: { 'Content-Type': 'multipart/form-data' } }
     )
     return response.data.data === true
+  },
+
+  // Get sprintId from a taskId (stub, needs backend support)
+  getSprintIdFromTaskId: async (): Promise<string> => {
+    // TODO: Replace with real API call if backend supports it
+    // For now, return a dummy value or throw an error
+    // throw new Error('getSprintIdFromTaskId not implemented')
+    return ''
   }
 }

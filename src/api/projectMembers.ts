@@ -5,22 +5,21 @@ const ENDPOINT = '/api/projectmember'
 
 export const projectMemberApi = {
   addMember: async (projectId: string, email: string) => {
-    const response = await axiosClient.post(`/project/${projectId}/members/add`, { email })
+    const response = await axiosClient.post(`/projects/${projectId}/members/add`, { email })
     // Trả về { email, token } từ response.data.data
     return response.data.data
   },
 
-  leaveProject: (projectId: string) =>
-    axiosClient.post(`/project/${projectId}/members/leave`),
+  leaveProject: (projectId: string) => axiosClient.post(`/projects/${projectId}/members/leave`),
 
   removeMember: (projectId: string, userId: string) =>
-    axiosClient.delete(`/project/${projectId}/members/remove/${userId}`),
+    axiosClient.delete(`/projects/${projectId}/members/remove/${userId}`),
 
   verifyJoin: (projectId: string, token: string) =>
-    axiosClient.get(`/project/${projectId}/members/verify-join`, { params: { token } }),
+    axiosClient.get(`/projects/${projectId}/members/verify-join`, { params: { token } }),
 
   getMembersByProjectId: async (projectId: string): Promise<ProjectMember[]> => {
-    const response = await axiosClient.get(`/project/${projectId}/members/all`)
+    const response = await axiosClient.get(`/projects/${projectId}/members/all`)
     return response.data
   },
 

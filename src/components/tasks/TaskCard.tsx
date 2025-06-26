@@ -1,17 +1,17 @@
-import { Calendar, ChevronDown, ChevronsDown, ChevronsUp, ChevronUp, FileText, MessageSquare } from 'lucide-react'
-import { Card } from '../ui/card'
-import { TaskP } from '@/types/task'
-import { format } from 'date-fns'
-import { useEffect, useState, useCallback } from 'react'
-import { TaskDetailMenu } from './TaskDetailMenu'
-import { useCurrentProject } from '@/hooks/useCurrentProject'
-import { taskApi } from '@/api/tasks'
-import { useNavigate } from 'react-router-dom'
 import { projectMemberApi } from '@/api/projectMembers'
-import { ProjectMember } from '@/types/project'
-import Avatar from 'boring-avatars'
-import { Sprint } from '@/types/sprint'
 import { sprintApi } from '@/api/sprints'
+import { taskApi } from '@/api/tasks'
+import { useCurrentProject } from '@/hooks/useCurrentProject'
+import { ProjectMember } from '@/types/project'
+import { Sprint } from '@/types/sprint'
+import { TaskP } from '@/types/task'
+import Avatar from 'boring-avatars'
+import { format } from 'date-fns'
+import { Calendar, ChevronDown, ChevronsDown, ChevronsUp, ChevronUp, FileText, MessageSquare } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Card } from '../ui/card'
+import { TaskDetailMenu } from './TaskDetailMenu'
 
 const getPriorityChevron = (priority: number) => {
   switch (priority) {
@@ -80,8 +80,6 @@ export const TaskCard = ({ task }: { task: TaskP }) => {
     fetchTaskDetailsAndMember()
   }, [fetchTaskDetailsAndMember])
 
-  const demoTags = ['Tag 1', 'Tag 2']
-
   return (
     <>
       <div className='relative' onClick={() => setIsDetailOpen(true)}>
@@ -93,16 +91,18 @@ export const TaskCard = ({ task }: { task: TaskP }) => {
         <Card className='w-full border border-gray-300 cursor-pointer hover:border-gray-400 transition-colors'>
           <div className='p-4'>
             <div className='flex gap-2 mb-3'>
-              {demoTags.map((tag, index) => (
-                <span
-                  key={index}
-                  className={`px-3 py-1 rounded-md text-sm ${
-                    index === 0 ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'
-                  }`}
-                >
-                  {tag}
-                </span>
-              ))}
+              {task.tags && task.tags.length > 0 && (
+                <>
+                  {task.tags.map((tag: { id: string; name: string }, index: number) => (
+                    <span
+                      key={tag.id || index}
+                      className='px-3 py-1 rounded-md text-sm bg-orange-100 text-orange-600 mr-1'
+                    >
+                      {tag.name}
+                    </span>
+                  ))}
+                </>
+              )}
             </div>
 
             <div className='flex items-center gap-2 mb-2'>

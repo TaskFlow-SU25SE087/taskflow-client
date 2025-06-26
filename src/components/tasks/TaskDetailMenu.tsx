@@ -1,24 +1,22 @@
-import { useEffect, useState } from 'react'
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { TaskP } from '@/types/task'
-import { ProjectMember } from '@/types/project'
-import { useToast } from '@/hooks/use-toast'
-import { Paperclip, Calendar, X, ListTodo, MessageCircle, Eye, Filter, UserPlus, Plus, Link } from 'lucide-react'
-import { ChevronsUp, ChevronsDown, ChevronUp, ChevronDown } from 'lucide-react'
-import { DialogDescription } from '@radix-ui/react-dialog'
 import { projectMemberApi } from '@/api/projectMembers'
-import { taskApi } from '@/api/tasks'
-import { useCurrentProject } from '@/hooks/useCurrentProject'
-import { useNavigate } from 'react-router-dom'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { cn } from '@/lib/utils'
-import Avatar from 'boring-avatars'
-import { useAuth } from '@/hooks/useAuth'
-import { Sprint } from '@/types/sprint'
 import { sprintApi } from '@/api/sprints'
-import { Tag } from '@/types/project'
+import { taskApi } from '@/api/tasks'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/hooks/useAuth'
+import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useTags } from '@/hooks/useTags'
+import { cn } from '@/lib/utils'
+import { ProjectMember, Tag } from '@/types/project'
+import { Sprint } from '@/types/sprint'
+import { TaskP } from '@/types/task'
+import Avatar from 'boring-avatars'
+import { Calendar, ChevronDown, ChevronsDown, ChevronsUp, ChevronUp, Eye, Filter, Link, ListTodo, Loader2, MessageCircle, Paperclip, Pencil, Plus, UserPlus, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dialog'
 
 interface TaskDetailMenuProps {
   task: TaskP
@@ -49,6 +47,22 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const [removeReason, setRemoveReason] = useState('')
   const [leaveLoading, setLeaveLoading] = useState(false)
   const [leaveReason, setLeaveReason] = useState('')
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [editTitle, setEditTitle] = useState(task.title)
+  const [editDescription, setEditDescription] = useState(task.description)
+  const [editPriority, setEditPriority] = useState(task.priority)
+
+  // State cho edit mode
+  const [isEditingTitle, setIsEditingTitle] = useState(false)
+  const [isEditingDescription, setIsEditingDescription] = useState(false)
+
+  // Priority mapping
+  const PRIORITY_MAP: Record<number, string> = {
+    1: 'Low',
+    2: 'Medium',
+    3: 'High',
+    4: 'Critical'
+  }
 
   const getPriorityChevron = (priority: number) => {
     switch (priority) {
@@ -204,6 +218,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       setComment('')
       setCommentFiles([])
       // TODO: reload comments/activity if needed
+      await fetchComments()
     } catch {
       toast({ title: 'Error', description: 'Failed to add comment', variant: 'destructive' })
     } finally {
@@ -215,14 +230,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     if (!currentProject || !assignee) return
     setRemoveLoading(true)
     try {
-      await taskApi.removeTaskAssignment(
-        currentProject.id,
-        task.id,
-        {
-          assigneeId: assignee.userId,
-          reason: removeReason
-        }
-      )
+      await taskApi.removeTaskAssignment(currentProject.id, task.id, {
+        assigneeId: assignee.userId,
+        reason: removeReason
+      })
       toast({ title: 'Success', description: 'Assignee removed from task!' })
       setAssignee(null)
       setRemoveReason('')
@@ -250,10 +261,59 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     }
   }
 
+  useEffect(() => {
+    setEditTitle(task.title)
+    setEditDescription(task.description)
+    setEditPriority(task.priority)
+  }, [task])
+
+  const handleUpdateTask = async () => {
+    if (!currentProject) return
+    setIsUpdating(true)
+    try {
+      await taskApi.updateTask(currentProject.id, task.id, {
+        title: editTitle,
+        description: editDescription,
+        priority: editPriority.toString()
+      })
+      toast({ title: 'Success', description: 'Task updated!' })
+      onTaskUpdated()
+    } catch {
+      toast({ title: 'Error', description: 'Failed to update task', variant: 'destructive' })
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  // Activity Section
+  const [comments, setComments] = useState<any[]>([])
+
+  const fetchComments = async () => {
+    if (!currentProject) return
+    try {
+      const tasks = await taskApi.getTasksFromProject(currentProject.id)
+      const currentTask = tasks.find((t: any) => t.id === task.id)
+      setComments(currentTask?.commnets || [])
+    } catch (e) {
+      setComments([])
+    }
+  }
+
+  useEffect(() => {
+    fetchComments()
+    // eslint-disable-next-line
+  }, [isOpen, task.id])
+
+  // Tổng hợp file đính kèm từ task và các comment
+  const allAttachmentUrls: string[] = [
+    ...(task.attachmentUrlsList || []),
+    ...((task.commnets || []).flatMap(c => c.attachmentUrls || []))
+  ];
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogDescription className='hidden'>Description</DialogDescription>
-      <DialogContent className='max-w-2xl [&>button]:hidden'>
+      <DialogContent className='max-w-4xl w-full [&>button]:hidden'>
         <DialogTitle className='hidden'>Title</DialogTitle>
 
         {/* Header */}
@@ -277,11 +337,136 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           </div>
           <div className='flex items-center gap-2'>
             <ListTodo className='h-5 w-5' />
-            <p className='text-2xl font-semibold flex-grow'>{task.title}</p>
-            <div className='flex items-center gap-2'>{getPriorityChevron(task.priority)}</div>
+            <div className='relative flex-grow'>
+              {isEditingTitle ? (
+                <Input
+                  className='text-2xl font-semibold pr-10 w-full'
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  onBlur={() => setIsEditingTitle(false)}
+                  autoFocus
+                  disabled={isUpdating}
+                />
+              ) : (
+                <div
+                  className='text-2xl font-semibold pr-10 w-full flex items-center group cursor-pointer rounded hover:bg-gray-50 transition'
+                  onClick={() => setIsEditingTitle(true)}
+                >
+                  <span className='flex-1 truncate'>{editTitle}</span>
+                  <Pencil className='h-5 w-5 ml-2 text-gray-400 opacity-0 group-hover:opacity-100 transition' />
+                </div>
+              )}
+            </div>
+            <div className='flex items-center gap-2'>
+              <div className='relative'>
+                <select
+                  className='w-28 border rounded px-2 py-1 text-center bg-white pr-8'
+                  value={editPriority}
+                  onChange={(e) => setEditPriority(Number(e.target.value))}
+                  disabled={isUpdating}
+                >
+                  <option value={1}>Low</option>
+                  <option value={2}>Medium</option>
+                  <option value={3}>High</option>
+                  <option value={4}>Critical</option>
+                </select>
+                <span className='absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none'>
+                  <Pencil className='h-4 w-4' />
+                </span>
+              </div>
+              <span className='ml-2 text-sm font-semibold'>{PRIORITY_MAP[editPriority]}</span>
+              {getPriorityChevron(editPriority)}
+            </div>
           </div>
-          <div className='mt-2 text-gray-600'>{task.description ? task.description : 'No description'}</div>
+          <div className='mt-2 text-gray-600'>
+            <div className='relative'>
+              {isEditingDescription ? (
+                <textarea
+                  className='w-full border rounded p-2 pr-10'
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  onBlur={() => setIsEditingDescription(false)}
+                  autoFocus
+                  disabled={isUpdating}
+                />
+              ) : (
+                <div className='w-full min-h-[48px] flex items-center rounded px-2 py-2 bg-gray-50'>
+                  <span className={`flex-1 ${!editDescription ? 'text-gray-400 italic' : ''}`}>
+                    {editDescription || 'Chưa có mô tả chi tiết cho task này.'}
+                  </span>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='ml-2 text-gray-400 hover:text-blue-500'
+                    onClick={() => setIsEditingDescription(true)}
+                  >
+                    <Pencil className='h-4 w-4' />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className='flex justify-end mt-2'>
+            <Button
+              onClick={handleUpdateTask}
+              disabled={
+                isUpdating ||
+                !editTitle.trim() ||
+                (editTitle === task.title && editDescription === task.description && editPriority === task.priority)
+              }
+              className='px-6 bg-blue-500 hover:bg-blue-600 text-white'
+            >
+              {isUpdating ? (
+                <>
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  Đang lưu...
+                </>
+              ) : (
+                'Lưu'
+              )}
+            </Button>
+          </div>
         </div>
+
+        {/* Attachments */}
+        {allAttachmentUrls.length > 0 && (
+          <div className="mt-4">
+            <div className="font-semibold mb-2">Attachments:</div>
+            <div className="flex flex-wrap gap-3">
+              {allAttachmentUrls.map((url: string, idx: number) => {
+                if (url.match(/\.(jpg|jpeg|png|gif)$/i)) {
+                  // Ảnh
+                  return (
+                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer">
+                      <img src={url} alt={`attachment-${idx}`} className="w-24 h-24 object-cover rounded border" />
+                    </a>
+                  )
+                } else if (url.match(/\.pdf$/i)) {
+                  // PDF
+                  return (
+                    <div key={idx} className="w-48 h-64 border rounded overflow-hidden">
+                      <iframe src={url} title={`pdf-${idx}`} className="w-full h-full" />
+                      <a href={url} target="_blank" rel="noopener noreferrer" className="block text-blue-600 underline text-center mt-1">Xem PDF</a>
+                    </div>
+                  )
+                } else {
+                  // File khác
+                  return (
+                    <a
+                      key={idx}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline flex items-center gap-1"
+                    >
+                      📎 File {idx + 1}
+                    </a>
+                  )
+                }
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons */}
         <div className='flex gap-2 mb-6'>
@@ -357,16 +542,11 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     type='text'
                     placeholder='Reason (optional)'
                     value={removeReason}
-                    onChange={e => setRemoveReason(e.target.value)}
+                    onChange={(e) => setRemoveReason(e.target.value)}
                     className='px-2 py-1 border rounded text-sm'
                     disabled={removeLoading}
                   />
-                  <Button
-                    onClick={handleRemoveAssignee}
-                    disabled={removeLoading}
-                    variant='destructive'
-                    size='sm'
-                  >
+                  <Button onClick={handleRemoveAssignee} disabled={removeLoading} variant='destructive' size='sm'>
                     {removeLoading ? 'Removing...' : 'Gỡ người được giao'}
                   </Button>
                 </div>
@@ -381,12 +561,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     className='px-2 py-1 border rounded text-sm'
                     disabled={leaveLoading}
                   />
-                  <Button
-                    onClick={handleLeaveAssignment}
-                    disabled={leaveLoading}
-                    variant='outline'
-                    size='sm'
-                  >
+                  <Button onClick={handleLeaveAssignment} disabled={leaveLoading} variant='outline' size='sm'>
                     {leaveLoading ? 'Leaving...' : 'Rời khỏi task'}
                   </Button>
                 </div>
@@ -468,7 +643,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               placeholder='Write a comment...'
               className='flex-1 px-4 py-2 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none rounded-lg border border-gray-200'
               value={comment}
-              onChange={e => setComment(e.target.value)}
+              onChange={(e) => setComment(e.target.value)}
               disabled={isCommentLoading}
             />
             <input
@@ -479,7 +654,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               disabled={isCommentLoading}
             />
             <Button
-              onClick={handleAddComment}
+              onClick={async () => { await handleAddComment(); await fetchComments(); }}
               disabled={isCommentLoading || !comment.trim()}
               className='ml-2 px-4 py-2 bg-lavender-500 text-white hover:bg-lavender-700'
             >
@@ -487,8 +662,52 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             </Button>
           </div>
 
-          {/* Empty Activity State */}
-          <div className='text-center text-gray-500 py-4'>No activity yet</div>
+          {/* Hiển thị danh sách comment */}
+          <div className='space-y-2'>
+            {comments.length === 0 ? (
+              <div className='text-center text-gray-500 py-4'>No activity yet</div>
+            ) : (
+              comments.map((c, idx) => (
+                <div key={c.commenter + idx} className='flex items-start gap-2'>
+                  <Avatar size='28px' variant='beam' name={c.commenter} src={c.avatar} />
+                  <div className='flex-1'>
+                    <div className='font-medium'>{c.commenter}</div>
+                    <div className='text-gray-700 mb-1'>{c.content}</div>
+                    {Array.isArray(c.attachmentUrls) && c.attachmentUrls.length > 0 && (
+                      <div className='flex flex-wrap gap-2 mb-1'>
+                        {c.attachmentUrls.map((url: string, i: number) => {
+                          if (url.match(/\.(jpg|jpeg|png|gif)$/i)) {
+                            return (
+                              <img
+                                key={i}
+                                src={url}
+                                alt={`attachment-${i}`}
+                                className='w-24 h-24 object-cover rounded border'
+                              />
+                            )
+                          } else {
+                            return (
+                              <a
+                                key={i}
+                                href={url}
+                                target='_blank'
+                                rel='noopener noreferrer'
+                                className='text-blue-600 underline text-sm flex items-center gap-1'
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.586-6.586a2 2 0 10-2.828-2.828z' /></svg>
+                                File {i + 1}
+                              </a>
+                            )
+                          }
+                        })}
+                      </div>
+                    )}
+                    <div className='text-xs text-gray-400'>{c.lastUpdate}</div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

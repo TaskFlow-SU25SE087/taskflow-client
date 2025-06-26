@@ -23,6 +23,9 @@ import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { arrayMove } from '@dnd-kit/sortable'
 import { ChevronDown, Filter, Link2, Pencil, Plus, Search } from 'lucide-react'
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { taskApi } from '@/api/tasks';
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -210,6 +213,26 @@ export default function ProjectBoard() {
     refreshBoards()
   }
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  // Xử lý kéo thả task giữa các board
+  const handleTaskDragEnd = async (event: any) => {
+    const { active, over } = event;
+    if (!active || !over || active.id === over.id) return;
+    // active.id là taskId, over.id là boardId mới
+    const taskId = active.id;
+    const newBoardId = over.id;
+    if (!currentProject?.id) return;
+    try {
+      await taskApi.updateTask(currentProject.id, taskId, { boardId: newBoardId })
+      refreshBoards()
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to move task', variant: 'destructive' })
+    }
+  };
+
   if (isLoading || isBoardLoading || !currentProject) {
     return (
       <div className='flex h-screen bg-gray-100'>
@@ -321,30 +344,28 @@ export default function ProjectBoard() {
 
           <div className='min-h-0 flex-1'>
             <ScrollArea className='w-full whitespace-nowrap rounded-md'>
-              <BoardDragDropWrapper
-                boardIds={boards.map((b) => b.id)}
-                onDragEnd={handleBoardDragEnd}
-              >
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleTaskDragEnd}>
                 <div className='inline-flex gap-6 p-1'>
                   {boards && boards.length > 0 ? (
                     boards.map((board) => (
-                      <SortableTaskColumn
-                        key={board.id}
-                        id={board.id}
-                        title={board.name}
-                        description={board.description}
-                        tasks={board.tasks}
-                        color={getBoardColor(board.name)}
-                        onTaskCreated={refreshBoards}
-                        status={board.name}
-                        boardId={board.id}
-                      />
+                      <SortableContext key={board.id} id={board.id} items={board.tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                        <SortableTaskColumn
+                          id={board.id}
+                          title={board.name}
+                          description={board.description}
+                          tasks={board.tasks}
+                          color={getBoardColor(board.name)}
+                          onTaskCreated={refreshBoards}
+                          status={board.name}
+                          boardId={board.id}
+                        />
+                      </SortableContext>
                     ))
                   ) : (
                     <div className='text-gray-400 text-lg p-8'>No boards found for this project.</div>
                   )}
                 </div>
-              </BoardDragDropWrapper>
+              </DndContext>
               <ScrollBar orientation='horizontal' />
             </ScrollArea>
           </div>

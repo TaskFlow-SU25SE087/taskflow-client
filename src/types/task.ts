@@ -29,6 +29,15 @@ export interface TaskP {
   sprint: any | null
   workflows: any[]
   tags: any[]
+  comments?: any[]
+  attachmentUrlsList?: string[]
+  commnets?: {
+    commenter: string
+    content: string
+    avatar: string
+    attachmentUrls: string[]
+    lastUpdate: string
+  }[]
 }
 
 export interface Task {
