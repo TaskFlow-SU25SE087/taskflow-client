@@ -1,19 +1,18 @@
 import { boardApi } from '@/api/boards'
 import { projectMemberApi } from '@/api/projectMembers'
+import { taskApi } from '@/api/tasks'
 import { Navbar } from '@/components/Navbar'
 import { ProjectEditMenu } from '@/components/projects/ProjectEditMenu'
 import { ProjectInviteDialog } from '@/components/projects/ProjectInviteDialog'
 import { ProjectMemberList } from '@/components/projects/ProjectMemberList'
 import ProjectTagManager from '@/components/projects/ProjectTagManager'
 import { Sidebar } from '@/components/Sidebar'
-import { BoardDragDropWrapper } from '@/components/tasks/BoardDragDropWrapper'
-import { SortableTaskColumn } from '@/components/tasks/SortableTaskColumn'
+import { SortableBoardColumn, SortableTaskColumn } from '@/components/tasks/SortableTaskColumn'
 import TaskBoardCreateMenu from '@/components/tasks/TaskBoardCreateMenu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Loader } from '@/components/ui/loader'
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { useToast } from '@/hooks/use-toast'
 import { useAuth } from '@/hooks/useAuth'
 import { useBoards } from '@/hooks/useBoards'
@@ -21,11 +20,9 @@ import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjectMembers } from '@/hooks/useProjectMembers'
 import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
-import { arrayMove } from '@dnd-kit/sortable'
+import { closestCenter, DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import { arrayMove, horizontalListSortingStrategy, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { ChevronDown, Filter, Link2, Pencil, Plus, Search } from 'lucide-react'
-import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { taskApi } from '@/api/tasks';
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -203,14 +200,21 @@ export default function ProjectBoard() {
     }
   }
 
-  const handleBoardDragEnd = async (oldIndex: number, newIndex: number) => {
-    if (!boards || !currentProject?.id) return
-    const newBoards = arrayMove(boards, oldIndex, newIndex)
-    setBoards(newBoards) // cập nhật ngay trên FE
-    // Gửi order mới lên backend
-    const orderPayload = newBoards.map((b, idx) => ({ id: b.id, order: idx }))
-    await boardApi.updateBoardOrder(currentProject.id, orderPayload)
-    refreshBoards()
+  const handleBoardDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    console.log('[DnD] DragEnd event:', { active, over });
+    if (!over || active.id === over.id) return;
+    const oldIndex = boards.findIndex(b => b.id === active.id);
+    const newIndex = boards.findIndex(b => b.id === over.id);
+    console.log('[DnD] oldIndex:', oldIndex, 'newIndex:', newIndex);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const newBoards = arrayMove(boards, oldIndex, newIndex);
+    setBoards(newBoards);
+    const orderPayload = newBoards.map((b, idx) => ({ id: b.id, order: idx }));
+    console.log('[handleBoardDragEnd] orderPayload:', orderPayload);
+    const res = await boardApi.updateBoardOrder(currentProject.id, orderPayload);
+    console.log('[handleBoardDragEnd] updateBoardOrder response:', res);
+    refreshBoards();
   }
 
   const sensors = useSensors(
@@ -343,31 +347,32 @@ export default function ProjectBoard() {
           </div>
 
           <div className='min-h-0 flex-1'>
-            <ScrollArea className='w-full whitespace-nowrap rounded-md'>
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleTaskDragEnd}>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleBoardDragEnd}>
+              <SortableContext items={boards.map(b => b.id)} strategy={horizontalListSortingStrategy}>
                 <div className='inline-flex gap-6 p-1'>
                   {boards && boards.length > 0 ? (
                     boards.map((board) => (
-                      <SortableContext key={board.id} id={board.id} items={board.tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
-                        <SortableTaskColumn
-                          id={board.id}
-                          title={board.name}
-                          description={board.description}
-                          tasks={board.tasks}
-                          color={getBoardColor(board.name)}
-                          onTaskCreated={refreshBoards}
-                          status={board.name}
-                          boardId={board.id}
-                        />
-                      </SortableContext>
+                      <SortableBoardColumn key={board.id} id={board.id}>
+                        <SortableContext items={board.tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                          <SortableTaskColumn
+                            id={board.id}
+                            title={board.name}
+                            description={board.description}
+                            tasks={board.tasks}
+                            color={getBoardColor(board.name)}
+                            onTaskCreated={refreshBoards}
+                            status={board.name}
+                            boardId={board.id}
+                          />
+                        </SortableContext>
+                      </SortableBoardColumn>
                     ))
                   ) : (
                     <div className='text-gray-400 text-lg p-8'>No boards found for this project.</div>
                   )}
                 </div>
-              </DndContext>
-              <ScrollBar orientation='horizontal' />
-            </ScrollArea>
+              </SortableContext>
+            </DndContext>
           </div>
         </div>
       </div>

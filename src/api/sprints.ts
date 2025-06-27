@@ -48,5 +48,11 @@ export const sprintApi = {
   // Alias fetchSprints cho getAllSprintsByProjectId
   fetchSprints: async (projectId: string): Promise<Sprint[]> => {
     return sprintApi.getAllSprintsByProjectId(projectId)
+  },
+
+  // Lấy sprint theo ID
+  getSprintById: async (sprintId: string): Promise<Sprint> => {
+    const response = await axiosClient.get(`/sprints/${sprintId}`)
+    return response.data.data
   }
 }

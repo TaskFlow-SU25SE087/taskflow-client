@@ -4,12 +4,14 @@ import { Sidebar } from '@/components/Sidebar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { toast } from '@/hooks/use-toast'
+import { useAuth } from '@/hooks/useAuth'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 interface Member {
   id: string
+  userId: string
   fullName: string
   avatar: string
   email: string
@@ -30,6 +32,7 @@ export default function ProjectMembers() {
   const [selfId, setSelfId] = useState<string | null>(null)
   const [selfRole, setSelfRole] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const { user } = useAuth();
 
   const fetchMembers = async () => {
     if (!projectId) return
@@ -40,12 +43,14 @@ export default function ProjectMembers() {
       console.log('[ProjectMembers] fetchMembers response:', data)
       setMembers(data)
     
-      const userEmail = localStorage.getItem('userEmail')
-      if (userEmail) {
-        const self = data.find((m) => m.email === userEmail)
+      console.log('[ProjectMembers] user from context:', user)
+      console.log('[ProjectMembers] members:', data)
+      if (user && user.email) {
+        const self = data.find((m) => m.email === user.email)
         if (self) {
           setSelfId(self.id)
           setSelfRole(self.role)
+          console.log('[ProjectMembers] selfId:', self.id, 'selfRole:', self.role)
         }
       }
     } catch (err) {
@@ -130,21 +135,24 @@ export default function ProjectMembers() {
           {loading && <div>Loading...</div>}
           {error && <div className='text-red-500'>{error}</div>}
           <ul className='divide-y'>
-            {members.map((m) => (
-              <li key={m.id} className='flex items-center gap-4 py-3'>
-                <img src={m.avatar} alt={m.fullName} className='w-10 h-10 rounded-full object-cover' />
-                <div className='flex-1'>
-                  <div className='font-semibold'>{m.fullName}</div>
-                  <div className='text-sm text-gray-500'>{m.email}</div>
-                  <div className='text-xs text-gray-400'>{m.role}</div>
-                </div>
-                {selfRole === 'Leader' && m.id !== selfId && (
-                  <Button variant='destructive' size='sm' onClick={() => handleRemove(m.id)}>
-                    Remove
-                  </Button>
-                )}
-              </li>
-            ))}
+            {members.map((m) => {
+              console.log('[ProjectMembers] render member:', m)
+              return (
+                <li key={m.id} className='flex items-center gap-4 py-3'>
+                  <img src={m.avatar} alt={m.fullName} className='w-10 h-10 rounded-full object-cover' />
+                  <div className='flex-1'>
+                    <div className='font-semibold'>{m.fullName}</div>
+                    <div className='text-sm text-gray-500'>{m.email}</div>
+                    <div className='text-xs text-gray-400'>{m.role}</div>
+                  </div>
+                  {selfRole?.toLowerCase() === 'leader' && m.id !== selfId && (
+                    <Button variant='destructive' size='sm' onClick={() => handleRemove(m.userId)}>
+                      Remove
+                    </Button>
+                  )}
+                </li>
+              )
+            })}
           </ul>
         </main>
       </div>
