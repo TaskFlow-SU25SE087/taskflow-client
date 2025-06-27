@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
 import { projectApi } from '@/api/projects'
+import { Navbar } from '@/components/Navbar'
+import { Sidebar } from '@/components/Sidebar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Sidebar } from '@/components/Sidebar'
-import { Navbar } from '@/components/Navbar'
+import { toast } from '@/hooks/use-toast'
+import { useCurrentProject } from '@/hooks/useCurrentProject'
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 
 interface Member {
   id: string
@@ -15,7 +17,10 @@ interface Member {
 }
 
 export default function ProjectMembers() {
-  const { projectId } = useParams<{ projectId: string }>()
+  const { currentProject } = useCurrentProject();
+  const params = useParams();
+  const projectId = currentProject?.id || params.projectId;
+  console.log('[ProjectMembers] projectId:', projectId);
   const navigate = useNavigate()
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(false)
@@ -32,11 +37,9 @@ export default function ProjectMembers() {
     setError(null)
     try {
       const data: Member[] = await projectApi.getProjectMembers(projectId)
+      console.log('[ProjectMembers] fetchMembers response:', data)
       setMembers(data)
-      // Xác định user hiện tại (giả sử backend trả về selfId/selfRole hoặc lấy từ context)
-      // Ví dụ: nếu backend trả về selfId/selfRole trong data, hãy lấy ra
-      // setSelfId(...); setSelfRole(...)
-      // Tạm thời, nếu có user hiện tại trong localStorage hoặc context, bạn có thể so sánh với email
+    
       const userEmail = localStorage.getItem('userEmail')
       if (userEmail) {
         const self = data.find((m) => m.email === userEmail)
@@ -58,16 +61,25 @@ export default function ProjectMembers() {
   }, [projectId])
 
   const handleInvite = async () => {
-    if (!projectId || !inviteEmail) return
-    setInviteLoading(true)
+    console.log('handleInvite called', { projectId, inviteEmail });
+    if (!projectId || !inviteEmail) {
+      console.log('handleInvite return early', { projectId, inviteEmail });
+      return;
+    }
+    setInviteLoading(true);
     try {
-      await projectApi.addMemberToProject(projectId, inviteEmail)
-      setInviteEmail('')
-      fetchMembers()
+      console.log('Calling API addMemberToProject');
+      const res = await projectApi.addMemberToProject(projectId, inviteEmail);
+      console.log('[ProjectMembers] addMemberToProject response:', res);
+      setInviteEmail('');
+      fetchMembers();
+      alert('Mời thành viên thành công!');
+      toast({ title: 'Thành công', description: 'Đã mời thành viên!', variant: 'default' });
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to invite member')
+      alert(err instanceof Error ? err.message : 'Failed to invite member');
+      toast({ title: 'Lỗi', description: 'Không mời được thành viên!', variant: 'destructive' });
     } finally {
-      setInviteLoading(false)
+      setInviteLoading(false);
     }
   }
 
@@ -102,7 +114,13 @@ export default function ProjectMembers() {
           <h1 className='text-2xl font-bold mb-4'>Project Members</h1>
           <div className='flex gap-2 mb-6'>
             <Input placeholder='Invite by email...' value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
-            <Button onClick={handleInvite} disabled={inviteLoading || !inviteEmail}>
+            <Button
+              onClick={() => {
+                console.log('Invite button clicked', inviteEmail)
+                handleInvite()
+              }}
+              disabled={inviteLoading || !inviteEmail}
+            >
               {inviteLoading ? 'Inviting...' : 'Invite'}
             </Button>
             <Button variant='outline' color='red' onClick={handleLeave}>

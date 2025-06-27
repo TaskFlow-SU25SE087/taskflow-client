@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom'
 import { projectApi } from '@/api/projects'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/hooks/useAuth'
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 export default function ProjectMemberVerify() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -9,6 +10,7 @@ export default function ProjectMemberVerify() {
   const [status, setStatus] = useState<'pending' | 'success' | 'error'>('pending')
   const [message, setMessage] = useState('Verifying...')
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   useEffect(() => {
     const token = searchParams.get('token')
@@ -22,6 +24,13 @@ export default function ProjectMemberVerify() {
         if (ok) {
           setStatus('success')
           setMessage('Project join verification successful!')
+          setTimeout(() => {
+            if (!user) {
+              navigate('/login', { replace: true })
+            } else {
+              navigate(`/projects/${projectId}`, { replace: true })
+            }
+          }, 1200)
         } else {
           setStatus('error')
           setMessage('Verification failed or link expired!')
@@ -31,7 +40,7 @@ export default function ProjectMemberVerify() {
         setStatus('error')
         setMessage('An error occurred during verification!')
       })
-  }, [projectId, searchParams])
+  }, [projectId, searchParams, user, navigate])
 
   return (
     <div className='flex flex-col items-center justify-center min-h-screen'>

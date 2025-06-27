@@ -42,6 +42,7 @@ export const useCurrentProject = () => {
     const savedProjectId = Cookies.get(CURRENT_PROJECT_COOKIE)
     console.log('[useCurrentProject] savedProjectId:', savedProjectId)
     if (savedProjectId) {
+      setCurrentProject(null); // reset trước khi fetch
       fetchProject(savedProjectId)
     } else {
       setIsLoading(false)

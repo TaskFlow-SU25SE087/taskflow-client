@@ -1,41 +1,41 @@
-import { TaskP } from '@/types/task'
+import { projectMemberApi } from '@/api/projectMembers'
+import { sprintApi } from '@/api/sprints'
+import { taskApi } from '@/api/tasks'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-  MoreHorizontal,
-  Circle,
-  Bug,
-  Rocket,
-  Zap,
-  FileText,
-  Settings,
-  ChevronDown,
-  PlayCircle,
-  CheckCircle,
-  User
-} from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenuPortal,
   DropdownMenuSeparator,
   DropdownMenuSub,
+  DropdownMenuSubContent,
   DropdownMenuSubTrigger,
-  DropdownMenuPortal,
-  DropdownMenuSubContent
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { useState, useEffect } from 'react'
-import { taskApi } from '@/api/tasks'
-import { sprintApi } from '@/api/sprints'
 import { toast } from '@/hooks/use-toast'
-import { cn } from '@/lib/utils'
 import { useBoards } from '@/hooks/useBoards'
-import { useTasks } from '@/hooks/useTasks'
-import { useSprints } from '@/hooks/useSprints'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
-import { projectMemberApi } from '@/api/projectMembers'
+import { useSprints } from '@/hooks/useSprints'
+import { useTasks } from '@/hooks/useTasks'
+import { cn } from '@/lib/utils'
 import { ProjectMember } from '@/types/project'
+import { TaskP } from '@/types/task'
+import {
+  Bug,
+  CheckCircle,
+  ChevronDown,
+  Circle,
+  FileText,
+  MoreHorizontal,
+  PlayCircle,
+  Rocket,
+  Settings,
+  User,
+  Zap
+} from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Avatar, AvatarFallback } from '../ui/avatar'
 
 interface TaskListProps {
@@ -60,6 +60,7 @@ export function TaskList({ tasks, className = '', onTaskUpdate }: TaskListProps)
 
       try {
         const members = await projectMemberApi.getMembersByProjectId(currentProject.id)
+        console.log('[ProjectMembers] fetchMembers response:', members)
         setProjectMembers(members)
       } catch (error) {
         console.error('Failed to fetch project members:', error)
@@ -109,7 +110,8 @@ export function TaskList({ tasks, className = '', onTaskUpdate }: TaskListProps)
     deployed: '#27AE60'
   }
 
-  const getBoardColor = (status: string): string => {
+  const getBoardColor = (status: string | undefined | null): string => {
+    if (!status) return '#5030E5'
     return boardColors[status.toLowerCase()] || '#5030E5'
   }
 
@@ -138,7 +140,10 @@ export function TaskList({ tasks, className = '', onTaskUpdate }: TaskListProps)
   const handleStatusChange = async (taskId: string, newStatus: string) => {
     try {
       setUpdatingTaskId(taskId)
-      await taskApi.updateTaskStatus(taskId, newStatus)
+      if (!currentProject?.id) throw new Error('No projectId')
+      const board = boards.find(b => (b.name || '').toLowerCase() === newStatus.toLowerCase())
+      if (!board) throw new Error('No board found for status: ' + newStatus)
+      await taskApi.updateTask(currentProject.id, taskId, { boardId: board.id })
       await refreshTasks()
       toast({
         title: 'Success',
@@ -161,7 +166,8 @@ export function TaskList({ tasks, className = '', onTaskUpdate }: TaskListProps)
 
   const handleDeleteTask = async (taskId: string) => {
     try {
-      await taskApi.deleteTask(taskId)
+      if (!currentProject?.id) throw new Error('No projectId')
+      await taskApi.deleteTask(currentProject.id, taskId)
       await refreshTasks()
       toast({
         title: 'Success',
@@ -191,7 +197,8 @@ export function TaskList({ tasks, className = '', onTaskUpdate }: TaskListProps)
     }
 
     try {
-      await taskApi.assignTask(taskId, email)
+      if (!currentProject?.id) throw new Error('No projectId')
+      await taskApi.assignTask(currentProject.id, taskId, email)
       await refreshTasks()
       toast({
         title: 'Success',
@@ -303,28 +310,29 @@ export function TaskList({ tasks, className = '', onTaskUpdate }: TaskListProps)
                     className='w-[180px] p-1.5 animate-in fade-in-0 zoom-in-95 border-none shadow-lg'
                   >
                     {boards.map((board, index) => {
-                      const boardColor = getBoardColor(board.status)
+                      const boardStatus = board.name || 'todo';
+                      const boardColor = getBoardColor(boardStatus);
                       return (
-                        <div key={board.status}>
+                        <div key={board.id}>
                           <DropdownMenuItem
                             className={cn(
                               'gap-2 rounded-md px-2.5 py-2 cursor-pointer transition-colors focus:ring-0 focus:ring-offset-0',
-                              task.status.toLowerCase() === board.status.toLowerCase()
+                              (task.status || '').toLowerCase() === boardStatus.toLowerCase()
                                 ? 'bg-opacity-10'
                                 : 'hover:bg-opacity-10'
                             )}
                             style={{
                               backgroundColor:
-                                task.status.toLowerCase() === board.status.toLowerCase()
+                                (task.status || '').toLowerCase() === boardStatus.toLowerCase()
                                   ? `${boardColor}20`
                                   : 'transparent',
                               ['--hover-bg' as string]: `${boardColor}20`
                             }}
-                            onClick={() => handleStatusChange(task.id, board.status)}
+                            onClick={() => handleStatusChange(task.id, boardStatus)}
                           >
-                            {getStatusIcon(board.status)}
+                            {getStatusIcon(boardStatus)}
                             <span className='capitalize font-medium' style={{ color: boardColor }}>
-                              {board.status}
+                              {boardStatus}
                             </span>
                           </DropdownMenuItem>
                           {index < boards.length - 1 && <DropdownMenuSeparator className='my-1 opacity-50' />}
@@ -362,7 +370,7 @@ export function TaskList({ tasks, className = '', onTaskUpdate }: TaskListProps)
                           </AvatarFallback>
                         </Avatar>
                         <div className='flex flex-col'>
-                          <span className='font-medium'>{member.user.name}</span>
+                          <span className='font-medium'>{member.user.fullName}</span>
                           <span className='text-xs text-gray-500'>{member.user.email}</span>
                         </div>
                       </DropdownMenuItem>
