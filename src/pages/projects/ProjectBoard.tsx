@@ -5,7 +5,6 @@ import { Navbar } from '@/components/Navbar'
 import { ProjectEditMenu } from '@/components/projects/ProjectEditMenu'
 import { ProjectInviteDialog } from '@/components/projects/ProjectInviteDialog'
 import { ProjectMemberList } from '@/components/projects/ProjectMemberList'
-import ProjectTagManager from '@/components/projects/ProjectTagManager'
 import { Sidebar } from '@/components/Sidebar'
 import { SortableBoardColumn, SortableTaskColumn } from '@/components/tasks/SortableTaskColumn'
 import TaskBoardCreateMenu from '@/components/tasks/TaskBoardCreateMenu'
@@ -21,7 +20,12 @@ import { useProjectMembers } from '@/hooks/useProjectMembers'
 import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { closestCenter, DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
-import { arrayMove, horizontalListSortingStrategy, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import {
+  arrayMove,
+  horizontalListSortingStrategy,
+  SortableContext,
+  verticalListSortingStrategy
+} from '@dnd-kit/sortable'
 import { ChevronDown, Filter, Link2, Pencil, Plus, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -118,13 +122,20 @@ export default function ProjectBoard() {
   const [isBoardDialogOpen, setIsBoardDialogOpen] = useState(false)
 
   const { toast } = useToast()
-  const { addMember, leaveProject, removeMember, verifyJoin, loading: memberLoading, error: memberError } = useProjectMembers()
+  const {
+    addMember,
+    leaveProject,
+    removeMember,
+    verifyJoin,
+    loading: memberLoading,
+    error: memberError
+  } = useProjectMembers()
   const { user } = useAuth()
 
   console.log(boards)
 
   useEffect(() => {
-    if (!currentProject || !currentProject.id) return;
+    if (!currentProject || !currentProject.id) return
     const fetchMembers = async () => {
       try {
         const members = await projectMemberApi.getMembersByProjectId(currentProject.id)
@@ -201,41 +212,39 @@ export default function ProjectBoard() {
   }
 
   const handleBoardDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    console.log('[DnD] DragEnd event:', { active, over });
-    if (!over || active.id === over.id) return;
-    const oldIndex = boards.findIndex(b => b.id === active.id);
-    const newIndex = boards.findIndex(b => b.id === over.id);
-    console.log('[DnD] oldIndex:', oldIndex, 'newIndex:', newIndex);
-    if (oldIndex === -1 || newIndex === -1) return;
-    const newBoards = arrayMove(boards, oldIndex, newIndex);
-    setBoards(newBoards);
-    const orderPayload = newBoards.map((b, idx) => ({ id: b.id, order: idx }));
-    console.log('[handleBoardDragEnd] orderPayload:', orderPayload);
-    const res = await boardApi.updateBoardOrder(currentProject.id, orderPayload);
-    console.log('[handleBoardDragEnd] updateBoardOrder response:', res);
-    refreshBoards();
+    const { active, over } = event
+    console.log('[DnD] DragEnd event:', { active, over })
+    if (!over || active.id === over.id) return
+    const oldIndex = boards.findIndex((b) => b.id === active.id)
+    const newIndex = boards.findIndex((b) => b.id === over.id)
+    console.log('[DnD] oldIndex:', oldIndex, 'newIndex:', newIndex)
+    if (oldIndex === -1 || newIndex === -1) return
+    const newBoards = arrayMove(boards, oldIndex, newIndex)
+    setBoards(newBoards)
+    const orderPayload = newBoards.map((b, idx) => ({ id: b.id, order: idx }))
+    console.log('[handleBoardDragEnd] orderPayload:', orderPayload)
+    const res = await boardApi.updateBoardOrder(currentProject.id, orderPayload)
+    console.log('[handleBoardDragEnd] updateBoardOrder response:', res)
+    refreshBoards()
   }
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  );
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   // Xử lý kéo thả task giữa các board
   const handleTaskDragEnd = async (event: any) => {
-    const { active, over } = event;
-    if (!active || !over || active.id === over.id) return;
+    const { active, over } = event
+    if (!active || !over || active.id === over.id) return
     // active.id là taskId, over.id là boardId mới
-    const taskId = active.id;
-    const newBoardId = over.id;
-    if (!currentProject?.id) return;
+    const taskId = active.id
+    const newBoardId = over.id
+    if (!currentProject?.id) return
     try {
       await taskApi.updateTask(currentProject.id, taskId, { boardId: newBoardId })
       refreshBoards()
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to move task', variant: 'destructive' })
     }
-  };
+  }
 
   if (isLoading || isBoardLoading || !currentProject) {
     return (
@@ -254,7 +263,7 @@ export default function ProjectBoard() {
   }
 
   // Log giá trị boards để debug
-  console.log('Boards in ProjectBoard:', boards);
+  console.log('Boards in ProjectBoard:', boards)
 
   return (
     <div className='flex h-screen bg-gray-100'>
@@ -318,8 +327,6 @@ export default function ProjectBoard() {
             </div>
           </div>
 
-          <ProjectTagManager />
-
           <div className='pb-6 flex items-center justify-between'>
             <div className='flex items-center gap-4'>
               <Button variant='outline' className='bg-white hover:bg-gray-50 focus:ring-0'>
@@ -348,12 +355,12 @@ export default function ProjectBoard() {
 
           <div className='min-h-0 flex-1'>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleBoardDragEnd}>
-              <SortableContext items={boards.map(b => b.id)} strategy={horizontalListSortingStrategy}>
+              <SortableContext items={boards.map((b) => b.id)} strategy={horizontalListSortingStrategy}>
                 <div className='inline-flex gap-6 p-1'>
                   {boards && boards.length > 0 ? (
                     boards.map((board) => (
                       <SortableBoardColumn key={board.id} id={board.id}>
-                        <SortableContext items={board.tasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                        <SortableContext items={board.tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
                           <SortableTaskColumn
                             id={board.id}
                             title={board.name}

@@ -1,6 +1,5 @@
 import { sprintApi } from '@/api/sprints'
 import { Navbar } from '@/components/Navbar'
-import ProjectTagManager from '@/components/projects/ProjectTagManager'
 import { Sidebar } from '@/components/Sidebar'
 import { SprintBacklog } from '@/components/sprints/SprintBacklog'
 import { SprintBoard } from '@/components/sprints/SprintBoard'
@@ -30,12 +29,7 @@ export default function ProjectBacklog() {
   const [scrollPosition, setScrollPosition] = useState(0)
   const contentRef = useRef<HTMLDivElement>(null)
 
-  const {
-    sprints,
-    isLoading: sprintsLoading,
-    createSprint,
-    refreshSprints
-  } = useSprints(currentProject?.id)
+  const { sprints, isLoading: sprintsLoading, createSprint, refreshSprints } = useSprints()
 
   const [sprintTasks, setSprintTasks] = useState<Record<string, TaskP[]>>({})
 
@@ -54,7 +48,7 @@ export default function ProjectBacklog() {
     }
 
     loadSprintTasks()
-  }, [sprints, getSprintTasks])
+  }, [sprints])
 
   useEffect(() => {
     if (contentRef.current) {
@@ -92,7 +86,7 @@ export default function ProjectBacklog() {
 
     try {
       await addTaskToSprint(sprintId, selectedTaskId)
-      await Promise.all([fetchSprints(currentProject?.id)])
+      await Promise.all([fetchSprints(currentProject?.id as string)])
       toast({
         title: 'Success',
         description: 'Task moved to sprint successfully'
@@ -112,7 +106,7 @@ export default function ProjectBacklog() {
     if (contentRef.current) {
       setScrollPosition(contentRef.current.scrollTop)
     }
-    await Promise.all([fetchSprints(currentProject?.id), refreshTasks()])
+    await Promise.all([fetchSprints(currentProject?.id as string), refreshTasks()])
   }
 
   const handleSprintUpdate = async () => {
@@ -249,8 +243,6 @@ export default function ProjectBacklog() {
               </Select>
             </div>
           </div>
-
-          <ProjectTagManager />
 
           <div className='space-y-6'>
             {filteredSprints.map((sprint) => (

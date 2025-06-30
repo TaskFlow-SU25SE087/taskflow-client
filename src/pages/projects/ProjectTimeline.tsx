@@ -1,5 +1,4 @@
 import { Navbar } from '@/components/Navbar'
-import ProjectTagManager from '@/components/projects/ProjectTagManager'
 import { Sidebar } from '@/components/Sidebar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -284,8 +283,6 @@ export default function ProjectTimeline() {
               </Select>
             </div>
           </div>
-
-          <ProjectTagManager />
 
           <div className='flex-1 overflow-y-auto overflow-x-auto bg-white border-t border-gray-200'>
             <div className='min-w-[1200px] relative pb-6'>
