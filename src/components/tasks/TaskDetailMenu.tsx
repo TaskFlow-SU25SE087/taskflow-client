@@ -13,10 +13,29 @@ import { ProjectMember, Tag } from '@/types/project'
 import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
 import Avatar from 'boring-avatars'
-import { Calendar, ChevronDown, ChevronsDown, ChevronsUp, ChevronUp, Eye, Filter, Link, ListTodo, Loader2, MessageCircle, Paperclip, Pencil, Plus, UserPlus, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import {
+  Calendar,
+  ChevronDown,
+  ChevronsDown,
+  ChevronsUp,
+  ChevronUp,
+  Eye,
+  Filter,
+  Link,
+  ListTodo,
+  Loader2,
+  MessageCircle,
+  Paperclip,
+  Pencil,
+  Plus,
+  Settings,
+  UserPlus,
+  X
+} from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dialog'
+import ProjectTagManager from '@/components/projects/ProjectTagManager'
 
 interface TaskDetailMenuProps {
   task: TaskP
@@ -37,6 +56,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const navigate = useNavigate()
   const { tags } = useTags()
   const [isTagSelectOpen, setIsTagSelectOpen] = useState(false)
+  const [isPrioritySelectOpen, setIsPrioritySelectOpen] = useState(false)
   const [selectedTagId, setSelectedTagId] = useState<string>('')
   const [taskTags, setTaskTags] = useState<Tag[]>(task.tags || [])
   const [completeLoading, setCompleteLoading] = useState(false)
@@ -51,6 +71,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const [editTitle, setEditTitle] = useState(task.title)
   const [editDescription, setEditDescription] = useState(task.description)
   const [editPriority, setEditPriority] = useState(task.priority)
+  const [isTagManagerOpen, setIsTagManagerOpen] = useState(false)
 
   // State cho edit mode
   const [isEditingTitle, setIsEditingTitle] = useState(false)
@@ -110,7 +131,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         const tasks = await taskApi.getTasksFromProject(currentProject.id)
         const taskDetails = tasks?.find((t) => t.id === task.id)
         const sprintId = taskDetails?.sprintId
-        // @ts-expect-error: getSprintById may not exist in sprintApi type, but is implemented in backend
         await sprintApi.getSprintById(sprintId as string).then((sprint: Sprint) => setSprint(sprint))
 
         if (taskDetails?.assigneeId) {
@@ -171,7 +191,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   }
 
   const handleAddTag = () => {
-    setIsTagSelectOpen(true)
+    setIsTagManagerOpen(true)
   }
 
   const handleTagSelect = async (tagId: string) => {
@@ -307,8 +327,30 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   // Tổng hợp file đính kèm từ task và các comment
   const allAttachmentUrls: string[] = [
     ...(task.attachmentUrlsList || []),
-    ...((task.commnets || []).flatMap(c => c.attachmentUrls || []))
-  ];
+    ...(task.commnets || []).flatMap((c) => c.attachmentUrls || [])
+  ]
+
+  const priorityDropdownRef = useRef<HTMLDivElement>(null)
+  const tagDropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        isPrioritySelectOpen &&
+        priorityDropdownRef.current &&
+        !priorityDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsPrioritySelectOpen(false)
+      }
+      if (isTagSelectOpen && tagDropdownRef.current && !tagDropdownRef.current.contains(event.target as Node)) {
+        setIsTagSelectOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isPrioritySelectOpen, isTagSelectOpen])
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -332,8 +374,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         {/* Task Name and Priority */}
         <div className='mb-4'>
           <div className='flex items-center gap-2 mb-1'>
-            <span className='text-gray-500'>In board</span>
-            <span className='text-gray-900 cursor-pointer hover:underline'>{task.status}</span>
+            <span className='text-gray-500'>Board</span>
+            <span className='text-gray-900 cursor-pointer hover:underline font-medium'>{task.status}</span>
           </div>
           <div className='flex items-center gap-2'>
             <ListTodo className='h-5 w-5' />
@@ -358,31 +400,47 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               )}
             </div>
             <div className='flex items-center gap-2'>
-              <div className='relative'>
-                <select
-                  className='w-28 border rounded px-2 py-1 text-center bg-white pr-8'
-                  value={editPriority}
-                  onChange={(e) => setEditPriority(Number(e.target.value))}
+              <div className='relative' ref={priorityDropdownRef}>
+                <button
+                  type='button'
+                  className={`w-40 flex items-center justify-between border rounded px-3 py-1.5 text-center bg-lavender-50 font-medium text-lavender-700 hover:bg-lavender-100 transition-colors duration-150 shadow-sm focus:outline-none focus:ring-2 focus:ring-lavender-300 ${isUpdating ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  onClick={() => setIsPrioritySelectOpen((v) => !v)}
                   disabled={isUpdating}
+                  aria-label='Priority'
+                  style={{ marginRight: '0.5rem' }}
                 >
-                  <option value={1}>Low</option>
-                  <option value={2}>Medium</option>
-                  <option value={3}>High</option>
-                  <option value={4}>Critical</option>
-                </select>
-                <span className='absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none'>
-                  <Pencil className='h-4 w-4' />
-                </span>
+                  <span className='flex items-center gap-2 whitespace-nowrap'>
+                    {getPriorityChevron(editPriority)}
+                    {PRIORITY_MAP[editPriority] || 'Set Priority'}
+                  </span>
+                  <ChevronDown className='h-4 w-4 ml-2 text-lavender-400' />
+                </button>
+                {isPrioritySelectOpen && (
+                  <div className='absolute left-0 top-12 z-50 bg-white border rounded shadow-lg min-w-[160px] max-h-60 overflow-y-auto animate-fade-in'>
+                    {[1, 2, 3, 4].map((priority) => (
+                      <button
+                        key={priority}
+                        className={`w-full flex items-center gap-2 px-4 py-2 text-left text-sm font-medium hover:bg-lavender-50 transition-colors duration-100 ${editPriority === priority ? 'bg-lavender-100 text-lavender-700' : 'text-gray-700'}`}
+                        onClick={() => {
+                          setEditPriority(priority)
+                          setIsPrioritySelectOpen(false)
+                        }}
+                        disabled={isUpdating}
+                      >
+                        {getPriorityChevron(priority)}
+                        {PRIORITY_MAP[priority]}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              <span className='ml-2 text-sm font-semibold'>{PRIORITY_MAP[editPriority]}</span>
-              {getPriorityChevron(editPriority)}
             </div>
           </div>
           <div className='mt-2 text-gray-600'>
             <div className='relative'>
               {isEditingDescription ? (
                 <textarea
-                  className='w-full border rounded p-2 pr-10'
+                  className='w-full border rounded p-2 pr-10 font-medium'
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   onBlur={() => setIsEditingDescription(false)}
@@ -391,8 +449,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                 />
               ) : (
                 <div className='w-full min-h-[48px] flex items-center rounded px-2 py-2 bg-gray-50'>
-                  <span className={`flex-1 ${!editDescription ? 'text-gray-400 italic' : ''}`}>
-                    {editDescription || 'Chưa có mô tả chi tiết cho task này.'}
+                  <span className={`flex-1 ${!editDescription ? 'text-gray-400 italic' : ''} font-medium`}>
+                    {editDescription || 'No detailed description for this task.'}
                   </span>
                   <Button
                     variant='ghost'
@@ -414,15 +472,16 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                 !editTitle.trim() ||
                 (editTitle === task.title && editDescription === task.description && editPriority === task.priority)
               }
-              className='px-6 bg-blue-500 hover:bg-blue-600 text-white'
+              className='px-6 bg-lavender-500 hover:bg-lavender-700 text-white font-semibold border-0'
+              style={{ boxShadow: 'none' }}
             >
               {isUpdating ? (
                 <>
                   <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                  Đang lưu...
+                  Saving...
                 </>
               ) : (
-                'Lưu'
+                'Save'
               )}
             </Button>
           </div>
@@ -430,34 +489,41 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
         {/* Attachments */}
         {allAttachmentUrls.length > 0 && (
-          <div className="mt-4">
-            <div className="font-semibold mb-2">Attachments:</div>
-            <div className="flex flex-wrap gap-3">
+          <div className='mt-4'>
+            <div className='font-semibold mb-2'>Attachments:</div>
+            <div className='flex flex-wrap gap-3'>
               {allAttachmentUrls.map((url: string, idx: number) => {
                 if (url.match(/\.(jpg|jpeg|png|gif)$/i)) {
-                  // Ảnh
+                  // Image
                   return (
-                    <a key={idx} href={url} target="_blank" rel="noopener noreferrer">
-                      <img src={url} alt={`attachment-${idx}`} className="w-24 h-24 object-cover rounded border" />
+                    <a key={idx} href={url} target='_blank' rel='noopener noreferrer'>
+                      <img src={url} alt={`attachment-${idx}`} className='w-24 h-24 object-cover rounded border' />
                     </a>
                   )
                 } else if (url.match(/\.pdf$/i)) {
                   // PDF
                   return (
-                    <div key={idx} className="w-48 h-64 border rounded overflow-hidden">
-                      <iframe src={url} title={`pdf-${idx}`} className="w-full h-full" />
-                      <a href={url} target="_blank" rel="noopener noreferrer" className="block text-blue-600 underline text-center mt-1">Xem PDF</a>
+                    <div key={idx} className='w-48 h-64 border rounded overflow-hidden'>
+                      <iframe src={url} title={`pdf-${idx}`} className='w-full h-full' />
+                      <a
+                        href={url}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        className='block text-blue-600 underline text-center mt-1 font-medium'
+                      >
+                        View PDF
+                      </a>
                     </div>
                   )
                 } else {
-                  // File khác
+                  // Other file
                   return (
                     <a
                       key={idx}
                       href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 underline flex items-center gap-1"
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='text-blue-600 underline flex items-center gap-1 font-medium'
                     >
                       📎 File {idx + 1}
                     </a>
@@ -482,7 +548,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             disabled={completeLoading}
             className='flex items-center gap-2 px-3 py-1.5 text-green-700 border border-green-300 bg-green-50 hover:bg-green-100'
           >
-            {completeLoading ? 'Completing...' : 'Hoàn thành'}
+            {completeLoading ? 'Completing...' : 'Complete'}
           </Button>
         </div>
 
@@ -547,7 +613,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     disabled={removeLoading}
                   />
                   <Button onClick={handleRemoveAssignee} disabled={removeLoading} variant='destructive' size='sm'>
-                    {removeLoading ? 'Removing...' : 'Gỡ người được giao'}
+                    {removeLoading ? 'Removing...' : 'Remove assignee'}
                   </Button>
                 </div>
               )}
@@ -562,7 +628,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     disabled={leaveLoading}
                   />
                   <Button onClick={handleLeaveAssignment} disabled={leaveLoading} variant='outline' size='sm'>
-                    {leaveLoading ? 'Leaving...' : 'Rời khỏi task'}
+                    {leaveLoading ? 'Leaving...' : 'Leave task'}
                   </Button>
                 </div>
               )}
@@ -571,41 +637,70 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
           {/* Tags Section */}
           <div>
-            <h1 className='text-base font-medium mb-2 flex items-center gap-2'>Tags</h1>
+            <h1 className='text-base font-medium mb-2 flex items-center gap-2'>
+              Tags
+              <button
+                type='button'
+                className='ml-1 p-1 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition'
+                onClick={() => setIsTagManagerOpen(true)}
+                title='Manage tags'
+              >
+                <Settings className='w-4 h-4' />
+              </button>
+            </h1>
             <div className='flex items-center gap-2 flex-wrap'>
               {taskTags.map((tag) => (
-                <span key={tag.id} className='px-3 py-1 bg-orange-100 text-orange-600 rounded-full text-sm'>
+                <span key={tag.id} className='px-3 py-1 bg-orange-100 text-orange-600 rounded-full text-sm font-medium'>
                   {tag.name}
                 </span>
               ))}
-              <div className='flex items-center gap-2 cursor-pointer'>
+              <div
+                className='flex items-center gap-2 cursor-pointer relative group'
+                ref={tagDropdownRef}
+                onClick={() => setIsTagSelectOpen((v) => !v)}
+                tabIndex={0}
+                role='button'
+                aria-label='Add tag'
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') setIsTagSelectOpen((v) => !v)
+                }}
+              >
                 <Button
                   variant='ghost'
                   size='icon'
-                  className='h-6 w-6 rounded-lg bg-lavender-200 hover:bg-lavender-300/60'
-                  onClick={handleAddTag}
+                  className='h-6 w-6 rounded-lg bg-lavender-200 group-hover:bg-lavender-300/60 transition-colors duration-150 pointer-events-none'
+                  aria-label='Add tag icon'
                 >
-                  <Plus className='h-4 w-4 text-lavender-500 hover:text-lavender-800' />
+                  <Plus className='h-4 w-4 text-lavender-500 group-hover:text-lavender-800 transition-colors duration-150' />
                 </Button>
-                <span className='font-medium text-lavender-500 hover:text-lavender-800'>Add</span>
+                <span className='font-medium text-lavender-500 group-hover:text-lavender-800 transition-colors duration-150'>
+                  Add
+                </span>
                 {isTagSelectOpen && (
-                  <Select value={selectedTagId} onValueChange={handleTagSelect}>
-                    <SelectTrigger className='ml-2 w-40'>
-                      <SelectValue placeholder='Select tag' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {tags
+                  <div className='absolute left-0 top-8 z-50 bg-white border rounded shadow-lg min-w-[160px] max-h-60 overflow-y-auto'>
+                    {tags.filter((t) => !taskTags.some((tag) => tag.id === t.id)).length === 0 ? (
+                      <div className='px-4 py-2 text-gray-400 text-sm'>No tags available</div>
+                    ) : (
+                      tags
                         .filter((t) => !taskTags.some((tag) => tag.id === t.id))
                         .map((tag) => (
-                          <SelectItem key={tag.id} value={tag.id}>
+                          <button
+                            key={tag.id}
+                            className='w-full text-left px-4 py-2 hover:bg-lavender-50 text-sm text-gray-700 font-medium'
+                            onClick={async () => {
+                              await handleTagSelect(tag.id)
+                              setIsTagSelectOpen(false)
+                            }}
+                          >
                             {tag.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
+                          </button>
+                        ))
+                    )}
+                  </div>
                 )}
               </div>
             </div>
+            <ProjectTagManager isOpen={isTagManagerOpen} onClose={() => setIsTagManagerOpen(false)} />
           </div>
         </div>
 
@@ -619,16 +714,16 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             <div className='flex items-center gap-2'>
               <div className='flex items-center gap-2'>
                 <span className='text-gray-500'>Show:</span>
-                <button className='flex items-center gap-2 px-3 py-1.5 text-gray-600 rounded-lg border hover:bg-gray-50'>
+                <button className='flex items-center gap-2 px-3 py-1.5 text-gray-600 rounded-lg border hover:bg-gray-50 font-medium'>
                   <Filter className='h-4 w-4' />
                   <span>All</span>
                 </button>
               </div>
-              <button className='flex items-center gap-2 px-3 py-1.5 text-gray-600 rounded-lg border hover:bg-gray-50'>
+              <button className='flex items-center gap-2 px-3 py-1.5 text-gray-600 rounded-lg border hover:bg-gray-50 font-medium'>
                 <Eye className='h-4 w-4' />
                 <span>Hide Details</span>
               </button>
-              <button className='flex items-center gap-2 px-3 py-1.5 text-gray-600 rounded-lg border hover:bg-gray-50'>
+              <button className='flex items-center gap-2 px-3 py-1.5 text-gray-600 rounded-lg border hover:bg-gray-50 font-medium'>
                 <Calendar className='h-4 w-4' />
                 <span>Today</span>
               </button>
@@ -641,7 +736,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             <input
               type='text'
               placeholder='Write a comment...'
-              className='flex-1 px-4 py-2 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none rounded-lg border border-gray-200'
+              className='flex-1 px-4 py-2 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none rounded-lg border border-gray-200 font-medium'
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               disabled={isCommentLoading}
@@ -650,29 +745,32 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               type='file'
               multiple
               onChange={handleCommentFileChange}
-              className='block text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-lavender-50 file:text-lavender-700 hover:file:bg-lavender-100'
+              className='block text-sm text-gray-500 font-medium file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-lavender-100 file:text-lavender-700 hover:file:bg-lavender-200 file:transition-colors file:duration-150 file:cursor-pointer'
               disabled={isCommentLoading}
             />
             <Button
-              onClick={async () => { await handleAddComment(); await fetchComments(); }}
+              onClick={async () => {
+                await handleAddComment()
+                await fetchComments()
+              }}
               disabled={isCommentLoading || !comment.trim()}
-              className='ml-2 px-4 py-2 bg-lavender-500 text-white hover:bg-lavender-700'
+              className='ml-2 px-4 py-2 bg-lavender-500 text-white hover:bg-lavender-700 font-semibold'
             >
               {isCommentLoading ? 'Sending...' : 'Send'}
             </Button>
           </div>
 
-          {/* Hiển thị danh sách comment */}
+          {/* Comments List */}
           <div className='space-y-2'>
             {comments.length === 0 ? (
-              <div className='text-center text-gray-500 py-4'>No activity yet</div>
+              <div className='text-center text-gray-500 py-4 font-medium'>No activity yet</div>
             ) : (
               comments.map((c, idx) => (
                 <div key={c.commenter + idx} className='flex items-start gap-2'>
                   <Avatar size='28px' variant='beam' name={c.commenter} src={c.avatar} />
                   <div className='flex-1'>
                     <div className='font-medium'>{c.commenter}</div>
-                    <div className='text-gray-700 mb-1'>{c.content}</div>
+                    <div className='text-gray-700 mb-1 font-medium'>{c.content}</div>
                     {Array.isArray(c.attachmentUrls) && c.attachmentUrls.length > 0 && (
                       <div className='flex flex-wrap gap-2 mb-1'>
                         {c.attachmentUrls.map((url: string, i: number) => {
@@ -692,9 +790,22 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                                 href={url}
                                 target='_blank'
                                 rel='noopener noreferrer'
-                                className='text-blue-600 underline text-sm flex items-center gap-1'
+                                className='text-blue-600 underline text-sm flex items-center gap-1 font-medium'
                               >
-                                <svg xmlns="http://www.w3.org/2000/svg" className='h-4 w-4' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.586-6.586a2 2 0 10-2.828-2.828z' /></svg>
+                                <svg
+                                  xmlns='http://www.w3.org/2000/svg'
+                                  className='h-4 w-4'
+                                  fill='none'
+                                  viewBox='0 0 24 24'
+                                  stroke='currentColor'
+                                >
+                                  <path
+                                    strokeLinecap='round'
+                                    strokeLinejoin='round'
+                                    strokeWidth={2}
+                                    d='M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.586-6.586a2 2 0 10-2.828-2.828z'
+                                  />
+                                </svg>
                                 File {i + 1}
                               </a>
                             )
