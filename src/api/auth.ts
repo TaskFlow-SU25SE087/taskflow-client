@@ -337,4 +337,25 @@ export const authApi = {
       throw error;
     }
   },
+
+  sendResetPasswordMail: async (email: string): Promise<string> => {
+    try {
+      const response = await axiosClient.post<{
+        code: number;
+        message: string;
+        data: string;
+      }>(`${ENDPOINT}/account/reset-password/send-mail`, email, {
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (response.data.code !== 0 && response.data.code !== 200) {
+        throw new Error(response.data.message);
+      }
+      return response.data.data;
+    } catch (error: any) {
+      if (error.response?.data?.message) {
+        throw new Error(error.response.data.message);
+      }
+      throw error;
+    }
+  },
 }

@@ -1,3 +1,4 @@
+import { authApi } from '@/api/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -28,15 +29,22 @@ export default function ForgotPasswordPage() {
 
     setIsLoading(true)
     
-    // Simulate API call delay
-    setTimeout(() => {
+    try {
+      await authApi.sendResetPasswordMail(email)
       setIsSubmitted(true)
-      setIsLoading(false)
       toast({
         title: 'Success',
         description: 'Password reset email sent! Please check your inbox.',
       })
-    }, 1000)
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to send reset email',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   if (isSubmitted) {
