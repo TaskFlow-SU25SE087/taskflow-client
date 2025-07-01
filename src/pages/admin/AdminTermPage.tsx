@@ -6,7 +6,8 @@ import { useState } from 'react';
 
 export default function AdminTermPage() {
   const [page, setPage] = useState(1);
-  const { terms, loading, error } = useAdminTerm(page);
+  const [reloadFlag, setReloadFlag] = useState(0);
+  const { terms, loading, error } = useAdminTerm(page, reloadFlag);
 
   // State for create form
   const [season, setSeason] = useState('');
@@ -15,7 +16,6 @@ export default function AdminTermPage() {
   const [endDate, setEndDate] = useState('');
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string|null>(null);
-  const [reloadFlag, setReloadFlag] = useState(false);
 
   // State for edit
   const [editingId, setEditingId] = useState<string|null>(null);
@@ -31,8 +31,7 @@ export default function AdminTermPage() {
   const [detailLoading, setDetailLoading] = useState(false);
 
   // Reload terms when needed
-  const reloadTerms = () => setReloadFlag(f => !f);
-  const { terms: termsReloaded, loading: loadingReloaded, error: errorReloaded } = useAdminTerm(page + Number(reloadFlag));
+  const reloadTerms = () => setReloadFlag(f => f + 1);
 
   // Create term
   const handleCreateTerm = async (e: React.FormEvent) => {
@@ -51,7 +50,7 @@ export default function AdminTermPage() {
       setStartDate('');
       setEndDate('');
       setPage(1);
-      reloadTerms();
+      setReloadFlag(f => f + 1);
       toast({ title: 'Success', description: 'Term created successfully!', variant: 'default' });
     } catch (err: any) {
       setCreateError(err.message || 'Create term failed');
@@ -80,7 +79,7 @@ export default function AdminTermPage() {
       });
       setEditingId(null);
       setPage(1);
-      reloadTerms();
+      setReloadFlag(f => f + 1);
       toast({ title: 'Success', description: 'Term updated successfully!', variant: 'default' });
     } catch (err: any) {
       toast({ title: 'Error', description: 'Failed to update term!', variant: 'destructive' });
@@ -95,7 +94,7 @@ export default function AdminTermPage() {
     try {
       await adminApi.deleteTerm(id);
       setPage(1);
-      reloadTerms();
+      setReloadFlag(f => f + 1);
       toast({ title: 'Success', description: 'Term deleted successfully!', variant: 'default' });
     } catch (err: any) {
       toast({ title: 'Error', description: 'Failed to delete term!', variant: 'destructive' });
@@ -108,7 +107,7 @@ export default function AdminTermPage() {
     try {
       await adminApi.lockTerm(id);
       setPage(1);
-      reloadTerms();
+      setReloadFlag(f => f + 1);
       toast({ title: 'Success', description: 'Term locked!', variant: 'default' });
     } catch (err: any) {
       toast({ title: 'Error', description: 'Failed to lock term!', variant: 'destructive' });
@@ -137,7 +136,7 @@ export default function AdminTermPage() {
   // Filtering
   const [filterSeason, setFilterSeason] = useState('');
   const [filterYear, setFilterYear] = useState('');
-  const filteredTerms = (termsReloaded || terms).filter((term: any) => {
+  const filteredTerms = (terms).filter((term: any) => {
     return (
       (!filterSeason || term.season.toLowerCase().includes(filterSeason.toLowerCase())) &&
       (!filterYear || term.year.toString() === filterYear)
@@ -170,8 +169,8 @@ export default function AdminTermPage() {
           <input placeholder="Filter by season" value={filterSeason} onChange={e => setFilterSeason(e.target.value)} style={{padding: 6, borderRadius: 4, border: '1px solid #ccc', width: 160}} />
           <input placeholder="Filter by year" value={filterYear} onChange={e => setFilterYear(e.target.value)} style={{padding: 6, borderRadius: 4, border: '1px solid #ccc', width: 120}} />
         </div>
-        {(loading || loadingReloaded) && <div>Loading...</div>}
-        {(error || errorReloaded) && <div style={{color: 'red'}}>{error || errorReloaded}</div>}
+        {(loading) && <div>Loading...</div>}
+        {(error) && <div style={{color: 'red'}}>{error}</div>}
         <div style={{overflowX: 'auto'}}>
           <table style={{width: '100%', borderCollapse: 'collapse', background: '#fff'}}>
             <thead>

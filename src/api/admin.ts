@@ -56,7 +56,7 @@ export const adminApi = {
     axiosClient.post('/admin/term', data),
 
   updateTerm: (id: string, data: { season: string; year: number; startDate: string; endDate: string }) =>
-    axiosClient.put(`/${id}`, null, {
+    axiosClient.put(`/admin/term/${id}`, null, {
       params: {
         Season: data.season,
         Year: data.year,
@@ -66,10 +66,10 @@ export const adminApi = {
     }),
 
   deleteTerm: (id: string) =>
-    axiosClient.delete(`/${id}`),
+    axiosClient.delete(`/admin/term/${id}`),
 
   getTermDetail: (id: string) =>
-    axiosClient.get(`/${id}`),
+    axiosClient.get(`/admin/term/${id}`),
 
   lockTerm: (id: string) =>
     axiosClient.delete(`/admin/term/lock/${id}`),
