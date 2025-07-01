@@ -47,5 +47,30 @@ export const adminApi = {
   unbanUser: async (userId: string) => {
     const response = await axiosClient.patch(`${ENDPOINT}/users/${userId}/unban`)
     return response.data
-  }
+  },
+
+  getTermList: (page: number = 1) =>
+    axiosClient.get('/admin/term/list', { params: { page } }),
+
+  createTerm: (data: { season: string; year: number; startDate: string; endDate: string }) =>
+    axiosClient.post('/admin/term', data),
+
+  updateTerm: (id: string, data: { season: string; year: number; startDate: string; endDate: string }) =>
+    axiosClient.put(`/${id}`, null, {
+      params: {
+        Season: data.season,
+        Year: data.year,
+        StartDate: data.startDate,
+        EndDate: data.endDate,
+      },
+    }),
+
+  deleteTerm: (id: string) =>
+    axiosClient.delete(`/${id}`),
+
+  getTermDetail: (id: string) =>
+    axiosClient.get(`/${id}`),
+
+  lockTerm: (id: string) =>
+    axiosClient.delete(`/admin/term/lock/${id}`),
 } 

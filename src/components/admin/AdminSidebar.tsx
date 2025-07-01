@@ -34,6 +34,19 @@ export default function AdminSidebar() {
           <Users className="h-5 w-5" />
           User Management
         </NavLink>
+        <NavLink
+          to="/admin/terms"
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-4 py-2 rounded-lg text-base font-medium transition-colors ${
+              isActive
+                ? 'bg-blue-100 text-blue-700'
+                : 'text-gray-700 hover:bg-gray-100 hover:text-blue-700'
+            }`
+          }
+        >
+          <span className="h-5 w-5">📅</span>
+          Term Management
+        </NavLink>
       </nav>
     </div>
   );

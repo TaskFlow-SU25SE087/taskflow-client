@@ -3,18 +3,19 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from '@/hooks/useAuthContext.tsx'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
+import AdminTermPage from '@/pages/admin/AdminTermPage'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import ActivateAccountPage from '@/pages/home/ActivateAccountPage'
 import ForgotPasswordPage from '@/pages/home/ForgotPasswordPage'
 import HomePage from '@/pages/home/HomePage'
 import LoginPage from '@/pages/home/LoginPage'
 import SignUpPage from '@/pages/home/SignupPage'
+import LegacyProjectMemberVerify from '@/pages/projects/LegacyProjectMemberVerify'
 import ProjectBoard from '@/pages/projects/ProjectBoard'
 import ProjectCreate from '@/pages/projects/ProjectCreate'
 import ProjectList from '@/pages/projects/ProjectList'
 import ProjectMembers from '@/pages/projects/ProjectMembers'
 import ProjectMemberVerify from '@/pages/projects/ProjectMemberVerify'
-import LegacyProjectMemberVerify from '@/pages/projects/LegacyProjectMemberVerify'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import GitCommits from './pages/github/GitCommits'
@@ -256,6 +257,14 @@ function App() {
           <Route
             path='/project/member/verify-join'
             element={<LegacyProjectMemberVerify />}
+          />
+          <Route
+            path='/admin/terms'
+            element={
+              <AdminProtectedRoute>
+                <AdminTermPage />
+              </AdminProtectedRoute>
+            }
           />
         </Routes>
       </AuthProvider>
