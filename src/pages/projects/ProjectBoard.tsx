@@ -198,14 +198,14 @@ export default function ProjectBoard() {
     try {
       await leaveProject(currentProject.id)
       toast({
-        title: 'Rời dự án thành công',
-        description: 'Bạn đã rời khỏi dự án này.'
+        title: 'Left project successfully',
+        description: 'You have left this project.'
       })
       navigate('/projects')
     } catch (err) {
       toast({
-        title: 'Lỗi',
-        description: memberError || 'Không thể rời dự án',
+        title: 'Error',
+        description: memberError || 'Could not leave the project',
         variant: 'destructive'
       })
     }
@@ -311,7 +311,7 @@ export default function ProjectBoard() {
                   onClick={handleLeaveProject}
                   disabled={memberLoading}
                 >
-                  {memberLoading ? 'Đang rời...' : 'Rời dự án'}
+                  {memberLoading ? 'Leaving...' : 'Leave Project'}
                 </Button>
               </div>
               <MemberAvatarGroup members={projectMembers} />

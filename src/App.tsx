@@ -251,7 +251,7 @@ function App() {
             element={<ProjectMemberVerify />}
           />
           <Route
-            path='/project/:projectId/members/verify-join'
+            path='/project/:projectId/member/verify-join'
             element={<ProjectMemberVerify />}
           />
           <Route

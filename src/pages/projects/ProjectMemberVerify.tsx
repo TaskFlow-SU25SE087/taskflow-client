@@ -42,6 +42,22 @@ export default function ProjectMemberVerify() {
       })
   }, [projectId, searchParams, user, navigate])
 
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-white p-4">
+        <div className="max-w-md w-full text-center space-y-6">
+          <h2 className="text-2xl font-bold text-gray-900">You need to log in to verify your membership.</h2>
+          <button
+            onClick={() => navigate('/login')}
+            className="px-6 py-3 bg-blue-600 text-white rounded font-semibold hover:bg-blue-700 transition"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className='flex flex-col items-center justify-center min-h-screen'>
       <div className='bg-white p-8 rounded shadow max-w-md w-full text-center'>

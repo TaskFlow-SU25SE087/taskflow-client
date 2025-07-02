@@ -78,11 +78,10 @@ export default function ProjectMembers() {
       console.log('[ProjectMembers] addMemberToProject response:', res);
       setInviteEmail('');
       fetchMembers();
-      alert('Mời thành viên thành công!');
-      toast({ title: 'Thành công', description: 'Đã mời thành viên!', variant: 'default' });
+      toast({ title: 'Success', description: 'Member invited!', variant: 'default' });
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to invite member');
-      toast({ title: 'Lỗi', description: 'Không mời được thành viên!', variant: 'destructive' });
+      toast({ title: 'Error', description: 'Failed to invite member!', variant: 'destructive' });
     } finally {
       setInviteLoading(false);
     }
@@ -101,7 +100,7 @@ export default function ProjectMembers() {
 
   const handleLeave = async () => {
     if (!projectId) return
-    if (!window.confirm('Bạn chắc chắn muốn rời khỏi project này?')) return
+    if (!window.confirm('Are you sure you want to leave this project?')) return
     try {
       await projectApi.leaveProject(projectId)
       navigate('/projects')
@@ -129,7 +128,7 @@ export default function ProjectMembers() {
               {inviteLoading ? 'Inviting...' : 'Invite'}
             </Button>
             <Button variant='outline' color='red' onClick={handleLeave}>
-              Rời khỏi project
+              Leave project
             </Button>
           </div>
           {loading && <div>Loading...</div>}
