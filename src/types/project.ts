@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { User } from './auth'
 import { Sprint } from './sprint'
 import { TaskP } from './task'
 
@@ -26,10 +25,13 @@ export interface Project {
 export interface ProjectMember {
   role: string
   userId: string
-  projectId: string
-  project: Project | null
-  evaluationResults: any[]
-  user: User
+  projectId?: string
+  project?: Project | null
+  evaluationResults?: any[]
+  // user?: User
+  fullName?: string
+  avatar?: string
+  email?: string
 }
 
 export interface ProjectListItem {

@@ -15,46 +15,23 @@ export const taskApi = {
   },
 
   // Create a new task for a project
-  createTask: async (
-    projectId: string,
-    data: {
-      title: string
-      description?: string
-      priority: string
-      deadline: string
-      file?: File | null
-    }
-  ) => {
-    const formData = new FormData()
-    formData.append('Title', data.title)
-    if (data.description) formData.append('Description', data.description)
-    formData.append('Priority', data.priority)
-    formData.append('Deadline', data.deadline)
-    if (data.file) formData.append('File', data.file)
+  createTask: async (projectId: string, formData: FormData): Promise<boolean> => {
     const response = await axiosClient.post(`/projects/${projectId}/tasks`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { 'Content-Type': 'multipart/form-data' },
     })
-    return response.data.data
+    return response.data.data === true
   },
 
   // Update a task
-  updateTask: async (
-    projectId: string,
-    taskId: string,
-    data: {
-      title?: string
-      description?: string
-      priority?: string
-      boardId?: string
-    }
-  ) => {
+  updateTask: async (projectId: string, taskId: string, data: { title: string; description: string; priority: string }): Promise<any> => {
     const response = await axiosClient.put(`/projects/${projectId}/tasks/update/${taskId}`, data)
     return response.data.data
   },
 
   // Delete a task
-  deleteTask: async (projectId: string, taskId: string): Promise<void> => {
-    await axiosClient.delete(`/projects/${projectId}/tasks/${taskId}`)
+  deleteTask: async (projectId: string, taskId: string): Promise<boolean> => {
+    const response = await axiosClient.delete(`/projects/${projectId}/tasks/${taskId}`)
+    return response.data.data === true
   },
 
   // Get all tasks of a sprint
@@ -92,14 +69,16 @@ export const taskApi = {
   },
 
   // Assign a task to a user
-  assignTask: async (projectId: string, taskId: string, assignerId: string): Promise<boolean> => {
+  assignTask: async (projectId: string, taskId: string, implementerId: string): Promise<boolean> => {
+    console.log('Assign action:', { projectId, taskId, implementerId })
     const formData = new FormData()
-    formData.append('AssignerId', assignerId)
+    formData.append('implementerId', implementerId)
     const response = await axiosClient.post(
       `/projects/${projectId}/tasks/${taskId}/assignments/assign`,
       formData,
       { headers: { 'Content-Type': 'multipart/form-data' } }
     )
+    console.log('Assign response:', response)
     return response.data.data === true
   },
 
@@ -107,7 +86,7 @@ export const taskApi = {
   removeTaskAssignment: async (
     projectId: string,
     taskId: string,
-    body: { assigneeId: string; reason: string }
+    body: { implementId: string; reason: string }
   ): Promise<boolean> => {
     const response = await axiosClient.delete(
       `/projects/${projectId}/tasks/${taskId}/assignments/remove`,
@@ -148,5 +127,23 @@ export const taskApi = {
     // For now, return a dummy value or throw an error
     // throw new Error('getSprintIdFromTaskId not implemented')
     return ''
-  }
+  },
+
+  // Lấy tất cả task của project
+  getAllTasks: async (projectId: string): Promise<TaskP[]> => {
+    const response = await axiosClient.get(`/projects/${projectId}/tasks`)
+    return response.data.data
+  },
+
+  // Lấy task chưa gán sprint
+  getUnassignedSprintTasks: async (projectId: string): Promise<TaskP[]> => {
+    const response = await axiosClient.get(`/projects/${projectId}/tasks/nounassigned-sprint`)
+    return response.data.data
+  },
+
+  // Chuyển task sang board
+  moveTaskToBoard: async (projectId: string, taskId: string, boardId: string): Promise<boolean> => {
+    const response = await axiosClient.post(`/projects/${projectId}/tasks/${taskId}/status/board/${boardId}`)
+    return response.data.data === true
+  },
 }

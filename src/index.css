@@ -54,4 +54,24 @@
       transform: rotate(90deg);
     }
   }
+
+  /* Drag & Drop UI improvements */
+  .task-card {
+    transition: box-shadow 0.2s, opacity 0.2s, transform 0.2s;
+  }
+  .task-card.dragging {
+    box-shadow: 0 8px 24px rgba(80,48,229,0.18), 0 1.5px 6px rgba(0,0,0,0.08);
+    opacity: 0.7;
+    z-index: 100;
+    cursor: grabbing;
+    transform: scale(1.03);
+  }
+  .board-droppable {
+    transition: background 0.2s, border 0.2s;
+    border-radius: 8px;
+  }
+  .board-droppable.over {
+    background: #e0f7fa;
+    border: 2px solid #00bcd4;
+  }
 }

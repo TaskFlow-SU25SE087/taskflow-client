@@ -6,6 +6,7 @@ import { ProjectEditMenu } from '@/components/projects/ProjectEditMenu'
 import { ProjectInviteDialog } from '@/components/projects/ProjectInviteDialog'
 import { ProjectMemberList } from '@/components/projects/ProjectMemberList'
 import { Sidebar } from '@/components/Sidebar'
+import { DroppableBoard } from '@/components/tasks/DroppableBoard'
 import { SortableBoardColumn, SortableTaskColumn } from '@/components/tasks/SortableTaskColumn'
 import TaskBoardCreateMenu from '@/components/tasks/TaskBoardCreateMenu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -17,9 +18,11 @@ import { useAuth } from '@/hooks/useAuth'
 import { useBoards } from '@/hooks/useBoards'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjectMembers } from '@/hooks/useProjectMembers'
+import { useSprints } from '@/hooks/useSprints'
+import { useTasks } from '@/hooks/useTasks'
 import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
-import { closestCenter, DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import {
   arrayMove,
   horizontalListSortingStrategy,
@@ -53,11 +56,12 @@ const getBoardColor = (status: string): string => {
 }
 
 function MemberAvatar({ name, background, textColor, className = '' }: MemberAvatarProps) {
-  const initials = name
+  const safeName = name || '';
+  const initials = safeName
     .split(' ')
     .map((n) => n[0])
     .join('')
-    .toUpperCase()
+    .toUpperCase();
 
   return (
     <div className={`relative transition-transform hover:scale-110 hover:z-10 ${className}`}>
@@ -70,7 +74,7 @@ function MemberAvatar({ name, background, textColor, className = '' }: MemberAva
         </AvatarFallback>
       </Avatar>
     </div>
-  )
+  );
 }
 
 const avatarColors = [
@@ -103,7 +107,8 @@ function MemberAvatarGroup({ members }: MemberAvatarGroupProps) {
     <div className='flex -space-x-3'>
       {members.slice(0, 4).map((member, index) => {
         const { bg, text } = getAvatarColor(index)
-        return <MemberAvatar key={member.userId} name={member.user.fullName} background={bg} textColor={text} />
+        const name = member.fullName || member.email || member.userId;
+        return <MemberAvatar key={member.userId} name={name} background={bg} textColor={text} />
       })}
       {members.length > 4 && <MemberAvatar name={`+${members.length - 4}`} background='#FFFFFF' textColor='#DFDFDF' />}
     </div>
@@ -120,8 +125,10 @@ export default function ProjectBoard() {
   const [filteredTasks, setFilteredTasks] = useState<TaskP[]>([])
   const [isInviteOpen, setIsInviteOpen] = useState(false)
   const [isBoardDialogOpen, setIsBoardDialogOpen] = useState(false)
+  const { sprints, isLoading: isSprintsLoading, refreshSprints } = useSprints();
+  const { tasks, isTaskLoading, refreshTasks } = useTasks();
 
-  const { toast } = useToast()
+  const toast = useToast().toast
   const {
     addMember,
     leaveProject,
@@ -211,40 +218,78 @@ export default function ProjectBoard() {
     }
   }
 
-  const handleBoardDragEnd = async (event: DragEndEvent) => {
+  // Hàm xử lý kéo thả chung cho cả board và task
+  const handleDragEnd = async (event: any) => {
     const { active, over } = event
-    console.log('[DnD] DragEnd event:', { active, over })
-    if (!over || active.id === over.id) return
-    const oldIndex = boards.findIndex((b) => b.id === active.id)
-    const newIndex = boards.findIndex((b) => b.id === over.id)
-    console.log('[DnD] oldIndex:', oldIndex, 'newIndex:', newIndex)
-    if (oldIndex === -1 || newIndex === -1) return
-    const newBoards = arrayMove(boards, oldIndex, newIndex)
-    setBoards(newBoards)
-    const orderPayload = newBoards.map((b, idx) => ({ id: b.id, order: idx }))
-    console.log('[handleBoardDragEnd] orderPayload:', orderPayload)
-    const res = await boardApi.updateBoardOrder(currentProject.id, orderPayload)
-    console.log('[handleBoardDragEnd] updateBoardOrder response:', res)
-    refreshBoards()
+    console.log('DnD handleDragEnd', { active, over, overId: over?.id })
+    if (!active || !over || active.id === over.id) {
+      console.log('[DnD] Không có active, over hoặc kéo thả cùng vị trí', { active, over })
+      return
+    }
+
+    // Nếu kéo board (id của board nằm trong boards)
+    const isBoardDrag = boards.some((b) => b.id === active.id)
+    if (isBoardDrag) {
+      if (!currentProject?.id) {
+        console.log('[DnD] Không có currentProject khi kéo board')
+        return;
+      }
+      const oldIndex = boards.findIndex((b) => b.id === active.id)
+      const newIndex = boards.findIndex((b) => b.id === over.id)
+      if (oldIndex === -1 || newIndex === -1) {
+        console.log('[DnD] Không tìm thấy oldIndex hoặc newIndex khi kéo board', { oldIndex, newIndex, activeId: active.id, overId: over.id })
+        return
+      }
+      const newBoards = arrayMove(boards, oldIndex, newIndex)
+      setBoards(newBoards)
+      const orderPayload = newBoards.map((b, idx) => ({ id: b.id, order: idx }))
+      await boardApi.updateBoardOrder(currentProject.id, orderPayload)
+      refreshBoards()
+      console.log('[DnD] Đã cập nhật thứ tự board', { orderPayload })
+      return
+    }
+
+    // Nếu kéo task (id của task nằm trong bất kỳ board.tasks)
+    const allTaskIds = boards.flatMap((b) => b.tasks.map((t) => t.id))
+    if (allTaskIds.includes(active.id)) {
+      if (!currentProject?.id) {
+        console.log('[DnD] Không có currentProject khi kéo task')
+        return;
+      }
+      const taskId = active.id
+      let newBoardId = over.id
+      // Nếu over là taskId, tìm board chứa task đó
+      if (allTaskIds.includes(over.id)) {
+        const foundBoard = boards.find((b) => b.tasks.some((t) => t.id === over.id))
+        if (foundBoard) newBoardId = foundBoard.id
+        console.log('[DnD] over là task, tìm thấy board chứa task', { foundBoard, newBoardId })
+      }
+      console.log('[DnD] moveTaskToBoard', { projectId: currentProject.id, taskId, newBoardId })
+      try {
+        const taskObj = boards.flatMap(b => b.tasks).find(t => t.id === taskId);
+        const boardObj = boards.find(b => b.id === newBoardId);
+        console.log('[DnD] DEBUG taskObj:', taskObj);
+        console.log('[DnD] DEBUG boardObj:', boardObj);
+        await taskApi.moveTaskToBoard(currentProject.id, taskId, newBoardId)
+        refreshBoards()
+        console.log('[DnD] Đã chuyển task sang board mới thành công', { taskId, newBoardId })
+      } catch (err) {
+        // Log chi tiết lỗi trả về từ backend
+        const error = err as any;
+        if (error.response) {
+          console.error('[DnD] API error', error.response.data)
+        } else {
+          console.error('[DnD] API error', error)
+        }
+      }
+      return
+    }
+    console.log('[DnD] Không phải kéo board hoặc task hợp lệ', { active, over })
   }
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
-  // Xử lý kéo thả task giữa các board
-  const handleTaskDragEnd = async (event: any) => {
-    const { active, over } = event
-    if (!active || !over || active.id === over.id) return
-    // active.id là taskId, over.id là boardId mới
-    const taskId = active.id
-    const newBoardId = over.id
-    if (!currentProject?.id) return
-    try {
-      await taskApi.updateTask(currentProject.id, taskId, { boardId: newBoardId })
-      refreshBoards()
-    } catch (err) {
-      toast({ title: 'Error', description: 'Failed to move task', variant: 'destructive' })
-    }
-  }
+  console.log('All tasks:', tasks);
 
   if (isLoading || isBoardLoading || !currentProject) {
     return (
@@ -354,24 +399,27 @@ export default function ProjectBoard() {
           </div>
 
           <div className='min-h-0 flex-1'>
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleBoardDragEnd}>
+            {/* DndContext chung cho cả board và task */}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={boards.map((b) => b.id)} strategy={horizontalListSortingStrategy}>
                 <div className='inline-flex gap-6 p-1'>
                   {boards && boards.length > 0 ? (
                     boards.map((board) => (
                       <SortableBoardColumn key={board.id} id={board.id}>
-                        <SortableContext items={board.tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                          <SortableTaskColumn
-                            id={board.id}
-                            title={board.name}
-                            description={board.description}
-                            tasks={board.tasks}
-                            color={getBoardColor(board.name)}
-                            onTaskCreated={refreshBoards}
-                            status={board.name}
-                            boardId={board.id}
-                          />
-                        </SortableContext>
+                        <DroppableBoard boardId={board.id}>
+                          <SortableContext items={board.tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                            <SortableTaskColumn
+                              id={board.id}
+                              title={board.name}
+                              description={board.description}
+                              tasks={board.tasks}
+                              color={getBoardColor(board.name)}
+                              onTaskCreated={refreshBoards}
+                              status={board.name}
+                              boardId={board.id}
+                            />
+                          </SortableContext>
+                        </DroppableBoard>
                       </SortableBoardColumn>
                     ))
                   ) : (

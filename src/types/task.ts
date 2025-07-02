@@ -38,6 +38,7 @@ export interface TaskP {
     attachmentUrls: string[]
     lastUpdate: string
   }[]
+  assignmentAccepted?: boolean
 }
 
 export interface Task {

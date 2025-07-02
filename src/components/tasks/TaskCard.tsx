@@ -60,8 +60,10 @@ export const TaskCard = ({ task }: { task: TaskP }) => {
           setAssignedMember(null)
         }
         const sprintId = await taskApi.getSprintIdFromTaskId(task.id)
-        const sprint = await sprintApi.getSprintById(sprintId)
-        setSprint(sprint)
+        if (sprintId && currentProject?.id) {
+          const sprint = await sprintApi.getSprintById(currentProject.id, sprintId)
+          setSprint(sprint)
+        }
       }
     } catch (error) {
       console.error('Error fetching task details:', error)

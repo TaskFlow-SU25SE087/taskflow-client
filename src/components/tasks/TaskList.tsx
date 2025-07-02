@@ -1,42 +1,26 @@
 import { projectMemberApi } from '@/api/projectMembers'
 import { sprintApi } from '@/api/sprints'
 import { taskApi } from '@/api/tasks'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
 import { toast } from '@/hooks/use-toast'
 import { useBoards } from '@/hooks/useBoards'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useSprints } from '@/hooks/useSprints'
 import { useTasks } from '@/hooks/useTasks'
-import { cn } from '@/lib/utils'
 import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
+import { SortableContext } from '@dnd-kit/sortable'
 import {
   Bug,
   CheckCircle,
-  ChevronDown,
   Circle,
   FileText,
-  MoreHorizontal,
   PlayCircle,
   Rocket,
   Settings,
-  User,
   Zap
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Avatar, AvatarFallback } from '../ui/avatar'
+import { SortableTaskCard } from './SortableTaskCard'
 
 interface TaskListProps {
   tasks: TaskP[]
@@ -143,7 +127,7 @@ export function TaskList({ tasks, className = '', onTaskUpdate }: TaskListProps)
       if (!currentProject?.id) throw new Error('No projectId')
       const board = boards.find(b => (b.name || '').toLowerCase() === newStatus.toLowerCase())
       if (!board) throw new Error('No board found for status: ' + newStatus)
-      await taskApi.updateTask(currentProject.id, taskId, { boardId: board.id })
+      await taskApi.moveTaskToBoard(currentProject.id, taskId, board.id)
       await refreshTasks()
       toast({
         title: 'Success',
@@ -165,263 +149,67 @@ export function TaskList({ tasks, className = '', onTaskUpdate }: TaskListProps)
   }
 
   const handleDeleteTask = async (taskId: string) => {
+    if (!currentProject?.id) return;
     try {
-      if (!currentProject?.id) throw new Error('No projectId')
-      await taskApi.deleteTask(currentProject.id, taskId)
-      await refreshTasks()
+      await taskApi.deleteTask(currentProject.id, taskId);
+      await refreshTasks();
       toast({
         title: 'Success',
-        description: 'Task deleted successfully'
-      })
-      if (onTaskUpdate) {
-        onTaskUpdate()
-      }
+        description: 'Task deleted successfully',
+      });
+      if (onTaskUpdate) onTaskUpdate();
     } catch (error) {
-      console.error('Error deleting task:', error)
       toast({
         title: 'Error',
         description: 'Failed to delete task',
-        variant: 'destructive'
-      })
+        variant: 'destructive',
+      });
     }
-  }
+  };
 
-  const handleAssignTask = async (taskId: string, email: string) => {
-    if (!currentProject?.projectMembers?.[0]?.userId) {
-      toast({
-        title: 'Error',
-        description: 'Cannot assign task: No project leader found',
-        variant: 'destructive'
-      })
-      return
-    }
-
+  const handleAssignTask = async (taskId: string, assigneeId: string) => {
+    if (!currentProject?.id) return;
     try {
-      if (!currentProject?.id) throw new Error('No projectId')
-      await taskApi.assignTask(currentProject.id, taskId, email)
-      await refreshTasks()
+      await taskApi.assignTask(currentProject.id, taskId, assigneeId);
+      await refreshTasks();
       toast({
         title: 'Success',
-        description: 'Task assigned successfully'
-      })
-      if (onTaskUpdate) {
-        onTaskUpdate()
-      }
+        description: 'Task assigned successfully',
+      });
+      if (onTaskUpdate) onTaskUpdate();
     } catch (error) {
-      console.error('Error assigning task:', error)
       toast({
         title: 'Error',
         description: 'Failed to assign task',
-        variant: 'destructive'
-      })
+        variant: 'destructive',
+      });
     }
-  }
+  };
 
   const handleMoveToSprint = async (taskId: string, sprintId: string) => {
+    if (!currentProject?.id) return;
     try {
-      await sprintApi.addTaskToSprint(sprintId, taskId)
-      await refreshTasks()
+      await sprintApi.assignTasksToSprint(currentProject.id, sprintId, [taskId]);
+      await refreshTasks();
       toast({
         title: 'Success',
-        description: 'Task moved to sprint successfully'
-      })
-      if (onTaskUpdate) {
-        onTaskUpdate()
-      }
+        description: 'Task moved to sprint successfully',
+      });
+      if (onTaskUpdate) onTaskUpdate();
     } catch (error) {
-      console.error('Error moving task to sprint:', error)
       toast({
         title: 'Error',
         description: 'Failed to move task to sprint',
-        variant: 'destructive'
-      })
+        variant: 'destructive',
+      });
     }
-  }
+  };
 
   return (
-    <div className={`min-w-[800px] ${className}`}>
-      <div className='grid grid-cols-[auto,auto,1fr,auto,auto,auto] gap-4 p-4 border-b border-gray-200 bg-gray-50 text-sm font-medium text-gray-500'>
-        <div className='flex items-center justify-center'>
-          <Checkbox
-            checked={selectedTasks.length === tasks.length && tasks.length > 0}
-            onCheckedChange={toggleAllTasks}
-            className='border-lavender-400 data-[state=checked]:bg-lavender-500 data-[state=checked]:border-lavender-500'
-          />
-        </div>
-        <div className='flex items-center justify-center'></div>
-        <div className='flex items-center'>Task</div>
-        <div className='flex items-center pr-10'>Status</div>
-        <div className='flex items-center pr-5'>Assignee</div>
-        <div></div>
-      </div>
-
-      <div className='divide-y divide-gray-100'>
-        {tasks.map((task) => {
-          const isSelected = selectedTasks.includes(task.id)
-          const statusColor = getBoardColor(task.status)
-
-          return (
-            <div
-              key={task.id}
-              className={cn(
-                'grid grid-cols-[auto,auto,1fr,auto,auto,auto] gap-4 p-4 transition-colors items-center group',
-                isSelected ? 'bg-lavender-50/70' : 'hover:bg-gray-50',
-                isSelected && 'hover:bg-lavender-100/70'
-              )}
-            >
-              <div className='flex items-center justify-center'>
-                <Checkbox
-                  checked={isSelected}
-                  onCheckedChange={() => toggleTaskSelection(task.id)}
-                  className='border-lavender-400 data-[state=checked]:bg-lavender-500 data-[state=checked]:border-lavender-500'
-                />
-              </div>
-              <div className='flex items-center justify-center'>{getTaskIcon(task.description)}</div>
-              <div>
-                <div className='font-medium text-gray-900'>{task.title}</div>
-                <div className='text-sm text-gray-500 mt-1'>{task.description || 'No description'}</div>
-              </div>
-              <div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant='ghost'
-                      size='sm'
-                      className={cn(
-                        'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-colors',
-                        'focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0',
-                        'active:scale-95 data-[state=open]:bg-transparent',
-                        'after:hidden',
-                        getStatusColor(task.status),
-                        updatingTaskId === task.id && 'opacity-50 cursor-not-allowed'
-                      )}
-                      style={{ backgroundColor: `${statusColor}20` }}
-                      disabled={updatingTaskId === task.id}
-                    >
-                      {getStatusIcon(task.status)}
-                      <span className='capitalize font-medium' style={{ color: statusColor }}>
-                        {task.status}
-                      </span>
-                      <ChevronDown className='h-3 w-3 ml-0.5 opacity-50' style={{ color: statusColor }} />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    align='start'
-                    className='w-[180px] p-1.5 animate-in fade-in-0 zoom-in-95 border-none shadow-lg'
-                  >
-                    {boards.map((board, index) => {
-                      const boardStatus = board.name || 'todo';
-                      const boardColor = getBoardColor(boardStatus);
-                      return (
-                        <div key={board.id}>
-                          <DropdownMenuItem
-                            className={cn(
-                              'gap-2 rounded-md px-2.5 py-2 cursor-pointer transition-colors focus:ring-0 focus:ring-offset-0',
-                              (task.status || '').toLowerCase() === boardStatus.toLowerCase()
-                                ? 'bg-opacity-10'
-                                : 'hover:bg-opacity-10'
-                            )}
-                            style={{
-                              backgroundColor:
-                                (task.status || '').toLowerCase() === boardStatus.toLowerCase()
-                                  ? `${boardColor}20`
-                                  : 'transparent',
-                              ['--hover-bg' as string]: `${boardColor}20`
-                            }}
-                            onClick={() => handleStatusChange(task.id, boardStatus)}
-                          >
-                            {getStatusIcon(boardStatus)}
-                            <span className='capitalize font-medium' style={{ color: boardColor }}>
-                              {boardStatus}
-                            </span>
-                          </DropdownMenuItem>
-                          {index < boards.length - 1 && <DropdownMenuSeparator className='my-1 opacity-50' />}
-                        </div>
-                      )
-                    })}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className='flex items-center gap-2'>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant='ghost'
-                      size='sm'
-                      className='p-0 h-auto hover:bg-transparent focus-visible:ring-transparent focus-visible:ring-0 focus-visible:ring-offset-0'
-                    >
-                      <Avatar className='h-8 w-8 bg-gray-200'>
-                        <AvatarFallback>
-                          <User className='h-4 w-4 text-gray-500' />
-                        </AvatarFallback>
-                      </Avatar>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align='start' className='w-[220px] p-1.5'>
-                    {projectMembers.map((member) => (
-                      <DropdownMenuItem
-                        key={member.userId}
-                        onClick={() => handleAssignTask(task.id, member.user.email)}
-                        className='flex items-start gap-2 px-2 py-2'
-                      >
-                        <Avatar className='h-8 w-8 bg-gray-200'>
-                          <AvatarFallback>
-                            <User className='h-4 w-4 text-gray-500' />
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className='flex flex-col'>
-                          <span className='font-medium'>{member.user.fullName}</span>
-                          <span className='text-xs text-gray-500'>{member.user.email}</span>
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <div className='text-right'>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      className='hover:bg-gray-100 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'
-                    >
-                      <MoreHorizontal className='h-4 w-4' />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align='end' className='min-w-[160px] p-1.5'>
-                    <DropdownMenuSub>
-                      <DropdownMenuSubTrigger className='px-2.5 py-2'>
-                        <PlayCircle className='mr-2 h-4 w-4' />
-                        <span>Move to Sprint</span>
-                      </DropdownMenuSubTrigger>
-                      <DropdownMenuPortal>
-                        <DropdownMenuSubContent className='min-w-[200px]'>
-                          {sprints.map((sprint) => (
-                            <DropdownMenuItem key={sprint.id} onClick={() => handleMoveToSprint(task.id, sprint.id)}>
-                              {sprint.name}
-                            </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuSubContent>
-                      </DropdownMenuPortal>
-                    </DropdownMenuSub>
-
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      className='text-red-600 px-2.5 py-2 cursor-pointer'
-                      onClick={() => handleDeleteTask(task.id)}
-                    >
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          )
-        })}
-
-        {tasks.length === 0 && <div className='p-4 text-center text-gray-500'>No tasks found</div>}
-      </div>
-    </div>
+    <SortableContext items={tasks.map((task) => task.id)}>
+      {tasks.map((task) => (
+        <SortableTaskCard key={task.id} task={task} />
+      ))}
+    </SortableContext>
   )
 }

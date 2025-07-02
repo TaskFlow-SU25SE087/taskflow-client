@@ -19,8 +19,7 @@ export const projectMemberApi = {
     axiosClient.get(`/projects/${projectId}/members/verify-join`, { params: { token } }),
 
   getMembersByProjectId: async (projectId: string): Promise<ProjectMember[]> => {
-    // Try /members first, fallback to /members/list if needed
-    const response = await axiosClient.get(`/projects/${projectId}/members`)
+    const response = await axiosClient.get(`/project/${projectId}/members/list`)
     return response.data.data
   },
 

@@ -148,9 +148,18 @@ export default function ProjectCard({ project, onSelect, onProjectUpdated }: Pro
 
         {projectLeader && (
           <div className='flex items-center gap-2 pt-4 border-t border-gray-100'>
-            <Avatar size='32px' variant='beam' name={projectLeader.userId} />
+            {projectLeader.avatar ? (
+              <img
+                src={projectLeader.avatar}
+                alt={projectLeader.fullName}
+                className="h-8 w-8 rounded-full object-cover border"
+                onError={e => (e.currentTarget.src = '/public/logo.png')}
+              />
+            ) : (
+              <Avatar size='32px' variant='beam' name={projectLeader.fullName || projectLeader.userId} />
+            )}
             <div className='flex flex-col'>
-              <span className='text-sm text-gray-600 font-medium'>{projectLeader.user.fullName}</span>
+              <span className='text-sm text-gray-600 font-medium'>{projectLeader.fullName || 'No name'}</span>
               <span className='text-xs text-gray-400'>Project Leader</span>
             </div>
           </div>

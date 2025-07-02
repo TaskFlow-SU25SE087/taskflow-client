@@ -17,10 +17,9 @@ import { TaskP } from '@/types/task'
 import { Filter, Search, Share2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
-const { getSprintTasks, addTaskToSprint, fetchSprints } = sprintApi
-
 export default function ProjectBacklog() {
   const { tasks, refreshTasks, isTaskLoading: tasksLoading } = useTasks()
+  console.log('All tasks:', tasks)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [taskSearchQuery, setTaskSearchQuery] = useState('')
   const [sprintSearchQuery, setSprintSearchQuery] = useState('')
@@ -30,31 +29,6 @@ export default function ProjectBacklog() {
   const contentRef = useRef<HTMLDivElement>(null)
 
   const { sprints, isLoading: sprintsLoading, createSprint, refreshSprints } = useSprints()
-
-  const [sprintTasks, setSprintTasks] = useState<Record<string, TaskP[]>>({})
-
-  useEffect(() => {
-    const loadSprintTasks = async () => {
-      if (!sprints.length) return
-
-      const tasksMap: Record<string, TaskP[]> = {}
-      await Promise.all(
-        sprints.map(async (sprint) => {
-          const tasks = await getSprintTasks(sprint.id)
-          tasksMap[sprint.id] = tasks
-        })
-      )
-      setSprintTasks(tasksMap)
-    }
-
-    loadSprintTasks()
-  }, [sprints])
-
-  useEffect(() => {
-    if (contentRef.current) {
-      contentRef.current.scrollTop = scrollPosition
-    }
-  }, [tasks, scrollPosition])
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
@@ -82,11 +56,10 @@ export default function ProjectBacklog() {
   }
 
   const handleMoveToSprint = async (sprintId: string) => {
-    if (!selectedTaskId) return
-
+    if (!selectedTaskId || !currentProject) return
     try {
-      await addTaskToSprint(sprintId, selectedTaskId)
-      await Promise.all([fetchSprints(currentProject?.id as string)])
+      await sprintApi.assignTasksToSprint(currentProject.id, sprintId, [selectedTaskId])
+      await refreshTasks()
       toast({
         title: 'Success',
         description: 'Task moved to sprint successfully'
@@ -106,7 +79,7 @@ export default function ProjectBacklog() {
     if (contentRef.current) {
       setScrollPosition(contentRef.current.scrollTop)
     }
-    await Promise.all([fetchSprints(currentProject?.id as string), refreshTasks()])
+    await refreshTasks()
   }
 
   const handleSprintUpdate = async () => {
@@ -114,16 +87,6 @@ export default function ProjectBacklog() {
       setScrollPosition(contentRef.current.scrollTop)
     }
     await refreshSprints()
-    // Wait for sprints to update before loading tasks
-    const updatedSprints = sprints.length ? sprints : []
-    const tasksMap: Record<string, TaskP[]> = {}
-    await Promise.all(
-      updatedSprints.map(async (sprint) => {
-        const tasks = await getSprintTasks(sprint.id)
-        tasksMap[sprint.id] = tasks
-      })
-    )
-    setSprintTasks(tasksMap)
   }
 
   // Filter helper function for tasks
@@ -137,14 +100,18 @@ export default function ProjectBacklog() {
     )
   }
 
-  const backlogTasks = tasks.filter(
-    (task) =>
-      !Object.values(sprintTasks)
-        .flat()
-        .some((sprintTask) => sprintTask.id === task.id)
-  )
+  // Lọc task cho từng sprint
+  const sprintTaskMap = sprints.reduce((acc, sprint) => {
+    acc[sprint.id] = tasks.filter(
+      (task) => (task.sprintId === sprint.id) && filterTask(task)
+    )
+    return acc
+  }, {} as Record<string, TaskP[]>)
 
-  const filteredBacklogTasks = backlogTasks.filter(filterTask)
+  // Task chưa gán sprint (backlog)
+  const backlogTasks = tasks.filter(
+    (task) => (!task.sprintId) && filterTask(task)
+  )
 
   // Filter sprints
   const filteredSprints = sprints.filter((sprint) => {
@@ -152,14 +119,15 @@ export default function ProjectBacklog() {
     return sprint.name.toLowerCase().includes(sprintSearchQuery.toLowerCase())
   })
 
-  // Filter sprint tasks
-  const filteredSprintTasks = Object.entries(sprintTasks).reduce(
-    (acc, [sprintId, tasks]) => ({
-      ...acc,
-      [sprintId]: tasks.filter(filterTask)
-    }),
-    {} as Record<string, TaskP[]>
-  )
+  // Debug log
+  console.log('All tasks:', tasks)
+  console.log('Mapping sprintTaskMap:', sprintTaskMap)
+  console.log('Backlog tasks:', backlogTasks)
+
+  // Log từng task trong backlog (dùng useEffect để tránh lỗi trong JSX)
+  useEffect(() => {
+    backlogTasks.forEach(task => console.log('Task in Backlog:', task))
+  }, [backlogTasks])
 
   if (sprintsLoading || tasksLoading) {
     return (
@@ -245,25 +213,28 @@ export default function ProjectBacklog() {
           </div>
 
           <div className='space-y-6'>
-            {filteredSprints.map((sprint) => (
-              <SprintBoard
-                key={sprint.id}
-                sprint={sprint}
-                tasks={filteredSprintTasks[sprint.id] || []}
-                onMoveTask={setSelectedTaskId}
-                projectId={currentProject?.id || ''}
-                onTaskUpdate={handleTaskUpdate}
-                onTaskCreated={handleTaskUpdate}
-                onSprintUpdate={handleSprintUpdate}
-              />
-            ))}
+            {sprints.map((sprint) => {
+              console.log('Sprint:', sprint.name, 'id:', sprint.id, 'Tasks:', sprintTaskMap[sprint.id]);
+              (sprintTaskMap[sprint.id] || []).forEach(task => console.log('Task in Sprint', sprint.id, ':', task));
+              return (
+                <SprintBoard
+                  key={sprint.id}
+                  sprint={sprint}
+                  tasks={sprintTaskMap[sprint.id] || []}
+                  onMoveTask={setSelectedTaskId}
+                  projectId={currentProject?.id || ''}
+                  onTaskUpdate={refreshTasks}
+                  onTaskCreated={refreshTasks}
+                  onSprintUpdate={refreshSprints}
+                />
+              )
+            })}
             <SprintBacklog
-              tasks={filteredBacklogTasks}
-              onMoveTask={setSelectedTaskId}
+              tasks={backlogTasks}
+              onMoveTask={() => {}}
               projectId={currentProject?.id || ''}
-              onTaskCreated={handleTaskUpdate}
-              onTaskUpdate={handleTaskUpdate}
-              sprint={undefined} // Backlog không có sprint, truyền undefined
+              onTaskCreated={refreshTasks}
+              onTaskUpdate={refreshTasks}
             />
           </div>
         </div>

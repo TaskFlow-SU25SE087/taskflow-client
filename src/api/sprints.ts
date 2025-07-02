@@ -39,10 +39,10 @@ export const sprintApi = {
     return response.data.data
   },
 
-  // Thêm task vào sprint
-  addTaskToSprint: async (sprintId: string, taskId: string): Promise<boolean> => {
-    const response = await axiosClient.post(`/sprints/${sprintId}/tasks`, { taskId })
-    return response.data.data
+  // Gán nhiều task vào sprint
+  assignTasksToSprint: async (projectId: string, sprintId: string, taskIds: string[]): Promise<boolean> => {
+    const response = await axiosClient.post(`/projects/${projectId}/sprints/${sprintId}/tasks/assign`, taskIds);
+    return response.data.data;
   },
 
   // Alias fetchSprints cho getAllSprintsByProjectId
@@ -51,8 +51,8 @@ export const sprintApi = {
   },
 
   // Lấy sprint theo ID
-  getSprintById: async (sprintId: string): Promise<Sprint> => {
-    const response = await axiosClient.get(`/sprints/${sprintId}`)
+  getSprintById: async (projectId: string, sprintId: string): Promise<Sprint> => {
+    const response = await axiosClient.get(`/projects/${projectId}/sprints/${sprintId}`)
     return response.data.data
   }
 }

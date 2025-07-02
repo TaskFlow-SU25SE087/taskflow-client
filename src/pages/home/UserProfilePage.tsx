@@ -17,6 +17,9 @@ interface UserProfileData {
   phoneNumber: string;
   studentId: string;
   term: string;
+  termSeason?: string;
+  termYear?: number;
+  pastTerms?: string;
 }
 
 export default function UserProfilePage() {
@@ -93,7 +96,7 @@ export default function UserProfilePage() {
       if (avatarFile) {
         formData.append('Avatar', avatarFile);
       }
-      const res = await axiosClient.put(`/${user.id}`, formData, {
+      const res = await axiosClient.put(`/user/${user.id}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -172,6 +175,18 @@ export default function UserProfilePage() {
         <div>
           <Label>Term</Label>
           <Input value={profile.term} disabled />
+        </div>
+        <div>
+          <Label>Term Season</Label>
+          <Input value={profile.termSeason || ''} disabled />
+        </div>
+        <div>
+          <Label>Term Year</Label>
+          <Input value={profile.termYear || ''} disabled />
+        </div>
+        <div>
+          <Label>Past Terms</Label>
+          <Input value={profile.pastTerms || ''} disabled />
         </div>
         <Button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 text-white w-full">{saving ? 'Saving...' : 'Save Changes'}</Button>
       </form>

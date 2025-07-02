@@ -124,13 +124,15 @@ export default function TaskCreateMenuForBoard({
     }
     setIsSubmitting(true)
     try {
-      await taskApi.createTask(projectId, {
-        title,
-        description,
-        priority,
-        deadline,
-        file
-      })
+      const formData = new FormData();
+      formData.append('Title', title);
+      formData.append('Description', description);
+      formData.append('Priority', priority);
+      formData.append('Deadline', deadline);
+      if (file) formData.append('File', file);
+      formData.append('SprintId', selectedSprintId);
+      selectedTagIds.forEach((tagId) => formData.append('TagIds', tagId));
+      await taskApi.createTask(projectId, formData);
       toast({
         title: 'Success',
         description: 'Task created successfully'
