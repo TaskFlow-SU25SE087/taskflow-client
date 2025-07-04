@@ -125,21 +125,57 @@ export default function ProjectBoard() {
   const [filteredTasks, setFilteredTasks] = useState<TaskP[]>([])
   const [isInviteOpen, setIsInviteOpen] = useState(false)
   const [isBoardDialogOpen, setIsBoardDialogOpen] = useState(false)
-  const { sprints, isLoading: isSprintsLoading, refreshSprints } = useSprints();
-  const { tasks, isTaskLoading, refreshTasks } = useTasks();
+  const { sprints, isLoading: isSprintsLoading, refreshSprints, getSprintTasks } = useSprints()
+  const { tasks, isTaskLoading, refreshTasks } = useTasks()
+  const [sprintTasks, setSprintTasks] = useState<TaskP[]>([])
+  const [selectedSprintId, setSelectedSprintId] = useState<string | null>(null)
 
   const toast = useToast().toast
-  const {
-    addMember,
-    leaveProject,
-    removeMember,
-    verifyJoin,
-    loading: memberLoading,
-    error: memberError
-  } = useProjectMembers()
+  const { leaveProject, loading: memberLoading, error: memberError } = useProjectMembers()
   const { user } = useAuth()
 
-  console.log(boards)
+  // Lấy sprint active mặc định
+  useEffect(() => {
+    if (sprints && sprints.length > 0) {
+      const activeSprints = sprints.filter((s) => s.status === 1)
+      const latestActiveSprint = activeSprints.length
+        ? activeSprints.reduce((latest, curr) => (new Date(curr.startDate) > new Date(latest.startDate) ? curr : latest))
+        : null
+      if (latestActiveSprint) {
+        setSelectedSprintId(latestActiveSprint.id)
+      } else {
+        setSelectedSprintId(sprints[0].id) // fallback: chọn sprint đầu tiên nếu không có sprint active
+      }
+    }
+  }, [sprints])
+
+  // Lấy tasks của sprint khi selectedSprintId thay đổi
+  useEffect(() => {
+    const fetchSprintTasks = async () => {
+      if (selectedSprintId && currentProject?.id) {
+        try {
+          // Đảm bảo truyền đúng thứ tự projectId, sprintId
+          const tasks = await getSprintTasks(selectedSprintId, currentProject.id)
+          setSprintTasks(Array.isArray(tasks) ? tasks : [])
+          // Debug log số lượng task mỗi lần đổi sprint
+          // eslint-disable-next-line no-console
+          console.log('SprintTasks:', Array.isArray(tasks) ? tasks : [])
+        } catch (err) {
+          setSprintTasks([])
+          // eslint-disable-next-line no-console
+          console.log('SprintTasks: [] (error)')
+        }
+      } else {
+        setSprintTasks([])
+        // eslint-disable-next-line no-console
+        console.log('SprintTasks: [] (no sprint or project)')
+      }
+    }
+    fetchSprintTasks()
+  }, [selectedSprintId, currentProject, getSprintTasks])
+
+  // console.log('Boards:', boards)
+  // console.log('SprintTasks:', sprintTasks)
 
   useEffect(() => {
     if (!currentProject || !currentProject.id) return
@@ -307,8 +343,30 @@ export default function ProjectBoard() {
   console.log('DEBUG_BOARDS:', boards);
   console.log('DEBUG_TASKS:', boards.flatMap(b => b.tasks));
 
-  // Tạm thời hiển thị tất cả task trên board (bỏ filter sprint)
-  const filteredBoards = boards;
+  // Hiển thị task của từng board theo sprint (nếu có sprintTasks)
+  const filteredBoards = boards.map((board) => ({
+    ...board,
+    tasks: sprintTasks.filter((task) => task.boardId === board.id)
+  }))
+
+  // UI chọn sprint
+  const SprintSelector = () => (
+    <div className='mb-4 flex items-center gap-2'>
+      <span className='font-medium'>Sprint:</span>
+      <select
+        className='border rounded px-2 py-1 text-sm'
+        value={selectedSprintId || ''}
+        onChange={(e) => setSelectedSprintId(e.target.value)}
+        disabled={isSprintsLoading}
+      >
+        {sprints.map((sprint) => (
+          <option key={sprint.id} value={sprint.id}>
+            {sprint.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
 
   if (isLoading || isBoardLoading || !currentProject) {
     return (
@@ -337,6 +395,7 @@ export default function ProjectBoard() {
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
         <div className='flex flex-col h-full p-6'>
+          <SprintSelector />
           <div className='flex-none w-full flex items-center justify-between pb-4'>
             <div className='flex items-center gap-2'>
               <h1 className='text-4xl font-bold pr-2'>{currentProject.title}</h1>

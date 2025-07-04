@@ -74,6 +74,7 @@ export const useSprints = () => {
   const getSprintTasks = useCallback(async (sprintId: string, projectId?: string) => {
     const pid = projectId || currentProject?.id
     if (!pid) return []
+    // Đảm bảo truyền đúng thứ tự projectId, sprintId cho API
     return sprintApi.getSprintTasks(pid, sprintId)
   }, [currentProject?.id])
 
