@@ -30,13 +30,7 @@ export function ProjectMemberList({ projectId, members, onMemberRemoved, current
       {members.map((member) => (
         <div key={member.userId} className='flex items-center justify-between p-2 bg-gray-50 rounded'>
           <div className='flex items-center gap-2'>
-            <div className='h-8 w-8 rounded-full bg-lavender-700 flex items-center justify-center text-white'>
-              {((member.user?.fullName || member.user?.username || member.user?.email || member.userId) || '').charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <div className='font-medium'>{member.user?.fullName || member.user?.username || member.user?.email || member.userId}</div>
-              <div className='text-xs text-gray-500'>{member.user?.email || member.userId}</div>
-            </div>
+            
           </div>
           {isOwnerOrAdmin && member.userId !== currentUserId && (
             <Button
