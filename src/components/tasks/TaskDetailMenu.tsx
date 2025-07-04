@@ -1,5 +1,4 @@
 import { projectMemberApi } from '@/api/projectMembers'
-import { sprintApi } from '@/api/sprints'
 import { taskApi } from '@/api/tasks'
 import ProjectTagManager from '@/components/projects/ProjectTagManager'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -15,23 +14,23 @@ import { ProjectMember, Tag } from '@/types/project'
 import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
 import {
-    Calendar,
-    ChevronDown,
-    ChevronsDown,
-    ChevronsUp,
-    ChevronUp,
-    Eye,
-    Filter,
-    Link,
-    ListTodo,
-    Loader2,
-    MessageCircle,
-    Paperclip,
-    Pencil,
-    Plus,
-    Settings,
-    UserPlus,
-    X
+  Calendar,
+  ChevronDown,
+  ChevronsDown,
+  ChevronsUp,
+  ChevronUp,
+  Eye,
+  Filter,
+  Link,
+  ListTodo,
+  Loader2,
+  MessageCircle,
+  Paperclip,
+  Pencil,
+  Plus,
+  Settings,
+  UserPlus,
+  X
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -129,10 +128,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         const tasks = await taskApi.getTasksFromProject(currentProject.id)
         const taskDetails = tasks?.find((t) => t.id === task.id)
         const sprintId = taskDetails?.sprintId
-        if (sprintId && currentProject?.id) {
-          await sprintApi.getSprintById(currentProject.id, sprintId as string).then((sprint: Sprint) => setSprint(sprint))
-        }
-
         if (taskDetails?.assigneeId) {
           const assignee = members.find((member) => member.id === taskDetails.assigneeId)
           if (assignee) {
@@ -514,14 +509,14 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                 if (url.match(/\.(jpg|jpeg|png|gif)$/i)) {
                   // Image
                   return (
-                    <a key={idx} href={url} target='_blank' rel='noopener noreferrer'>
+                    <a key={url || idx} href={url} target='_blank' rel='noopener noreferrer'>
                       <img src={url} alt={`attachment-${idx}`} className='w-24 h-24 object-cover rounded border' />
                     </a>
                   )
                 } else if (url.match(/\.pdf$/i)) {
                   // PDF
                   return (
-                    <div key={idx} className='w-48 h-64 border rounded overflow-hidden'>
+                    <div key={url || idx} className='w-48 h-64 border rounded overflow-hidden'>
                       <iframe src={url} title={`pdf-${idx}`} className='w-full h-full' />
                       <a
                         href={url}
@@ -537,7 +532,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                   // Other file
                   return (
                     <a
-                      key={idx}
+                      key={url || idx}
                       href={url}
                       target='_blank'
                       rel='noopener noreferrer'
@@ -701,8 +696,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               </button>
             </h1>
             <div className='flex items-center gap-2 flex-wrap'>
-              {taskTags.map((tag) => (
-                <span key={tag.id} className='px-3 py-1 bg-orange-100 text-orange-600 rounded-full text-sm font-medium'>
+              {taskTags.map((tag, idx) => (
+                <span key={tag.id || idx} className='px-3 py-1 bg-orange-100 text-orange-600 rounded-full text-sm font-medium'>
                   {tag.name}
                 </span>
               ))}
@@ -835,7 +830,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                           if (url.match(/\.(jpg|jpeg|png|gif)$/i)) {
                             return (
                               <img
-                                key={i}
+                                key={url || i}
                                 src={url}
                                 alt={`attachment-${i}`}
                                 className='w-24 h-24 object-cover rounded border'
@@ -844,7 +839,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                           } else {
                             return (
                               <a
-                                key={i}
+                                key={url || i}
                                 href={url}
                                 target='_blank'
                                 rel='noopener noreferrer'

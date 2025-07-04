@@ -109,11 +109,31 @@ function MemberAvatarGroup({ members }: MemberAvatarGroupProps) {
       {members.slice(0, 4).map((member, index) => {
         const { bg, text } = getAvatarColor(index)
         const name = member.fullName || member.email || member.userId;
-        return <MemberAvatar key={member.userId} name={name} background={bg} textColor={text} />
+        return <MemberAvatar key={member.userId || index} name={name} background={bg} textColor={text} />
       })}
       {members.length > 4 && <MemberAvatar name={`+${members.length - 4}`} background='#FFFFFF' textColor='#DFDFDF' />}
     </div>
   )
+}
+
+// Đưa hàm fetchCurrentSprintAndTasks ra ngoài scope ProjectBoard
+const fetchCurrentSprintAndTasks = async (projectId: string | undefined, setSelectedSprintId: any, setSprintTasks: any) => {
+  if (projectId) {
+    try {
+      const currentSprint = await sprintApi.getCurrentSprint(projectId)
+      if (currentSprint && currentSprint.id) {
+        setSelectedSprintId(currentSprint.id)
+        // Lấy task của current sprint và set luôn
+        const tasks = await sprintApi.getSprintTasks(projectId, currentSprint.id)
+        setSprintTasks(Array.isArray(tasks) ? tasks : [])
+        return;
+      }
+    } catch (err) {
+      setSprintTasks([])
+    }
+  } else {
+    setSprintTasks([])
+  }
 }
 
 export default function ProjectBoard() {
@@ -137,26 +157,7 @@ export default function ProjectBoard() {
 
   // Lấy sprint hiện tại (in progress) khi vào trang
   useEffect(() => {
-    const fetchCurrentSprintAndTasks = async () => {
-      if (currentProject?.id) {
-        try {
-          const currentSprint = await sprintApi.getCurrentSprint(currentProject.id)
-          if (currentSprint && currentSprint.id) {
-            setSelectedSprintId(currentSprint.id)
-            // Lấy task của current sprint và set luôn
-            const tasks = await sprintApi.getSprintTasks(currentProject.id, currentSprint.id)
-            setSprintTasks(Array.isArray(tasks) ? tasks : [])
-            return;
-          }
-        } catch (err) {
-          // Nếu không có sprint hiện tại, không lấy task nào
-          setSprintTasks([])
-        }
-      } else {
-        setSprintTasks([])
-      }
-    }
-    fetchCurrentSprintAndTasks()
+    fetchCurrentSprintAndTasks(currentProject?.id, setSelectedSprintId, setSprintTasks)
   }, [currentProject])
 
   useEffect(() => {
@@ -282,14 +283,18 @@ export default function ProjectBoard() {
         if (foundBoard) newBoardId = foundBoard.id
         console.log('[DnD] over là task, tìm thấy board chứa task', { foundBoard, newBoardId })
       }
+      const taskObj = boards.flatMap(b => b.tasks).find(t => t.id === taskId);
+      if (taskObj && taskObj.boardId === newBoardId) {
+        console.log('[DnD] Task đã ở board này, không cần gọi API');
+        return;
+      }
       console.log('[DnD] moveTaskToBoard', { projectId: currentProject.id, taskId, newBoardId })
       try {
-        const taskObj = boards.flatMap(b => b.tasks).find(t => t.id === taskId);
         const boardObj = boards.find(b => b.id === newBoardId);
         console.log('[DnD] DEBUG taskObj:', taskObj);
         console.log('[DnD] DEBUG boardObj:', boardObj);
         await taskApi.moveTaskToBoard(currentProject.id, taskId, newBoardId)
-        refreshBoards()
+        await fetchCurrentSprintAndTasks(currentProject?.id, setSelectedSprintId, setSprintTasks)
         console.log('[DnD] Đã chuyển task sang board mới thành công', { taskId, newBoardId })
       } catch (err) {
         // Log chi tiết lỗi trả về từ backend
@@ -457,22 +462,24 @@ export default function ProjectBoard() {
                 <div className='inline-flex gap-6 p-1'>
                   {filteredBoards && filteredBoards.length > 0 ? (
                     filteredBoards.map((board) => (
-                      <SortableBoardColumn key={board.id} id={board.id}>
-                        <DroppableBoard boardId={board.id}>
-                          <SortableContext items={board.tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                            <SortableTaskColumn
-                              id={board.id}
-                              title={board.name}
-                              description={board.description}
-                              tasks={board.tasks}
-                              color={getBoardColor(board.name)}
-                              onTaskCreated={refreshBoards}
-                              status={board.name}
-                              boardId={board.id}
-                            />
-                          </SortableContext>
-                        </DroppableBoard>
-                      </SortableBoardColumn>
+                      <div key={board.id} className='...'>
+                        <SortableBoardColumn id={board.id}>
+                          <DroppableBoard boardId={board.id}>
+                            <SortableContext items={board.tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                              <SortableTaskColumn
+                                id={board.id}
+                                title={board.name}
+                                description={board.description}
+                                tasks={board.tasks}
+                                color={getBoardColor(board.name)}
+                                onTaskCreated={refreshBoards}
+                                status={board.name}
+                                boardId={board.id}
+                              />
+                            </SortableContext>
+                          </DroppableBoard>
+                        </SortableBoardColumn>
+                      </div>
                     ))
                   ) : (
                     <div className='text-gray-400 text-lg p-8'>No boards found for this project.</div>

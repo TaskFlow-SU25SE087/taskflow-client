@@ -28,7 +28,7 @@ export function ProjectMemberList({ projectId, members, onMemberRemoved, current
   return (
     <div className='space-y-2'>
       {members.map((member) => (
-        <div key={member.userId} className='flex items-center justify-between p-2 bg-gray-50 rounded'>
+        <div key={member.id} className='flex items-center justify-between p-2 bg-gray-50 rounded'>
           <div className='flex items-center gap-2'>
             
           </div>

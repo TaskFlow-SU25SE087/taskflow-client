@@ -1,5 +1,4 @@
 import { projectMemberApi } from '@/api/projectMembers'
-import { sprintApi } from '@/api/sprints'
 import { taskApi } from '@/api/tasks'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { ProjectMember } from '@/types/project'
@@ -60,11 +59,6 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
         } else {
           setAssignedMember(null)
         }
-        const sprintId = await taskApi.getSprintIdFromTaskId(task.id)
-        if (sprintId && currentProject?.id) {
-          const sprint = await sprintApi.getSprintById(currentProject.id, sprintId)
-          setSprint(sprint)
-        }
       }
     } catch (error) {
       console.error('Error fetching task details:', error)
@@ -85,6 +79,25 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
   if (!currentProject) {
     return <div className='p-4 text-center text-gray-500'>Chưa chọn project</div>;
   }
+
+  // Lấy số comment, số file, deadline, status, người tạo, ngày tạo, danh sách assignees
+  const commentCount = Array.isArray(task.comments) ? task.comments.length : (Array.isArray(task.commnets) ? task.commnets.length : 0);
+  const fileCount = Array.isArray(task.attachmentUrlsList) ? task.attachmentUrlsList.length : 0;
+  const deadline = sprint?.endDate ? format(new Date(sprint.endDate), 'MMM d, yyyy') : 'N/A';
+  const status = task.status || 'N/A';
+  const createdBy = task.reporter?.fullName || task.reporter?.email || 'Unknown';
+  const createdAt = task.created ? format(new Date(task.created), 'MMM d, yyyy') : 'N/A';
+  const assignees = task.assignee ? [task.assignee] : [];
+  const priorityText =
+    task.priority === 1 ? 'Low' :
+    task.priority === 2 ? 'Medium' :
+    task.priority === 3 ? 'High' :
+    task.priority === 4 ? 'Urgent' : 'N/A';
+  const priorityColor =
+    task.priority === 1 ? 'text-blue-500' :
+    task.priority === 2 ? 'text-orange-400' :
+    task.priority === 3 ? 'text-red-500' :
+    task.priority === 4 ? 'text-red-600' : 'text-gray-400';
 
   if (compact) {
     return (
@@ -139,6 +152,7 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
 
             <div className={`flex items-center gap-2 ${compact ? 'mb-1' : 'mb-2'}`}>
               <h2 className={`font-bold ${compact ? 'text-base truncate max-w-[120px]' : 'text-xl'}`}>{task.title}</h2>
+              <span className={`ml-2 font-semibold ${priorityColor}`}>{priorityText}</span>
               {getPriorityChevron(task.priority)}
             </div>
 
@@ -147,19 +161,27 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
             <div className={`flex items-center ${compact ? 'gap-2 mb-1' : 'gap-6 mb-4'}`}>
               <div className='flex items-center gap-1 text-gray-400'>
                 <MessageSquare className={compact ? 'w-4 h-4' : 'w-5 h-5'} />
+                <span>{commentCount}</span>
               </div>
               <div className='flex items-center gap-1 text-gray-400'>
                 <FileText className={compact ? 'w-4 h-4' : 'w-5 h-5'} />
+                <span>{fileCount}</span>
               </div>
             </div>
 
             <div className='flex justify-between items-center'>
               <div className='flex flex-row items-center space-x-1'>
-                {assignedMember ? (
-                  <>
-                    <Avatar size={compact ? '20px' : '32px'} variant='beam' name={assignedMember.userId} />
-                    {!compact && <p className='text-gray-500'>{assignedMember.fullName || assignedMember.email || 'No name'}</p>}
-                  </>
+                {assignees.length > 0 ? (
+                  assignees.map((assignee, idx) => (
+                    <div key={assignee?.userId || idx} className='flex items-center gap-1'>
+                      <div style={{ width: compact ? 20 : 32, height: compact ? 20 : 32 }}>
+                        <Avatar
+                          name={assignee?.fullName || assignee?.email || 'No name'}
+                        />
+                      </div>
+                      {!compact && <p className='text-gray-500'>{assignee?.fullName || assignee?.email || 'No name'}</p>}
+                    </div>
+                  ))
                 ) : (
                   <>
                     <div className={compact ? 'w-5 h-5 rounded-full bg-gray-200' : 'w-8 h-8 rounded-full bg-gray-200'}></div>
@@ -168,9 +190,11 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
                 )}
               </div>
 
-              <div className='flex items-center gap-1 text-gray-400'>
-                <Calendar className={compact ? 'w-4 h-4' : 'w-5 h-5'} />
-                {!compact && <span className='text-sm'>{sprint?.endDate ? format(new Date(sprint?.endDate), 'MMM d') : 'N/A'}</span>}
+              <div className='flex flex-col items-end'>
+                <div className='flex items-center gap-1 text-gray-400'>
+                  <Calendar className={compact ? 'w-4 h-4' : 'w-5 h-5'} />
+                  <span className='text-sm'>{deadline}</span>
+                </div>
               </div>
             </div>
           </div>
