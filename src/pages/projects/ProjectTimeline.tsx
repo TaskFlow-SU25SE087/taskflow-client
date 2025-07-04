@@ -1,5 +1,7 @@
+import { sprintApi } from '@/api/sprints'
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
+import { TaskDetailMenu } from '@/components/tasks/TaskDetailMenu'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Loader } from '@/components/ui/loader'
@@ -12,7 +14,6 @@ import { TaskP } from '@/types/task'
 import { addMonths, eachDayOfInterval, endOfMonth, format, startOfMonth } from 'date-fns'
 import { ArrowLeft, ArrowRight, Calendar, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { sprintApi } from '@/api/sprints'
 
 interface SprintWithTasks extends Sprint {
   tasks: TaskP[]
@@ -66,6 +67,34 @@ function TimelineHeader({
   )
 }
 
+function getStatusIcon(status: string) {
+  switch (status) {
+    case 'done':
+    case 'Completed':
+      return <>✅</>
+    case 'ongoing':
+    case 'In Progress':
+      return <>🔄</>
+    case 'Not Started':
+      return <>🕓</>
+    case 'Blocked':
+      return <>⛔</>
+    default:
+      return <>•</>
+  }
+}
+
+function TaskTooltip({ task }: { task: TaskP }) {
+  return (
+    <div className="absolute z-50 left-1/2 top-full mt-2 -translate-x-1/2 bg-black/80 text-white rounded-lg shadow-lg p-3 min-w-[220px] pointer-events-none">
+      <div className="font-semibold mb-1">{task.title}</div>
+      <div className="text-sm mb-1">{task.description || 'No description'}</div>
+      <div className="text-xs mb-1">Assignee: {task.assignee?.fullName || task.assigneeId || 'Unassigned'}</div>
+      <div className="text-xs">Start: {task.sprint?.startDate ? format(new Date(task.sprint.startDate), 'dd/MM/yyyy') : 'N/A'} - End: {task.sprint?.endDate ? format(new Date(task.sprint.endDate), 'dd/MM/yyyy') : 'N/A'}</div>
+    </div>
+  )
+}
+
 function CurrentTimeIndicator({ currentDate }: { currentDate: Date }) {
   const now = new Date()
   const monthStart = startOfMonth(currentDate)
@@ -84,17 +113,33 @@ function CurrentTimeIndicator({ currentDate }: { currentDate: Date }) {
 
   return (
     <div
-      className='absolute top-0 bottom-0 w-[2px] bg-lavender-500 z-20'
+      className='absolute top-0 bottom-0 w-[4px] bg-purple-600 shadow-lg shadow-purple-400/40 z-30 rounded'
       style={{
         left: `calc(200px + (100% - 200px) * ${percentage / 100})`
       }}
     >
-      <div className='w-2 h-2 rounded-full bg-lavender-500 -translate-x-[3px]' />
+      <div className='w-4 h-4 rounded-full bg-purple-600 border-2 border-white -translate-x-1/2 shadow-lg shadow-purple-400/40' />
     </div>
   )
 }
 
-function SprintRow({ sprint, currentDate }: { sprint: SprintWithTasks; currentDate: Date }) {
+function getSprintColor(index: number) {
+  const colors = [
+    'bg-blue-50 border-blue-200',
+    'bg-green-50 border-green-200',
+    'bg-yellow-50 border-yellow-200',
+    'bg-pink-50 border-pink-200',
+    'bg-purple-50 border-purple-200',
+    'bg-orange-50 border-orange-200',
+    'bg-cyan-50 border-cyan-200',
+    'bg-lime-50 border-lime-200',
+    'bg-rose-50 border-rose-200',
+    'bg-violet-50 border-violet-200'
+  ]
+  return colors[index % colors.length]
+}
+
+function SprintRow({ sprint, currentDate, index, onTaskClick }: { sprint: SprintWithTasks; currentDate: Date; index: number; onTaskClick?: (task: TaskP) => void }) {
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
@@ -133,8 +178,11 @@ function SprintRow({ sprint, currentDate }: { sprint: SprintWithTasks; currentDa
     ) + 1
   )
 
+  const sprintColor = getSprintColor(index)
+  const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null);
+
   return (
-    <div className='grid grid-cols-[200px,1fr] min-h-[160px] border-b border-gray-200 group hover:bg-gray-50'>
+    <div className={`grid grid-cols-[200px,1fr] min-h-[160px] border-b border-gray-200 group hover:bg-gray-50 ${sprintColor}`}>
       <div className='p-4'>
         <h3 className='font-medium text-gray-900'>{sprint.name}</h3>
         <p className='text-sm text-gray-500 mt-1'>
@@ -157,7 +205,7 @@ function SprintRow({ sprint, currentDate }: { sprint: SprintWithTasks; currentDa
 
         {startOffset < totalDays && visibleDuration > 0 && (
           <div
-            className='absolute top-2 bottom-2 bg-lavender-100 rounded-lg border-2 border-lavender-200'
+            className={`absolute top-2 bottom-2 rounded-lg border-2 ${sprintColor}`}
             style={{
               left: `${(startOffset / totalDays) * 100}%`,
               width: `${(visibleDuration / totalDays) * 100}%`,
@@ -169,24 +217,41 @@ function SprintRow({ sprint, currentDate }: { sprint: SprintWithTasks; currentDa
                 sprint.tasks.map((task) => (
                   <div
                     key={task.id}
-                    className='px-3 py-2 bg-white rounded-md border border-gray-200 text-sm shadow-sm hover:border-lavender-300 transition-colors cursor-pointer hover:shadow-md'
+                    className={cn(
+                      'px-3 py-2 bg-white rounded-md border text-sm shadow-sm hover:border-lavender-300 transition-colors cursor-pointer hover:shadow-md',
+                      task.status === 'done' || task.status === 'Completed'
+                        ? 'border-green-400'
+                        : task.status === 'ongoing' || task.status === 'In Progress'
+                        ? 'border-blue-400'
+                        : task.status === 'Blocked'
+                        ? 'border-red-400'
+                        : 'border-gray-300'
+                    )}
+                    onClick={() => onTaskClick && onTaskClick(task)}
+                    onMouseEnter={() => setHoveredTaskId(task.id)}
+                    onMouseLeave={() => setHoveredTaskId(null)}
+                    style={{ position: 'relative' }}
                   >
                     <div className='font-medium truncate'>{task.title}</div>
                     <div className='flex items-center justify-between'>
                       <span className='text-xs text-gray-500'>{'Unassigned'}</span>
                       <span
                         className={cn(
-                          'px-2 py-0.5 rounded-full text-xs font-medium',
-                          task.status === 'done'
+                          'px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1',
+                          task.status === 'done' || task.status === 'Completed'
                             ? 'bg-green-100 text-green-700'
-                            : task.status === 'ongoing'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-gray-100 text-gray-700'
+                            : task.status === 'ongoing' || task.status === 'In Progress'
+                            ? 'bg-blue-100 text-blue-700'
+                            : task.status === 'Blocked'
+                            ? 'bg-red-100 text-red-700'
+                            : 'bg-gray-100 text-gray-700'
                         )}
                       >
+                        {getStatusIcon(task.status)}
                         {task.status}
                       </span>
                     </div>
+                    {hoveredTaskId === task.id && <TaskTooltip task={task} />}
                   </div>
                 ))
               ) : (
@@ -208,14 +273,15 @@ export default function ProjectTimeline() {
   const [currentDate, setCurrentDate] = useState(new Date())
   const [sprintsWithTasks, setSprintsWithTasks] = useState<SprintWithTasks[]>([])
   const { sprints, isLoading: sprintsLoading } = useSprints(currentProject?.id)
+  const [selectedTask, setSelectedTask] = useState<TaskP | null>(null)
 
   useEffect(() => {
     const loadSprintTasks = async () => {
-      if (!sprints.length) return
+      if (!sprints.length || !currentProject?.id) return
 
       const sprintsData = await Promise.all(
         sprints.map(async (sprint) => {
-          const tasks = await sprintApi.getSprintTasks(sprint.id)
+          const tasks = await sprintApi.getSprintTasks(currentProject.id, sprint.id)
           return {
             ...sprint,
             tasks
@@ -226,7 +292,7 @@ export default function ProjectTimeline() {
     }
 
     loadSprintTasks()
-  }, [sprints])
+  }, [sprints, currentProject])
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen)
@@ -239,7 +305,7 @@ export default function ProjectTimeline() {
   if (projectLoading || sprintsLoading || !currentProject) {
     return (
       <div className='flex h-screen bg-gray-100'>
-        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
+        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
         <div className='flex-1 flex flex-col overflow-hidden'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
           <Loader />
@@ -250,7 +316,7 @@ export default function ProjectTimeline() {
 
   return (
     <div className='flex h-screen bg-gray-100'>
-      <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
+      <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
 
       <div className='flex-1 flex flex-col overflow-hidden'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
@@ -289,8 +355,8 @@ export default function ProjectTimeline() {
               <TimelineHeader currentDate={currentDate} onNavigate={handleNavigate} />
               <CurrentTimeIndicator currentDate={currentDate} />
               <div className='relative'>
-                {sprintsWithTasks.map((sprint) => (
-                  <SprintRow key={sprint.id} sprint={sprint} currentDate={currentDate} />
+                {sprintsWithTasks.map((sprint, idx) => (
+                  <SprintRow key={sprint.id} sprint={sprint} currentDate={currentDate} index={idx} onTaskClick={setSelectedTask} />
                 ))}
                 {sprintsWithTasks.length === 0 && (
                   <div className='p-8 text-center text-gray-500'>No sprints found for this project</div>
@@ -299,6 +365,14 @@ export default function ProjectTimeline() {
             </div>
           </div>
         </div>
+        {selectedTask && (
+          <TaskDetailMenu
+            task={selectedTask}
+            isOpen={!!selectedTask}
+            onClose={() => setSelectedTask(null)}
+            onTaskUpdated={() => {}}
+          />
+        )}
       </div>
     </div>
   )

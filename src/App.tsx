@@ -211,6 +211,48 @@ function App() {
             }
           />
 
+          {/* Dynamic project routes */}
+          <Route
+            path='/projects/:projectId/board'
+            element={
+              <ProtectedRoute>
+                <ProjectBoard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path='/projects/:projectId/timeline'
+            element={
+              <ProtectedRoute>
+                <ProjectTimeline />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path='/projects/:projectId/backlog'
+            element={
+              <ProtectedRoute>
+                <ProjectBacklog />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path='/projects/:projectId/reports'
+            element={
+              <ProtectedRoute>
+                <ProjectReports />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path='/projects/:projectId/members'
+            element={
+              <ProtectedRoute>
+                <ProjectMembers />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Admin routes */}
           <Route
             path='/admin/users'

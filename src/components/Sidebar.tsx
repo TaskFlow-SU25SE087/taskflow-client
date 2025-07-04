@@ -1,14 +1,15 @@
-import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
-import { Button } from '@/components/ui/button'
 import { SidebarLogic } from '@/components/SidebarLogic'
+import { Button } from '@/components/ui/button'
+import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 
 interface MainSidebarProps {
   isOpen: boolean
   onToggle: () => void
+  currentProject: any
 }
 
-export const Sidebar = ({ isOpen, onToggle }: MainSidebarProps) => {
+export const Sidebar = ({ isOpen, onToggle, currentProject }: MainSidebarProps) => {
   return (
     <div
       className={`transition-all duration-300 ease-in-out ${
@@ -27,7 +28,7 @@ export const Sidebar = ({ isOpen, onToggle }: MainSidebarProps) => {
             {isOpen ? <FiChevronLeft className='h-4 w-4' /> : <FiChevronRight className='h-4 w-4' />}
           </Button>
         </div>
-        <SidebarLogic />
+        <SidebarLogic projectId={currentProject?.id} />
       </div>
     </div>
   )

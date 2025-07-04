@@ -1,10 +1,10 @@
-import { useEffect, useState, useRef } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
 import gsap from 'gsap'
-import { FiClock, FiLayers, FiBarChart2, FiGitBranch, FiAlertCircle, FiSettings, FiUsers } from 'react-icons/fi'
 import { LucideLayoutDashboard } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { FiAlertCircle, FiBarChart2, FiClock, FiGitBranch, FiLayers, FiSettings, FiUsers } from 'react-icons/fi'
+import { useLocation, useNavigate } from 'react-router-dom'
 
-export const SidebarLogic = () => {
+export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
   const [activeTab, setActiveTab] = useState('board')
   const [hoveredTab, setHoveredTab] = useState<string | null>(null)
   const highlightRef = useRef<HTMLDivElement>(null)
@@ -18,17 +18,17 @@ export const SidebarLogic = () => {
   }, [activeTab])
 
   const navItems = [
-    { id: 'timeline', icon: <FiClock className='h-5 w-5' />, label: 'Timeline', section: 1, path: '/timeline' },
+    { id: 'timeline', icon: <FiClock className='h-5 w-5' />, label: 'Timeline', section: 1, path: projectId ? `/projects/${projectId}/timeline` : '/timeline' },
     {
       id: 'board',
       icon: <LucideLayoutDashboard className='h-5 w-5' />,
       label: 'Board',
       section: 1,
-      path: '/board'
+      path: projectId ? `/projects/${projectId}/board` : '/board'
     },
-    { id: 'backlog', icon: <FiLayers className='h-5 w-5' />, label: 'Backlog', section: 1, path: '/backlog' },
-    { id: 'members', icon: <FiUsers className='h-5 w-5' />, label: 'Members', section: 1, path: '/members' },
-    { id: 'reports', icon: <FiBarChart2 className='h-5 w-5' />, label: 'Reports', section: 1, path: '/reports' },
+    { id: 'backlog', icon: <FiLayers className='h-5 w-5' />, label: 'Backlog', section: 1, path: projectId ? `/projects/${projectId}/backlog` : '/backlog' },
+    { id: 'members', icon: <FiUsers className='h-5 w-5' />, label: 'Members', section: 1, path: projectId ? `/projects/${projectId}/members` : '/members' },
+    { id: 'reports', icon: <FiBarChart2 className='h-5 w-5' />, label: 'Reports', section: 1, path: projectId ? `/projects/${projectId}/reports` : '/reports' },
     { id: 'commits', icon: <FiGitBranch className='h-5 w-5' />, label: 'Commits', section: 2, path: '/commits' },
     { id: 'issues', icon: <FiAlertCircle className='h-5 w-5' />, label: 'Issues', section: 2, path: '/issues' },
     { id: 'settings', icon: <FiSettings className='h-5 w-5' />, label: 'Settings', section: 3, path: '/settings' }
