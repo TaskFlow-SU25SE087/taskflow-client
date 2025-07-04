@@ -315,7 +315,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
   // Tổng hợp file đính kèm từ task và các comment
   const allAttachmentUrls: string[] = [
-    ...(task.attachmentUrlsList || []),
+    ...(task.attachmentUrl ? [task.attachmentUrl] : []),
+    ...(Array.isArray(task.completionAttachmentUrls) ? task.completionAttachmentUrls : []),
     ...(task.commnets || []).flatMap((c) => c.attachmentUrls || [])
   ]
 
@@ -448,6 +449,12 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                 )}
               </div>
             </div>
+          </div>
+          <div className='flex items-center gap-2 mt-2'>
+            <Calendar className='h-4 w-4 text-gray-400' />
+            <span className='text-sm text-gray-600'>
+              Deadline: {task.deadline ? new Date(task.deadline).toLocaleDateString('vi-VN') : 'N/A'}
+            </span>
           </div>
           <div className='mt-2 text-gray-600'>
             <div className='relative'>
@@ -866,7 +873,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                         })}
                       </div>
                     )}
-                    <div className='text-xs text-gray-400'>{c.lastUpdate}</div>
+                    <div className='text-xs text-gray-400'>{c.lastUpdate ? new Date(c.lastUpdate).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}</div>
                   </div>
                 </div>
               ))

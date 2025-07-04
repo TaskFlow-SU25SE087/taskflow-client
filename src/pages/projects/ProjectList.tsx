@@ -27,7 +27,8 @@ export default function ProjectList() {
     currentPage,
     totalPages,
     totalItems,
-    goToPage
+    goToPage,
+    fetchProjects
   } = useProjects()
   const navigate = useNavigate()
   const { setCurrentProjectId } = useCurrentProject()
@@ -167,8 +168,7 @@ export default function ProjectList() {
                   project={project} 
                   onSelect={handleSelectProject}
                   onProjectUpdated={() => {
-                    // Refresh the project list when a project is updated
-                    window.location.reload()
+                    if (typeof fetchProjects === 'function') fetchProjects();
                   }}
                 />
               ))

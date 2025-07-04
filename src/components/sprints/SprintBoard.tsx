@@ -1,3 +1,4 @@
+import { taskApi } from '@/api/tasks'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
 import { useSprints } from '@/hooks/useSprints'
@@ -36,6 +37,8 @@ export function SprintBoard({
   const { startSprint, completeSprint, updateSprint } = useSprints(projectId)
   const { toast } = useToast()
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
+  const [showSprintSelector, setShowSprintSelector] = useState(false)
+  const [loadingBatch, setLoadingBatch] = useState(false)
 
   // Map backend status string to UI status
   const statusMap: Record<string, { label: string; color: string }> = {
@@ -195,8 +198,23 @@ export function SprintBoard({
           {selectedTaskIds.length > 0 && (
             <div className='mb-2 flex items-center gap-2'>
               <span className='text-xs text-gray-600'>{selectedTaskIds.length} selected</span>
-              <Button size='sm' variant='outline' onClick={() => {/* handle batch action here */}}>
-                Batch Action
+              <Button size='sm' variant='destructive' onClick={async () => {
+                if (!window.confirm('Bạn có chắc muốn xóa các task đã chọn?')) return;
+                setLoadingBatch(true);
+                try {
+                  for (const id of selectedTaskIds) {
+                    await taskApi.deleteTask(projectId, id);
+                  }
+                  toast({ title: 'Success', description: 'Deleted selected tasks!' });
+                  setSelectedTaskIds([]);
+                  onTaskUpdate();
+                } catch {
+                  toast({ title: 'Error', description: 'Failed to delete tasks', variant: 'destructive' });
+                } finally {
+                  setLoadingBatch(false);
+                }
+              }} disabled={loadingBatch}>
+                Delete selected
               </Button>
             </div>
           )}

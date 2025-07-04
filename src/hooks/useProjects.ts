@@ -13,26 +13,26 @@ export function useProjects() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'name'>('newest')
   const { user } = useAuth()
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        if (!user?.id) {
-          throw new Error('User not authenticated')
-        }
-        const response = await projectApi.getProjects()
-        // Map lại để đảm bảo có ownerId
-        const mapped = response.data.map((project: any) => ({
-          ...project,
-          ownerId: project.ownerId ?? '',
-        }))
-        setProjects(mapped)
-      } catch (error) {
-        console.error('Error fetching projects:', error)
-      } finally {
-        setIsLoading(false)
+  // Đưa fetchProjects ra ngoài để có thể gọi lại
+  const fetchProjects = async () => {
+    try {
+      if (!user?.id) {
+        throw new Error('User not authenticated')
       }
+      const response = await projectApi.getProjects()
+      const mapped = response.data.map((project: any) => ({
+        ...project,
+        ownerId: project.ownerId ?? '',
+      }))
+      setProjects(mapped)
+    } catch (error) {
+      console.error('Error fetching projects:', error)
+    } finally {
+      setIsLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchProjects()
   }, [user])
 
@@ -56,6 +56,7 @@ export function useProjects() {
     filterStatus,
     setFilterStatus,
     sortBy,
-    setSortBy
+    setSortBy,
+    fetchProjects
   }
 }

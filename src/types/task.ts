@@ -12,25 +12,24 @@ export interface TaskP {
   id: string
   title: string
   description: string
-  priority: number
+  priority: number | string
   created: string
   updated: string
   status: string
-  reporterId: string | null
-  assigneeId: string | null
-  projectId: string
-  sprintId: string | null
-  boardId: string | null
-  assignee: any | null
-  board: any | null
-  issues: any[]
-  project: any | null
-  reporter: any | null
-  sprint: any | null
-  workflows: any[]
-  tags: any[]
+  reporterId?: string | null
+  assigneeId?: string | null
+  projectId?: string
+  sprintId?: string | null
+  boardId?: string | null
+  assignee?: any | null
+  board?: any | null
+  issues?: any[]
+  project?: any | null
+  reporter?: any | null
+  sprint?: any | null
+  workflows?: any[]
+  tags?: any[]
   comments?: any[]
-  attachmentUrlsList?: string[]
   commnets?: {
     commenter: string
     content: string
@@ -39,6 +38,17 @@ export interface TaskP {
     lastUpdate: string
   }[]
   assignmentAccepted?: boolean
+  deadline?: string
+  updatedAt?: string
+  createdAt?: string
+  attachmentUrl?: string
+  completionAttachmentUrls?: string[]
+  taskAssignees?: Array<{
+    projectMemberId: string
+    executor: string
+    avatar: string
+    role: string
+  }>
 }
 
 export interface Task {

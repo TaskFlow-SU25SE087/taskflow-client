@@ -1,23 +1,23 @@
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
+import { BacklogSkeleton } from '@/components/sprints/BacklogSkeleton'
 import { SprintBacklog } from '@/components/sprints/SprintBacklog'
 import { SprintBoard } from '@/components/sprints/SprintBoard'
 import { SprintCreateMenu } from '@/components/sprints/SprintCreateMenu'
 import { SprintSelector } from '@/components/sprints/SprintSelector'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Loader } from '@/components/ui/loader'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from '@/hooks/use-toast'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
+import { useOptimizedTasks } from '@/hooks/useOptimizedTasks'
 import { useSprints } from '@/hooks/useSprints'
-import { useTasks } from '@/hooks/useTasks'
 import { TaskP } from '@/types/task'
 import { Filter, Search, Share2 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 export default function ProjectBacklog() {
-  const { tasks, refreshTasks, isTaskLoading: tasksLoading } = useTasks()
+  const { tasks, isLoading: tasksLoading, refreshTasks } = useOptimizedTasks()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [taskSearchQuery, setTaskSearchQuery] = useState('')
   const [sprintSearchQuery, setSprintSearchQuery] = useState('')
@@ -36,6 +36,18 @@ export default function ProjectBacklog() {
   } = useSprints()
 
   const [sprintTasks, setSprintTasks] = useState<Record<string, TaskP[]>>({})
+
+  // Memoize filtered tasks to avoid unnecessary recalculations
+  const filteredTasks = useMemo(() => {
+    if (!taskSearchQuery) return tasks
+    
+    const searchLower = taskSearchQuery.toLowerCase()
+    return tasks.filter(task => 
+      task.description.toLowerCase().includes(searchLower) ||
+      task.status.toLowerCase().includes(searchLower) ||
+      task.title?.toLowerCase().includes(searchLower)
+    )
+  }, [tasks, taskSearchQuery])
 
   useEffect(() => {
     if (!sprints.length || !currentProject?.id) return
@@ -112,6 +124,7 @@ export default function ProjectBacklog() {
       setScrollPosition(contentRef.current.scrollTop)
     }
     await fetchSprints()
+    await refreshTasks()
   }
 
   const handleSprintUpdate = async () => {
@@ -129,25 +142,12 @@ export default function ProjectBacklog() {
     setSprintTasks(tasksMap)
   }
 
-  // Filter helper function for tasks
-  const filterTask = (task: TaskP) => {
-    if (!taskSearchQuery) return true
-    const searchLower = taskSearchQuery.toLowerCase()
-    return (
-      task.description.toLowerCase().includes(searchLower) ||
-      task.status.toLowerCase().includes(searchLower) ||
-      task.title?.toLowerCase().includes(searchLower)
-    )
-  }
-
-  const backlogTasks = tasks.filter(
+  const backlogTasks = filteredTasks.filter(
     (task) =>
       !Object.values(sprintTasks)
         .flat()
         .some((sprintTask) => sprintTask.id === task.id)
   )
-
-  const filteredBacklogTasks = backlogTasks.filter(filterTask)
 
   // Filter sprints
   const filteredSprints = sprints.filter((sprint) => {
@@ -159,7 +159,15 @@ export default function ProjectBacklog() {
   const filteredSprintTasks = Object.entries(sprintTasks).reduce(
     (acc, [sprintId, tasks]) => ({
       ...acc,
-      [sprintId]: tasks.filter(filterTask)
+      [sprintId]: tasks.filter(task => {
+        if (!taskSearchQuery) return true
+        const searchLower = taskSearchQuery.toLowerCase()
+        return (
+          task.description.toLowerCase().includes(searchLower) ||
+          task.status.toLowerCase().includes(searchLower) ||
+          task.title?.toLowerCase().includes(searchLower)
+        )
+      })
     }),
     {} as Record<string, TaskP[]>
   )
@@ -168,9 +176,11 @@ export default function ProjectBacklog() {
     return (
       <div className='flex h-screen bg-gray-100'>
         <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
-        <div className='flex-1 flex flex-col overflow-hidden'>
+        <div className='flex-1 overflow-hidden'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-          <Loader />
+          <div className='p-6 overflow-auto h-[calc(100vh-64px)]'>
+            <BacklogSkeleton />
+          </div>
         </div>
       </div>
     )
@@ -261,11 +271,12 @@ export default function ProjectBacklog() {
               />
             ))}
             <SprintBacklog
-              tasks={filteredBacklogTasks}
+              tasks={backlogTasks}
               onMoveTask={setSelectedTaskId}
               projectId={currentProject?.id || ''}
               onTaskCreated={handleTaskUpdate}
               onTaskUpdate={handleTaskUpdate}
+              isLoading={tasksLoading}
             />
           </div>
         </div>
