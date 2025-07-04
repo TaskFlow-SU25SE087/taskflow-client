@@ -291,6 +291,25 @@ export default function ProjectBoard() {
 
   console.log('All tasks:', tasks);
 
+  // Lọc sprint đang active (IN_PROGRESS/status=1)
+  const activeSprints = sprints.filter(s => s.status === 1);
+  // Chọn sprint active có startDate mới nhất
+  const latestActiveSprint = activeSprints.length
+    ? activeSprints.reduce((latest, curr) =>
+        new Date(curr.startDate) > new Date(latest.startDate) ? curr : latest
+      )
+    : null;
+
+  // Lọc task thuộc sprint active này (ưu tiên sprintId, fallback sang sprintName nếu chưa có sprintId)
+ 
+
+  // DEBUG: Log toàn bộ boards và tasks
+  console.log('DEBUG_BOARDS:', boards);
+  console.log('DEBUG_TASKS:', boards.flatMap(b => b.tasks));
+
+  // Tạm thời hiển thị tất cả task trên board (bỏ filter sprint)
+  const filteredBoards = boards;
+
   if (isLoading || isBoardLoading || !currentProject) {
     return (
       <div className='flex h-screen bg-gray-100'>
@@ -401,10 +420,10 @@ export default function ProjectBoard() {
           <div className='min-h-0 flex-1'>
             {/* DndContext chung cho cả board và task */}
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={boards.map((b) => b.id)} strategy={horizontalListSortingStrategy}>
+              <SortableContext items={filteredBoards.map((b) => b.id)} strategy={horizontalListSortingStrategy}>
                 <div className='inline-flex gap-6 p-1'>
-                  {boards && boards.length > 0 ? (
-                    boards.map((board) => (
+                  {filteredBoards && filteredBoards.length > 0 ? (
+                    filteredBoards.map((board) => (
                       <SortableBoardColumn key={board.id} id={board.id}>
                         <DroppableBoard boardId={board.id}>
                           <SortableContext items={board.tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>

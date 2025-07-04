@@ -11,14 +11,14 @@ import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { SortableContext } from '@dnd-kit/sortable'
 import {
-    Bug,
-    CheckCircle,
-    Circle,
-    FileText,
-    PlayCircle,
-    Rocket,
-    Settings,
-    Zap
+  Bug,
+  CheckCircle,
+  Circle,
+  FileText,
+  PlayCircle,
+  Rocket,
+  Settings,
+  Zap
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { SortableTaskCard } from './SortableTaskCard'

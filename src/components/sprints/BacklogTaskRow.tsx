@@ -1,8 +1,13 @@
+import { taskApi } from '@/api/tasks'
+import { useToast } from '@/hooks/use-toast'
+import { useBoards } from '@/hooks/useBoards'
+import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { TaskP } from '@/types/task'
 import Avatar from 'boring-avatars'
 import { Calendar, FileText, MessageSquare } from 'lucide-react'
 import React, { useState } from 'react'
 import { TaskDetailMenu } from '../tasks/TaskDetailMenu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu'
 
 interface BacklogTaskRowProps {
   task: TaskP
@@ -20,8 +25,19 @@ const statusColorMap: Record<string, string> = {
   'blocked': 'bg-red-100 text-red-700',
 }
 
+const getBoardColorClass = (board: any) => {
+  if (board?.color) {
+    return `bg-[${board.color}] text-white`;
+  }
+  return statusColorMap[board?.name?.toLowerCase?.()] || 'bg-gray-100 text-gray-600';
+}
+
 export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({ task, onMoveToSprint, showMeta, checked = false, onCheck }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
+  const [statusLoading, setStatusLoading] = useState(false)
+  const { boards, refreshBoards } = useBoards()
+  const { currentProject } = useCurrentProject()
+  const { toast } = useToast()
   // Fake meta for demo, you can replace with real data if available
   const assignee = task.assignee || null
   const commentCount = task.comments ? task.comments.length : 0
@@ -68,17 +84,50 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({ task, onMoveToSp
         <div className="flex-shrink-0 min-w-[100px] max-w-[140px] font-semibold truncate">
           {task.title}
         </div>
-        {/* Status */}
+        {/* Status (dropdown) */}
         <div className="flex-shrink-0 min-w-[90px] max-w-[110px]">
-          {task.status && (
-            <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColorMap[task.status.toLowerCase()] || 'bg-gray-100 text-gray-600'}`}>
-              {task.status}
-            </span>
+          {task.status && boards.length > 0 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={`px-2 py-0.5 rounded text-xs font-medium w-full text-left ${getBoardColorClass(boards.find(b => b.id === task.boardId) || { name: task.status })} ${statusLoading ? 'opacity-60' : ''}`}
+                  disabled={statusLoading}
+                >
+                  {task.status}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {boards.map((board) => (
+                  <DropdownMenuItem
+                    key={board.id}
+                    className={getBoardColorClass(board)}
+                    onClick={async () => {
+                      if (!currentProject?.id || board.id === task.boardId) return
+                      setStatusLoading(true)
+                      try {
+                        await taskApi.moveTaskToBoard(currentProject.id, task.id, board.id)
+                        toast({ title: 'Success', description: `Status changed to ${board.name}` })
+                        await refreshBoards()
+                        window.location.reload()
+                      } catch (err) {
+                        toast({ title: 'Error', description: 'Failed to change status', variant: 'destructive' })
+                      } finally {
+                        setStatusLoading(false)
+                      }
+                    }}
+                  >
+                    {board.name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            task.status && (
+              <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColorMap[task.status.toLowerCase()] || 'bg-gray-100 text-gray-600'}`}>
+                {task.status}
+              </span>
+            )
           )}
-        </div>
-        {/* Description */}
-        <div className="flex-shrink-0 min-w-[120px] max-w-[180px] text-gray-500 truncate">
-          {task.description}
         </div>
         {/* Meta info for sprint board */}
         {showMeta && (
