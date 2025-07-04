@@ -1,5 +1,6 @@
 import { boardApi } from '@/api/boards'
 import { projectMemberApi } from '@/api/projectMembers'
+import { sprintApi } from '@/api/sprints'
 import { taskApi } from '@/api/tasks'
 import { Navbar } from '@/components/Navbar'
 import { ProjectEditMenu } from '@/components/projects/ProjectEditMenu'
@@ -134,48 +135,29 @@ export default function ProjectBoard() {
   const { leaveProject, loading: memberLoading, error: memberError } = useProjectMembers()
   const { user } = useAuth()
 
-  // Lấy sprint active mặc định
+  // Lấy sprint hiện tại (in progress) khi vào trang
   useEffect(() => {
-    if (sprints && sprints.length > 0) {
-      const activeSprints = sprints.filter((s) => s.status === 1)
-      const latestActiveSprint = activeSprints.length
-        ? activeSprints.reduce((latest, curr) => (new Date(curr.startDate) > new Date(latest.startDate) ? curr : latest))
-        : null
-      if (latestActiveSprint) {
-        setSelectedSprintId(latestActiveSprint.id)
-      } else {
-        setSelectedSprintId(sprints[0].id) // fallback: chọn sprint đầu tiên nếu không có sprint active
-      }
-    }
-  }, [sprints])
-
-  // Lấy tasks của sprint khi selectedSprintId thay đổi
-  useEffect(() => {
-    const fetchSprintTasks = async () => {
-      if (selectedSprintId && currentProject?.id) {
+    const fetchCurrentSprintAndTasks = async () => {
+      if (currentProject?.id) {
         try {
-          // Đảm bảo truyền đúng thứ tự projectId, sprintId
-          const tasks = await getSprintTasks(selectedSprintId, currentProject.id)
-          setSprintTasks(Array.isArray(tasks) ? tasks : [])
-          // Debug log số lượng task mỗi lần đổi sprint
-          // eslint-disable-next-line no-console
-          console.log('SprintTasks:', Array.isArray(tasks) ? tasks : [])
+          const currentSprint = await sprintApi.getCurrentSprint(currentProject.id)
+          if (currentSprint && currentSprint.id) {
+            setSelectedSprintId(currentSprint.id)
+            // Lấy task của current sprint và set luôn
+            const tasks = await sprintApi.getSprintTasks(currentProject.id, currentSprint.id)
+            setSprintTasks(Array.isArray(tasks) ? tasks : [])
+            return;
+          }
         } catch (err) {
+          // Nếu không có sprint hiện tại, không lấy task nào
           setSprintTasks([])
-          // eslint-disable-next-line no-console
-          console.log('SprintTasks: [] (error)')
         }
       } else {
         setSprintTasks([])
-        // eslint-disable-next-line no-console
-        console.log('SprintTasks: [] (no sprint or project)')
       }
     }
-    fetchSprintTasks()
-  }, [selectedSprintId, currentProject, getSprintTasks])
-
-  // console.log('Boards:', boards)
-  // console.log('SprintTasks:', sprintTasks)
+    fetchCurrentSprintAndTasks()
+  }, [currentProject])
 
   useEffect(() => {
     if (!currentProject || !currentProject.id) return
@@ -349,24 +331,16 @@ export default function ProjectBoard() {
     tasks: sprintTasks.filter((task) => task.boardId === board.id)
   }))
 
-  // UI chọn sprint
-  const SprintSelector = () => (
-    <div className='mb-4 flex items-center gap-2'>
-      <span className='font-medium'>Sprint:</span>
-      <select
-        className='border rounded px-2 py-1 text-sm'
-        value={selectedSprintId || ''}
-        onChange={(e) => setSelectedSprintId(e.target.value)}
-        disabled={isSprintsLoading}
-      >
-        {sprints.map((sprint) => (
-          <option key={sprint.id} value={sprint.id}>
-            {sprint.name}
-          </option>
-        ))}
-      </select>
-    </div>
-  )
+  // UI chọn sprint (không còn dropdown)
+  const SprintSelector = () => {
+    const currentSprint = sprints.find(s => s.id === selectedSprintId);
+    return (
+      <div className='mb-4 flex items-center gap-2'>
+        <span className='font-medium'>Sprint:</span>
+        <span className='text-base font-semibold'>{currentSprint ? currentSprint.name : 'No sprint'}</span>
+      </div>
+    );
+  }
 
   if (isLoading || isBoardLoading || !currentProject) {
     return (

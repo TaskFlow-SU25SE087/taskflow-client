@@ -54,5 +54,11 @@ export const sprintApi = {
   getSprintById: async (projectId: string, sprintId: string): Promise<Sprint> => {
     const response = await axiosClient.get(`/projects/${projectId}/sprints/${sprintId}`)
     return response.data.data
+  },
+
+  // Lấy sprint hiện tại (active sprint)(inprogess) của project
+  getCurrentSprint: async (projectId: string): Promise<Sprint> => {
+    const response = await axiosClient.get(`/projects/${projectId}/sprints/current`)
+    return response.data.data
   }
 }
