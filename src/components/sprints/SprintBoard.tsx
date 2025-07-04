@@ -7,7 +7,7 @@ import { format } from 'date-fns'
 import { CheckCircle, ChevronDown, ChevronRight, PlayCircle, Plus } from 'lucide-react'
 import { useState } from 'react'
 import TaskCreateMenu from '../tasks/TaskCreateMenu'
-import { TaskList } from '../tasks/TaskList'
+import { BacklogTaskRow } from './BacklogTaskRow'
 import { SprintEditMenu } from './SprintEditMenu'
 import { SprintStartMenu } from './SprintStartMenu'
 
@@ -35,6 +35,7 @@ export function SprintBoard({
   const [isStartDialogOpen, setIsStartDialogOpen] = useState(false)
   const { startSprint, completeSprint, updateSprint } = useSprints(projectId)
   const { toast } = useToast()
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
 
   // Map backend status string to UI status
   const statusMap: Record<string, { label: string; color: string }> = {
@@ -102,6 +103,10 @@ export function SprintBoard({
         variant: 'destructive'
       })
     }
+  }
+
+  const handleCheck = (taskId: string, checked: boolean) => {
+    setSelectedTaskIds(prev => checked ? [...prev, taskId] : prev.filter(id => id !== taskId))
   }
 
   return (
@@ -187,8 +192,26 @@ export function SprintBoard({
       </div>
       {isExpanded && (
         <div className='overflow-x-auto'>
+          {selectedTaskIds.length > 0 && (
+            <div className='mb-2 flex items-center gap-2'>
+              <span className='text-xs text-gray-600'>{selectedTaskIds.length} selected</span>
+              <Button size='sm' variant='outline' onClick={() => {/* handle batch action here */}}>
+                Batch Action
+              </Button>
+            </div>
+          )}
           {tasks.length > 0 ? (
-            <TaskList tasks={tasks} onMoveToSprint={onMoveTask} className='border-none' onTaskUpdate={onTaskUpdate} />
+            <div>
+              {tasks.map((task) => (
+                <BacklogTaskRow
+                  key={task.id}
+                  task={task}
+                  showMeta={true}
+                  checked={selectedTaskIds.includes(task.id)}
+                  onCheck={handleCheck}
+                />
+              ))}
+            </div>
           ) : (
             <div className='p-4 text-center text-gray-500'>No tasks in this sprint yet</div>
           )}

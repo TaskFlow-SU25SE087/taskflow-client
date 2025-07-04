@@ -1,10 +1,14 @@
+import { sprintApi } from '@/api/sprints'
 import { Button } from '@/components/ui/button'
 import { SprintStatusMap } from '@/constants/sprintStatus'
+import { useToast } from '@/hooks/use-toast'
+import { useSprints } from '@/hooks/useSprints'
 import { TaskP } from '@/types/task'
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react'
 import { useState } from 'react'
 import TaskCreateMenu from '../tasks/TaskCreateMenu'
-import { TaskList } from '../tasks/TaskList'
+import { BacklogTaskRow } from './BacklogTaskRow'
+import { SprintSelector } from './SprintSelector'
 
 interface SprintBacklogProps {
   tasks: TaskP[]
@@ -18,6 +22,36 @@ interface SprintBacklogProps {
 export function SprintBacklog({ tasks, onMoveTask, projectId, onTaskCreated, onTaskUpdate, sprint }: SprintBacklogProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
+  const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
+  const { sprints, refreshSprints } = useSprints()
+  const { toast } = useToast()
+  const [showSprintSelector, setShowSprintSelector] = useState(false)
+  const [loadingBatch, setLoadingBatch] = useState(false)
+
+  const handleCheck = (taskId: string, checked: boolean) => {
+    setSelectedTaskIds(prev => checked ? [...prev, taskId] : prev.filter(id => id !== taskId))
+  }
+
+  const handleMoveSelectedToSprint = (sprintId: string) => {
+    selectedTaskIds.forEach(id => onMoveTask(id))
+    setSelectedTaskIds([])
+  }
+
+  const handleBatchMove = async (sprintId: string) => {
+    setLoadingBatch(true)
+    try {
+      await sprintApi.assignTasksToSprint(projectId, sprintId, selectedTaskIds)
+      toast({ title: 'Success', description: 'Tasks moved to sprint successfully!' })
+      setSelectedTaskIds([])
+      setShowSprintSelector(false)
+      await refreshSprints()
+      onTaskUpdate()
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to move tasks', variant: 'destructive' })
+    } finally {
+      setLoadingBatch(false)
+    }
+  }
 
   return (
     <div className='bg-white border border-gray-200 rounded-lg shadow-sm transition-colors'>
@@ -65,8 +99,34 @@ export function SprintBacklog({ tasks, onMoveTask, projectId, onTaskCreated, onT
       </div>
       {isExpanded && (
         <div className='overflow-x-auto'>
+          {selectedTaskIds.length > 0 && (
+            <div className='mb-2 flex items-center gap-2'>
+              <span className='text-xs text-gray-600'>{selectedTaskIds.length} selected</span>
+              <Button size='sm' variant='outline' onClick={() => setShowSprintSelector(true)} disabled={loadingBatch}>
+                Move selected to Sprint
+              </Button>
+              {showSprintSelector && (
+                <SprintSelector
+                  sprints={sprints}
+                  onSprintSelect={handleBatchMove}
+                  trigger={null}
+                />
+              )}
+            </div>
+          )}
           {tasks.length > 0 ? (
-            <TaskList tasks={tasks} onMoveToSprint={onMoveTask} className='border-none' onTaskUpdate={onTaskUpdate} />
+            <div>
+              {tasks.map((task) => (
+                <BacklogTaskRow
+                  key={task.id}
+                  task={task}
+                  onMoveToSprint={onMoveTask}
+                  showMeta={true}
+                  checked={selectedTaskIds.includes(task.id)}
+                  onCheck={handleCheck}
+                />
+              ))}
+            </div>
           ) : (
             <div className='p-4 text-center text-gray-500'>No tasks in backlog</div>
           )}

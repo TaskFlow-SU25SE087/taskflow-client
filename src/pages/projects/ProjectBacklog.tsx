@@ -1,4 +1,3 @@
-import { sprintApi } from '@/api/sprints'
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
 import { SprintBacklog } from '@/components/sprints/SprintBacklog'
@@ -19,7 +18,6 @@ import { useEffect, useRef, useState } from 'react'
 
 export default function ProjectBacklog() {
   const { tasks, refreshTasks, isTaskLoading: tasksLoading } = useTasks()
-  console.log('All tasks:', tasks)
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [taskSearchQuery, setTaskSearchQuery] = useState('')
   const [sprintSearchQuery, setSprintSearchQuery] = useState('')
@@ -28,19 +26,52 @@ export default function ProjectBacklog() {
   const [scrollPosition, setScrollPosition] = useState(0)
   const contentRef = useRef<HTMLDivElement>(null)
 
-  const { sprints, isLoading: sprintsLoading, createSprint, refreshSprints } = useSprints()
+  const {
+    sprints,
+    isLoading: sprintsLoading,
+    createSprint,
+    getSprintTasks,
+    addTaskToSprint,
+    fetchSprints
+  } = useSprints()
+
+  const [sprintTasks, setSprintTasks] = useState<Record<string, TaskP[]>>({})
+
+  useEffect(() => {
+    if (!sprints.length || !currentProject?.id) return
+
+    const loadSprintTasks = async () => {
+      const tasksMap: Record<string, TaskP[]> = {}
+      await Promise.all(
+        sprints.map(async (sprint) => {
+          const tasks = await getSprintTasks(sprint.id, currentProject.id)
+          tasksMap[sprint.id] = tasks
+        })
+      )
+      setSprintTasks(tasksMap)
+    }
+
+    loadSprintTasks()
+  }, [sprints, getSprintTasks, currentProject?.id])
+
+  useEffect(() => {
+    if (contentRef.current) {
+      contentRef.current.scrollTop = scrollPosition
+    }
+  }, [tasks, scrollPosition])
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
-  const handleCreateSprint = async (data: {
-    name: string
-    description: string
-    startDate: string
-    endDate: string
-  }) => {
+  const handleCreateSprint = async (data: { name: string; description: string; startDate: string; endDate: string }) => {
     if (!currentProject) return
     try {
-      await createSprint(data)
+      await createSprint({
+        name: data.name,
+        description: data.description,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        status: '0' // Not Started mặc định
+      })
       toast({
         title: 'Success',
         description: 'Sprint created successfully'
@@ -56,10 +87,11 @@ export default function ProjectBacklog() {
   }
 
   const handleMoveToSprint = async (sprintId: string) => {
-    if (!selectedTaskId || !currentProject) return
+    if (!selectedTaskId) return
+
     try {
-      await sprintApi.assignTasksToSprint(currentProject.id, sprintId, [selectedTaskId])
-      await refreshTasks()
+      await addTaskToSprint(sprintId, selectedTaskId)
+      await fetchSprints()
       toast({
         title: 'Success',
         description: 'Task moved to sprint successfully'
@@ -79,14 +111,22 @@ export default function ProjectBacklog() {
     if (contentRef.current) {
       setScrollPosition(contentRef.current.scrollTop)
     }
-    await refreshTasks()
+    await fetchSprints()
   }
 
   const handleSprintUpdate = async () => {
     if (contentRef.current) {
       setScrollPosition(contentRef.current.scrollTop)
     }
-    await refreshSprints()
+    await fetchSprints()
+    const tasksMap: Record<string, TaskP[]> = {}
+    await Promise.all(
+      sprints.map(async (sprint) => {
+        const tasks = await getSprintTasks(sprint.id, currentProject?.id)
+        tasksMap[sprint.id] = tasks
+      })
+    )
+    setSprintTasks(tasksMap)
   }
 
   // Filter helper function for tasks
@@ -100,18 +140,14 @@ export default function ProjectBacklog() {
     )
   }
 
-  // Lọc task cho từng sprint
-  const sprintTaskMap = sprints.reduce((acc, sprint) => {
-    acc[sprint.id] = tasks.filter(
-      (task) => (task.sprintId === sprint.id) && filterTask(task)
-    )
-    return acc
-  }, {} as Record<string, TaskP[]>)
-
-  // Task chưa gán sprint (backlog)
   const backlogTasks = tasks.filter(
-    (task) => (!task.sprintId) && filterTask(task)
+    (task) =>
+      !Object.values(sprintTasks)
+        .flat()
+        .some((sprintTask) => sprintTask.id === task.id)
   )
+
+  const filteredBacklogTasks = backlogTasks.filter(filterTask)
 
   // Filter sprints
   const filteredSprints = sprints.filter((sprint) => {
@@ -119,15 +155,14 @@ export default function ProjectBacklog() {
     return sprint.name.toLowerCase().includes(sprintSearchQuery.toLowerCase())
   })
 
-  // Debug log
-  console.log('All tasks:', tasks)
-  console.log('Mapping sprintTaskMap:', sprintTaskMap)
-  console.log('Backlog tasks:', backlogTasks)
-
-  // Log từng task trong backlog (dùng useEffect để tránh lỗi trong JSX)
-  useEffect(() => {
-    backlogTasks.forEach(task => console.log('Task in Backlog:', task))
-  }, [backlogTasks])
+  // Filter sprint tasks
+  const filteredSprintTasks = Object.entries(sprintTasks).reduce(
+    (acc, [sprintId, tasks]) => ({
+      ...acc,
+      [sprintId]: tasks.filter(filterTask)
+    }),
+    {} as Record<string, TaskP[]>
+  )
 
   if (sprintsLoading || tasksLoading) {
     return (
@@ -213,28 +248,24 @@ export default function ProjectBacklog() {
           </div>
 
           <div className='space-y-6'>
-            {sprints.map((sprint) => {
-              console.log('Sprint:', sprint.name, 'id:', sprint.id, 'Tasks:', sprintTaskMap[sprint.id]);
-              (sprintTaskMap[sprint.id] || []).forEach(task => console.log('Task in Sprint', sprint.id, ':', task));
-              return (
-                <SprintBoard
-                  key={sprint.id}
-                  sprint={sprint}
-                  tasks={sprintTaskMap[sprint.id] || []}
-                  onMoveTask={setSelectedTaskId}
-                  projectId={currentProject?.id || ''}
-                  onTaskUpdate={refreshTasks}
-                  onTaskCreated={refreshTasks}
-                  onSprintUpdate={refreshSprints}
-                />
-              )
-            })}
+            {filteredSprints.map((sprint) => (
+              <SprintBoard
+                key={sprint.id}
+                sprint={sprint}
+                tasks={filteredSprintTasks[sprint.id] || []}
+                onMoveTask={setSelectedTaskId}
+                projectId={currentProject?.id || ''}
+                onTaskUpdate={handleTaskUpdate}
+                onTaskCreated={handleTaskUpdate}
+                onSprintUpdate={handleSprintUpdate}
+              />
+            ))}
             <SprintBacklog
-              tasks={backlogTasks}
-              onMoveTask={() => {}}
+              tasks={filteredBacklogTasks}
+              onMoveTask={setSelectedTaskId}
               projectId={currentProject?.id || ''}
-              onTaskCreated={refreshTasks}
-              onTaskUpdate={refreshTasks}
+              onTaskCreated={handleTaskUpdate}
+              onTaskUpdate={handleTaskUpdate}
             />
           </div>
         </div>

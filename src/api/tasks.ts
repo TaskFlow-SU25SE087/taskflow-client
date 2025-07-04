@@ -36,7 +36,7 @@ export const taskApi = {
 
   // Get all tasks of a sprint
   getSprintTasks: async (projectId: string, sprintId: string): Promise<TaskP[]> => {
-    const response = await axiosClient.get(`/projects/${projectId}/sprint/${sprintId}/tasks`)
+    const response = await axiosClient.get(`/projects/${projectId}/sprints/${sprintId}/tasks`)
     return response.data.data
   },
 

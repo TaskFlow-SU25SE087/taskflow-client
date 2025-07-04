@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
 import { sprintApi } from '@/api/sprints'
 import { Sprint } from '@/types/sprint'
+import { useCallback, useEffect, useState } from 'react'
 import { useCurrentProject } from './useCurrentProject'
 
 export const useSprints = () => {
@@ -31,11 +31,17 @@ export const useSprints = () => {
 
   const refreshSprints = fetchSprints
 
-  const createSprint = async (sprint: { name: string; description: string; startDate: string; endDate: string }) => {
+  const createSprint = async (sprint: { name: string; description: string; startDate: string; endDate: string; status: string | number }) => {
     if (!currentProject || !currentProject.id) return false
     setIsLoading(true)
     try {
-      const ok = await sprintApi.createSprint(currentProject.id, sprint)
+      const ok = await sprintApi.createSprint(currentProject.id, {
+        name: sprint.name,
+        description: sprint.description,
+        startDate: sprint.startDate,
+        endDate: sprint.endDate,
+        status: String(sprint.status)
+      })
       if (ok) await fetchSprints()
       return ok
     } catch (err) {
@@ -64,12 +70,46 @@ export const useSprints = () => {
     }
   }
 
+  // Lấy tasks của 1 sprint (cần cả projectId và sprintId)
+  const getSprintTasks = useCallback(async (sprintId: string, projectId?: string) => {
+    const pid = projectId || currentProject?.id
+    if (!pid) return []
+    return sprintApi.getSprintTasks(pid, sprintId)
+  }, [currentProject?.id])
+
+  // Gán 1 task vào sprint
+  const addTaskToSprint = async (sprintId: string, taskId: string) => {
+    if (!currentProject || !currentProject.id) return false
+    // API nhận mảng taskIds
+    return sprintApi.assignTasksToSprint(currentProject.id, sprintId, [taskId])
+  }
+
+  // Alias fetchSprints cho bên ngoài sử dụng (có thể truyền projectId nếu cần)
+  const fetchSprintsPublic = async (projectId?: string) => {
+    const pid = projectId || currentProject?.id
+    if (!pid) return
+    setIsLoading(true)
+    try {
+      const data = await sprintApi.getAllSprintsByProjectId(pid)
+      setSprints(data)
+      setError(null)
+    } catch (err) {
+      setError(err as Error)
+      setSprints([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return {
     sprints,
     isLoading,
     error,
     refreshSprints,
     createSprint,
-    updateSprint
+    updateSprint,
+    getSprintTasks,
+    addTaskToSprint,
+    fetchSprints: fetchSprintsPublic
   }
 }

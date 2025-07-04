@@ -1,6 +1,7 @@
 import { projectMemberApi } from '@/api/projectMembers'
 import { sprintApi } from '@/api/sprints'
 import { taskApi } from '@/api/tasks'
+import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/use-toast'
 import { useBoards } from '@/hooks/useBoards'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
@@ -10,14 +11,14 @@ import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { SortableContext } from '@dnd-kit/sortable'
 import {
-  Bug,
-  CheckCircle,
-  Circle,
-  FileText,
-  PlayCircle,
-  Rocket,
-  Settings,
-  Zap
+    Bug,
+    CheckCircle,
+    Circle,
+    FileText,
+    PlayCircle,
+    Rocket,
+    Settings,
+    Zap
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { SortableTaskCard } from './SortableTaskCard'
@@ -27,9 +28,10 @@ interface TaskListProps {
   onMoveToSprint?: (taskId: string) => void
   className?: string
   onTaskUpdate?: () => void
+  compact?: boolean
 }
 
-export function TaskList({ tasks, className = '', onTaskUpdate }: TaskListProps) {
+export function TaskList({ tasks, className = '', onMoveToSprint, onTaskUpdate, compact = false }: TaskListProps) {
   const [selectedTasks, setSelectedTasks] = useState<string[]>([])
   const [updatingTaskId, setUpdatingTaskId] = useState<string | null>(null)
   const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([])
@@ -208,7 +210,16 @@ export function TaskList({ tasks, className = '', onTaskUpdate }: TaskListProps)
   return (
     <SortableContext items={tasks.map((task) => task.id)}>
       {tasks.map((task) => (
-        <SortableTaskCard key={task.id} task={task} />
+        <div key={task.id} className='relative'>
+          <SortableTaskCard task={task} compact={compact} />
+          {onMoveToSprint && (
+            <div className='absolute top-2 right-2'>
+              <Button size='sm' variant='outline' onClick={() => onMoveToSprint(task.id)}>
+                Move to Sprint
+              </Button>
+            </div>
+          )}
+        </div>
       ))}
     </SortableContext>
   )

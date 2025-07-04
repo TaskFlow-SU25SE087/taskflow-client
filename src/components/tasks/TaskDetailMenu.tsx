@@ -15,23 +15,23 @@ import { ProjectMember, Tag } from '@/types/project'
 import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
 import {
-  Calendar,
-  ChevronDown,
-  ChevronsDown,
-  ChevronsUp,
-  ChevronUp,
-  Eye,
-  Filter,
-  Link,
-  ListTodo,
-  Loader2,
-  MessageCircle,
-  Paperclip,
-  Pencil,
-  Plus,
-  Settings,
-  UserPlus,
-  X
+    Calendar,
+    ChevronDown,
+    ChevronsDown,
+    ChevronsUp,
+    ChevronUp,
+    Eye,
+    Filter,
+    Link,
+    ListTodo,
+    Loader2,
+    MessageCircle,
+    Paperclip,
+    Pencil,
+    Plus,
+    Settings,
+    UserPlus,
+    X
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -110,10 +110,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
   useEffect(() => {
     if (!currentProject) {
-      navigate('/board')
-      return
+      return;
     }
-
     const fetchAssigneeAndMembers = async () => {
       try {
         const members = await projectMemberApi.getMembersByProjectId(currentProject.id)
@@ -150,7 +148,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         })
       }
     }
-
     fetchAssigneeAndMembers()
   }, [currentProject, navigate, task.id, toast])
 
@@ -368,6 +365,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   }
 
   const [acceptLoading, setAcceptLoading] = useState(false)
+
+  if (!currentProject) {
+    return <div className='p-4 text-center text-gray-500'>Chưa chọn project</div>;
+  }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -820,7 +821,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               <div className='text-center text-gray-500 py-4 font-medium'>No activity yet</div>
             ) : (
               comments.map((c, idx) => (
-                <div key={c.commenter + idx} className='flex items-start gap-2'>
+                <div key={c.id || (c.commenter + idx)} className='flex items-start gap-2'>
                   <Avatar>
                     <AvatarImage src={c.avatar} alt={c.commenter || 'Unknown'} />
                     <AvatarFallback>{(c.commenter?.[0] || '?').toUpperCase()}</AvatarFallback>

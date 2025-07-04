@@ -1,18 +1,19 @@
 import { projectApi } from '@/api/projects'
 import { Project } from '@/types/project'
 import Cookies from 'js-cookie'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const CURRENT_PROJECT_COOKIE = 'current_project_id'
+const CURRENT_PROJECT_LOCAL = 'currentProjectId'
 
 export const useCurrentProject = () => {
   const [currentProject, setCurrentProject] = useState<Project | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const navigate = useNavigate()
 
-  const fetchProject = useCallback(
-    async (projectId: string) => {
+  useEffect(() => {
+    const fetchProject = async (projectId: string) => {
       try {
         const response = await projectApi.getProjectById(projectId)
         setCurrentProject({
@@ -22,45 +23,75 @@ export const useCurrentProject = () => {
           projectMembers: [],
           sprints: [],
           taskPs: []
-        }) // Sửa: chỉ lấy response.data
+        })
       } catch (error) {
         console.error('Failed to fetch project:', error)
         if (error && error.response) {
           console.error('[useCurrentProject] error.response:', error.response)
         }
-        // If project fetch fails, clear the cookie
+        // If project fetch fails, clear both cookie and localStorage
         Cookies.remove(CURRENT_PROJECT_COOKIE)
+        localStorage.removeItem(CURRENT_PROJECT_LOCAL)
         navigate('/project')
       } finally {
         setIsLoading(false)
       }
-    },
-    [navigate]
-  )
+    }
 
-  useEffect(() => {
-    const savedProjectId = Cookies.get(CURRENT_PROJECT_COOKIE)
+    let savedProjectId = Cookies.get(CURRENT_PROJECT_COOKIE)
+    if (!savedProjectId) {
+      savedProjectId = localStorage.getItem(CURRENT_PROJECT_LOCAL) || undefined
+      if (savedProjectId) {
+        // Sync cookie if only localStorage has it
+        Cookies.set(CURRENT_PROJECT_COOKIE, savedProjectId, { path: '/' })
+      }
+    }
     console.log('[useCurrentProject] savedProjectId:', savedProjectId)
     if (savedProjectId) {
-      setCurrentProject(null); // reset trước khi fetch
+      setCurrentProject(null) // reset trước khi fetch
       fetchProject(savedProjectId)
     } else {
       setIsLoading(false)
     }
-  }, [fetchProject])
+  }, [navigate])
 
   const setCurrentProjectId = (projectId: string) => {
     Cookies.set(CURRENT_PROJECT_COOKIE, projectId, { path: '/' })
+    localStorage.setItem(CURRENT_PROJECT_LOCAL, projectId)
     console.log('[useCurrentProject] setCurrentProjectId:', projectId)
   }
 
-  const refreshCurrentProject = useCallback(async () => {
-    const projectId = Cookies.get(CURRENT_PROJECT_COOKIE)
+  const refreshCurrentProject = async () => {
+    let projectId = Cookies.get(CURRENT_PROJECT_COOKIE)
+    if (!projectId) {
+      projectId = localStorage.getItem(CURRENT_PROJECT_LOCAL) || undefined
+    }
     console.log('[useCurrentProject] refreshCurrentProject, projectId:', projectId)
     if (projectId) {
-      await fetchProject(projectId)
+      // fetchProject logic inline
+      try {
+        const response = await projectApi.getProjectById(projectId)
+        setCurrentProject({
+          ...response.data,
+          analysisResults: [],
+          boards: response.data.boards || [],
+          projectMembers: [],
+          sprints: [],
+          taskPs: []
+        })
+      } catch (error) {
+        console.error('Failed to fetch project:', error)
+        if (error && error.response) {
+          console.error('[useCurrentProject] error.response:', error.response)
+        }
+        Cookies.remove(CURRENT_PROJECT_COOKIE)
+        localStorage.removeItem(CURRENT_PROJECT_LOCAL)
+        navigate('/project')
+      } finally {
+        setIsLoading(false)
+      }
     }
-  }, [fetchProject])
+  }
 
   useEffect(() => {
     console.log('[useCurrentProject] currentProject:', currentProject)

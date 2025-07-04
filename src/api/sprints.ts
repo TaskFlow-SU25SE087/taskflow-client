@@ -33,9 +33,9 @@ export const sprintApi = {
     return response.data.data
   },
 
-  // Lấy tasks của 1 sprint
-  getSprintTasks: async (sprintId: string): Promise<TaskP[]> => {
-    const response = await axiosClient.get(`/sprints/${sprintId}/tasks`)
+  // Lấy tasks của 1 sprint (cần cả projectId và sprintId)
+  getSprintTasks: async (projectId: string, sprintId: string): Promise<TaskP[]> => {
+    const response = await axiosClient.get(`/projects/${projectId}/sprints/${sprintId}/tasks`)
     return response.data.data
   },
 
