@@ -14,23 +14,23 @@ import { ProjectMember, Tag } from '@/types/project'
 import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
 import {
-  Calendar,
-  ChevronDown,
-  ChevronsDown,
-  ChevronsUp,
-  ChevronUp,
-  Eye,
-  Filter,
-  Link,
-  ListTodo,
-  Loader2,
-  MessageCircle,
-  Paperclip,
-  Pencil,
-  Plus,
-  Settings,
-  UserPlus,
-  X
+    Calendar,
+    ChevronDown,
+    ChevronsDown,
+    ChevronsUp,
+    ChevronUp,
+    Eye,
+    Filter,
+    Link,
+    ListTodo,
+    Loader2,
+    MessageCircle,
+    Paperclip,
+    Pencil,
+    Plus,
+    Settings,
+    UserPlus,
+    X
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -84,6 +84,9 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     3: 'High',
     4: 'Critical'
   }
+
+  // Add this hook here (moved up)
+  const [acceptLoading, setAcceptLoading] = useState(false)
 
   const getPriorityChevron = (priority: number) => {
     switch (priority) {
@@ -453,8 +456,26 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     }
   }, [isPrioritySelectOpen, isTagSelectOpen])
 
-  // Xác định user là assignee và task chưa được accept
-  const isUserAssignee = user?.id && assignee && (user.id === assignee.userId || user.id === (assignee as any).id)
+  // Tìm project member hiện tại dựa trên email (vì userId không trùng id)
+  const myProjectMember = projectMembers.find(m => m.email === user?.email);
+  const myProjectMemberId = myProjectMember?.id;
+
+  // Debug chi tiết mapping
+  console.log('projectMembers:', projectMembers);
+  console.log('current user:', user);
+  console.log('myProjectMember:', myProjectMember);
+  console.log('myProjectMemberId:', myProjectMemberId);
+  console.log('taskAssignees:', task.taskAssignees);
+
+  // Hỗ trợ nhiều assignee
+  const assigneeProjectMemberIds = task.taskAssignees?.map(a => a.projectMemberId) || [];
+  const isUserAssignee = !!myProjectMemberId && Array.isArray(task.taskAssignees) && task.taskAssignees.some(a => a.projectMemberId === myProjectMemberId);
+
+  // Debug chi tiết
+  console.log('myProjectMember:', myProjectMember);
+  console.log('myProjectMemberId:', myProjectMemberId);
+  console.log('assigneeProjectMemberIds:', assigneeProjectMemberIds);
+
   const isTaskAccepted = !!task.assignmentAccepted
   
   // Kiểm tra role từ currentProject và projectLeader
@@ -489,7 +510,29 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     }
   }
 
-  const [acceptLoading, setAcceptLoading] = useState(false)
+  // Đảm bảo khai báo biến trước khi log
+  // Log điều kiện hiển thị nút Leave
+  console.log('[TaskDetailMenu] isUserAssignee:', isUserAssignee);
+  console.log('[TaskDetailMenu] myProjectMember:', myProjectMember);
+  console.log('[TaskDetailMenu] myProjectMemberId:', myProjectMemberId);
+  console.log('[TaskDetailMenu] assigneeProjectMemberIds:', assigneeProjectMemberIds);
+
+  const handleLeaveTask = async () => {
+    console.log('[TaskDetailMenu] User clicked Leave:', {
+      user,
+      myProjectMember,
+      myProjectMemberId,
+      taskId: task.id,
+      assigneeProjectMemberIds,
+    });
+    try {
+      await taskApi.leaveTaskAssignment(task.id, myProjectMemberId);
+      console.log('[TaskDetailMenu] Leave task success:', { taskId: task.id, myProjectMemberId });
+      // ... existing code ...
+    } catch (error) {
+      console.error('[TaskDetailMenu] Leave task failed:', error);
+    }
+  };
 
   if (!currentProject) {
     return <div className='p-4 text-center text-gray-500'>Chưa chọn project</div>;
@@ -699,53 +742,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           >
             {completeLoading ? 'Completing...' : 'Complete'}
           </Button>
-          {/* Nút chấp nhận task cho assignee nếu chưa accept */}
-          {(() => {
-            console.log('[AcceptTask Debug] user:', user);
-            console.log('[AcceptTask Debug] assignee:', assignee);
-            console.log('[AcceptTask Debug] isUserAssignee:', isUserAssignee);
-            console.log('[AcceptTask Debug] isTaskAccepted:', isTaskAccepted);
-            
-            // Debug task assignment details
-            console.log('[Task Assignment Debug] Task ID:', task.id);
-            console.log('[Task Assignment Debug] Task Title:', task.title);
-            console.log('[Task Assignment Debug] Task Assignee ID:', task.assigneeId);
-            console.log('[Task Assignment Debug] Task Assignee Object:', assignee);
-            console.log('[Task Assignment Debug] All Project Members:', projectMembers);
-            
-            // Debug full task object
-            console.log('[Task Assignment Debug] Full Task Object:', task);
-            console.log('[Task Assignment Debug] Task Object Keys:', Object.keys(task));
-            
-            // Check if task has assigneeId field
-            if ('assigneeId' in task) {
-              console.log('[Task Assignment Debug] Task has assigneeId field:', task.assigneeId);
-            } else {
-              console.log('[Task Assignment Debug] Task does NOT have assigneeId field');
-            }
-            
-            // Check if assignee exists in project members
-            if (assignee && projectMembers.length > 0) {
-              const assigneeInMembers = projectMembers.find(member => 
-                member.userId === assignee.userId || member.userId === (assignee as any)?.id
-              );
-              console.log('[Task Assignment Debug] Assignee found in project members:', assigneeInMembers);
-              console.log('[Task Assignment Debug] Assignee role in project:', assigneeInMembers?.role);
-            } else {
-              console.log('[Task Assignment Debug] No assignee or no project members');
-            }
-            
-            return (isUserAssignee && !isTaskAccepted);
-          })() && (
-            <Button
-              onClick={handleAcceptTask}
-              disabled={acceptLoading}
-              className='flex items-center gap-2 px-3 py-1.5 text-blue-700 border border-blue-300 bg-blue-50 hover:bg-blue-100'
-            >
-              {acceptLoading ? <Loader2 className='h-4 w-4 animate-spin' /> : null}
-              Chấp nhận task
-            </Button>
-          )}
         </div>
 
         {/* Assignee and Tags Grid */}
@@ -754,21 +750,20 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           <div>
             <h1 className='text-base font-medium mb-2 flex items-center gap-2'>
               Assignee
-              {assignee && (
-                <span className={`px-2 py-1 text-xs rounded-full ${
-                  isTaskAccepted 
-                    ? 'bg-green-100 text-green-700' 
-                    : 'bg-yellow-100 text-yellow-700'
-                }`}>
-                  {isTaskAccepted ? 'Đã chấp nhận' : 'Chưa chấp nhận'}
-                </span>
-              )}
             </h1>
             <div className='flex items-center gap-2'>
               <Select
-                onValueChange={handleAssignMember}
+                onValueChange={async (memberId) => {
+                  await handleAssignMember(memberId);
+                  // Log assignee và user sau khi assign
+                  setTimeout(() => {
+                    console.log('[DEBUG after assign] assignee:', assignee);
+                    console.log('[DEBUG after assign] user:', user);
+                  }, 500);
+                  onTaskUpdated();
+                }}
                 value={assignee?.userId || (assignee as any)?.id || ''}
-                disabled={!canAssignTask}
+                disabled={!user?.id}
               >
                 <SelectTrigger
                   className={cn(
@@ -783,12 +778,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     placeholder={
                       <div className='flex items-center gap-2 text-gray-500'>
                         <UserPlus className='h-4 w-4' />
-                        <span>
-                          {canAssignTask 
-                            ? 'Assign member' 
-                            : `Chỉ ${isUserOwnerOrAdmin ? 'Leader' : 'Leader/Admin'} có thể gán task`
-                          }
-                        </span>
+                        <span>Assign member</span>
                       </div>
                     }
                   >
@@ -802,7 +792,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     )}
                   </SelectValue>
                 </SelectTrigger>
-                {canAssignTask && (
+                {/* Luôn hiển thị danh sách thành viên cho mọi user đăng nhập */}
+                {user?.id && (
                   <SelectContent className='p-0'>
                     {projectMembers.map((member) => {
                       const memberId = member.userId || (member as any).id;
@@ -834,22 +825,59 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                   {/* Leave task - chỉ hiển thị cho assignee */}
                   {isUserAssignee && (
                     <div className='flex items-center gap-2'>
+                      {(() => {
+                        console.log('[TaskDetailMenu] Rendering Leave button', {
+                          isUserAssignee,
+                          myProjectMember,
+                          myProjectMemberId,
+                          assigneeProjectMemberIds,
+                          leaveLoading,
+                          leaveReason,
+                          user,
+                          taskId: task.id,
+                        });
+                        return null;
+                      })()}
                       <input
                         type='text'
-                        placeholder='Lý do rời khỏi (tùy chọn)'
+                        placeholder='Leave reason (optional)'
                         value={leaveReason}
                         onChange={(e) => setLeaveReason(e.target.value)}
                         className='px-2 py-1 border rounded text-sm w-32'
                         disabled={leaveLoading}
                       />
                       <Button
-                        onClick={handleLeaveAssignment}
+                        onClick={async () => {
+                          console.log('[TaskDetailMenu] Leave button clicked', {
+                            user,
+                            myProjectMember,
+                            myProjectMemberId,
+                            taskId: task.id,
+                            assigneeProjectMemberIds,
+                            leaveReason,
+                          });
+                          setLeaveLoading(true);
+                          try {
+                            // Ensure correct params: projectId, taskId, projectMemberId (if required)
+                            const res = await taskApi.leaveTaskAssignment(currentProject.id, task.id, { projectMemberId: myProjectMemberId, reason: leaveReason });
+                            console.log('[TaskDetailMenu] Leave API response', res);
+                            toast({ title: 'Success', description: 'You have left this task!' });
+                            setAssignee(null);
+                            setLeaveReason('');
+                            onTaskUpdated();
+                          } catch (error) {
+                            console.error('[TaskDetailMenu] Leave API error', error);
+                            toast({ title: 'Error', description: 'Failed to leave task', variant: 'destructive' });
+                          } finally {
+                            setLeaveLoading(false);
+                          }
+                        }}
                         disabled={leaveLoading}
                         variant='outline'
                         size='sm'
-                        title='Rời khỏi task này'
+                        title='Leave this task'
                       >
-                        {leaveLoading ? 'Đang rời...' : 'Rời khỏi'}
+                        {leaveLoading ? 'Leaving...' : 'Leave'}
                       </Button>
                     </div>
                   )}
@@ -859,7 +887,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     <div className='flex items-center gap-2'>
                       <input
                         type='text'
-                        placeholder='Lý do thu hồi (tùy chọn)'
+                        placeholder='Remove reason (optional)'
                         value={removeReason}
                         onChange={(e) => setRemoveReason(e.target.value)}
                         className='px-2 py-1 border rounded text-sm w-32'
@@ -870,9 +898,9 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                         disabled={removeLoading}
                         variant='destructive'
                         size='sm'
-                        title='Thu hồi task từ assignee này'
+                        title='Remove this assignee from the task'
                       >
-                        {removeLoading ? 'Đang thu hồi...' : 'Thu hồi'}
+                        {removeLoading ? 'Removing...' : 'Remove'}
                       </Button>
                     </div>
                   )}
@@ -1035,6 +1063,20 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                                 className='w-24 h-24 object-cover rounded border'
                               />
                             )
+                          } else if (url.match(/\.pdf$/i)) {
+                            return (
+                              <div key={url || i} className='w-48 h-64 border rounded overflow-hidden'>
+                                <iframe src={url} title={`pdf-${i}`} className='w-full h-full' />
+                                <a
+                                  href={url}
+                                  target='_blank'
+                                  rel='noopener noreferrer'
+                                  className='block text-blue-600 underline text-center mt-1 font-medium'
+                                >
+                                  View PDF
+                                </a>
+                              </div>
+                            )
                           } else {
                             return (
                               <a
@@ -1042,30 +1084,15 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                                 href={url}
                                 target='_blank'
                                 rel='noopener noreferrer'
-                                className='text-blue-600 underline text-sm flex items-center gap-1 font-medium'
+                                className='text-blue-600 underline flex items-center gap-1 font-medium'
                               >
-                                <svg
-                                  xmlns='http://www.w3.org/2000/svg'
-                                  className='h-4 w-4'
-                                  fill='none'
-                                  viewBox='0 0 24 24'
-                                  stroke='currentColor'
-                                >
-                                  <path
-                                    strokeLinecap='round'
-                                    strokeLinejoin='round'
-                                    strokeWidth={2}
-                                    d='M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.586-6.586a2 2 0 10-2.828-2.828z'
-                                  />
-                                </svg>
-                                File {i + 1}
+                                📎 File {i + 1}
                               </a>
                             )
                           }
                         })}
                       </div>
                     )}
-                    <div className='text-xs text-gray-400'>{c.lastUpdate ? new Date(c.lastUpdate).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}</div>
                   </div>
                 </div>
               ))

@@ -308,6 +308,7 @@ function App() {
               </AdminProtectedRoute>
             }
           />
+          <Route path="/project" element={<Navigate to="/projects/" />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
