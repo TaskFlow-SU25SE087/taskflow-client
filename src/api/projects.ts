@@ -91,7 +91,10 @@ export const projectApi = {
   },
 
   getProjectById: async (projectId: string): Promise<ProjectDetailResponse> => {
+    console.log('[projectApi] getProjectById called with projectId:', projectId)
+    console.log('[projectApi] Full URL:', `${axiosClient.defaults.baseURL}${ENDPOINT}/${projectId}`)
     const response = await axiosClient.get<ProjectDetailResponse>(`${ENDPOINT}/${projectId}`)
+    console.log('[projectApi] Response received:', response)
     return response.data
   },
 

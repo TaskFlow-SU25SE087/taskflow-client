@@ -4,7 +4,6 @@ import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { ProjectMember } from '@/types/project'
 import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
-import Avatar from 'boring-avatars'
 import { format } from 'date-fns'
 import { Calendar, ChevronDown, ChevronsDown, ChevronsUp, ChevronUp, FileText, MessageSquare } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
@@ -87,7 +86,7 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
   const status = task.status || 'N/A';
   const createdBy = task.reporter?.fullName || task.reporter?.email || 'Unknown';
   const createdAt = task.created ? format(new Date(task.created), 'MMM d, yyyy') : 'N/A';
-  const assignees = task.assignee ? [task.assignee] : [];
+  const assignees = Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0 ? task.taskAssignees : [];
   const priorityText =
     task.priority === 1 ? 'Low' :
     task.priority === 2 ? 'Medium' :
@@ -173,20 +172,13 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
               <div className='flex flex-row items-center space-x-1'>
                 {assignees.length > 0 ? (
                   assignees.map((assignee, idx) => (
-                    <div key={assignee?.userId || idx} className='flex items-center gap-1'>
-                      <div style={{ width: compact ? 20 : 32, height: compact ? 20 : 32 }}>
-                        <Avatar
-                          name={assignee?.fullName || assignee?.email || 'No name'}
-                        />
-                      </div>
-                      {!compact && <p className='text-gray-500'>{assignee?.fullName || assignee?.email || 'No name'}</p>}
+                    <div key={assignee.projectMemberId || idx} className='flex items-center gap-1'>
+                      <img src={assignee.avatar} alt={assignee.executor} style={{ width: 24, height: 24, borderRadius: '50%', marginRight: 8 }} />
+                      <span>{assignee.executor}</span>
                     </div>
                   ))
                 ) : (
-                  <>
-                    <div className={compact ? 'w-5 h-5 rounded-full bg-gray-200' : 'w-8 h-8 rounded-full bg-gray-200'}></div>
-                    {!compact && <p className='text-gray-500'>No assignees</p>}
-                  </>
+                  <span>No assignees</span>
                 )}
               </div>
 

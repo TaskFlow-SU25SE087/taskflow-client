@@ -34,6 +34,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { projectApi } from '../../api/projects'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dialog'
 
 interface TaskDetailMenuProps {
@@ -69,7 +70,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const [isUpdating, setIsUpdating] = useState(false)
   const [editTitle, setEditTitle] = useState(task.title)
   const [editDescription, setEditDescription] = useState(task.description)
-  const [editPriority, setEditPriority] = useState(task.priority)
+  const [editPriority, setEditPriority] = useState<number>(typeof task.priority === 'number' ? task.priority : parseInt(task.priority as string) || 1)
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false)
 
   // State cho edit mode
@@ -120,7 +121,31 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
         setProjectMembers(members)
 
-        const leader = members.find((member) => member.role === 'Leader')
+        // Kiểm tra nhiều trường hợp role Leader
+        const leader = members.find((member) => 
+          member.role === 'Leader' || 
+          member.role === 'leader' || 
+          member.role === 'ProjectLeader' ||
+          member.role === 'projectLeader'
+        )
+        console.log('Debug members and leader:', {
+          members: members.map(m => ({ 
+            userId: m.userId, 
+            id: (m as any).id,
+            role: m.role, 
+            fullName: m.fullName 
+          })),
+          leader,
+          currentUser: user?.id
+        })
+        
+        // Kiểm tra role của user hiện tại trong members list
+        const currentUserMember = members.find((member) => 
+          member.userId === user?.id || 
+          (member as any).id === user?.id
+        );
+        console.log('Current user member:', currentUserMember);
+        console.log('Current user role in members:', currentUserMember?.role);
         if (leader) {
           setProjectLeader(leader)
         }
@@ -128,10 +153,25 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         const tasks = await taskApi.getTasksFromProject(currentProject.id)
         const taskDetails = tasks?.find((t) => t.id === task.id)
         const sprintId = taskDetails?.sprintId
-        if (taskDetails?.assigneeId) {
-          const assignee = members.find((member) => member.id === taskDetails.assigneeId)
-          if (assignee) {
-            setAssignee(assignee)
+        if (taskDetails?.taskAssignees) {
+          console.log('Task assignees:', taskDetails.taskAssignees);
+          // Lấy assignee đầu tiên từ taskDetails.taskAssignees
+          const assigneeFromTask = Array.isArray(taskDetails.taskAssignees) && taskDetails.taskAssignees.length > 0 ? taskDetails.taskAssignees[0] : null;
+          console.log('Found assignee:', assigneeFromTask);
+          if (assigneeFromTask) {
+            setAssignee({
+              userId: assigneeFromTask.projectMemberId,
+              fullName: assigneeFromTask.executor,
+              avatar: assigneeFromTask.avatar,
+              role: assigneeFromTask.role,
+            })
+          } else {
+            console.log('Assignee not found in members list');
+            console.log('Available members:', members.map(m => ({ 
+              userId: m.userId, 
+              id: (m as any).id,
+              fullName: m.fullName 
+            })));
           }
         }
       } catch (error) {
@@ -146,25 +186,96 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     fetchAssigneeAndMembers()
   }, [currentProject, navigate, task.id, toast])
 
+  console.log('projectMembers:', projectMembers);
+  console.log('current user:', user);
+
+  // State để lưu role của user trong project hiện tại
+  const [myProjectRole, setMyProjectRole] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    const fetchMyRole = async () => {
+      try {
+        const res = await projectApi.getProjects(); // gọi GET /project
+        console.log('[TaskDetailMenu] Project API response:', res);
+        if (res?.data && currentProject) {
+          const myProject = res.data.find((p: any) => p.id === currentProject.id);
+          console.log('[TaskDetailMenu] My project:', myProject);
+          console.log('[TaskDetailMenu] My role:', myProject?.role);
+          console.log('[TaskDetailMenu] Current project ID:', currentProject.id);
+          console.log('[TaskDetailMenu] All projects:', res.data.map((p: any) => ({ id: p.id, role: p.role })));
+          setMyProjectRole(myProject?.role);
+        } else {
+          console.log('[TaskDetailMenu] No data or currentProject:', { hasData: !!res?.data, currentProject: !!currentProject });
+        }
+      } catch (e) {
+        console.error('[TaskDetailMenu] Error fetching role:', e);
+        setMyProjectRole(undefined);
+      }
+    };
+    fetchMyRole();
+  }, [currentProject]);
+
+  // Kiểm tra role từ members list để so sánh
+  const currentUserMember = projectMembers.find((member) => 
+    member.userId === user?.id || 
+    (member as any).id === user?.id
+  );
+  
+  // Logic phân quyền: xác định quyền dựa trên myProjectRole hoặc fallback về members list
+  const effectiveRole = myProjectRole || currentUserMember?.role;
+  const isUserLeader = effectiveRole === 'Leader' || effectiveRole === 'leader';
+  const isUserOwnerOrAdmin = effectiveRole === 'Owner' || effectiveRole === 'Admin' || effectiveRole === 'owner' || effectiveRole === 'admin' || effectiveRole === '0';
+  const canAssignTask = isUserLeader || isUserOwnerOrAdmin;
+  
+  console.log('[TaskDetailMenu] Role check:', {
+    myProjectRole,
+    effectiveRole,
+    isUserLeader,
+    isUserOwnerOrAdmin,
+    canAssignTask,
+    currentUserMemberRole: currentUserMember?.role,
+    currentUserMember
+  });
+
   const handleAssignMember = async (memberId: string) => {
     console.log('Assign memberId:', memberId);
-    const member = projectMembers.find((m) => m.id === memberId);
+    console.log('Available projectMembers:', projectMembers);
+    
+    // Tìm member bằng userId hoặc id (để xử lý cả hai trường hợp)
+    const member = projectMembers.find((m) => m.userId === memberId || (m as any).id === memberId);
     console.log('Assign member object:', member);
-    if (!member) return;
-    console.log('Assign member.id:', member.id);
+    console.log('Member keys:', member ? Object.keys(member) : 'No member found');
+    
+    if (!member) {
+      console.error('Member not found for ID:', memberId);
+      console.log('Available member IDs:', projectMembers.map(m => ({ 
+        userId: m.userId, 
+        id: (m as any).id,
+        fullName: m.fullName 
+      })));
+      return;
+    }
+    
+    // Sử dụng member.userId hoặc member.id cho implementerId
+    const implementerId = member.userId || (member as any).id;
+    console.log('Assign implementerId:', implementerId);
+    
     setIsAssigning(true);
     try {
-      await taskApi.assignTask(currentProject.id, task.id, member.id);
+      await taskApi.assignTask(currentProject!.id, task.id, implementerId);
       setAssignee(member);
       onTaskUpdated();
       toast({
         title: 'Success',
-        description: `Task assigned to ${member.fullName || member.email || member.id}`
+        description: `Task assigned to ${member.fullName || member.email || member.userId || (member as any).id}`
       });
-    } catch {
+    } catch (error) {
+      console.error('Assignment error:', error);
+      console.error('Assignment error response:', error.response?.data);
+      console.error('Assignment error status:', error.response?.status);
       toast({
         title: 'Error',
-        description: 'Failed to assign task. Please try again.',
+        description: `Failed to assign task: ${error.response?.data?.message || error.message}`,
         variant: 'destructive'
       });
     } finally {
@@ -240,7 +351,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setRemoveLoading(true)
     try {
       await taskApi.removeTaskAssignment(currentProject.id, task.id, {
-        implementId: assignee.id,
+        implementId: assignee.userId || (assignee as any).id,
         reason: removeReason
       })
       toast({ title: 'Success', description: 'Assignee removed from task!' })
@@ -255,7 +366,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   }
 
   const handleLeaveAssignment = async () => {
-    if (!currentProject || !assignee || user?.id !== assignee.id) return
+    if (!currentProject || !assignee || (user?.id !== assignee.userId && user?.id !== (assignee as any).id)) return
     setLeaveLoading(true)
     try {
       await taskApi.leaveTaskAssignment(currentProject.id, task.id, { reason: leaveReason })
@@ -273,7 +384,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   useEffect(() => {
     setEditTitle(task.title)
     setEditDescription(task.description)
-    setEditPriority(task.priority)
+    setEditPriority(typeof task.priority === 'number' ? task.priority : parseInt(task.priority as string) || 1)
   }, [task])
 
   const handleUpdateTask = async () => {
@@ -343,8 +454,26 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   }, [isPrioritySelectOpen, isTagSelectOpen])
 
   // Xác định user là assignee và task chưa được accept
-  const isUserAssignee = user?.id && assignee && user.id === assignee.id
+  const isUserAssignee = user?.id && assignee && (user.id === assignee.userId || user.id === (assignee as any).id)
   const isTaskAccepted = !!task.assignmentAccepted
+  
+  // Kiểm tra role từ currentProject và projectLeader
+
+
+  // Debug info
+  console.log('Debug assignment logic:', {
+    user: user?.id,
+    myProjectRole,
+    effectiveRole,
+    currentProjectRole: currentProject?.role,
+    projectLeader: projectLeader?.userId || (projectLeader as any)?.id,
+    isUserLeader,
+    isUserOwnerOrAdmin,
+    canAssignTask,
+    assignee: assignee?.userId || (assignee as any)?.id,
+    isUserAssignee,
+    isTaskAccepted
+  })
 
   const handleAcceptTask = async () => {
     if (!currentProject) return
@@ -424,8 +553,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                   style={{ marginRight: '0.5rem' }}
                 >
                   <span className='flex items-center gap-2 whitespace-nowrap'>
-                    {getPriorityChevron(editPriority)}
-                    {PRIORITY_MAP[editPriority] || 'Set Priority'}
+                    {getPriorityChevron(editPriority as number)}
+                    {PRIORITY_MAP[editPriority as number] || 'Set Priority'}
                   </span>
                   <ChevronDown className='h-4 w-4 ml-2 text-lavender-400' />
                 </button>
@@ -571,7 +700,43 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             {completeLoading ? 'Completing...' : 'Complete'}
           </Button>
           {/* Nút chấp nhận task cho assignee nếu chưa accept */}
-          {isUserAssignee && !isTaskAccepted && (
+          {(() => {
+            console.log('[AcceptTask Debug] user:', user);
+            console.log('[AcceptTask Debug] assignee:', assignee);
+            console.log('[AcceptTask Debug] isUserAssignee:', isUserAssignee);
+            console.log('[AcceptTask Debug] isTaskAccepted:', isTaskAccepted);
+            
+            // Debug task assignment details
+            console.log('[Task Assignment Debug] Task ID:', task.id);
+            console.log('[Task Assignment Debug] Task Title:', task.title);
+            console.log('[Task Assignment Debug] Task Assignee ID:', task.assigneeId);
+            console.log('[Task Assignment Debug] Task Assignee Object:', assignee);
+            console.log('[Task Assignment Debug] All Project Members:', projectMembers);
+            
+            // Debug full task object
+            console.log('[Task Assignment Debug] Full Task Object:', task);
+            console.log('[Task Assignment Debug] Task Object Keys:', Object.keys(task));
+            
+            // Check if task has assigneeId field
+            if ('assigneeId' in task) {
+              console.log('[Task Assignment Debug] Task has assigneeId field:', task.assigneeId);
+            } else {
+              console.log('[Task Assignment Debug] Task does NOT have assigneeId field');
+            }
+            
+            // Check if assignee exists in project members
+            if (assignee && projectMembers.length > 0) {
+              const assigneeInMembers = projectMembers.find(member => 
+                member.userId === assignee.userId || member.userId === (assignee as any)?.id
+              );
+              console.log('[Task Assignment Debug] Assignee found in project members:', assigneeInMembers);
+              console.log('[Task Assignment Debug] Assignee role in project:', assigneeInMembers?.role);
+            } else {
+              console.log('[Task Assignment Debug] No assignee or no project members');
+            }
+            
+            return (isUserAssignee && !isTaskAccepted);
+          })() && (
             <Button
               onClick={handleAcceptTask}
               disabled={acceptLoading}
@@ -587,103 +752,130 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         <div className='grid grid-cols-2 gap-6 mb-6'>
           {/* Assignee Section */}
           <div>
-            <h1 className='text-base font-medium mb-2 flex items-center gap-2'>Assignee</h1>
+            <h1 className='text-base font-medium mb-2 flex items-center gap-2'>
+              Assignee
+              {assignee && (
+                <span className={`px-2 py-1 text-xs rounded-full ${
+                  isTaskAccepted 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-yellow-100 text-yellow-700'
+                }`}>
+                  {isTaskAccepted ? 'Đã chấp nhận' : 'Chưa chấp nhận'}
+                </span>
+              )}
+            </h1>
             <div className='flex items-center gap-2'>
               <Select
                 onValueChange={handleAssignMember}
-                value={assignee?.id || ''}
+                value={assignee?.userId || (assignee as any)?.id || ''}
+                disabled={!canAssignTask}
               >
                 <SelectTrigger
                   className={cn(
                     'flex items-center gap-2 px-3 py-1.5 text-gray-600 rounded-lg border hover:bg-gray-50',
                     'focus:ring-0 focus:ring-offset-0 h-auto',
                     '[&>span]:flex [&>span]:items-center [&>span]:gap-2 [&>span]:m-0 [&>span]:p-0',
-                    '[&>svg]:hidden'
+                    '[&>svg]:hidden',
+                    !canAssignTask && 'opacity-50 cursor-not-allowed'
                   )}
                 >
                   <SelectValue
                     placeholder={
                       <div className='flex items-center gap-2 text-gray-500'>
                         <UserPlus className='h-4 w-4' />
-                        <span>Assign member</span>
+                        <span>
+                          {canAssignTask 
+                            ? 'Assign member' 
+                            : `Chỉ ${isUserOwnerOrAdmin ? 'Leader' : 'Leader/Admin'} có thể gán task`
+                          }
+                        </span>
                       </div>
                     }
                   >
-                    {assignee && (
-                      <div className='flex items-center gap-2'>
-                        <Avatar>
-                          <AvatarImage src={assignee.avatar} alt={assignee.fullName || assignee.email || assignee.id || 'Unknown'} />
-                          <AvatarFallback>{(assignee.fullName?.[0] || assignee.email?.[0] || assignee.id?.[0] || '?').toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <span className='font-semibold'>{assignee.fullName?.trim() || assignee.email?.trim() || (assignee.id ? assignee.id.slice(0, 6) : 'Unknown')}</span>
+                    {assignee ? (
+                      <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <img src={assignee.avatar} alt={assignee.fullName} style={{ width: 24, height: 24, borderRadius: '50%', marginRight: 8 }} />
+                        <span>{assignee.fullName}</span>
                       </div>
+                    ) : (
+                      <span>Assign member</span>
                     )}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className='p-0'>
-                  {projectMembers.map((member) => {
-                    const displayName = member.fullName?.trim() || member.email?.trim() || (member.id ? member.id.slice(0, 6) : 'Unknown');
-                    const avatarChar = (member.fullName?.[0] || member.email?.[0] || member.id?.[0] || '?').toUpperCase();
-                    return (
-                      <SelectItem
-                        key={member.id}
-                        value={member.id}
-                        className='focus:bg-gray-100 focus:text-gray-900 py-2 px-3'
-                      >
-                        <div className='flex items-center pl-5 gap-2'>
-                          <Avatar>
-                            <AvatarImage src={member.avatar} alt={displayName} />
-                            <AvatarFallback>{avatarChar}</AvatarFallback>
-                          </Avatar>
-                          <span>{displayName}</span>
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
+                {canAssignTask && (
+                  <SelectContent className='p-0'>
+                    {projectMembers.map((member) => {
+                      const memberId = member.userId || (member as any).id;
+                      const displayName = member.fullName?.trim() || member.email?.trim() || (memberId ? memberId.slice(0, 6) : 'Unknown');
+                      const avatarChar = (member.fullName?.[0] || member.email?.[0] || memberId?.[0] || '?').toUpperCase();
+                      return (
+                        <SelectItem
+                          key={memberId}
+                          value={memberId}
+                          className='focus:bg-gray-100 focus:text-gray-900 py-2 px-3'
+                        >
+                          <div className='flex items-center pl-5 gap-2'>
+                            <Avatar>
+                              <AvatarImage src={member.avatar} alt={displayName} />
+                              <AvatarFallback>{avatarChar}</AvatarFallback>
+                            </Avatar>
+                            <span>{displayName}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                )}
               </Select>
-              {/* Assignment actions (tạm thời, không phân biệt trạng thái accept) */}
-              {assignee && user?.id === assignee.id && (
-                <div className='flex items-center gap-2 ml-2'>
-                  <input
-                    type='text'
-                    placeholder='Reason (optional)'
-                    value={leaveReason}
-                    onChange={(e) => setLeaveReason(e.target.value)}
-                    className='px-2 py-1 border rounded text-sm'
-                    disabled={leaveLoading}
-                  />
-                  <Button
-                    onClick={handleLeaveAssignment}
-                    disabled={leaveLoading}
-                    variant='outline'
-                    size='sm'
-                    title='Leave this task.'
-                  >
-                    {leaveLoading ? 'Leaving...' : 'Leave task'}
-                  </Button>
-                </div>
-              )}
-              {/* Remove by leader (tạm thời, cho mọi assignee) */}
-              {assignee && projectLeader && user?.id === projectLeader.id && (
-                <div className='flex items-center gap-2 ml-2'>
-                  <input
-                    type='text'
-                    placeholder='Reason (optional)'
-                    value={removeReason}
-                    onChange={(e) => setRemoveReason(e.target.value)}
-                    className='px-2 py-1 border rounded text-sm'
-                    disabled={removeLoading}
-                  />
-                  <Button
-                    onClick={handleRemoveAssignee}
-                    disabled={removeLoading}
-                    variant='destructive'
-                    size='sm'
-                    title='Remove this assignee from the task.'
-                  >
-                    {removeLoading ? 'Removing...' : 'Remove assignee'}
-                  </Button>
+              
+              {/* Assignment actions */}
+              {assignee && (
+                <div className='flex flex-col gap-2 ml-2'>
+                  {/* Leave task - chỉ hiển thị cho assignee */}
+                  {isUserAssignee && (
+                    <div className='flex items-center gap-2'>
+                      <input
+                        type='text'
+                        placeholder='Lý do rời khỏi (tùy chọn)'
+                        value={leaveReason}
+                        onChange={(e) => setLeaveReason(e.target.value)}
+                        className='px-2 py-1 border rounded text-sm w-32'
+                        disabled={leaveLoading}
+                      />
+                      <Button
+                        onClick={handleLeaveAssignment}
+                        disabled={leaveLoading}
+                        variant='outline'
+                        size='sm'
+                        title='Rời khỏi task này'
+                      >
+                        {leaveLoading ? 'Đang rời...' : 'Rời khỏi'}
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {/* Remove assignee - chỉ hiển thị cho Leader */}
+                  {isUserLeader && (
+                    <div className='flex items-center gap-2'>
+                      <input
+                        type='text'
+                        placeholder='Lý do thu hồi (tùy chọn)'
+                        value={removeReason}
+                        onChange={(e) => setRemoveReason(e.target.value)}
+                        className='px-2 py-1 border rounded text-sm w-32'
+                        disabled={removeLoading}
+                      />
+                      <Button
+                        onClick={handleRemoveAssignee}
+                        disabled={removeLoading}
+                        variant='destructive'
+                        size='sm'
+                        title='Thu hồi task từ assignee này'
+                      >
+                        {removeLoading ? 'Đang thu hồi...' : 'Thu hồi'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

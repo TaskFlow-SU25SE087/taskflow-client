@@ -15,7 +15,16 @@ export const useCurrentProject = () => {
   useEffect(() => {
     const fetchProject = async (projectId: string) => {
       try {
+        console.log('[useCurrentProject] Calling API with projectId:', projectId)
         const response = await projectApi.getProjectById(projectId)
+        console.log('[useCurrentProject] API response:', response)
+        console.log('[useCurrentProject] response.data:', response.data)
+        
+        if (!response.data) {
+          console.error('[useCurrentProject] No data in response')
+          throw new Error('No data received from API')
+        }
+        
         setCurrentProject({
           ...response.data,
           analysisResults: [],
@@ -28,6 +37,8 @@ export const useCurrentProject = () => {
         console.error('Failed to fetch project:', error)
         if (error && error.response) {
           console.error('[useCurrentProject] error.response:', error.response)
+          console.error('[useCurrentProject] error.response.data:', error.response.data)
+          console.error('[useCurrentProject] error.response.status:', error.response.status)
         }
         // If project fetch fails, clear both cookie and localStorage
         Cookies.remove(CURRENT_PROJECT_COOKIE)

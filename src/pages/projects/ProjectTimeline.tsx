@@ -89,7 +89,7 @@ function TaskTooltip({ task }: { task: TaskP }) {
     <div className="absolute z-50 left-1/2 top-full mt-2 -translate-x-1/2 bg-black/80 text-white rounded-lg shadow-lg p-3 min-w-[220px] pointer-events-none">
       <div className="font-semibold mb-1">{task.title}</div>
       <div className="text-sm mb-1">{task.description || 'No description'}</div>
-      <div className="text-xs mb-1">Assignee: {task.assignee?.fullName || task.assigneeId || 'Unassigned'}</div>
+      <div className="text-xs mb-1">Assignee: {Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0 ? task.taskAssignees[0].executor : 'Unassigned'}</div>
       <div className="text-xs">Start: {task.sprint?.startDate ? format(new Date(task.sprint.startDate), 'dd/MM/yyyy') : 'N/A'} - End: {task.sprint?.endDate ? format(new Date(task.sprint.endDate), 'dd/MM/yyyy') : 'N/A'}</div>
     </div>
   )
