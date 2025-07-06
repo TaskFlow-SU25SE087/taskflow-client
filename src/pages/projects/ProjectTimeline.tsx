@@ -2,6 +2,7 @@ import { sprintApi } from '@/api/sprints'
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
 import { TaskDetailMenu } from '@/components/tasks/TaskDetailMenu'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Loader } from '@/components/ui/loader'
@@ -13,7 +14,7 @@ import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
 import { addMonths, eachDayOfInterval, endOfMonth, format, startOfMonth } from 'date-fns'
 import { ArrowLeft, ArrowRight, Calendar, Search } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface SprintWithTasks extends Sprint {
   tasks: TaskP[]
@@ -139,6 +140,54 @@ function getSprintColor(index: number) {
   return colors[index % colors.length]
 }
 
+// --- AvatarStack nội bộ cho timeline task ---
+const avatarColors = [
+  { bg: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%)', text: '#FFFFFF' },
+  { bg: 'linear-gradient(135deg, #4ECDC4 0%, #45B7AF 100%)', text: '#FFFFFF' },
+  { bg: 'linear-gradient(135deg, #FFD93D 0%, #FFE566 100%)', text: '#000000' },
+  { bg: 'linear-gradient(135deg, #6C5CE7 0%, #8480E9 100%)', text: '#FFFFFF' },
+  { bg: 'linear-gradient(135deg, #A8E6CF 0%, #DCEDC1 100%)', text: '#000000' },
+  { bg: 'linear-gradient(135deg, #FF8B94 0%, #FFC2C7 100%)', text: '#000000' },
+  { bg: 'linear-gradient(135deg, #98ACFF 0%, #6C63FF 100%)', text: '#FFFFFF' },
+  { bg: 'linear-gradient(135deg, #FFA62B 0%, #FFB85C 100%)', text: '#000000' }
+]
+const getAvatarColor = (index: number) => avatarColors[index % avatarColors.length]
+
+function AvatarStack({ assignees }: { assignees: any[] }) {
+  if (!assignees || assignees.length === 0) {
+    return (
+      <div className='flex items-center justify-center h-7 px-2 rounded bg-gray-100'>
+        <span className='text-xs text-gray-500'>Unassigned</span>
+      </div>
+    )
+  }
+  return (
+    <div className='flex -space-x-2'>
+      {assignees.slice(0, 4).map((assignee, idx) => {
+        const { bg, text } = getAvatarColor(idx)
+        return (
+          <Avatar key={assignee.projectMemberId || idx} className='h-6 w-6 border-2 border-white shadow'>
+            {assignee.avatar ? (
+              <AvatarImage src={assignee.avatar} alt={assignee.executor} />
+            ) : (
+              <AvatarFallback style={{ background: bg, color: text }}>
+                {assignee.executor?.[0]?.toUpperCase() || '?'}
+              </AvatarFallback>
+            )}
+          </Avatar>
+        )
+      })}
+      {assignees.length > 4 && (
+        <Avatar className='h-6 w-6 border-2 border-white shadow'>
+          <AvatarFallback style={{ background: '#F3F4F6', color: '#6B7280' }}>
+            +{assignees.length - 4}
+          </AvatarFallback>
+        </Avatar>
+      )}
+    </div>
+  )
+}
+
 function SprintRow({ sprint, currentDate, index, onTaskClick }: { sprint: SprintWithTasks; currentDate: Date; index: number; onTaskClick?: (task: TaskP) => void }) {
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
@@ -233,8 +282,12 @@ function SprintRow({ sprint, currentDate, index, onTaskClick }: { sprint: Sprint
                     style={{ position: 'relative' }}
                   >
                     <div className='font-medium truncate'>{task.title}</div>
-                    <div className='flex items-center justify-between'>
-                      <span className='text-xs text-gray-500'>{'Unassigned'}</span>
+                    <div className='flex items-center justify-between mt-1'>
+                      <AvatarStack assignees={Array.isArray(task.taskAssignees) ? task.taskAssignees : []} />
+                      <span className='flex items-center gap-1 text-xs text-gray-700 font-semibold'>
+                        <Calendar className='w-4 h-4 text-gray-400' />
+                        {task.deadline ? format(new Date(task.deadline), 'dd/MM/yyyy') : 'N/A'}
+                      </span>
                       <span
                         className={cn(
                           'px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1',
@@ -274,6 +327,34 @@ export default function ProjectTimeline() {
   const [sprintsWithTasks, setSprintsWithTasks] = useState<SprintWithTasks[]>([])
   const { sprints, isLoading: sprintsLoading } = useSprints(currentProject?.id)
   const [selectedTask, setSelectedTask] = useState<TaskP | null>(null)
+  const timelineScrollRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    isDragging.current = true;
+    startX.current = e.pageX - (timelineScrollRef.current?.getBoundingClientRect().left || 0);
+    scrollLeft.current = timelineScrollRef.current?.scrollLeft || 0;
+  };
+
+  const handleMouseLeave = () => {
+    isDragging.current = false;
+  };
+
+  const handleMouseUp = () => {
+    isDragging.current = false;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging.current) return;
+    e.preventDefault();
+    const x = e.pageX - (timelineScrollRef.current?.getBoundingClientRect().left || 0);
+    const walk = x - startX.current;
+    if (timelineScrollRef.current) {
+      timelineScrollRef.current.scrollLeft = scrollLeft.current - walk;
+    }
+  };
 
   useEffect(() => {
     const loadSprintTasks = async () => {
@@ -350,13 +431,20 @@ export default function ProjectTimeline() {
             </div>
           </div>
 
-          <div className='flex-1 overflow-y-auto overflow-x-auto bg-white border-t border-gray-200'>
+          <div className='flex-1 overflow-y-auto bg-white border-t border-gray-200'>
             <div className='min-w-[1200px] relative pb-6'>
               <TimelineHeader currentDate={currentDate} onNavigate={handleNavigate} />
               <CurrentTimeIndicator currentDate={currentDate} />
-              <div className='relative'>
+              <div
+                ref={timelineScrollRef}
+                className='relative overflow-x-auto cursor-grab select-none'
+                onMouseDown={handleMouseDown}
+                onMouseLeave={handleMouseLeave}
+                onMouseUp={handleMouseUp}
+                onMouseMove={handleMouseMove}
+              >
                 {sprintsWithTasks.map((sprint, idx) => (
-                  <SprintRow key={sprint.id} sprint={sprint} currentDate={currentDate} index={idx} onTaskClick={setSelectedTask} />
+                  <SprintRow key={sprint.id} sprint={sprint} currentDate={currentDate} index={idx} onTaskClick={task => setSelectedTask(task)} />
                 ))}
                 {sprintsWithTasks.length === 0 && (
                   <div className='p-8 text-center text-gray-500'>No sprints found for this project</div>

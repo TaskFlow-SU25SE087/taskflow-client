@@ -8,6 +8,7 @@ import { format } from 'date-fns'
 import { Calendar, ChevronDown, ChevronsDown, ChevronsUp, ChevronUp, FileText, MessageSquare } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 import { Card } from '../ui/card'
 import { TaskDetailMenu } from './TaskDetailMenu'
 
@@ -98,6 +99,54 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
     task.priority === 3 ? 'text-red-500' :
     task.priority === 4 ? 'text-red-600' : 'text-gray-400';
 
+  // --- AvatarStack nội bộ cho TaskCard ---
+  const avatarColors = [
+    { bg: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%)', text: '#FFFFFF' },
+    { bg: 'linear-gradient(135deg, #4ECDC4 0%, #45B7AF 100%)', text: '#FFFFFF' },
+    { bg: 'linear-gradient(135deg, #FFD93D 0%, #FFE566 100%)', text: '#000000' },
+    { bg: 'linear-gradient(135deg, #6C5CE7 0%, #8480E9 100%)', text: '#FFFFFF' },
+    { bg: 'linear-gradient(135deg, #A8E6CF 0%, #DCEDC1 100%)', text: '#000000' },
+    { bg: 'linear-gradient(135deg, #FF8B94 0%, #FFC2C7 100%)', text: '#000000' },
+    { bg: 'linear-gradient(135deg, #98ACFF 0%, #6C63FF 100%)', text: '#FFFFFF' },
+    { bg: 'linear-gradient(135deg, #FFA62B 0%, #FFB85C 100%)', text: '#000000' }
+  ]
+  const getAvatarColor = (index: number) => avatarColors[index % avatarColors.length]
+
+  function AvatarStack({ assignees }: { assignees: any[] }) {
+    if (!assignees || assignees.length === 0) {
+      return (
+        <div className='flex items-center justify-center h-8 px-2 rounded bg-gray-100'>
+          <span className='text-xs text-gray-500'>No assignees</span>
+        </div>
+      )
+    }
+    return (
+      <div className='flex -space-x-2'>
+        {assignees.slice(0, 4).map((assignee, idx) => {
+          const { bg, text } = getAvatarColor(idx)
+          return (
+            <Avatar key={assignee.projectMemberId || idx} className='h-7 w-7 border-2 border-white shadow'>
+              {assignee.avatar ? (
+                <AvatarImage src={assignee.avatar} alt={assignee.executor} />
+              ) : (
+                <AvatarFallback style={{ background: bg, color: text }}>
+                  {assignee.executor?.[0]?.toUpperCase() || '?'}
+                </AvatarFallback>
+              )}
+            </Avatar>
+          )
+        })}
+        {assignees.length > 4 && (
+          <Avatar className='h-7 w-7 border-2 border-white shadow'>
+            <AvatarFallback style={{ background: '#F3F4F6', color: '#6B7280' }}>
+              +{assignees.length - 4}
+            </AvatarFallback>
+          </Avatar>
+        )}
+      </div>
+    )
+  }
+
   if (compact) {
     return (
       <div className="flex items-center gap-2 border border-gray-200 rounded px-2 py-1 text-xs bg-white min-h-[36px]">
@@ -169,23 +218,15 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
             </div>
 
             <div className='flex justify-between items-center'>
-              <div className='flex flex-row items-center space-x-1'>
-                {assignees.length > 0 ? (
-                  assignees.map((assignee, idx) => (
-                    <div key={assignee.projectMemberId || idx} className='flex items-center gap-1'>
-                      <img src={assignee.avatar} alt={assignee.executor} style={{ width: 24, height: 24, borderRadius: '50%', marginRight: 8 }} />
-                      <span>{assignee.executor}</span>
-                    </div>
-                  ))
-                ) : (
-                  <span>No assignees</span>
-                )}
+              <div className='flex flex-row items-center space-x-2'>
+                <AvatarStack assignees={assignees} />
               </div>
-
               <div className='flex flex-col items-end'>
                 <div className='flex items-center gap-1 text-gray-400'>
                   <Calendar className={compact ? 'w-4 h-4' : 'w-5 h-5'} />
-                  <span className='text-sm'>{deadline}</span>
+                  <span className='text-sm font-semibold text-gray-700'>
+                    {task.deadline ? format(new Date(task.deadline), 'dd/MM/yyyy') : deadline}
+                  </span>
                 </div>
               </div>
             </div>

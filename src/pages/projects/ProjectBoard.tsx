@@ -31,7 +31,7 @@ import {
   verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { ChevronDown, Filter, Link2, Pencil, Plus, Search } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 interface MemberAvatarProps {
@@ -154,6 +154,35 @@ export default function ProjectBoard() {
   const toast = useToast().toast
   const { leaveProject, loading: memberLoading, error: memberError } = useProjectMembers()
   const { user } = useAuth()
+
+  const boardContainerRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    isDragging.current = true;
+    startX.current = e.pageX - (boardContainerRef.current?.offsetLeft || 0);
+    scrollLeft.current = boardContainerRef.current?.scrollLeft || 0;
+  };
+
+  const handleMouseLeave = () => {
+    isDragging.current = false;
+  };
+
+  const handleMouseUp = () => {
+    isDragging.current = false;
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isDragging.current) return;
+    e.preventDefault();
+    const x = e.pageX - (boardContainerRef.current?.offsetLeft || 0);
+    const walk = x - startX.current;
+    if (boardContainerRef.current) {
+      boardContainerRef.current.scrollLeft = scrollLeft.current - walk;
+    }
+  };
 
   // Lấy sprint hiện tại (in progress) khi vào trang
   useEffect(() => {
@@ -459,31 +488,40 @@ export default function ProjectBoard() {
             {/* DndContext chung cho cả board và task */}
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={filteredBoards.map((b) => b.id)} strategy={horizontalListSortingStrategy}>
-                <div className='inline-flex gap-6 p-1'>
-                  {filteredBoards && filteredBoards.length > 0 ? (
-                    filteredBoards.map((board) => (
-                      <div key={board.id} className='...'>
-                        <SortableBoardColumn id={board.id}>
-                          <DroppableBoard boardId={board.id}>
-                            <SortableContext items={board.tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-                              <SortableTaskColumn
-                                id={board.id}
-                                title={board.name}
-                                description={board.description}
-                                tasks={board.tasks}
-                                color={getBoardColor(board.name)}
-                                onTaskCreated={refreshBoards}
-                                status={board.name}
-                                boardId={board.id}
-                              />
-                            </SortableContext>
-                          </DroppableBoard>
-                        </SortableBoardColumn>
-                      </div>
-                    ))
-                  ) : (
-                    <div className='text-gray-400 text-lg p-8'>No boards found for this project.</div>
-                  )}
+                <div
+                  ref={boardContainerRef}
+                  className='w-full h-full overflow-x-auto overflow-y-hidden cursor-grab select-none'
+                  onMouseDown={handleMouseDown}
+                  onMouseLeave={handleMouseLeave}
+                  onMouseUp={handleMouseUp}
+                  onMouseMove={handleMouseMove}
+                >
+                  <div className='inline-flex gap-6 p-1 h-full'>
+                    {filteredBoards && filteredBoards.length > 0 ? (
+                      filteredBoards.map((board) => (
+                        <div key={board.id} className='...'>
+                          <SortableBoardColumn id={board.id}>
+                            <DroppableBoard boardId={board.id}>
+                              <SortableContext items={board.tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                                <SortableTaskColumn
+                                  id={board.id}
+                                  title={board.name}
+                                  description={board.description}
+                                  tasks={board.tasks}
+                                  color={getBoardColor(board.name)}
+                                  onTaskCreated={refreshBoards}
+                                  status={board.name}
+                                  boardId={board.id}
+                                />
+                              </SortableContext>
+                            </DroppableBoard>
+                          </SortableBoardColumn>
+                        </div>
+                      ))
+                    ) : (
+                      <div className='text-gray-400 text-lg p-8'>No boards found for this project.</div>
+                    )}
+                  </div>
                 </div>
               </SortableContext>
             </DndContext>

@@ -4,10 +4,10 @@ import { useToast } from '@/hooks/use-toast'
 import { useBoards } from '@/hooks/useBoards'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { TaskP } from '@/types/task'
-import Avatar from 'boring-avatars'
 import { AlertCircle, Calendar, FileText, MessageSquare } from 'lucide-react'
 import React, { useState } from 'react'
 import { TaskDetailMenu } from '../tasks/TaskDetailMenu'
+import { AvatarFallback, AvatarImage, Avatar as UIAvatar } from '../ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu'
 
 interface BacklogTaskRowProps {
@@ -61,6 +61,56 @@ const getDeadlineIcon = (deadline: string | null) => {
   return Calendar
 }
 
+// --- AvatarStack nội bộ cho backlog ---
+const avatarColors = [
+  { bg: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%)', text: '#FFFFFF' },
+  { bg: 'linear-gradient(135deg, #4ECDC4 0%, #45B7AF 100%)', text: '#FFFFFF' },
+  { bg: 'linear-gradient(135deg, #FFD93D 0%, #FFE566 100%)', text: '#000000' },
+  { bg: 'linear-gradient(135deg, #6C5CE7 0%, #8480E9 100%)', text: '#FFFFFF' },
+  { bg: 'linear-gradient(135deg, #A8E6CF 0%, #DCEDC1 100%)', text: '#000000' },
+  { bg: 'linear-gradient(135deg, #FF8B94 0%, #FFC2C7 100%)', text: '#000000' },
+  { bg: 'linear-gradient(135deg, #98ACFF 0%, #6C63FF 100%)', text: '#FFFFFF' },
+  { bg: 'linear-gradient(135deg, #FFA62B 0%, #FFB85C 100%)', text: '#000000' }
+]
+const getAvatarColor = (index: number) => avatarColors[index % avatarColors.length]
+
+function AvatarStack({ assignees }: { assignees: any[] }) {
+  if (!assignees || assignees.length === 0) {
+    return (
+      <div className='flex items-center justify-center min-w-[70px] h-7'>
+        <span className='text-xs text-gray-500 whitespace-nowrap text-center w-full'>Unassigned</span>
+      </div>
+    )
+  }
+  return (
+    <div className='flex items-center justify-center min-w-[70px] h-7'>
+      <div className='flex items-center justify-center -space-x-2'>
+        {assignees.slice(0, 4).map((assignee, idx) => {
+          const { bg, text } = getAvatarColor(idx)
+          return (
+            <UIAvatar key={assignee.projectMemberId || idx} className='h-4 w-4 border border-white shadow'>
+              {assignee.avatar ? (
+                <AvatarImage src={assignee.avatar} alt={assignee.executor} />
+              ) : (
+                <AvatarFallback style={{ background: bg, color: text, fontSize: '10px' }}>
+                  {assignee.executor?.[0]?.toUpperCase() || '?'}
+                </AvatarFallback>
+              )}
+            </UIAvatar>
+          )
+        })}
+        {assignees.length > 4 && (
+          <UIAvatar className='h-4 w-4 border border-white shadow'>
+            <AvatarFallback style={{ background: '#F3F4F6', color: '#6B7280', fontSize: '10px' }}>
+              +{assignees.length - 4}
+            </AvatarFallback>
+          </UIAvatar>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({ task, showMeta, checked = false, onCheck, onTaskUpdate }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [statusLoading, setStatusLoading] = useState(false)
@@ -85,15 +135,10 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({ task, showMeta, 
       : 0);
 
   // Deadline: deadline -> updatedAt -> createdAt -> N/A
-  const deadline = task.deadline
-    ? new Date(task.deadline).toLocaleDateString('en-GB')
-    : task.updatedAt
-    ? new Date(task.updatedAt).toLocaleDateString('en-GB')
-    : task.createdAt
-    ? new Date(task.createdAt).toLocaleDateString('en-GB')
-    : 'N/A';
-  const deadlineColor = getDeadlineColor(task.deadline || task.updatedAt || task.createdAt);
-  const DeadlineIcon = getDeadlineIcon(task.deadline || task.updatedAt || task.createdAt);
+  const rawDeadline: string | null = task.deadline ?? task.updatedAt ?? task.createdAt ?? null;
+  const deadline = rawDeadline ? new Date(rawDeadline).toLocaleDateString('en-GB') : 'N/A';
+  const deadlineColor = getDeadlineColor(rawDeadline);
+  const DeadlineIcon = getDeadlineIcon(rawDeadline);
 
   return (
     <TooltipProvider>
@@ -205,25 +250,16 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({ task, showMeta, 
               {/* Assignee */}
               <Tooltip>
                 <TooltipTrigger>
-                  <div className="flex-shrink-0 w-8 flex justify-center">
-                    {assignee?.avatar ? (
-                      <img 
-                        src={assignee.avatar} 
-                        alt="avatar" 
-                        className="w-5 h-5 rounded-full object-cover border border-gray-200" 
-                      />
-                    ) : (
-                      <Avatar 
-                        size={20} 
-                        name={assignee?.fullName || assignee?.email || 'No assignee'} 
-                        variant="beam"
-                        colors={['#92A1C6', '#146A7C', '#F0AB3D', '#C271B4', '#C20D90']}
-                      />
-                    )}
+                  <div className="flex-shrink-0 min-w-[70px] flex items-center justify-center h-7 ml-3">
+                    <AvatarStack assignees={Array.isArray(task.taskAssignees) ? task.taskAssignees : []} />
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{assignee?.fullName || assignee?.email || 'No assignee'}</p>
+                  <p>
+                    {Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0
+                      ? task.taskAssignees.map(a => a.executor).join(', ')
+                      : 'Unassigned'}
+                  </p>
                 </TooltipContent>
               </Tooltip>
               

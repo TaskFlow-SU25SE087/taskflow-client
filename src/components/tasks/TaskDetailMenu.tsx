@@ -13,24 +13,25 @@ import { cn } from '@/lib/utils'
 import { ProjectMember, Tag } from '@/types/project'
 import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
+import { formatDistanceToNow } from 'date-fns'
 import {
-    Calendar,
-    ChevronDown,
-    ChevronsDown,
-    ChevronsUp,
-    ChevronUp,
-    Eye,
-    Filter,
-    Link,
-    ListTodo,
-    Loader2,
-    MessageCircle,
-    Paperclip,
-    Pencil,
-    Plus,
-    Settings,
-    UserPlus,
-    X
+  Calendar,
+  ChevronDown,
+  ChevronsDown,
+  ChevronsUp,
+  ChevronUp,
+  Eye,
+  Filter,
+  Link,
+  ListTodo,
+  Loader2,
+  MessageCircle,
+  Paperclip,
+  Pencil,
+  Plus,
+  Settings,
+  UserPlus,
+  X
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -87,6 +88,12 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
   // Add this hook here (moved up)
   const [acceptLoading, setAcceptLoading] = useState(false)
+
+  // State cho từng assignee
+  const [removeReasonMap, setRemoveReasonMap] = useState<{ [id: string]: string }>({});
+  const [removeLoadingMap, setRemoveLoadingMap] = useState<{ [id: string]: boolean }>({});
+  const [leaveReasonMap, setLeaveReasonMap] = useState<{ [id: string]: string }>({});
+  const [leaveLoadingMap, setLeaveLoadingMap] = useState<{ [id: string]: boolean }>({});
 
   const getPriorityChevron = (priority: number) => {
     switch (priority) {
@@ -354,14 +361,14 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setRemoveLoading(true)
     try {
       await taskApi.removeTaskAssignment(currentProject.id, task.id, {
-        implementId: assignee.userId || (assignee as any).id,
+        implementId: assignee.userId,
         reason: removeReason
       })
       toast({ title: 'Success', description: 'Assignee removed from task!' })
       setAssignee(null)
       setRemoveReason('')
       onTaskUpdated()
-    } catch {
+    } catch (error: any) {
       toast({ title: 'Error', description: 'Failed to remove assignee', variant: 'destructive' })
     } finally {
       setRemoveLoading(false)
@@ -377,7 +384,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       setAssignee(null)
       setLeaveReason('')
       onTaskUpdated()
-    } catch {
+    } catch (error: any) {
       toast({ title: 'Error', description: 'Failed to leave task', variant: 'destructive' })
     } finally {
       setLeaveLoading(false)
@@ -748,162 +755,179 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         <div className='grid grid-cols-2 gap-6 mb-6'>
           {/* Assignee Section */}
           <div>
-            <h1 className='text-base font-medium mb-2 flex items-center gap-2'>
+            <h1 className='text-base font-semibold mb-3 flex items-center gap-2'>
               Assignee
             </h1>
-            <div className='flex items-center gap-2'>
-              <Select
-                onValueChange={async (memberId) => {
-                  await handleAssignMember(memberId);
-                  // Log assignee và user sau khi assign
-                  setTimeout(() => {
-                    console.log('[DEBUG after assign] assignee:', assignee);
-                    console.log('[DEBUG after assign] user:', user);
-                  }, 500);
-                  onTaskUpdated();
-                }}
-                value={assignee?.userId || (assignee as any)?.id || ''}
-                disabled={!user?.id}
-              >
-                <SelectTrigger
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-1.5 text-gray-600 rounded-lg border hover:bg-gray-50',
-                    'focus:ring-0 focus:ring-offset-0 h-auto',
-                    '[&>span]:flex [&>span]:items-center [&>span]:gap-2 [&>span]:m-0 [&>span]:p-0',
-                    '[&>svg]:hidden',
-                    !canAssignTask && 'opacity-50 cursor-not-allowed'
-                  )}
-                >
-                  <SelectValue
-                    placeholder={
-                      <div className='flex items-center gap-2 text-gray-500'>
-                        <UserPlus className='h-4 w-4' />
-                        <span>Assign member</span>
+            <div className='flex flex-col gap-4 p-3 bg-white rounded-lg shadow-sm border max-w-xs'>
+              {/* Danh sách tất cả assignees */}
+              {Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0 ? (
+                task.taskAssignees.map((a, idx) => {
+                  const isCurrentUser = String(myProjectMemberId) === String(a.projectMemberId);
+                  const isLeader = isUserLeader;
+                  console.log('DEBUG: myProjectMemberId =', myProjectMemberId, '| assignee.projectMemberId =', a.projectMemberId, '| isCurrentUser =', isCurrentUser, '| isLeader =', isLeader);
+                  const removeReason = removeReasonMap[a.projectMemberId] || '';
+                  const removeLoading = removeLoadingMap[a.projectMemberId] || false;
+                  const leaveReason = leaveReasonMap[a.projectMemberId] || '';
+                  const leaveLoading = leaveLoadingMap[a.projectMemberId] || false;
+                  return (
+                    <div key={a.projectMemberId || idx} className='flex flex-col gap-2 border-b last:border-b-0 pb-3 last:pb-0 mb-3 last:mb-0'>
+                      <div className='flex items-center gap-3'>
+                        <Avatar className='w-10 h-10 border border-gray-200 shadow'>
+                          <AvatarImage src={a.avatar} alt={a.executor} />
+                          <AvatarFallback>{a.executor?.[0] || '?'}</AvatarFallback>
+                        </Avatar>
+                        <span className='font-medium text-gray-800 text-base'>{a.executor}</span>
+                        <span className='ml-2 text-xs text-gray-400'>{a.role}</span>
                       </div>
-                    }
-                  >
-                    {assignee ? (
-                      <div style={{ display: 'flex', alignItems: 'center' }}>
-                        <img src={assignee.avatar} alt={assignee.fullName} style={{ width: 24, height: 24, borderRadius: '50%', marginRight: 8 }} />
-                        <span>{assignee.fullName}</span>
-                      </div>
-                    ) : (
-                      <span>Assign member</span>
-                    )}
-                  </SelectValue>
-                </SelectTrigger>
-                {/* Luôn hiển thị danh sách thành viên cho mọi user đăng nhập */}
-                {user?.id && (
-                  <SelectContent className='p-0'>
-                    {projectMembers.map((member) => {
-                      const memberId = member.userId || (member as any).id;
-                      const displayName = member.fullName?.trim() || member.email?.trim() || (memberId ? memberId.slice(0, 6) : 'Unknown');
-                      const avatarChar = (member.fullName?.[0] || member.email?.[0] || memberId?.[0] || '?').toUpperCase();
-                      return (
-                        <SelectItem
-                          key={memberId}
-                          value={memberId}
-                          className='focus:bg-gray-100 focus:text-gray-900 py-2 px-3'
-                        >
-                          <div className='flex items-center pl-5 gap-2'>
-                            <Avatar>
-                              <AvatarImage src={member.avatar} alt={displayName} />
-                              <AvatarFallback>{avatarChar}</AvatarFallback>
-                            </Avatar>
-                            <span>{displayName}</span>
+                      {/* Leave task - chỉ hiển thị cho assignee hiện tại (member hoặc leader) */}
+                      {isCurrentUser ? (
+                        <div className='flex flex-col gap-2'>
+                          <input
+                            type='text'
+                            placeholder='Lý do rời task...'
+                            value={leaveReason}
+                            onChange={e => setLeaveReasonMap(prev => ({ ...prev, [a.projectMemberId]: e.target.value }))}
+                            className='rounded border px-2 py-1 text-sm focus:border-blue-400 transition bg-gray-50'
+                            disabled={leaveLoading}
+                          />
+                          <Button
+                            onClick={async () => {
+                              setLeaveLoadingMap(prev => ({ ...prev, [a.projectMemberId]: true }));
+                              try {
+                                await taskApi.leaveTaskAssignment(currentProject.id, task.id, { reason: leaveReason });
+                                toast({ title: 'Success', description: 'You have left this task!' });
+                                setAssignee(null);
+                                setLeaveReasonMap(prev => ({ ...prev, [a.projectMemberId]: '' }));
+                                onTaskUpdated();
+                              } catch (error: any) {
+                                toast({ title: 'Error', description: 'Failed to leave task', variant: 'destructive' });
+                              } finally {
+                                setLeaveLoadingMap(prev => ({ ...prev, [a.projectMemberId]: false }));
+                              }
+                            }}
+                            disabled={leaveLoading}
+                            variant='outline'
+                            size='sm'
+                            title='Rời khỏi task'
+                            className='flex items-center gap-1 text-gray-700 border-gray-300 hover:bg-gray-100 w-full justify-center'
+                          >
+                            <UserPlus className='w-4 h-4 mr-1' />
+                            {leaveLoading ? 'Leaving...' : 'Leave'}
+                          </Button>
+                        </div>
+                      ) : (
+                        // Remove chỉ hiển thị cho leader và không phải chính mình
+                        isLeader && !isCurrentUser && (
+                          <div className='flex flex-col gap-2'>
+                            <input
+                              type='text'
+                              placeholder='Lý do xóa assignee...'
+                              value={removeReason}
+                              onChange={e => setRemoveReasonMap(prev => ({ ...prev, [a.projectMemberId]: e.target.value }))}
+                              className='rounded border px-2 py-1 text-sm focus:border-red-400 transition bg-gray-50'
+                              disabled={removeLoading}
+                            />
+                            <Button
+                              onClick={async () => {
+                                setRemoveLoadingMap(prev => ({ ...prev, [a.projectMemberId]: true }));
+                                try {
+                                  await taskApi.removeTaskAssignment(currentProject.id, task.id, {
+                                    implementId: a.projectMemberId,
+                                    reason: removeReason
+                                  });
+                                  toast({ title: 'Success', description: 'Assignee removed from task!' });
+                                  setAssignee(null);
+                                  setRemoveReasonMap(prev => ({ ...prev, [a.projectMemberId]: '' }));
+                                  onTaskUpdated();
+                                } catch (error: any) {
+                                  toast({ title: 'Error', description: 'Failed to remove assignee', variant: 'destructive' });
+                                } finally {
+                                  setRemoveLoadingMap(prev => ({ ...prev, [a.projectMemberId]: false }));
+                                }
+                              }}
+                              disabled={removeLoading}
+                              variant='destructive'
+                              size='sm'
+                              title='Xóa assignee khỏi task'
+                              className='flex items-center gap-1 w-full justify-center'
+                            >
+                              <X className='w-4 h-4 mr-1' />
+                              {removeLoading ? 'Removing...' : 'Remove'}
+                            </Button>
                           </div>
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                )}
-              </Select>
-              
-              {/* Assignment actions */}
-              {assignee && (
-                <div className='flex flex-col gap-2 ml-2'>
-                  {/* Leave task - chỉ hiển thị cho assignee */}
-                  {isUserAssignee && (
-                    <div className='flex items-center gap-2'>
-                      {(() => {
-                        console.log('[TaskDetailMenu] Rendering Leave button', {
-                          isUserAssignee,
-                          myProjectMember,
-                          myProjectMemberId,
-                          assigneeProjectMemberIds,
-                          leaveLoading,
-                          leaveReason,
-                          user,
-                          taskId: task.id,
-                        });
-                        return null;
-                      })()}
-                      <input
-                        type='text'
-                        placeholder='Leave reason (optional)'
-                        value={leaveReason}
-                        onChange={(e) => setLeaveReason(e.target.value)}
-                        className='px-2 py-1 border rounded text-sm w-32'
-                        disabled={leaveLoading}
-                      />
-                      <Button
-                        onClick={async () => {
-                          console.log('[TaskDetailMenu] Leave button clicked', {
-                            user,
-                            myProjectMember,
-                            myProjectMemberId,
-                            taskId: task.id,
-                            assigneeProjectMemberIds,
-                            leaveReason,
-                          });
-                          setLeaveLoading(true);
-                          try {
-                            // Ensure correct params: projectId, taskId, projectMemberId (if required)
-                            const res = await taskApi.leaveTaskAssignment(currentProject.id, task.id, { projectMemberId: myProjectMemberId, reason: leaveReason });
-                            console.log('[TaskDetailMenu] Leave API response', res);
-                            toast({ title: 'Success', description: 'You have left this task!' });
-                            setAssignee(null);
-                            setLeaveReason('');
-                            onTaskUpdated();
-                          } catch (error) {
-                            console.error('[TaskDetailMenu] Leave API error', error);
-                            toast({ title: 'Error', description: 'Failed to leave task', variant: 'destructive' });
-                          } finally {
-                            setLeaveLoading(false);
-                          }
-                        }}
-                        disabled={leaveLoading}
-                        variant='outline'
-                        size='sm'
-                        title='Leave this task'
-                      >
-                        {leaveLoading ? 'Leaving...' : 'Leave'}
-                      </Button>
+                        )
+                      )}
                     </div>
-                  )}
-                  
-                  {/* Remove assignee - chỉ hiển thị cho Leader */}
-                  {isUserLeader && (
-                    <div className='flex items-center gap-2'>
-                      <input
-                        type='text'
-                        placeholder='Remove reason (optional)'
-                        value={removeReason}
-                        onChange={(e) => setRemoveReason(e.target.value)}
-                        className='px-2 py-1 border rounded text-sm w-32'
-                        disabled={removeLoading}
-                      />
-                      <Button
-                        onClick={handleRemoveAssignee}
-                        disabled={removeLoading}
-                        variant='destructive'
-                        size='sm'
-                        title='Remove this assignee from the task'
+                  );
+                })
+              ) : (
+                <span className='text-gray-400 italic'>Chưa có assignee</span>
+              )}
+              {/* Dropdown chọn assignee (nếu là leader) */}
+              {isUserLeader && (
+                <div className='mt-2'>
+                  <Select
+                    onValueChange={async (memberId) => {
+                      await handleAssignMember(memberId);
+                      setTimeout(() => {
+                        onTaskUpdated();
+                      }, 500);
+                    }}
+                    value={assignee?.userId || (assignee as any)?.id || ''}
+                    disabled={!user?.id}
+                  >
+                    <SelectTrigger
+                      className={cn(
+                        'flex items-center gap-2 px-3 py-1.5 text-gray-600 rounded-lg border hover:bg-gray-50',
+                        'focus:ring-0 focus:ring-offset-0 h-auto',
+                        '[&>span]:flex [&>span]:items-center [&>span]:gap-2 [&>span]:m-0 [&>span]:p-0',
+                        '[&>svg]:hidden',
+                        !canAssignTask && 'opacity-50 cursor-not-allowed'
+                      )}
+                    >
+                      <SelectValue
+                        placeholder={
+                          <div className='flex items-center gap-2 text-gray-500'>
+                            <UserPlus className='h-4 w-4' />
+                            <span>Assign member</span>
+                          </div>
+                        }
                       >
-                        {removeLoading ? 'Removing...' : 'Remove'}
-                      </Button>
-                    </div>
-                  )}
+                        {assignee ? (
+                          <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <img src={assignee.avatar} alt={assignee.fullName} style={{ width: 24, height: 24, borderRadius: '50%', marginRight: 8 }} />
+                            <span>{assignee.fullName}</span>
+                          </div>
+                        ) : (
+                          <span>Assign member</span>
+                        )}
+                      </SelectValue>
+                    </SelectTrigger>
+                    {user?.id && (
+                      <SelectContent className='p-0'>
+                        {projectMembers.map((member) => {
+                          const memberId = member.userId || (member as any).id;
+                          const displayName = member.fullName?.trim() || member.email?.trim() || (memberId ? memberId.slice(0, 6) : 'Unknown');
+                          const avatarChar = (member.fullName?.[0] || member.email?.[0] || memberId?.[0] || '?').toUpperCase();
+                          return (
+                            <SelectItem
+                              key={memberId}
+                              value={memberId}
+                              className='focus:bg-gray-100 focus:text-gray-900 py-2 px-3'
+                            >
+                              <div className='flex items-center pl-5 gap-2'>
+                                <Avatar>
+                                  <AvatarImage src={member.avatar} alt={displayName} />
+                                  <AvatarFallback>{avatarChar}</AvatarFallback>
+                                </Avatar>
+                                <span>{displayName}</span>
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    )}
+                  </Select>
                 </div>
               )}
             </div>
@@ -1049,7 +1073,14 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     <AvatarFallback>{(c.commenter?.[0] || '?').toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className='flex-1'>
-                    <div className='font-medium'>{c.commenter}</div>
+                    <div className='flex items-center gap-2'>
+                      <div className='font-medium'>{c.commenter}</div>
+                      {c.lastUpdate && (
+                        <span className='text-xs text-gray-400'>
+                          {formatDistanceToNow(new Date(c.lastUpdate), { addSuffix: true })}
+                        </span>
+                      )}
+                    </div>
                     <div className='text-gray-700 mb-1 font-medium'>{c.content}</div>
                     {Array.isArray(c.attachmentUrls) && c.attachmentUrls.length > 0 && (
                       <div className='flex flex-wrap gap-2 mb-1'>
