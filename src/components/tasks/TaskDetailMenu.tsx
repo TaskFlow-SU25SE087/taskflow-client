@@ -1,6 +1,7 @@
 import { projectMemberApi } from '@/api/projectMembers'
 import { taskApi } from '@/api/tasks'
 import ProjectTagManager from '@/components/projects/ProjectTagManager'
+import { IssueCreateMenu } from '@/components/tasks/IssueCreateMenu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -749,6 +750,13 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           >
             {completeLoading ? 'Completing...' : 'Complete'}
           </Button>
+          {currentProject && (
+            <IssueCreateMenu
+              projectId={currentProject.id}
+              taskId={task.id}
+              onIssueCreated={onTaskUpdated}
+            />
+          )}
         </div>
 
         {/* Assignee and Tags Grid */}
