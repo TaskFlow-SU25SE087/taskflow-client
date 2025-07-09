@@ -1,9 +1,9 @@
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
+import { EyeClosedIcon, EyeOpenIcon, Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/hooks/useAuth'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 export default function LoginPage() {
@@ -11,12 +11,27 @@ export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [rememberMe, setRememberMe] = useState(false)
+
+  // Tự động điền email nếu đã lưu
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('rememberedEmail')
+    if (savedEmail) setUsername(savedEmail)
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
     try {
+      // Lưu trạng thái rememberMe vào localStorage để useAuthContext biết
+      localStorage.setItem('rememberMe', rememberMe ? 'true' : 'false')
       await login(username, password)
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', username)
+      } else {
+        localStorage.removeItem('rememberedEmail')
+      }
     } catch (error) {
       console.error('Login error:', error)
     } finally {
@@ -67,19 +82,29 @@ export default function LoginPage() {
                   Forgot password?
                 </Link>
               </div>
-              <Input
-                id='password'
-                type='password'
-                placeholder='Enter your password'
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isSubmitting}
-                className='w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lavender-700 focus:border-transparent'
-              />
+              <div className='relative'>
+                <Input
+                  id='password'
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder='Enter your password'
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  disabled={isSubmitting}
+                  className='w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lavender-700 focus:border-transparent pr-10'
+                />
+                <button
+                  type='button'
+                  tabIndex={-1}
+                  className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 focus:outline-none'
+                  onClick={() => setShowPassword((v) => !v)}
+                >
+                  {showPassword ? <EyeOpenIcon width={22} height={22} /> : <EyeClosedIcon width={22} height={22} />}
+                </button>
+              </div>
             </div>
             <div className='flex items-center space-x-2'>
-              <Checkbox id='remember' />
+              <Checkbox id='remember' checked={rememberMe} onCheckedChange={val => setRememberMe(val === true)} />
               <label htmlFor='remember' className='text-sm font-medium text-gray-700 cursor-pointer'>
                 Remember me
               </label>

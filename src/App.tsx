@@ -32,14 +32,11 @@ import ProjectReports from './pages/projects/ProjectReports'
 import ProjectTimeline from './pages/projects/ProjectTimeline'
 
 const AuthRedirect = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, isOtpVerified, user } = useAuth()
+  const { isAuthenticated } = useAuth()
   const location = useLocation()
 
-  // Kiểm tra đã hoàn tất hồ sơ (ví dụ: có username và phoneNumber)
-  const isProfileCompleted = user && user.fullName && user.phoneNumber
-
-  // Nếu đã xác thực và hoàn tất hồ sơ, redirect sang /projects
-  if (isAuthenticated && isOtpVerified && isProfileCompleted && location.pathname !== '/projects') {
+  // Nếu đã xác thực, redirect sang /projects
+  if (isAuthenticated && location.pathname !== '/projects') {
     return <Navigate to='/projects' state={{ from: location }} replace />
   }
 

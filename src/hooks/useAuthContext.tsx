@@ -35,7 +35,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const storedUser = sessionStorage.getItem('auth_user')
     const storedOtpStatus = sessionStorage.getItem('otp_verified')
-    const storedAccessToken = sessionStorage.getItem('accessToken')
+    // Ưu tiên lấy accessToken từ localStorage nếu có rememberMe
+    const rememberMe = localStorage.getItem('rememberMe') === 'true'
+    const storedAccessToken = rememberMe
+      ? localStorage.getItem('accessToken')
+      : sessionStorage.getItem('accessToken')
     console.log('[AuthProvider] useEffect mount:')
     console.log('  storedUser:', storedUser)
     console.log('  storedOtpStatus:', storedOtpStatus)
@@ -60,7 +64,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null)
         setIsOtpVerified(false)
         sessionStorage.removeItem('auth_user')
-        sessionStorage.removeItem('accessToken')
+        if (rememberMe) {
+          localStorage.removeItem('accessToken')
+        } else {
+          sessionStorage.removeItem('accessToken')
+        }
       }
     }
     setAuthLoading(false)
@@ -115,7 +123,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Store tokens
       axiosClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
       localStorage.setItem('refreshToken', refreshToken)
-      sessionStorage.setItem('accessToken', accessToken)
+      // Lưu accessToken vào localStorage nếu rememberMe, ngược lại dùng sessionStorage
+      const rememberMe = localStorage.getItem('rememberMe') === 'true'
+      if (rememberMe) {
+        localStorage.setItem('accessToken', accessToken)
+      } else {
+        sessionStorage.setItem('accessToken', accessToken)
+      }
 
       // Get current user information including role from JWT token
       let currentUser: User | null = null
@@ -199,6 +213,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem('auth_user')
     sessionStorage.removeItem('otp_verified')
     sessionStorage.removeItem('accessToken')
+    localStorage.removeItem('accessToken')
+    localStorage.removeItem('rememberMe')
     navigate('/login', { replace: true })
   }
 
