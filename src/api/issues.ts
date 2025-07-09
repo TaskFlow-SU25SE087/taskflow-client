@@ -61,9 +61,8 @@ export const issueApi = {
       console.log('✅ [issueApi] Response received:', response)
       console.log('📊 [issueApi] Response data:', response.data)
       
-      const success = response.data.data === true
+      const success = response.status === 200
       console.log('🎯 [issueApi] Success:', success)
-      
       return success
     } catch (error) {
       console.error('❌ [issueApi] Error creating issue:', error)
