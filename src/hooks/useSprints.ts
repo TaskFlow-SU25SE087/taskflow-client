@@ -32,7 +32,7 @@ export const useSprints = () => {
   const refreshSprints = fetchSprints
 
   const createSprint = async (sprint: { name: string; description: string; startDate: string; endDate: string; status: string | number }) => {
-    if (!currentProject || !currentProject.id) return false
+    if (!currentProject || !currentProject.id) return { ok: false, message: 'No project selected' }
     setIsLoading(true)
     try {
       const ok = await sprintApi.createSprint(currentProject.id, {
@@ -43,10 +43,11 @@ export const useSprints = () => {
         status: String(sprint.status)
       })
       if (ok) await fetchSprints()
-      return ok
-    } catch (err) {
+      return { ok: true }
+    } catch (err: any) {
       setError(err as Error)
-      return false
+      const message = err?.response?.data?.message || 'Failed to create sprint. Please try again.'
+      return { ok: false, message }
     } finally {
       setIsLoading(false)
     }

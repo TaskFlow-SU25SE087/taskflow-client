@@ -8,15 +8,16 @@ import { SprintSelector } from '@/components/sprints/SprintSelector'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { toast } from '@/hooks/use-toast'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useOptimizedTasks } from '@/hooks/useOptimizedTasks'
 import { useSprints } from '@/hooks/useSprints'
+import { useToast } from '@/hooks/useToast'
 import { TaskP } from '@/types/task'
 import { Filter, Search, Share2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 export default function ProjectBacklog() {
+  const { toast } = useToast()
   const { tasks, isLoading: tasksLoading, refreshTasks } = useOptimizedTasks()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [taskSearchQuery, setTaskSearchQuery] = useState('')
@@ -75,26 +76,36 @@ export default function ProjectBacklog() {
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
   const handleCreateSprint = async (data: { name: string; description: string; startDate: string; endDate: string }) => {
-    if (!currentProject) return
+    if (!currentProject) return false
     try {
-      await createSprint({
+      const result = await createSprint({
         name: data.name,
         description: data.description,
         startDate: data.startDate,
         endDate: data.endDate,
-        status: '0' // Not Started mặc định
+        status: '0'
       })
-      toast({
-        title: 'Success',
-        description: 'Sprint created successfully'
-      })
-    } catch (error) {
-      console.log(error)
+      if (result.ok) {
+        toast({
+          title: 'Success',
+          description: 'Sprint created successfully'
+        })
+        return true
+      } else {
+        toast({
+          title: 'Error',
+          description: result.message,
+          variant: 'destructive'
+        })
+        return false
+      }
+    } catch (error: any) {
       toast({
         title: 'Error',
         description: 'Failed to create sprint. Please try again.',
         variant: 'destructive'
       })
+      return false
     }
   }
 
