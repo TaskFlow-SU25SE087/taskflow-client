@@ -24,9 +24,7 @@ export class SignalRService {
 
   async connect() {
     if (this.isConnecting) return
-    
     this.isConnecting = true
-    
     try {
       this.connection = new signalR.HubConnectionBuilder()
         .withUrl(SIGNALR_CONFIG.HUB_URL, {
@@ -38,7 +36,7 @@ export class SignalRService {
           }
         })
         .withAutomaticReconnect([0, 2000, 10000, 30000])
-        .configureLogging(signalR.LogLevel.Debug) // Bật log debug
+        .configureLogging(signalR.LogLevel.Debug)
         .build()
 
       // Register event handlers
@@ -48,7 +46,6 @@ export class SignalRService {
       await this.connection.start()
       console.log('✅ SignalR Connected!')
       this.reconnectAttempts = 0
-      
     } catch (error) {
       SignalRErrorHandler.handleConnectionError(error, this)
       this.handleReconnect()
@@ -77,21 +74,22 @@ export class SignalRService {
     if (!this.connection) return
 
     // Connection state handlers
-    this.connection.onclose((error) => {
+    this.connection.onclose((error?: any) => {
       console.log('🔌 SignalR disconnected', error)
     })
 
-    this.connection.onreconnected((connectionId) => {
+    this.connection.onreconnected((connectionId?: any) => {
       console.log('🔄 SignalR reconnected', connectionId)
     })
 
-    this.connection.onreconnecting((error) => {
+    this.connection.onreconnecting((error?: any) => {
       console.log('🔄 SignalR reconnecting...', error)
     })
 
-    // Log các sự kiện custom nếu có
-    this.connection.on('ReceiveNotification', (data) => {
-      console.log('📩 SignalR ReceiveNotification:', data)
+    // Lắng nghe sự kiện ReceiveNotification
+    this.connection.on('ReceiveNotification', (data: any) => {
+      console.log('[SignalR] Nhận thông báo real-time:', data)
+      // TODO: Xử lý hiển thị notification ở đây nếu cần
     })
   }
 
@@ -99,7 +97,6 @@ export class SignalRService {
     if (!this.connection) {
       throw new Error('SignalR connection not established')
     }
-    
     try {
       console.log(`[SignalR] Gọi method: ${methodName}`, ...args)
       return await this.connection.invoke(methodName, ...args)
@@ -111,6 +108,10 @@ export class SignalRService {
   }
 
   async joinProjectGroup(projectId: string) {
+    if (!this.isConnected()) {
+      console.warn('SignalR chưa kết nối, không thể join group')
+      return
+    }
     try {
       return await this.invokeMethod('JoinProjectGroup', projectId)
     } catch (error) {
@@ -120,6 +121,10 @@ export class SignalRService {
   }
 
   async leaveProjectGroup(projectId: string) {
+    if (!this.isConnected()) {
+      console.warn('SignalR chưa kết nối, không thể leave group')
+      return
+    }
     try {
       return await this.invokeMethod('LeaveProjectGroup', projectId)
     } catch (error) {
@@ -152,4 +157,4 @@ export class SignalRService {
   isConnected() {
     return this.connection?.state === 'Connected'
   }
-} 
+}
