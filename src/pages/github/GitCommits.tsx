@@ -1,15 +1,15 @@
-import { useState } from 'react'
-import { ChevronDown, Filter, GitCommit, Search, Calendar, ArrowRight } from 'lucide-react'
+import { Navbar } from '@/components/Navbar'
+import { Sidebar } from '@/components/Sidebar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Loader } from '@/components/ui/loader'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
-import { Sidebar } from '@/components/Sidebar'
-import { Navbar } from '@/components/Navbar'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
-import { Loader } from '@/components/ui/loader'
+import { format } from 'date-fns'
+import { ArrowRight, Calendar, ChevronDown, Filter, GitCommit, Search } from 'lucide-react'
+import { useState } from 'react'
 
 // Temporary mock data until API is ready
 const MOCK_COMMITS = [
@@ -106,7 +106,7 @@ export default function GitCommits() {
   if (isLoading || !currentProject) {
     return (
       <div className='flex h-screen bg-gray-100'>
-        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
+        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
         <div className='flex-1 flex flex-col overflow-hidden'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
           <Loader />
@@ -117,7 +117,7 @@ export default function GitCommits() {
 
   return (
     <div className='flex h-screen bg-gray-100'>
-      <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
+      <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
 
       <div className='flex-1 flex flex-col overflow-hidden'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />

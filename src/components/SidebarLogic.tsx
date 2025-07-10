@@ -1,8 +1,9 @@
 import gsap from 'gsap'
 import { LucideLayoutDashboard } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { FiAlertCircle, FiBarChart2, FiClock, FiGitBranch, FiLayers, FiSettings, FiUsers } from 'react-icons/fi'
+import { FiAlertCircle, FiBarChart2, FiClock, FiGitBranch, FiGithub, FiLayers, FiSettings, FiUsers } from 'react-icons/fi'
 import { useLocation, useNavigate } from 'react-router-dom'
+import GitHubSidebarItem from './github/GitHubSidebarItem'
 
 export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
   const [activeTab, setActiveTab] = useState('board')
@@ -29,8 +30,9 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
     { id: 'backlog', icon: <FiLayers className='h-5 w-5' />, label: 'Backlog', section: 1, path: projectId ? `/projects/${projectId}/backlog` : '/backlog' },
     { id: 'members', icon: <FiUsers className='h-5 w-5' />, label: 'Members', section: 1, path: projectId ? `/projects/${projectId}/members` : '/members' },
     { id: 'reports', icon: <FiBarChart2 className='h-5 w-5' />, label: 'Reports', section: 1, path: projectId ? `/projects/${projectId}/reports` : '/reports' },
-    { id: 'commits', icon: <FiGitBranch className='h-5 w-5' />, label: 'Commits', section: 2, path: '/commits' },
-    { id: 'issues', icon: <FiAlertCircle className='h-5 w-5' />, label: 'Issues', section: 2, path: '/issues' },
+    { id: 'commits', icon: <FiGitBranch className='h-5 w-5' />, label: 'Commits', section: 2, path: projectId ? `/projects/${projectId}/commits` : '/commits' },
+    { id: 'issues', icon: <FiAlertCircle className='h-5 w-5' />, label: 'Issues', section: 2, path: projectId ? `/projects/${projectId}/issues` : '/issues' },
+    { id: 'github', icon: <FiGithub className='h-5 w-5' />, label: 'GitHub', section: 2, path: projectId ? `/projects/${projectId}/github` : '/github' },
     { id: 'settings', icon: <FiSettings className='h-5 w-5' />, label: 'Settings', section: 3, path: '/settings' }
   ]
 
@@ -130,18 +132,35 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
 
     return (
       <div className='relative' onMouseMove={handleMouseMove}>
-        {sectionItems.map((item) => (
-          <div
-            key={item.id}
-            data-tab-id={item.id}
-            className={`relative flex items-center gap-3 px-2 py-3 cursor-pointer rounded-md transition-colors duration-200
-              ${getTabStyles(item.id).text}`}
-            onClick={() => handleClick(item.id)}
-          >
-            <div className={`transition-colors duration-200 ${getTabStyles(item.id).icon}`}>{item.icon}</div>
-            <span className='font-medium'>{item.label}</span>
-          </div>
-        ))}
+        {sectionItems.map((item) => {
+          // Special handling for GitHub item
+          if (item.id === 'github' && projectId) {
+            return (
+              <div key={item.id} data-tab-id={item.id}>
+                <GitHubSidebarItem
+                  projectId={projectId}
+                  partId="part-123" // Mock partId for now
+                  isActive={activeTab === item.id}
+                  onClick={() => handleClick(item.id)}
+                />
+              </div>
+            )
+          }
+
+          // Regular items
+          return (
+            <div
+              key={item.id}
+              data-tab-id={item.id}
+              className={`relative flex items-center gap-3 px-2 py-3 cursor-pointer rounded-md transition-colors duration-200
+                ${getTabStyles(item.id).text}`}
+              onClick={() => handleClick(item.id)}
+            >
+              <div className={`transition-colors duration-200 ${getTabStyles(item.id).icon}`}>{item.icon}</div>
+              <span className='font-medium'>{item.label}</span>
+            </div>
+          )
+        })}
       </div>
     )
   }

@@ -13,6 +13,7 @@ import SignUpPage from '@/pages/home/SignupPage'
 import LegacyProjectMemberVerify from '@/pages/projects/LegacyProjectMemberVerify'
 import ProjectBoard from '@/pages/projects/ProjectBoard'
 import ProjectCreate from '@/pages/projects/ProjectCreate'
+import ProjectGitHub from '@/pages/projects/ProjectGitHub'
 import ProjectList from '@/pages/projects/ProjectList'
 import ProjectMembers from '@/pages/projects/ProjectMembers'
 import ProjectMemberVerify from '@/pages/projects/ProjectMemberVerify'
@@ -208,6 +209,15 @@ function App() {
             }
           />
 
+          <Route
+            path='/github'
+            element={
+              <ProtectedRoute>
+                <ProjectGitHub />
+              </ProtectedRoute>
+            }
+          />
+
           {/* Dynamic project routes */}
           <Route
             path='/projects/:projectId/board'
@@ -246,6 +256,30 @@ function App() {
             element={
               <ProtectedRoute>
                 <ProjectMembers />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path='/projects/:projectId/github'
+            element={
+              <ProtectedRoute>
+                <ProjectGitHub />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path='/projects/:projectId/commits'
+            element={
+              <ProtectedRoute>
+                <GitCommits />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path='/projects/:projectId/issues'
+            element={
+              <ProtectedRoute>
+                <GitIssues />
               </ProtectedRoute>
             }
           />

@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom'
 interface MainSidebarProps {
   isOpen: boolean
   onToggle: () => void
-  currentProject: any
+  currentProject?: any
 }
 
 export const Sidebar = ({ isOpen, onToggle, currentProject }: MainSidebarProps) => {
