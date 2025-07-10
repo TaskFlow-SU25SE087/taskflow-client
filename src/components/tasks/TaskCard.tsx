@@ -1,5 +1,6 @@
 import { projectMemberApi } from '@/api/projectMembers'
 import { taskApi } from '@/api/tasks'
+import { useSignalR } from '@/contexts/SignalRContext'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { ProjectMember } from '@/types/project'
 import { Sprint } from '@/types/sprint'
@@ -42,6 +43,7 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
   const [sprint, setSprint] = useState<Sprint | null>(null)
   const { currentProject } = useCurrentProject()
   const navigate = useNavigate()
+  const { notificationService } = useSignalR()
 
   const fetchTaskDetailsAndMember = useCallback(async () => {
     if (!currentProject) return
@@ -71,6 +73,23 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
     }
     fetchTaskDetailsAndMember()
   }, [currentProject, navigate, fetchTaskDetailsAndMember])
+
+  // SignalR: Listen for task-related notifications
+  useEffect(() => {
+    const handleTaskNotification = (notification: any) => {
+      if (notification.taskId === task.id) {
+        console.log('Task updated via SignalR:', notification.message)
+        // Refresh task data when notification is received
+        fetchTaskDetailsAndMember()
+      }
+    }
+
+    notificationService.addListener(handleTaskNotification)
+    
+    return () => {
+      notificationService.removeListener(handleTaskNotification)
+    }
+  }, [task.id, notificationService, fetchTaskDetailsAndMember])
 
   const handleTaskUpdated = useCallback(() => {
     fetchTaskDetailsAndMember()

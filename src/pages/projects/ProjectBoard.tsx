@@ -3,6 +3,7 @@ import { projectMemberApi } from '@/api/projectMembers'
 import { sprintApi } from '@/api/sprints'
 import { taskApi } from '@/api/tasks'
 import { Navbar } from '@/components/Navbar'
+import ProjectGroupManager from '@/components/ProjectGroupManager'
 import { ProjectEditMenu } from '@/components/projects/ProjectEditMenu'
 import { ProjectInviteDialog } from '@/components/projects/ProjectInviteDialog'
 import { ProjectMemberList } from '@/components/projects/ProjectMemberList'
@@ -25,10 +26,10 @@ import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import {
-  arrayMove,
-  horizontalListSortingStrategy,
-  SortableContext,
-  verticalListSortingStrategy
+    arrayMove,
+    horizontalListSortingStrategy,
+    SortableContext,
+    verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { ChevronDown, Filter, Link2, Pencil, Plus, Search } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -401,6 +402,9 @@ export default function ProjectBoard() {
 
       <div className='flex-1 flex flex-col overflow-hidden'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+
+        {/* SignalR Project Group Manager */}
+        {currentProject?.id && <ProjectGroupManager projectId={currentProject.id} />}
 
         <div className='flex flex-col h-full p-6'>
           <SprintSelector />

@@ -1,21 +1,23 @@
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/useAuth'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjects } from '@/hooks/useProjects'
 import Avatar from 'boring-avatars'
-import { Bell, ChevronDown, FolderKanban, HelpCircle, Layout, LogOut, Plus, Search, Settings, Shield, User } from 'lucide-react'
+import { ChevronDown, FolderKanban, HelpCircle, Layout, LogOut, Plus, Search, Settings, Shield, User } from 'lucide-react'
 import { FiMenu } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
+import ConnectionStatus from './ConnectionStatus'
+import NotificationCenter from './NotificationCenter'
 
 interface NavbarProps {
   isSidebarOpen: boolean
@@ -129,9 +131,12 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
           <div className='text-gray-500 px-2 hover:bg-transparent cursor-pointer'>
             <HelpCircle className='h-5 w-5' />
           </div>
-          <div className='text-gray-500 px-2 hover:bg-transparent cursor-pointer'>
-            <Bell className='h-5 w-5' />
-          </div>
+          
+          {/* Notification Center */}
+          <NotificationCenter />
+          
+          {/* Connection Status */}
+          <ConnectionStatus />
 
           {/* Profile Dropdown */}
           <DropdownMenu>

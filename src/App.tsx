@@ -1,6 +1,7 @@
 import AdminProtectedRoute from '@/components/AdminProtectedRoute'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Toaster } from '@/components/ui/toaster'
+import { SignalRProvider } from '@/contexts/SignalRContext'
 import { AuthProvider } from '@/hooks/useAuthContext.tsx'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
 import AdminTermPage from '@/pages/admin/AdminTermPage'
@@ -49,7 +50,8 @@ function App() {
     <BrowserRouter>
       <Toaster />
       <AuthProvider>
-        <Routes>
+        <SignalRProvider>
+          <Routes>
           <Route
             path='/'
             element={
@@ -339,8 +341,10 @@ function App() {
               </AdminProtectedRoute>
             }
           />
+          
           <Route path="/project" element={<Navigate to="/projects/" />} />
         </Routes>
+        </SignalRProvider>
       </AuthProvider>
     </BrowserRouter>
   )
