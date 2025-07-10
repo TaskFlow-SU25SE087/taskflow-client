@@ -9,9 +9,10 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 import { useTags } from '@/hooks/useTags'
 import { useTasks } from '@/hooks/useTasks'
-import { ProjectMember } from '@/types/project'
 import { Loader2, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import DatePicker from 'react-datepicker'
+import 'react-datepicker/dist/react-datepicker.css'
 
 interface CreateTaskDialogProps {
   isOpen: boolean
@@ -38,10 +39,8 @@ export default function TaskCreateMenu({
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState('Medium')
-  const [deadline, setDeadline] = useState('')
+  const [deadline, setDeadline] = useState<Date | null>(null)
   const [file, setFile] = useState<File | null>(null)
-  const [members, setMembers] = useState<ProjectMember[]>([])
-  const [assigneeId, setAssigneeId] = useState('')
 
   const handleTagChange = (tagId: string) => {
     setSelectedTagIds((prev) =>
@@ -53,9 +52,9 @@ export default function TaskCreateMenu({
     const fetchMembers = async () => {
       try {
         const data = await projectMemberApi.getMembersByProjectId(projectId)
-        setMembers(data)
+        // setMembers(data) // XÓA: setMembers(data)
       } catch (error) {
-        setMembers([])
+        // setMembers([]) // XÓA: setMembers([])
       }
     }
     fetchMembers()
@@ -91,8 +90,14 @@ export default function TaskCreateMenu({
       const formData = new FormData();
       formData.append('Title', title);
       formData.append('Description', description);
-      formData.append('Priority', priority);
-      formData.append('Deadline', deadline);
+      const priorityMap = {
+        Low: 0,
+        Medium: 10000,
+        High: 20000,
+        Urgent: 30000
+      }
+      formData.append('Priority', String(priorityMap[priority as 'Low' | 'Medium' | 'High' | 'Urgent']))
+      formData.append('Deadline', deadline ? deadline.toISOString() : '')
       if (file) formData.append('File', file);
       if (sprintId) formData.append('SprintId', sprintId);
       selectedTagIds.forEach((tagId) => formData.append('TagIds', tagId));
@@ -106,9 +111,7 @@ export default function TaskCreateMenu({
         for (const tagId of selectedTagIds) {
           await taskApi.addTagToTask(projectId, createdTask.id, tagId)
         }
-        if (assigneeId) {
-          await taskApi.assignTask(projectId, createdTask.id, assigneeId)
-        }
+        // XÓA: if (assigneeId) { await taskApi.assignTask(projectId, createdTask.id, assigneeId) }
       } else {
         toast({
           title: 'Cảnh báo',
@@ -128,8 +131,8 @@ export default function TaskCreateMenu({
       setFile(null)
       setSelectedTagIds([])
       setPriority('Medium')
-      setDeadline('')
-      setAssigneeId('')
+      setDeadline(null)
+      // XÓA: setAssigneeId('')
     } catch (error) {
       console.error(error)
       toast({
@@ -198,7 +201,19 @@ export default function TaskCreateMenu({
                     checked={selectedTagIds.includes(tag.id)}
                     onChange={() => handleTagChange(tag.id)}
                   />
-                  {tag.name}
+                  <span
+                    style={{
+                      backgroundColor: tag.color,
+                      color: getContrastYIQ(tag.color),
+                      padding: '2px 8px',
+                      borderRadius: '8px',
+                      fontWeight: 500,
+                      fontSize: '0.95em',
+                      display: 'inline-block',
+                    }}
+                  >
+                    {tag.name}
+                  </span>
                 </label>
               ))}
             </div>
@@ -215,21 +230,25 @@ export default function TaskCreateMenu({
                 <SelectItem value='Low'>Low</SelectItem>
                 <SelectItem value='Medium'>Medium</SelectItem>
                 <SelectItem value='High'>High</SelectItem>
-                <SelectItem value='Critical'>Critical</SelectItem>
+                <SelectItem value='Urgent'>Urgent</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <div className='space-y-2'>
+          <div className='space-y-2 w-full'>
             <Label htmlFor='deadline' className='text-sm font-medium'>
               Deadline
             </Label>
-            <Input
-              id='deadline'
-              type='date'
-              className='h-11'
-              value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-            />
+            <div>
+              <DatePicker
+                id='deadline'
+                selected={deadline}
+                onChange={(date: Date | null) => setDeadline(date)}
+                dateFormat='dd/MM/yy'
+                placeholderText='dd/mm/yy'
+                className='w-full h-11 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-lavender-400 transition-all text-base bg-gray-50'
+                required
+              />
+            </div>
           </div>
           <div className='space-y-2'>
             <Label htmlFor='file' className='text-sm font-medium'>
@@ -242,7 +261,7 @@ export default function TaskCreateMenu({
               onChange={(e) => setFile(e.target.files?.[0] || null)}
             />
           </div>
-          <div className='space-y-2'>
+          {/* XÓA: <div className='space-y-2'>
             <label className='text-sm font-medium'>Assignee</label>
             <select
               className='h-11 w-full border rounded px-3'
@@ -256,7 +275,7 @@ export default function TaskCreateMenu({
                 </option>
               ))}
             </select>
-          </div>
+          </div> */}
           <div className='flex justify-end gap-3 pt-4'>
             <Button
               variant='outline'
@@ -285,4 +304,16 @@ export default function TaskCreateMenu({
       </DialogContent>
     </Dialog>
   )
+}
+
+function getContrastYIQ(hexcolor: string) {
+  let color = hexcolor.replace('#', '')
+  if (color.length === 3) {
+    color = color[0]+color[0]+color[1]+color[1]+color[2]+color[2]
+  }
+  const r = parseInt(color.substr(0,2),16)
+  const g = parseInt(color.substr(2,2),16)
+  const b = parseInt(color.substr(4,2),16)
+  const yiq = ((r*299)+(g*587)+(b*114))/1000
+  return (yiq >= 128) ? '#222' : '#fff'
 }
