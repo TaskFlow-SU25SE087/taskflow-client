@@ -406,52 +406,54 @@ export default function ProjectBoard() {
         {/* SignalR Project Group Manager */}
         {currentProject?.id && <ProjectGroupManager projectId={currentProject.id} />}
 
-        <div className='flex flex-col h-full p-6'>
+        <div className='flex flex-col h-full p-3 sm:p-6'>
           <SprintSelector />
-          <div className='flex-none w-full flex items-center justify-between pb-4'>
-            <div className='flex items-center gap-2'>
-              <h1 className='text-4xl font-bold pr-2'>{currentProject.title}</h1>
+          <div className='flex-none w-full flex flex-col sm:flex-row sm:items-center justify-between pb-4 gap-4'>
+            <div className='flex items-center gap-2 flex-wrap'>
+              <h1 className='text-2xl sm:text-4xl font-bold pr-2'>{currentProject.title}</h1>
               <ProjectEditMenu
                 project={currentProject}
                 onProjectUpdated={refreshBoards}
                 trigger={
-                  <Button variant='ghost' size='icon' className='h-8 w-8 rounded-xl bg-violet-100 hover:bg-violet-200'>
-                    <Pencil className='h-4 w-4 text-violet-600' />
+                  <Button variant='ghost' size='icon' className='h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-violet-100 hover:bg-violet-200'>
+                    <Pencil className='h-3 w-3 sm:h-4 sm:w-4 text-violet-600' />
                   </Button>
                 }
               />
               <Button
                 variant='ghost'
                 size='icon'
-                className='h-8 w-8 rounded-xl bg-violet-100 hover:bg-violet-200'
+                className='h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-violet-100 hover:bg-violet-200'
                 onClick={handleCopyProjectId}
               >
-                <Link2 className='h-4 w-4 text-violet-600' />
+                <Link2 className='h-3 w-3 sm:h-4 sm:w-4 text-violet-600' />
               </Button>
             </div>
 
-            <div className='flex items-center gap-4'>
+            <div className='flex items-center gap-2 sm:gap-4 flex-wrap'>
               <div className='flex items-center gap-2'>
                 <Button
                   variant='ghost'
-                  className='flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-100 hover:bg-violet-200 text-violet-600'
+                  className='flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg bg-violet-100 hover:bg-violet-200 text-violet-600 text-sm'
                   onClick={() => setIsInviteOpen(true)}
                 >
-                  <Plus className='h-4 w-4' />
-                  <span className='font-medium'>Invite</span>
+                  <Plus className='h-3 w-3 sm:h-4 sm:w-4' />
+                  <span className='font-medium hidden sm:inline'>Invite</span>
                 </Button>
                 <Button
                   variant='outline'
-                  className='ml-2 text-red-600 border-red-200 hover:bg-red-50'
+                  className='ml-2 text-red-600 border-red-200 hover:bg-red-50 text-sm px-2 sm:px-3'
                   onClick={handleLeaveProject}
                   disabled={memberLoading}
                 >
-                  {memberLoading ? 'Leaving...' : 'Leave Project'}
+                  {memberLoading ? 'Leaving...' : <span className='hidden sm:inline'>Leave Project</span>}
                 </Button>
               </div>
-              <MemberAvatarGroup members={projectMembers} />
+              <div className='hidden sm:block'>
+                <MemberAvatarGroup members={projectMembers} />
+              </div>
             </div>
-            <div className='mt-4'>
+            <div className='mt-4 sm:hidden'>
               <ProjectMemberList
                 projectId={currentProject.id}
                 members={projectMembers}
@@ -462,19 +464,19 @@ export default function ProjectBoard() {
             </div>
           </div>
 
-          <div className='pb-6 flex items-center justify-between'>
-            <div className='flex items-center gap-4'>
-              <Button variant='outline' className='bg-white hover:bg-gray-50 focus:ring-0'>
-                <Filter className='mr-2 h-4 w-4' />
-                Filter
-                <ChevronDown className='ml-2 h-4 w-4' />
+          <div className='pb-4 sm:pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
+            <div className='flex items-center gap-2 sm:gap-4 flex-wrap'>
+              <Button variant='outline' className='bg-white hover:bg-gray-50 focus:ring-0 text-sm'>
+                <Filter className='mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4' />
+                <span className='hidden sm:inline'>Filter</span>
+                <ChevronDown className='ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4' />
               </Button>
               <div className='relative'>
-                <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
+                <Search className='absolute left-2 sm:left-3 top-1/2 h-3 w-3 sm:h-4 sm:w-4 -translate-y-1/2 transform text-gray-400' />
                 <Input
                   placeholder='Search tasks...'
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className='w-[180px] rounded-md bg-white pl-10 focus-visible:ring-offset-0 focus-visible:ring-0 border-gray-300'
+                  className='w-[140px] sm:w-[180px] rounded-md bg-white pl-7 sm:pl-10 focus-visible:ring-offset-0 focus-visible:ring-0 border-gray-300 text-sm'
                 />
               </div>
             </div>

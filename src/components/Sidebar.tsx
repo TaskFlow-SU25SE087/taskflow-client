@@ -1,6 +1,6 @@
 import { SidebarLogic } from '@/components/SidebarLogic'
 import { Button } from '@/components/ui/button'
-import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
+import { FiChevronLeft } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 
 interface MainSidebarProps {
@@ -11,25 +11,43 @@ interface MainSidebarProps {
 
 export const Sidebar = ({ isOpen, onToggle, currentProject }: MainSidebarProps) => {
   return (
-    <div
-      className={`transition-all duration-300 ease-in-out ${
-        isOpen ? 'w-64' : 'w-0'
-      } border-r border-gray-300 bg-white overflow-hidden`}
-    >
-      <div className='p-4'>
-        <div className='flex items-center justify-between pb-4 border-b border-gray-300 mb-6'>
-          <div className='flex items-center gap-2'>
-            <Link to='/' className='flex items-center gap-2'>
-              <img src='/logo.png' alt='TaskFlow logo' className='h-8 w-8' />
-              <span className='text-xl font-semibold text-gray-800'>TaskFlow</span>
-            </Link>
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
+          onClick={onToggle}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <div
+        className={`transition-all duration-300 ease-in-out ${
+          isOpen ? 'w-64' : 'w-0'
+        } border-r border-gray-300 bg-white overflow-hidden fixed lg:relative h-full z-30 lg:z-auto`}
+      >
+        <div className='p-3 sm:p-4 h-full flex flex-col'>
+          <div className='flex items-center justify-between pb-3 sm:pb-4 border-b border-gray-300 mb-4 sm:mb-6'>
+            <div className='flex items-center gap-2'>
+              <Link to='/' className='flex items-center gap-2'>
+                <img src='/logo.png' alt='TaskFlow logo' className='h-6 w-6 sm:h-8 sm:w-8' />
+                <span className='text-lg sm:text-xl font-semibold text-gray-800'>TaskFlow</span>
+              </Link>
+            </div>
+            <Button 
+              variant='ghost' 
+              size='icon' 
+              className='h-6 w-6 hover:bg-transparent lg:hidden' 
+              onClick={onToggle}
+            >
+              <FiChevronLeft className='h-4 w-4' />
+            </Button>
           </div>
-          <Button variant='ghost' size='icon' className='h-6 w-6 hover:bg-transparent' onClick={onToggle}>
-            {isOpen ? <FiChevronLeft className='h-4 w-4' /> : <FiChevronRight className='h-4 w-4' />}
-          </Button>
+          <div className='flex-1 overflow-y-auto'>
+            <SidebarLogic projectId={currentProject?.id} />
+          </div>
         </div>
-        <SidebarLogic projectId={currentProject?.id} />
       </div>
-    </div>
+    </>
   )
 }

@@ -45,16 +45,16 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
 
   return (
     <div className='sticky top-0 z-10 w-full bg-white border-b border-gray-300'>
-      <div className='px-4 py-3 flex items-center justify-between'>
-        <div className='flex items-center gap-2'>
+      <div className='px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between'>
+        <div className='flex items-center gap-1 sm:gap-2'>
           {!isSidebarOpen && (
             <Button
               variant='ghost'
               size='icon'
-              className='text-gray-500 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0'
+              className='text-gray-500 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 h-8 w-8 sm:h-10 sm:w-10'
               onClick={toggleSidebar}
             >
-              <FiMenu className='h-5 w-5' />
+              <FiMenu className='h-4 w-4 sm:h-5 sm:w-5' />
             </Button>
           )}
 
@@ -63,14 +63,15 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
             <DropdownMenuTrigger asChild>
               <Button
                 variant='ghost'
-                className='gap-2 font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'
+                className='gap-1 sm:gap-2 font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none text-sm sm:text-base h-8 sm:h-10 px-2 sm:px-4'
               >
-                Projects
-                <ChevronDown className='h-4 w-4 text-gray-500' />
+                <span className='hidden sm:inline'>Projects</span>
+                <span className='sm:hidden'>Proj</span>
+                <ChevronDown className='h-3 w-3 sm:h-4 sm:w-4 text-gray-500' />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className='w-64'>
-              <DropdownMenuLabel className='text-lg'>Your Projects</DropdownMenuLabel>
+            <DropdownMenuContent className='w-56 sm:w-64'>
+              <DropdownMenuLabel className='text-base sm:text-lg'>Your Projects</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
                 {projects.map((project) => (
@@ -102,57 +103,63 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Teams Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant='ghost'
-                className='gap-2 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'
-              >
-                Teams
-                <ChevronDown className='h-4 w-4' />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className='w-56'>
-              <DropdownMenuItem className='cursor-not-allowed opacity-50'>Coming soon...</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Teams Dropdown - Hidden on mobile */}
+          <div className='hidden md:block'>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant='ghost'
+                  className='gap-2 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'
+                >
+                  Teams
+                  <ChevronDown className='h-4 w-4' />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className='w-56'>
+                <DropdownMenuItem className='cursor-not-allowed opacity-50'>Coming soon...</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
-        <div className='flex items-center gap-4'>
-          <div className='relative'>
+        <div className='flex items-center gap-2 sm:gap-4'>
+          {/* Search Bar - Hidden on mobile */}
+          <div className='hidden lg:block relative'>
             <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
             <Input
               placeholder='Search For Anything...'
-              className='w-[400px] rounded-lg bg-gray-100 pl-10 focus-visible:ring-offset-0 focus-visible:ring-0'
+              className='w-[300px] xl:w-[400px] rounded-lg bg-gray-100 pl-10 focus-visible:ring-offset-0 focus-visible:ring-0'
             />
           </div>
         
-          <div className='text-gray-500 px-2 hover:bg-transparent cursor-pointer'>
+          {/* Help Icon - Hidden on mobile */}
+          <div className='hidden md:block text-gray-500 px-2 hover:bg-transparent cursor-pointer'>
             <HelpCircle className='h-5 w-5' />
           </div>
           
           {/* Notification Center */}
           <NotificationCenter />
           
-          {/* Connection Status */}
-          <ConnectionStatus />
+          {/* Connection Status - Hidden on mobile */}
+          <div className='hidden sm:block'>
+            <ConnectionStatus />
+          </div>
 
           {/* Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <div className='cursor-pointer relative h-8 w-fit flex items-center gap-2 px-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'>
+              <div className='cursor-pointer relative h-8 w-fit flex items-center gap-1 sm:gap-2 px-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'>
                 {user?.avatar ? (
                   <img
                     src={user.avatar}
                     alt="avatar"
-                    className="w-8 h-8 rounded-full object-cover"
+                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover"
                   />
                 ) : (
-                  <Avatar size='32px' variant='beam' name={user?.id || 'unknown'} />
+                  <Avatar size='28px' variant='beam' name={user?.id || 'unknown'} className='sm:w-8 sm:h-8' />
                 )}
-                <span className='ml-2 font-medium text-black'>{user?.fullName || user?.email || 'No name'}</span>
-                <ChevronDown className='h-4 w-4 text-gray-500' />
+                <span className='hidden sm:block ml-2 font-medium text-black text-sm'>{user?.fullName || user?.email || 'No name'}</span>
+                <ChevronDown className='hidden sm:block h-4 w-4 text-gray-500' />
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent className='w-56' align='end'>
