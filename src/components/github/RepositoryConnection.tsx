@@ -1,24 +1,15 @@
 import {
-    AlertTriangle,
-    CheckCircle,
-    Eye,
-    EyeOff,
-    Github,
-    Link,
-    Settings,
-    Unlink,
-    XCircle
+  CheckCircle,
+  Settings,
+  Unlink,
+  XCircle
 } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
-import { useToast } from '../../hooks/useToast';
+import { useEffect } from 'react';
 import { useWebhooks } from '../../hooks/useWebhooks';
-import { RepositoryConnection as RepoConnection } from '../../types/webhook';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
-import { Input } from '../ui/input';
-import { Label } from '../ui/label';
-import { Loader } from '../ui/loader';
+import GitHubOAuth from './GitHubOAuth';
 
 interface RepositoryConnectionProps {
   projectId: string;
@@ -30,58 +21,14 @@ export default function RepositoryConnection({ projectId, partId }: RepositoryCo
     connectionStatus,
     connectionLoading,
     error,
-    connectRepository,
     disconnectRepository,
     fetchConnectionStatus
   } = useWebhooks();
-  
-  const { toast } = useToast();
-  const [isConnecting, setIsConnecting] = useState(false);
-  const [showToken, setShowToken] = useState(false);
-  
-  // Form state
-  const [repoUrl, setRepoUrl] = useState('');
-  const [accessToken, setAccessToken] = useState('');
 
   // Fetch connection status on mount
   useEffect(() => {
     fetchConnectionStatus(projectId, partId);
   }, [projectId, partId, fetchConnectionStatus]);
-
-  const handleConnect = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!repoUrl.trim() || !accessToken.trim()) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please fill in all fields',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setIsConnecting(true);
-    try {
-      const connection: RepoConnection = {
-        projectId,
-        partId,
-        repoUrl: repoUrl.trim(),
-        accessToken: accessToken.trim()
-      };
-      
-      await connectRepository(projectId, partId, connection);
-      
-      // Clear form on success
-      setRepoUrl('');
-      setAccessToken('');
-      setShowToken(false);
-      
-    } catch (err) {
-      // Error is already handled in the hook
-    } finally {
-      setIsConnecting(false);
-    }
-  };
 
   const handleDisconnect = async () => {
     if (!window.confirm('Are you sure you want to disconnect this repository? This will stop receiving webhook notifications.')) {
@@ -93,6 +40,11 @@ export default function RepositoryConnection({ projectId, partId }: RepositoryCo
     } catch (err) {
       // Error is already handled in the hook
     }
+  };
+
+  const handleConnectionSuccess = () => {
+    // Refresh connection status after successful OAuth connection
+    fetchConnectionStatus(projectId, partId);
   };
 
   const isConnected = connectionStatus?.isConnected;
@@ -144,105 +96,23 @@ export default function RepositoryConnection({ projectId, partId }: RepositoryCo
               )}
             </div>
 
-            {isConnected && connectionStatus.webhookUrl && (
-              <div className="mt-4 p-3 bg-white rounded-lg border">
-                <div className="flex items-center gap-2 mb-2">
-                  <Link className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm font-medium text-gray-700">Webhook URL</span>
-                </div>
-                <code className="text-sm text-gray-600 break-all">
-                  {connectionStatus.webhookUrl}
-                </code>
-              </div>
+            {error && (
+              <Alert className="mt-4">
+                <XCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
             )}
           </CardContent>
         </Card>
       )}
 
-      {/* Error */}
-      {error && (
-        <Alert variant="destructive">
-          <XCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Connection Form */}
+      {/* OAuth Connection */}
       {!isConnected && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Github className="h-5 w-5" />
-              Connect GitHub Repository
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleConnect} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="repoUrl">Repository URL</Label>
-                <Input
-                  id="repoUrl"
-                  type="url"
-                  placeholder="https://github.com/username/repository"
-                  value={repoUrl}
-                  onChange={(e) => setRepoUrl(e.target.value)}
-                  required
-                />
-                <p className="text-sm text-gray-500">
-                  Enter the full URL of your GitHub repository
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="accessToken">GitHub Access Token</Label>
-                <div className="relative">
-                  <Input
-                    id="accessToken"
-                    type={showToken ? 'text' : 'password'}
-                    placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                    value={accessToken}
-                    onChange={(e) => setAccessToken(e.target.value)}
-                    required
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3"
-                    onClick={() => setShowToken(!showToken)}
-                  >
-                    {showToken ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-                <p className="text-sm text-gray-500">
-                  Create a personal access token with repo permissions
-                </p>
-              </div>
-
-              <Button
-                type="submit"
-                disabled={isConnecting || connectionLoading}
-                className="w-full"
-              >
-                {isConnecting ? (
-                  <>
-                    <Loader className="h-4 w-4 mr-2 animate-spin" />
-                    Connecting...
-                  </>
-                ) : (
-                  <>
-                    <Link className="h-4 w-4 mr-2" />
-                    Connect Repository
-                  </>
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+        <GitHubOAuth 
+          projectId={projectId} 
+          partId={partId} 
+          onConnectionSuccess={handleConnectionSuccess}
+        />
       )}
 
       {/* Instructions */}
@@ -250,42 +120,36 @@ export default function RepositoryConnection({ projectId, partId }: RepositoryCo
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Settings className="h-5 w-5" />
-            Setup Instructions
+            How OAuth Works
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
-            <h4 className="font-medium text-gray-900">1. Create GitHub Access Token</h4>
-            <ol className="list-decimal list-inside space-y-1 text-sm text-gray-600">
-              <li>Go to GitHub Settings → Developer settings → Personal access tokens</li>
-              <li>Click "Generate new token (classic)"</li>
-              <li>Select scopes: <code className="bg-gray-100 px-1 rounded">repo</code></li>
-              <li>Copy the generated token</li>
-            </ol>
-          </div>
-
-          <div className="space-y-3">
-            <h4 className="font-medium text-gray-900">2. Connect Repository</h4>
-            <ol className="list-decimal list-inside space-y-1 text-sm text-gray-600">
-              <li>Enter your repository URL (e.g., https://github.com/username/repo)</li>
-              <li>Paste your access token</li>
-              <li>Click "Connect Repository"</li>
-            </ol>
-          </div>
-
-          <div className="space-y-3">
-            <h4 className="font-medium text-gray-900">3. Automatic Analysis</h4>
+            <h4 className="font-medium text-gray-900">1. Secure Authentication</h4>
             <p className="text-sm text-gray-600">
-              Once connected, every push to your repository will automatically trigger code quality analysis. 
-              You can view the results in the Commit History and Code Quality Dashboard.
+              Click "Connect with GitHub" to securely authenticate with your GitHub account using OAuth.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className="font-medium text-gray-900">2. Repository Selection</h4>
+            <p className="text-sm text-gray-600">
+              After authentication, you'll see a list of your repositories. Select the one you want to connect.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className="font-medium text-gray-900">3. Automatic Setup</h4>
+            <p className="text-sm text-gray-600">
+              We'll automatically set up webhooks and configure the connection for code quality analysis.
             </p>
           </div>
 
           <Alert>
-            <AlertTriangle className="h-4 w-4" />
+            <XCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>Security Note:</strong> Your access token is encrypted and stored securely. 
-              Never share your token publicly. You can revoke it anytime from GitHub settings.
+              <strong>Benefits:</strong> OAuth is more secure than personal access tokens and doesn't require 
+              manual token management. You can revoke access anytime from your GitHub settings.
             </AlertDescription>
           </Alert>
         </CardContent>
@@ -294,7 +158,7 @@ export default function RepositoryConnection({ projectId, partId }: RepositoryCo
       {/* Loading State */}
       {connectionLoading && (
         <div className="flex items-center justify-center py-8">
-          <Loader />
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
         </div>
       )}
     </div>

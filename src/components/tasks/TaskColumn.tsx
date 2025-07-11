@@ -32,12 +32,12 @@ export function TaskColumn({ title, tasks, color, onTaskCreated, boardId }: Task
     <div className='bg-white rounded-lg border w-[400px] border-gray-300 flex flex-col'>
       <div className='flex-none'>
         <div className='flex items-center justify-between px-6 pt-6 pb-4'>
-          <div className='flex items-center gap-2'>
+          <div className='flex items-center gap-x-3'>
             <div style={{ backgroundColor: color }} className='w-2 h-2 rounded-full'></div>
             <span className='font-medium'>{title}</span>
             <span className='bg-gray-300 px-2 py-0.5 rounded-full text-sm'>{tasks.length}</span>
           </div>
-          <div className='flex items-center gap-2'>
+          <div className='flex items-center gap-x-3'>
             {currentProject && (
               <TaskCreateMenuForBoard
                 isOpen={isAddingTask}

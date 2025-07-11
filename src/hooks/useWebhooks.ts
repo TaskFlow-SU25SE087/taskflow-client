@@ -1,15 +1,21 @@
 import { useCallback, useState } from 'react';
 import {
+    connectGitHubRepository,
     connectRepositoryToPart,
     disconnectRepositoryFromPart,
     getProjectPartCommits,
     getProjectPartQuality,
-    getRepositoryConnectionStatus
+    getRepositoryConnectionStatus,
+    handleGitHubOAuthCallback,
+    initiateGitHubOAuth
 } from '../api/webhooks';
 import {
     CodeQualityResult,
     CommitRecord,
     CommitStatus,
+    GitHubOAuthCallback,
+    GitHubOAuthConnectRequest,
+    GitHubOAuthRepositoryResponse,
     RepositoryConnection,
     RepositoryConnectionResponse
 } from '../types/webhook';
@@ -146,6 +152,96 @@ export function useWebhooks() {
     }
   }, [toast]);
 
+  // GitHub OAuth Functions
+  const [oauthLoading, setOauthLoading] = useState(false);
+  const [repositories, setRepositories] = useState<GitHubOAuthRepositoryResponse['data'] | null>(null);
+
+  const startGitHubOAuth = useCallback(async (
+    projectId: string,
+    partId: string,
+    returnUrl: string
+  ) => {
+    setOauthLoading(true);
+    setError(null);
+    try {
+      const response = await initiateGitHubOAuth(projectId, partId, returnUrl);
+      if (response.code === 0) {
+        // Redirect to GitHub OAuth
+        window.location.href = response.data.authUrl;
+        return response.data.authUrl;
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to start GitHub OAuth';
+      setError(errorMessage);
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive'
+      });
+      throw err;
+    } finally {
+      setOauthLoading(false);
+    }
+  }, [toast]);
+
+  const handleOAuthCallback = useCallback(async (callback: GitHubOAuthCallback) => {
+    setOauthLoading(true);
+    setError(null);
+    try {
+      const response = await handleGitHubOAuthCallback(callback);
+      if (response.code === 0) {
+        setRepositories(response.data);
+        return response.data;
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to handle OAuth callback';
+      setError(errorMessage);
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive'
+      });
+      throw err;
+    } finally {
+      setOauthLoading(false);
+    }
+  }, [toast]);
+
+  const connectOAuthRepository = useCallback(async (request: GitHubOAuthConnectRequest) => {
+    setConnectionLoading(true);
+    setError(null);
+    try {
+      const response = await connectGitHubRepository(request);
+      if (response.code === 0) {
+        setConnectionStatus(response.data);
+        setRepositories(null); // Clear repositories after connection
+        toast({
+          title: 'Success',
+          description: 'Repository connected successfully via OAuth!',
+          variant: 'default'
+        });
+        return response.data;
+      } else {
+        throw new Error(response.message);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to connect repository';
+      setError(errorMessage);
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive'
+      });
+      throw err;
+    } finally {
+      setConnectionLoading(false);
+    }
+  }, [toast]);
+
   // Get repository connection status
   const fetchConnectionStatus = useCallback(async (projectId: string, partId: string) => {
     setConnectionLoading(true);
@@ -210,6 +306,13 @@ export function useWebhooks() {
     // Individual loading states
     commitsLoading,
     qualityLoading,
-    connectionLoading
+    connectionLoading,
+
+    // OAuth returns
+    oauthLoading,
+    repositories,
+    startGitHubOAuth,
+    handleOAuthCallback,
+    connectOAuthRepository
   };
 } 

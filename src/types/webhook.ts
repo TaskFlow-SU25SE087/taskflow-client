@@ -159,4 +159,68 @@ export interface RepositoryConnectionResponse {
     webhookUrl: string
     isConnected: boolean
   }
+}
+
+// GitHub OAuth Types
+export interface GitHubOAuthConfig {
+  clientId: string
+  redirectUri: string
+  scope: string
+}
+
+export interface GitHubOAuthState {
+  projectId: string
+  partId: string
+  returnUrl: string
+}
+
+export interface GitHubOAuthCallback {
+  code: string
+  state: string
+}
+
+export interface GitHubOAuthTokenResponse {
+  access_token: string
+  token_type: string
+  scope: string
+}
+
+export interface GitHubUser {
+  id: number
+  login: string
+  avatar_url: string
+  name: string
+  email: string
+  html_url: string
+}
+
+export interface GitHubRepository {
+  id: number
+  name: string
+  full_name: string
+  private: boolean
+  html_url: string
+  description: string
+  default_branch: string
+  owner: {
+    login: string
+    avatar_url: string
+  }
+}
+
+export interface GitHubOAuthRepositoryResponse {
+  code: number
+  message: string
+  data: {
+    repositories: GitHubRepository[]
+    user: GitHubUser
+  }
+}
+
+export interface GitHubOAuthConnectRequest {
+  projectId: string
+  partId: string
+  repositoryId: number
+  repositoryName: string
+  repositoryFullName: string
 } 

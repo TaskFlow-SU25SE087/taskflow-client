@@ -21,6 +21,7 @@ import ProjectMemberVerify from '@/pages/projects/ProjectMemberVerify'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import GitCommits from './pages/github/GitCommits'
+import GitHubOAuthCallback from './pages/github/GitHubOAuthCallback'
 import GitIssues from './pages/github/GitIssues'
 import AboutPage from './pages/home/AboutPage'
 import AddUserInfoPage from './pages/home/AddUserInfoPage'
@@ -218,6 +219,12 @@ function App() {
                 <ProjectGitHub />
               </ProtectedRoute>
             }
+          />
+
+          {/* GitHub OAuth Callback */}
+          <Route
+            path='/github/oauth/callback'
+            element={<GitHubOAuthCallback />}
           />
 
           {/* Dynamic project routes */}

@@ -2,6 +2,9 @@ import axiosClient from '../configs/axiosClient';
 import {
     CodeQualityResponse,
     CommitsResponse,
+    GitHubOAuthCallback,
+    GitHubOAuthConnectRequest,
+    GitHubOAuthRepositoryResponse,
     GitHubWebhookPayload,
     RepositoryConnection,
     RepositoryConnectionResponse,
@@ -68,5 +71,33 @@ export async function getRepositoryConnectionStatus(
   partId: string
 ): Promise<RepositoryConnectionResponse> {
   const res = await axiosClient.get(`/projects/${projectId}/parts/${partId}/repo-status`);
+  return res.data;
+}
+
+// GitHub OAuth APIs
+export async function initiateGitHubOAuth(
+  projectId: string,
+  partId: string,
+  returnUrl: string
+): Promise<{ code: number; message: string; data: { authUrl: string } }> {
+  const res = await axiosClient.post('/api/github/oauth/initiate', {
+    projectId,
+    partId,
+    returnUrl
+  });
+  return res.data;
+}
+
+export async function handleGitHubOAuthCallback(
+  callback: GitHubOAuthCallback
+): Promise<GitHubOAuthRepositoryResponse> {
+  const res = await axiosClient.post('/api/github/oauth/callback', callback);
+  return res.data;
+}
+
+export async function connectGitHubRepository(
+  request: GitHubOAuthConnectRequest
+): Promise<RepositoryConnectionResponse> {
+  const res = await axiosClient.post('/api/github/oauth/connect', request);
   return res.data;
 } 
