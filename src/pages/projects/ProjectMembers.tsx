@@ -20,10 +20,10 @@ interface Member {
 }
 
 export default function ProjectMembers() {
-  const { currentProject } = useCurrentProject();
-  const params = useParams();
-  const projectId = currentProject?.id || params.projectId;
-  console.log('[ProjectMembers] projectId:', projectId);
+  const { currentProject } = useCurrentProject()
+  const params = useParams()
+  const projectId = currentProject?.id || params.projectId
+  console.log('[ProjectMembers] projectId:', projectId)
   const navigate = useNavigate()
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(false)
@@ -33,8 +33,8 @@ export default function ProjectMembers() {
   const [selfId, setSelfId] = useState<string | null>(null)
   const [selfRole, setSelfRole] = useState<string | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const { user } = useAuth();
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const { user } = useAuth()
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
 
   const fetchMembers = async () => {
     if (!projectId) return
@@ -44,7 +44,7 @@ export default function ProjectMembers() {
       const data: Member[] = await projectApi.getProjectMembers(projectId)
       console.log('[ProjectMembers] fetchMembers response:', data)
       setMembers(data)
-    
+
       console.log('[ProjectMembers] user from context:', user)
       console.log('[ProjectMembers] members:', data)
       if (user && user.email) {
@@ -68,24 +68,24 @@ export default function ProjectMembers() {
   }, [projectId])
 
   const handleInvite = async () => {
-    console.log('handleInvite called', { projectId, inviteEmail });
+    console.log('handleInvite called', { projectId, inviteEmail })
     if (!projectId || !inviteEmail) {
-      console.log('handleInvite return early', { projectId, inviteEmail });
-      return;
+      console.log('handleInvite return early', { projectId, inviteEmail })
+      return
     }
-    setInviteLoading(true);
+    setInviteLoading(true)
     try {
-      console.log('Calling API addMemberToProject');
-      const res = await projectApi.addMemberToProject(projectId, inviteEmail);
-      console.log('[ProjectMembers] addMemberToProject response:', res);
-      setInviteEmail('');
-      fetchMembers();
-      toast({ title: 'Success', description: 'Member invited!', variant: 'default' });
+      console.log('Calling API addMemberToProject')
+      const res = await projectApi.addMemberToProject(projectId, inviteEmail)
+      console.log('[ProjectMembers] addMemberToProject response:', res)
+      setInviteEmail('')
+      fetchMembers()
+      toast({ title: 'Success', description: 'Member invited!', variant: 'default' })
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to invite member');
-      toast({ title: 'Error', description: 'Failed to invite member!', variant: 'destructive' });
+      alert(err instanceof Error ? err.message : 'Failed to invite member')
+      toast({ title: 'Error', description: 'Failed to invite member!', variant: 'destructive' })
     } finally {
-      setInviteLoading(false);
+      setInviteLoading(false)
     }
   }
 
@@ -119,7 +119,11 @@ export default function ProjectMembers() {
         <main className='flex-1 max-w-2xl mx-auto p-6'>
           <h1 className='text-2xl font-bold mb-4'>Project Members</h1>
           <div className='flex gap-2 mb-6'>
-            <Input placeholder='Invite by email...' value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} />
+            <Input
+              placeholder='Invite by email...'
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+            />
             <Button
               onClick={() => {
                 console.log('Invite button clicked', inviteEmail)
@@ -139,7 +143,14 @@ export default function ProjectMembers() {
             {members.map((m) => {
               console.log('[ProjectMembers] render member:', m)
               return (
-                <li key={m.id} className='flex items-center gap-4 py-3 cursor-pointer hover:bg-gray-100 rounded transition' onClick={() => { console.log('Clicked member:', m.userId); setSelectedUserId(m.userId); }}>
+                <li
+                  key={m.id}
+                  className='flex items-center gap-4 py-3 cursor-pointer hover:bg-gray-100 rounded transition'
+                  onClick={() => {
+                    console.log('Clicked member:', m.userId)
+                    setSelectedUserId(m.userId)
+                  }}
+                >
                   <img src={m.avatar} alt={m.fullName} className='w-10 h-10 rounded-full object-cover' />
                   <div className='flex-1'>
                     <div className='font-semibold'>{m.fullName}</div>
@@ -147,7 +158,14 @@ export default function ProjectMembers() {
                     <div className='text-xs text-gray-400'>{m.role}</div>
                   </div>
                   {selfRole?.toLowerCase() === 'leader' && m.id !== selfId && (
-                    <Button variant='destructive' size='sm' onClick={e => { e.stopPropagation(); handleRemove(m.userId); }}>
+                    <Button
+                      variant='destructive'
+                      size='sm'
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRemove(m.userId)
+                      }}
+                    >
                       Remove
                     </Button>
                   )}
@@ -155,9 +173,7 @@ export default function ProjectMembers() {
               )
             })}
           </ul>
-          {selectedUserId && (
-            <UserProfileDialog userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
-          )}
+          {selectedUserId && <UserProfileDialog userId={selectedUserId} onClose={() => setSelectedUserId(null)} />}
         </main>
       </div>
     </div>

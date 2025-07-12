@@ -1,5 +1,12 @@
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -19,7 +26,7 @@ const priorityOptions = [
   { value: IssuePriority.Low, label: 'Low' },
   { value: IssuePriority.Medium, label: 'Medium' },
   { value: IssuePriority.High, label: 'High' },
-  { value: IssuePriority.Urgent, label: 'Urgent' },
+  { value: IssuePriority.Urgent, label: 'Urgent' }
 ]
 
 const typeOptions = [
@@ -28,14 +35,10 @@ const typeOptions = [
   { value: IssueType.Improvement, label: 'Improvement' },
   { value: IssueType.Task, label: 'Task' },
   { value: IssueType.Documentation, label: 'Documentation' },
-  { value: IssueType.Other, label: 'Other' },
+  { value: IssueType.Other, label: 'Other' }
 ]
 
-export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({
-  projectId,
-  taskId,
-  onIssueCreated,
-}) => {
+export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, taskId, onIssueCreated }) => {
   const { createIssue, isLoading } = useIssues()
   const [open, setOpen] = useState(false)
   const [files, setFiles] = useState<File[]>([])
@@ -46,7 +49,7 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({
     priority: IssuePriority.Medium,
     explanation: '',
     example: '',
-    type: IssueType.Bug,
+    type: IssueType.Bug
   })
 
   console.log('🎨 [IssueCreateMenu] Component rendered with:', {
@@ -59,9 +62,9 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({
 
   const handleInputChange = (field: keyof CreateIssueRequest, value: string | number) => {
     console.log('✏️ [IssueCreateMenu] Input changed:', { field, value })
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value,
+      [field]: value
     }))
   }
 
@@ -76,10 +79,10 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({
     console.log('🚀 [IssueCreateMenu] Form submitted!')
     console.log('📋 [IssueCreateMenu] Form data:', formData)
     console.log('📁 [IssueCreateMenu] Files:', files)
-    
+
     const issueData: CreateIssueRequest = {
       ...formData,
-      files: files.length > 0 ? files : undefined,
+      files: files.length > 0 ? files : undefined
     }
 
     console.log('📤 [IssueCreateMenu] Calling createIssue with:', {
@@ -89,9 +92,9 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({
     })
 
     const success = await createIssue(projectId, taskId, issueData)
-    
+
     console.log('📊 [IssueCreateMenu] createIssue result:', success)
-    
+
     if (success) {
       console.log('✅ [IssueCreateMenu] Issue created successfully, closing dialog')
       setOpen(false)
@@ -101,7 +104,7 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({
         priority: IssuePriority.Medium,
         explanation: '',
         example: '',
-        type: IssueType.Bug,
+        type: IssueType.Bug
       })
       setFiles([])
       onIssueCreated?.()
@@ -118,7 +121,7 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({
       priority: IssuePriority.Medium,
       explanation: '',
       example: '',
-      type: IssueType.Bug,
+      type: IssueType.Bug
     })
     setFiles([])
   }
@@ -131,45 +134,43 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({
   return (
     <Dialog open={open} onOpenChange={handleDialogChange}>
       <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="gap-2"
+        <Button
+          variant='outline'
+          size='sm'
+          className='gap-2'
           onClick={() => console.log('🔘 [IssueCreateMenu] Report Issue button clicked')}
         >
-          <AlertCircle className="h-4 w-4" />
+          <AlertCircle className='h-4 w-4' />
           Report Issue
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className='max-w-2xl max-h-[90vh] overflow-y-auto'>
         <DialogHeader>
           <DialogTitle>Create New Issue</DialogTitle>
-          <DialogDescription>
-            Fill out the form below to report a new issue for this task.
-          </DialogDescription>
+          <DialogDescription>Fill out the form below to report a new issue for this task.</DialogDescription>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
+
+        <form onSubmit={handleSubmit} className='space-y-4'>
+          <div className='grid grid-cols-2 gap-4'>
+            <div className='space-y-2'>
+              <Label htmlFor='title'>Title *</Label>
               <Input
-                id="title"
+                id='title'
                 value={formData.title}
                 onChange={(e) => handleInputChange('title', e.target.value)}
-                placeholder="Issue title"
+                placeholder='Issue title'
                 required
               />
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="type">Type *</Label>
+
+            <div className='space-y-2'>
+              <Label htmlFor='type'>Type *</Label>
               <Select
                 value={formData.type.toString()}
                 onValueChange={(value) => handleInputChange('type', parseInt(value))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select type" />
+                  <SelectValue placeholder='Select type' />
                 </SelectTrigger>
                 <SelectContent>
                   {typeOptions.map((option) => (
@@ -182,49 +183,49 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description">Description *</Label>
+          <div className='space-y-2'>
+            <Label htmlFor='description'>Description *</Label>
             <Textarea
-              id="description"
+              id='description'
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="Describe the issue in detail"
+              placeholder='Describe the issue in detail'
               rows={3}
               required
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="explanation">Explanation (Optional)</Label>
+          <div className='space-y-2'>
+            <Label htmlFor='explanation'>Explanation (Optional)</Label>
             <Textarea
-              id="explanation"
+              id='explanation'
               value={formData.explanation}
               onChange={(e) => handleInputChange('explanation', e.target.value)}
-              placeholder="Explain the issue in detail"
+              placeholder='Explain the issue in detail'
               rows={3}
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="example">Example (Optional)</Label>
+          <div className='space-y-2'>
+            <Label htmlFor='example'>Example (Optional)</Label>
             <Textarea
-              id="example"
+              id='example'
               value={formData.example}
               onChange={(e) => handleInputChange('example', e.target.value)}
-              placeholder="Provide an example or steps to reproduce"
+              placeholder='Provide an example or steps to reproduce'
               rows={2}
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="priority">Priority *</Label>
+          <div className='grid grid-cols-2 gap-4'>
+            <div className='space-y-2'>
+              <Label htmlFor='priority'>Priority *</Label>
               <Select
                 value={formData.priority.toString()}
                 onValueChange={(value) => handleInputChange('priority', parseInt(value))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select priority" />
+                  <SelectValue placeholder='Select priority' />
                 </SelectTrigger>
                 <SelectContent>
                   {priorityOptions.map((option) => (
@@ -236,34 +237,19 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="files">Files (Optional)</Label>
-              <Input
-                id="files"
-                type="file"
-                multiple
-                onChange={handleFileChange}
-                className="cursor-pointer"
-              />
-              {files.length > 0 && (
-                <div className="text-sm text-muted-foreground">
-                  {files.length} file(s) selected
-                </div>
-              )}
+            <div className='space-y-2'>
+              <Label htmlFor='files'>Files (Optional)</Label>
+              <Input id='files' type='file' multiple onChange={handleFileChange} className='cursor-pointer' />
+              {files.length > 0 && <div className='text-sm text-muted-foreground'>{files.length} file(s) selected</div>}
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={resetForm}
-              disabled={isLoading}
-            >
+          <div className='flex justify-end gap-2 pt-4'>
+            <Button type='button' variant='outline' onClick={resetForm} disabled={isLoading}>
               Reset
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type='submit'
               disabled={isLoading}
               onClick={() => console.log('🔘 [IssueCreateMenu] Create Issue button clicked')}
             >
@@ -274,4 +260,4 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({
       </DialogContent>
     </Dialog>
   )
-} 
+}

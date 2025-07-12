@@ -1,42 +1,34 @@
-import axiosClient from '../configs/axiosClient';
+import axiosClient from '../configs/axiosClient'
 import {
-    CodeQualityResponse,
-    CommitsResponse,
-    GitHubOAuthCallback,
-    GitHubOAuthConnectRequest,
-    GitHubOAuthRepositoryResponse,
-    GitHubWebhookPayload,
-    RepositoryConnection,
-    RepositoryConnectionResponse,
-    WebhookResponse
-} from '../types/webhook';
+  CodeQualityResponse,
+  CommitsResponse,
+  GitHubOAuthCallback,
+  GitHubOAuthConnectRequest,
+  GitHubOAuthRepositoryResponse,
+  GitHubWebhookPayload,
+  RepositoryConnection,
+  RepositoryConnectionResponse,
+  WebhookResponse
+} from '../types/webhook'
 
 // GitHub Webhook API (được gọi bởi GitHub, không phải Frontend)
 export async function postGithubWebhook(payload: GitHubWebhookPayload): Promise<WebhookResponse> {
-  const res = await axiosClient.post(
-    '/api/webhooks/github',
-    payload,
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-  return res.data;
+  const res = await axiosClient.post('/api/webhooks/github', payload, {
+    headers: { 'Content-Type': 'application/json' }
+  })
+  return res.data
 }
 
 // API để lấy danh sách commits của project part
-export async function getProjectPartCommits(
-  projectId: string, 
-  partId: string
-): Promise<CommitsResponse> {
-  const res = await axiosClient.get(`/projects/${projectId}/parts/${partId}/commits`);
-  return res.data;
+export async function getProjectPartCommits(projectId: string, partId: string): Promise<CommitsResponse> {
+  const res = await axiosClient.get(`/projects/${projectId}/parts/${partId}/commits`)
+  return res.data
 }
 
 // API để lấy code quality results của project part
-export async function getProjectPartQuality(
-  projectId: string, 
-  partId: string
-): Promise<CodeQualityResponse> {
-  const res = await axiosClient.get(`/projects/${projectId}/parts/${partId}/quality`);
-  return res.data;
+export async function getProjectPartQuality(projectId: string, partId: string): Promise<CodeQualityResponse> {
+  const res = await axiosClient.get(`/projects/${projectId}/parts/${partId}/quality`)
+  return res.data
 }
 
 // API để kết nối repository với project part
@@ -52,8 +44,8 @@ export async function connectRepositoryToPart(
       accessToken: connection.accessToken
     },
     { headers: { 'Content-Type': 'application/json' } }
-  );
-  return res.data;
+  )
+  return res.data
 }
 
 // API để disconnect repository khỏi project part
@@ -61,8 +53,8 @@ export async function disconnectRepositoryFromPart(
   projectId: string,
   partId: string
 ): Promise<RepositoryConnectionResponse> {
-  const res = await axiosClient.delete(`/projects/${projectId}/parts/${partId}/disconnect-repo`);
-  return res.data;
+  const res = await axiosClient.delete(`/projects/${projectId}/parts/${partId}/disconnect-repo`)
+  return res.data
 }
 
 // Note: getRepositoryConnectionStatus endpoint doesn't exist on backend
@@ -78,20 +70,18 @@ export async function initiateGitHubOAuth(
     projectId,
     partId,
     returnUrl
-  });
-  return res.data;
+  })
+  return res.data
 }
 
-export async function handleGitHubOAuthCallback(
-  callback: GitHubOAuthCallback
-): Promise<GitHubOAuthRepositoryResponse> {
-  const res = await axiosClient.post('/api/github/oauth/callback', callback);
-  return res.data;
+export async function handleGitHubOAuthCallback(callback: GitHubOAuthCallback): Promise<GitHubOAuthRepositoryResponse> {
+  const res = await axiosClient.post('/api/github/oauth/callback', callback)
+  return res.data
 }
 
 export async function connectGitHubRepository(
   request: GitHubOAuthConnectRequest
 ): Promise<RepositoryConnectionResponse> {
-  const res = await axiosClient.post('/api/github/oauth/connect', request);
-  return res.data;
-} 
+  const res = await axiosClient.post('/api/github/oauth/connect', request)
+  return res.data
+}

@@ -87,11 +87,19 @@ function getStatusIcon(status: string) {
 
 function TaskTooltip({ task }: { task: TaskP }) {
   return (
-    <div className="absolute z-50 left-1/2 top-full mt-2 -translate-x-1/2 bg-black/80 text-white rounded-lg shadow-lg p-3 min-w-[220px] pointer-events-none">
-      <div className="font-semibold mb-1">{task.title}</div>
-      <div className="text-sm mb-1">{task.description || 'No description'}</div>
-      <div className="text-xs mb-1">Assignee: {Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0 ? task.taskAssignees[0].executor : 'Unassigned'}</div>
-      <div className="text-xs">Start: {task.sprint?.startDate ? format(new Date(task.sprint.startDate), 'dd/MM/yyyy') : 'N/A'} - End: {task.sprint?.endDate ? format(new Date(task.sprint.endDate), 'dd/MM/yyyy') : 'N/A'}</div>
+    <div className='absolute z-50 left-1/2 top-full mt-2 -translate-x-1/2 bg-black/80 text-white rounded-lg shadow-lg p-3 min-w-[220px] pointer-events-none'>
+      <div className='font-semibold mb-1'>{task.title}</div>
+      <div className='text-sm mb-1'>{task.description || 'No description'}</div>
+      <div className='text-xs mb-1'>
+        Assignee:{' '}
+        {Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0
+          ? task.taskAssignees[0].executor
+          : 'Unassigned'}
+      </div>
+      <div className='text-xs'>
+        Start: {task.sprint?.startDate ? format(new Date(task.sprint.startDate), 'dd/MM/yyyy') : 'N/A'} - End:{' '}
+        {task.sprint?.endDate ? format(new Date(task.sprint.endDate), 'dd/MM/yyyy') : 'N/A'}
+      </div>
     </div>
   )
 }
@@ -179,16 +187,24 @@ function AvatarStack({ assignees }: { assignees: any[] }) {
       })}
       {assignees.length > 4 && (
         <Avatar className='h-6 w-6 border-2 border-white shadow'>
-          <AvatarFallback style={{ background: '#F3F4F6', color: '#6B7280' }}>
-            +{assignees.length - 4}
-          </AvatarFallback>
+          <AvatarFallback style={{ background: '#F3F4F6', color: '#6B7280' }}>+{assignees.length - 4}</AvatarFallback>
         </Avatar>
       )}
     </div>
   )
 }
 
-function SprintRow({ sprint, currentDate, index, onTaskClick }: { sprint: SprintWithTasks; currentDate: Date; index: number; onTaskClick?: (task: TaskP) => void }) {
+function SprintRow({
+  sprint,
+  currentDate,
+  index,
+  onTaskClick
+}: {
+  sprint: SprintWithTasks
+  currentDate: Date
+  index: number
+  onTaskClick?: (task: TaskP) => void
+}) {
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
@@ -228,10 +244,12 @@ function SprintRow({ sprint, currentDate, index, onTaskClick }: { sprint: Sprint
   )
 
   const sprintColor = getSprintColor(index)
-  const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null);
+  const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null)
 
   return (
-    <div className={`grid grid-cols-[200px,1fr] min-h-[160px] border-b border-gray-200 group hover:bg-gray-50 ${sprintColor}`}>
+    <div
+      className={`grid grid-cols-[200px,1fr] min-h-[160px] border-b border-gray-200 group hover:bg-gray-50 ${sprintColor}`}
+    >
       <div className='p-4'>
         <h3 className='font-medium text-gray-900'>{sprint.name}</h3>
         <p className='text-sm text-gray-500 mt-1'>
@@ -271,10 +289,10 @@ function SprintRow({ sprint, currentDate, index, onTaskClick }: { sprint: Sprint
                       task.status === 'done' || task.status === 'Completed'
                         ? 'border-green-400'
                         : task.status === 'ongoing' || task.status === 'In Progress'
-                        ? 'border-blue-400'
-                        : task.status === 'Blocked'
-                        ? 'border-red-400'
-                        : 'border-gray-300'
+                          ? 'border-blue-400'
+                          : task.status === 'Blocked'
+                            ? 'border-red-400'
+                            : 'border-gray-300'
                     )}
                     onClick={() => onTaskClick && onTaskClick(task)}
                     onMouseEnter={() => setHoveredTaskId(task.id)}
@@ -294,10 +312,10 @@ function SprintRow({ sprint, currentDate, index, onTaskClick }: { sprint: Sprint
                           task.status === 'done' || task.status === 'Completed'
                             ? 'bg-green-100 text-green-700'
                             : task.status === 'ongoing' || task.status === 'In Progress'
-                            ? 'bg-blue-100 text-blue-700'
-                            : task.status === 'Blocked'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-gray-100 text-gray-700'
+                              ? 'bg-blue-100 text-blue-700'
+                              : task.status === 'Blocked'
+                                ? 'bg-red-100 text-red-700'
+                                : 'bg-gray-100 text-gray-700'
                         )}
                       >
                         {getStatusIcon(task.status)}
@@ -327,34 +345,34 @@ export default function ProjectTimeline() {
   const [sprintsWithTasks, setSprintsWithTasks] = useState<SprintWithTasks[]>([])
   const { sprints, isLoading: sprintsLoading } = useSprints(currentProject?.id)
   const [selectedTask, setSelectedTask] = useState<TaskP | null>(null)
-  const timelineScrollRef = useRef<HTMLDivElement>(null);
-  const isDragging = useRef(false);
-  const startX = useRef(0);
-  const scrollLeft = useRef(0);
+  const timelineScrollRef = useRef<HTMLDivElement>(null)
+  const isDragging = useRef(false)
+  const startX = useRef(0)
+  const scrollLeft = useRef(0)
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    isDragging.current = true;
-    startX.current = e.pageX - (timelineScrollRef.current?.getBoundingClientRect().left || 0);
-    scrollLeft.current = timelineScrollRef.current?.scrollLeft || 0;
-  };
+    isDragging.current = true
+    startX.current = e.pageX - (timelineScrollRef.current?.getBoundingClientRect().left || 0)
+    scrollLeft.current = timelineScrollRef.current?.scrollLeft || 0
+  }
 
   const handleMouseLeave = () => {
-    isDragging.current = false;
-  };
+    isDragging.current = false
+  }
 
   const handleMouseUp = () => {
-    isDragging.current = false;
-  };
+    isDragging.current = false
+  }
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging.current) return;
-    e.preventDefault();
-    const x = e.pageX - (timelineScrollRef.current?.getBoundingClientRect().left || 0);
-    const walk = x - startX.current;
+    if (!isDragging.current) return
+    e.preventDefault()
+    const x = e.pageX - (timelineScrollRef.current?.getBoundingClientRect().left || 0)
+    const walk = x - startX.current
     if (timelineScrollRef.current) {
-      timelineScrollRef.current.scrollLeft = scrollLeft.current - walk;
+      timelineScrollRef.current.scrollLeft = scrollLeft.current - walk
     }
-  };
+  }
 
   useEffect(() => {
     const loadSprintTasks = async () => {
@@ -444,7 +462,13 @@ export default function ProjectTimeline() {
                 onMouseMove={handleMouseMove}
               >
                 {sprintsWithTasks.map((sprint, idx) => (
-                  <SprintRow key={sprint.id} sprint={sprint} currentDate={currentDate} index={idx} onTaskClick={task => setSelectedTask(task)} />
+                  <SprintRow
+                    key={sprint.id}
+                    sprint={sprint}
+                    currentDate={currentDate}
+                    index={idx}
+                    onTaskClick={(task) => setSelectedTask(task)}
+                  />
                 ))}
                 {sprintsWithTasks.length === 0 && (
                   <div className='p-8 text-center text-gray-500'>No sprints found for this project</div>

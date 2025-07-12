@@ -203,7 +203,9 @@ export default function ProjectCreate() {
                 const link = `${FE_BASE_URL}/activate-account?token=${item.token}&projectId=${projectId}`
                 return (
                   <li key={item.email} className='flex items-center gap-2'>
-                    <span className='truncate max-w-[180px]' title={item.email}>{item.email}</span>
+                    <span className='truncate max-w-[180px]' title={item.email}>
+                      {item.email}
+                    </span>
                     <input className='flex-1 border px-2 py-1 rounded text-xs' value={link} readOnly />
                     <Button
                       size='icon'
@@ -221,7 +223,9 @@ export default function ProjectCreate() {
                 )
               })}
             </ul>
-            <Button onClick={() => setShowInvitePopup(false)} className='w-full'>Đóng</Button>
+            <Button onClick={() => setShowInvitePopup(false)} className='w-full'>
+              Đóng
+            </Button>
           </div>
         </div>
       )}

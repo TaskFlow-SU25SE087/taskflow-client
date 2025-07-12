@@ -21,10 +21,10 @@ export function SprintCreateMenu({ onCreateSprint }: SprintCreateMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+  const [startDate, setStartDate] = useState<Date | null>(null)
+  const [endDate, setEndDate] = useState<Date | null>(null)
   const [status, setStatus] = useState('0') // NotStarted mặc định
-  const { toast } = useToast();
+  const { toast } = useToast()
 
   const toISOString = (date: string) => {
     if (!date) return ''
@@ -71,11 +71,15 @@ export function SprintCreateMenu({ onCreateSprint }: SprintCreateMenuProps) {
       <DialogContent className='sm:max-w-[425px] rounded-2xl p-8 shadow-xl bg-white'>
         <DialogHeader>
           <DialogTitle className='text-2xl font-bold mb-1'>Create New Sprint</DialogTitle>
-          <DialogDescription className='text-gray-500 mb-4'>Set up a new sprint for your project. Add a name and date range.</DialogDescription>
+          <DialogDescription className='text-gray-500 mb-4'>
+            Set up a new sprint for your project. Add a name and date range.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className='space-y-6'>
           <div className='space-y-1'>
-            <Label htmlFor='name' className='text-sm font-semibold text-gray-700'>Sprint Name</Label>
+            <Label htmlFor='name' className='text-sm font-semibold text-gray-700'>
+              Sprint Name
+            </Label>
             <input
               id='name'
               value={name}
@@ -86,7 +90,9 @@ export function SprintCreateMenu({ onCreateSprint }: SprintCreateMenuProps) {
             />
           </div>
           <div className='space-y-1'>
-            <Label htmlFor='description' className='text-sm font-semibold text-gray-700'>Description</Label>
+            <Label htmlFor='description' className='text-sm font-semibold text-gray-700'>
+              Description
+            </Label>
             <input
               id='description'
               value={description}
@@ -98,7 +104,9 @@ export function SprintCreateMenu({ onCreateSprint }: SprintCreateMenuProps) {
           {/* Nhóm hai trường ngày vào một hàng ngang trên desktop, xuống dòng trên mobile */}
           <div className='flex flex-col sm:flex-row gap-4'>
             <div className='flex-1 space-y-1'>
-              <Label htmlFor='startDate' className='text-sm font-semibold text-gray-700'>Start Date</Label>
+              <Label htmlFor='startDate' className='text-sm font-semibold text-gray-700'>
+                Start Date
+              </Label>
               <DatePicker
                 id='startDate'
                 selected={startDate}
@@ -110,7 +118,9 @@ export function SprintCreateMenu({ onCreateSprint }: SprintCreateMenuProps) {
               />
             </div>
             <div className='flex-1 space-y-1'>
-              <Label htmlFor='endDate' className='text-sm font-semibold text-gray-700'>End Date</Label>
+              <Label htmlFor='endDate' className='text-sm font-semibold text-gray-700'>
+                End Date
+              </Label>
               <DatePicker
                 id='endDate'
                 selected={endDate}
@@ -123,10 +133,18 @@ export function SprintCreateMenu({ onCreateSprint }: SprintCreateMenuProps) {
             </div>
           </div>
           <div className='flex justify-end gap-3 pt-2'>
-            <Button type='button' variant='outline' onClick={() => setIsOpen(false)} className='rounded-lg px-5 py-2 border border-gray-300 text-gray-700 hover:bg-gray-100 transition-all'>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={() => setIsOpen(false)}
+              className='rounded-lg px-5 py-2 border border-gray-300 text-gray-700 hover:bg-gray-100 transition-all'
+            >
               Cancel
             </Button>
-            <Button type='submit' className='rounded-lg px-5 py-2 bg-lavender-500 hover:bg-lavender-700 text-white font-semibold shadow-md transition-all'>
+            <Button
+              type='submit'
+              className='rounded-lg px-5 py-2 bg-lavender-500 hover:bg-lavender-700 text-white font-semibold shadow-md transition-all'
+            >
               Create Sprint
             </Button>
           </div>

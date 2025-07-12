@@ -73,7 +73,8 @@ export function ProjectInviteDialog({ isOpen, onClose, projectId, onMemberAdded 
 
       if (error instanceof AxiosError && error.response?.data?.message) {
         if (error.response.data.code === 3004) {
-          errorMessage = 'You have reached the maximum number of projects allowed. Please remove a project or contact support.'
+          errorMessage =
+            'You have reached the maximum number of projects allowed. Please remove a project or contact support.'
         } else {
           errorMessage = error.response.data.message
         }
@@ -108,7 +109,8 @@ export function ProjectInviteDialog({ isOpen, onClose, projectId, onMemberAdded 
           </DialogTitle>
         </DialogHeader>
         <DialogDescription>
-          Enter the email addresses of the members you want to invite to this project. You can add multiple emails, press Enter to add each one.
+          Enter the email addresses of the members you want to invite to this project. You can add multiple emails,
+          press Enter to add each one.
         </DialogDescription>
 
         <div className='space-y-6 py-4'>

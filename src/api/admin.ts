@@ -12,7 +12,7 @@ export const adminApi = {
     if (params?.pageSize) {
       queryParams.append('pageSize', params.pageSize.toString())
     }
-    
+
     const url = `${ENDPOINT}/users${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
     const response = await axiosClient.get<AdminUsersResponse>(url)
     return response.data
@@ -21,21 +21,21 @@ export const adminApi = {
   importUsers: async (file: File): Promise<boolean> => {
     const formData = new FormData()
     formData.append('file', file)
-    
+
     const response = await axiosClient.post<{
       code: number
       message: string
       data: boolean
     }>(`${ENDPOINT}/users/import`, formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+        'Content-Type': 'multipart/form-data'
+      }
     })
-    
+
     if (response.data.code !== 0) {
       throw new Error(response.data.message)
     }
-    
+
     return response.data.data
   },
 
@@ -49,8 +49,7 @@ export const adminApi = {
     return response.data
   },
 
-  getTermList: (page: number = 1) =>
-    axiosClient.get('/admin/term/list', { params: { page } }),
+  getTermList: (page: number = 1) => axiosClient.get('/admin/term/list', { params: { page } }),
 
   createTerm: (data: { season: string; year: number; startDate: string; endDate: string }) =>
     axiosClient.post('/admin/term', data),
@@ -61,16 +60,13 @@ export const adminApi = {
         Season: data.season,
         Year: data.year,
         StartDate: data.startDate,
-        EndDate: data.endDate,
-      },
+        EndDate: data.endDate
+      }
     }),
 
-  deleteTerm: (id: string) =>
-    axiosClient.delete(`/admin/term/${id}`),
+  deleteTerm: (id: string) => axiosClient.delete(`/admin/term/${id}`),
 
-  getTermDetail: (id: string) =>
-    axiosClient.get(`/admin/term/${id}`),
+  getTermDetail: (id: string) => axiosClient.get(`/admin/term/${id}`),
 
-  lockTerm: (id: string) =>
-    axiosClient.delete(`/admin/term/lock/${id}`),
-} 
+  lockTerm: (id: string) => axiosClient.delete(`/admin/term/lock/${id}`)
+}

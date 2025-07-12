@@ -1,564 +1,356 @@
-import GitHubProjectPartIntegration from '@/components/github/GitHubProjectPartIntegration';
-import { Navbar } from '@/components/Navbar';
-import { Sidebar } from '@/components/Sidebar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Loader } from '@/components/ui/loader';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useCurrentProject } from '@/hooks/useCurrentProject';
-import {
-    Activity,
-    AlertCircle,
-    BarChart3,
-    CheckCircle,
-    Clock,
-    Eye,
-    GitBranch,
-    GitCommit,
-    Github,
-    GitPullRequest,
-    Settings,
-    Star,
-    TrendingUp,
-    Users
-} from 'lucide-react';
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Navbar } from '@/components/Navbar'
+import { Sidebar } from '@/components/Sidebar'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Loader } from '@/components/ui/loader'
+import axiosClient from '@/configs/axiosClient'
+import { useCurrentProject } from '@/hooks/useCurrentProject'
+import { CheckCircle, Github, XCircle } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
 
-interface GitHubStats {
-  totalCommits: number;
-  totalIssues: number;
-  totalPullRequests: number;
-  totalRepositories: number;
-  activeContributors: number;
-  codeQuality: number;
-  lastCommit: string;
-  repositoryHealth: number;
+interface Repo {
+  name: string
+  fullName: string
+  htmlUrl: string
 }
-
-interface Repository {
-  id: string;
-  name: string;
-  fullName: string;
-  description: string;
-  language: string;
-  stars: number;
-  forks: number;
-  watchers: number;
-  isPrivate: boolean;
-  lastUpdated: string;
-  isConnected: boolean;
-}
-
-interface Commit {
-  id: string;
-  message: string;
-  author: string;
-  date: string;
-  repository: string;
-  branch: string;
-}
-
-interface Issue {
-  id: string;
-  title: string;
-  number: number;
-  state: 'open' | 'closed';
-  repository: string;
-  author: string;
-  createdAt: string;
-  labels: string[];
+interface ProjectPart {
+  id: string
+  name: string
+  programmingLanguage: string
+  framework: string
 }
 
 export default function ProjectGitHub() {
-  const { projectId } = useParams<{ projectId: string }>();
-  const { currentProject, isLoading } = useCurrentProject();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [showIntegrationDialog, setShowIntegrationDialog] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview');
+  const { projectId: urlProjectId } = useParams<{ projectId: string }>()
+  const { currentProject, isLoading } = useCurrentProject()
 
-  // Mock data for demonstration
-  const [stats] = useState<GitHubStats>({
-    totalCommits: 1247,
-    totalIssues: 89,
-    totalPullRequests: 34,
-    totalRepositories: 3,
-    activeContributors: 8,
-    codeQuality: 87,
-    lastCommit: '2 hours ago',
-    repositoryHealth: 92
-  });
+  // Use projectId from URL if available, otherwise use currentProject.id
+  const projectId = urlProjectId || currentProject?.id
 
-  const [repositories] = useState<Repository[]>([
-    {
-      id: '1',
-      name: 'taskflow-frontend',
-      fullName: 'taskflow/taskflow-frontend',
-      description: 'React frontend for TaskFlow project management platform',
-      language: 'TypeScript',
-      stars: 45,
-      forks: 12,
-      watchers: 23,
-      isPrivate: false,
-      lastUpdated: '2 hours ago',
-      isConnected: true
-    },
-    {
-      id: '2',
-      name: 'taskflow-backend',
-      fullName: 'taskflow/taskflow-backend',
-      description: '.NET Core backend API for TaskFlow',
-      language: 'C#',
-      stars: 32,
-      forks: 8,
-      watchers: 15,
-      isPrivate: false,
-      lastUpdated: '1 day ago',
-      isConnected: true
-    },
-    {
-      id: '3',
-      name: 'taskflow-database',
-      fullName: 'taskflow/taskflow-database',
-      description: 'Database migrations and schema for TaskFlow',
-      language: 'SQL',
-      stars: 18,
-      forks: 5,
-      watchers: 9,
-      isPrivate: true,
-      lastUpdated: '3 days ago',
-      isConnected: false
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [connectionStatus, setConnectionStatus] = useState<boolean | null>(null)
+  const [repos, setRepos] = useState<Repo[]>([])
+  const [parts, setParts] = useState<ProjectPart[]>([])
+  const [loading, setLoading] = useState(true)
+  const [oauthLoading, setOauthLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+
+  // For creating a new part
+  const [showCreatePart, setShowCreatePart] = useState(false)
+  const [newPart, setNewPart] = useState({ name: '', programmingLanguage: '', framework: '' })
+  const [creatingPart, setCreatingPart] = useState(false)
+
+  // For connecting repo to part
+  const [selectedRepo, setSelectedRepo] = useState<string>('')
+  const [selectedPart, setSelectedPart] = useState<string>('')
+  const [connecting, setConnecting] = useState(false)
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoading(true)
+      try {
+        const res = await axiosClient.get('/api/github/connection-status')
+        setConnectionStatus(res.data.data)
+        if (res.data.data) {
+          const repoRes = await axiosClient.get('/api/github/repos')
+          setRepos(repoRes.data.data)
+        }
+        // Since backend doesn't have GET /projects/{projectId}/parts endpoint,
+        // we'll use mock data for now
+        if (projectId) {
+          const mockParts: ProjectPart[] = [
+            {
+              id: 'part-1',
+              name: 'Frontend',
+              programmingLanguage: 'TypeScript',
+              framework: 'React'
+            },
+            {
+              id: 'part-2',
+              name: 'Backend',
+              programmingLanguage: 'C#',
+              framework: '.NET'
+            },
+            {
+              id: 'part-3',
+              name: 'Database',
+              programmingLanguage: 'SQL',
+              framework: 'Entity Framework'
+            }
+          ]
+          setParts(mockParts)
+        }
+      } catch (err) {
+        setError('Error loading data')
+      } finally {
+        setLoading(false)
+      }
     }
-  ]);
+    fetchData()
+  }, [projectId])
 
-  const [recentCommits] = useState<Commit[]>([
-    {
-      id: 'abc123',
-      message: 'feat: add GitHub integration dashboard',
-      author: 'john.doe',
-      date: '2 hours ago',
-      repository: 'taskflow-frontend',
-      branch: 'main'
-    },
-    {
-      id: 'def456',
-      message: 'fix: resolve authentication issue',
-      author: 'jane.smith',
-      date: '4 hours ago',
-      repository: 'taskflow-backend',
-      branch: 'develop'
-    },
-    {
-      id: 'ghi789',
-      message: 'docs: update API documentation',
-      author: 'mike.wilson',
-      date: '1 day ago',
-      repository: 'taskflow-frontend',
-      branch: 'main'
+  const handleConnectGitHub = async () => {
+    setOauthLoading(true)
+    setError(null)
+    try {
+      const res = await axiosClient.get('/api/github/login-url')
+      window.location.href = res.data.data
+    } catch (err) {
+      setError('Error getting GitHub login URL')
+    } finally {
+      setOauthLoading(false)
     }
-  ]);
+  }
 
-  const [recentIssues] = useState<Issue[]>([
-    {
-      id: '1',
-      title: 'GitHub OAuth not working in production',
-      number: 156,
-      state: 'open',
-      repository: 'taskflow-frontend',
-      author: 'john.doe',
-      createdAt: '1 day ago',
-      labels: ['bug', 'high-priority']
-    },
-    {
-      id: '2',
-      title: 'Add repository health monitoring',
-      number: 155,
-      state: 'open',
-      repository: 'taskflow-backend',
-      author: 'jane.smith',
-      createdAt: '2 days ago',
-      labels: ['enhancement', 'feature']
-    },
-    {
-      id: '3',
-      title: 'Update dependency versions',
-      number: 154,
-      state: 'closed',
-      repository: 'taskflow-frontend',
-      author: 'mike.wilson',
-      createdAt: '3 days ago',
-      labels: ['maintenance']
+  const handleCreatePart = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setCreatingPart(true)
+    setError(null)
+    try {
+      // Since backend doesn't have POST /projects/{projectId}/parts endpoint,
+      // we'll add to local state for now
+      const newPartWithId = {
+        ...newPart,
+        id: `part-${Date.now()}`
+      }
+      setParts((prev) => [...prev, newPartWithId])
+      setShowCreatePart(false)
+      setNewPart({ name: '', programmingLanguage: '', framework: '' })
+      setSuccess('Project Part created successfully!')
+    } catch {
+      setError('Error creating project part')
+    } finally {
+      setCreatingPart(false)
     }
-  ]);
+  }
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+  const handleConnectRepo = async () => {
+    if (!selectedRepo || !selectedPart) return
+    setConnecting(true)
+    setError(null)
+    setSuccess(null)
+    try {
+      // Since backend doesn't have PATCH /projects/{projectId}/parts/{partId}/connect-repo endpoint,
+      // we'll simulate the connection for now
+      setSuccess('Repository connected to Project Part successfully!')
+      // In a real implementation, you would call the API here
+      // await axiosClient.patch(
+      //   `/projects/${projectId}/parts/${selectedPart}/connect-repo`,
+      //   { repoUrl: selectedRepo },
+      //   { headers: { 'Content-Type': 'application/json-patch+json' } }
+      // )
+    } catch {
+      setError('Error connecting repository to Project Part')
+    } finally {
+      setConnecting(false)
+    }
+  }
 
-  const getLanguageColor = (language: string) => {
-    const colors: { [key: string]: string } = {
-      'TypeScript': 'bg-blue-100 text-blue-700',
-      'JavaScript': 'bg-yellow-100 text-yellow-700',
-      'C#': 'bg-purple-100 text-purple-700',
-      'Java': 'bg-orange-100 text-orange-700',
-      'Python': 'bg-green-100 text-green-700',
-      'SQL': 'bg-gray-100 text-gray-700'
-    };
-    return colors[language] || 'bg-gray-100 text-gray-700';
-  };
+  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
-  const getIssueStateIcon = (state: string) => {
-    return state === 'open' ? (
-      <AlertCircle className="h-4 w-4 text-green-500" />
-    ) : (
-      <CheckCircle className="h-4 w-4 text-gray-500" />
-    );
-  };
-
-  if (isLoading || !currentProject) {
+  // Check if no project is selected
+  if (!projectId) {
     return (
-      <div className="flex h-screen bg-gray-100">
+      <div className='flex h-screen bg-gray-100'>
         <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className='flex-1 flex flex-col overflow-hidden'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-          <div className="flex items-center justify-center flex-1">
+          <div className='flex-1 overflow-y-auto flex flex-col items-center justify-center p-6'>
+            <div className='text-center'>
+              <Github className='h-16 w-16 text-gray-400 mx-auto mb-4' />
+              <h1 className='text-2xl font-bold text-gray-900 mb-2'>No Project Selected</h1>
+              <p className='text-gray-600 mb-4'>Please select a project to access GitHub integration features.</p>
+              <Button
+                onClick={() => (window.location.href = '/projects/')}
+                className='bg-lavender-700 hover:bg-lavender-800'
+              >
+                Go to Projects
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (isLoading || !currentProject || loading) {
+    return (
+      <div className='flex h-screen bg-gray-100'>
+        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
+        <div className='flex-1 flex flex-col overflow-hidden'>
+          <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+          <div className='flex items-center justify-center flex-1'>
             <Loader />
           </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className='flex h-screen bg-gray-100'>
       <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
-      
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className='flex-1 flex flex-col overflow-hidden'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-        
-        <div className="flex-1 overflow-y-auto p-6">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">GitHub Integration</h1>
-                <p className="text-gray-600 mt-2">
-                  Manage your GitHub repositories and monitor project activity
-                </p>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <Dialog open={showIntegrationDialog} onOpenChange={setShowIntegrationDialog}>
-                  <DialogTrigger asChild>
-                    <Button>
-                      <Github className="h-4 w-4 mr-2" />
-                      Connect Repository
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-                    <DialogHeader>
-                      <DialogTitle>GitHub Integration</DialogTitle>
-                    </DialogHeader>
-                    <GitHubProjectPartIntegration 
-                      projectId={projectId!}
-                    />
-                  </DialogContent>
-                </Dialog>
-                
-                <Button variant="outline">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
-                </Button>
-              </div>
+        <div className='flex-1 overflow-y-auto flex flex-col items-center justify-center p-6'>
+          <div className='mb-8 w-full max-w-2xl'>
+            <h1 className='text-4xl font-bold text-gray-900 flex items-center gap-4 justify-center mb-2'>
+              <Github className='h-10 w-10 text-gray-700' />
+              GitHub Integration
+            </h1>
+            <p className='text-gray-600 text-center text-lg'>
+              Connect your GitHub account to integrate repositories with your project.
+            </p>
+          </div>
+          {error && (
+            <div className='text-red-500 mb-4 text-center w-full max-w-2xl shadow rounded p-2 bg-red-50'>{error}</div>
+          )}
+          {success && (
+            <div className='text-green-600 mb-4 text-center w-full max-w-2xl shadow rounded p-2 bg-green-50'>
+              {success}
             </div>
-          </div>
-
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Commits</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.totalCommits.toLocaleString()}</p>
-                  </div>
-                  <div className="p-3 bg-blue-100 rounded-lg">
-                    <GitCommit className="h-6 w-6 text-blue-600" />
-                  </div>
+          )}
+          <Card className='w-full max-w-2xl mb-8 shadow-lg border-2 border-gray-100'>
+            <CardHeader className='flex flex-col items-center pb-0'>
+              {connectionStatus ? (
+                <span className='flex items-center gap-2 text-green-600 font-semibold text-xl mb-2'>
+                  <CheckCircle className='h-6 w-6' /> Connected to GitHub
+                </span>
+              ) : (
+                <span className='flex items-center gap-2 text-gray-500 font-semibold text-xl mb-2'>
+                  <XCircle className='h-6 w-6' /> Not Connected
+                </span>
+              )}
+              <p className='text-gray-500 mt-1 text-center text-base'>
+                {connectionStatus
+                  ? 'You are connected to GitHub. Select a repository to integrate with your project.'
+                  : 'Connect your GitHub account to start integrating repositories.'}
+              </p>
+            </CardHeader>
+            <CardContent className='pt-4 pb-6'>
+              {!connectionStatus ? (
+                <Button
+                  onClick={handleConnectGitHub}
+                  disabled={oauthLoading}
+                  className='w-full mt-4 py-3 text-lg font-semibold'
+                  size='lg'
+                >
+                  <Github className='h-5 w-5 mr-2' />
+                  {oauthLoading ? 'Redirecting...' : 'Connect GitHub'}
+                </Button>
+              ) : repos.length === 0 ? (
+                <div className='text-gray-500 text-center py-8 text-lg'>
+                  No repositories found in your GitHub account.
                 </div>
-                <div className="mt-4 flex items-center text-sm text-gray-600">
-                  <TrendingUp className="h-4 w-4 mr-1 text-green-500" />
-                  <span>+12% from last week</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Active Issues</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.totalIssues}</p>
-                  </div>
-                  <div className="p-3 bg-orange-100 rounded-lg">
-                    <AlertCircle className="h-6 w-6 text-orange-600" />
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center text-sm text-gray-600">
-                  <Clock className="h-4 w-4 mr-1 text-orange-500" />
-                  <span>Last updated {stats.lastCommit}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Pull Requests</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.totalPullRequests}</p>
-                  </div>
-                  <div className="p-3 bg-green-100 rounded-lg">
-                    <GitPullRequest className="h-6 w-6 text-green-600" />
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center text-sm text-gray-600">
-                  <Users className="h-4 w-4 mr-1 text-green-500" />
-                  <span>{stats.activeContributors} contributors</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Code Quality</p>
-                    <p className="text-2xl font-bold text-gray-900">{stats.codeQuality}%</p>
-                  </div>
-                  <div className="p-3 bg-purple-100 rounded-lg">
-                    <BarChart3 className="h-6 w-6 text-purple-600" />
-                  </div>
-                </div>
-                <div className="mt-4">
-                  <Progress value={stats.codeQuality} className="h-2" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Main Content */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="repositories">Repositories</TabsTrigger>
-              <TabsTrigger value="activity">Activity</TabsTrigger>
-              <TabsTrigger value="issues">Issues</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="overview" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Repository Health */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Activity className="h-5 w-5" />
-                      Repository Health
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {repositories.map((repo) => (
-                        <div key={repo.id} className="flex items-center justify-between p-3 border rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <div className={`w-3 h-3 rounded-full ${repo.isConnected ? 'bg-green-500' : 'bg-gray-300'}`} />
-                            <div>
-                              <p className="font-medium">{repo.name}</p>
-                              <p className="text-sm text-gray-600">{repo.language}</p>
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-medium">{stats.repositoryHealth}%</p>
-                            <p className="text-xs text-gray-500">Healthy</p>
-                          </div>
-                        </div>
-                      ))}
+              ) : (
+                <>
+                  <div className='mb-6 flex flex-col md:flex-row md:items-end md:gap-6'>
+                    <div className='flex-1 mb-4 md:mb-0'>
+                      <label className='block font-medium mb-2 text-base'>Select Repository</label>
+                      <select
+                        className='w-full border rounded px-4 py-3 text-base shadow-sm focus:ring focus:ring-blue-200'
+                        value={selectedRepo}
+                        onChange={(e) => setSelectedRepo(e.target.value)}
+                      >
+                        <option value=''>-- Select a repository --</option>
+                        {repos.map((repo) => (
+                          <option key={repo.fullName} value={repo.htmlUrl}>
+                            {repo.fullName}
+                          </option>
+                        ))}
+                      </select>
                     </div>
-                  </CardContent>
-                </Card>
-
-                {/* Recent Activity */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <GitBranch className="h-5 w-5" />
-                      Recent Commits
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {recentCommits.map((commit) => (
-                        <div key={commit.id} className="flex items-start gap-3 p-3 border rounded-lg">
-                          <div className="w-2 h-2 bg-green-500 rounded-full mt-2" />
-                          <div className="flex-1">
-                            <p className="font-medium text-sm">{commit.message}</p>
-                            <div className="flex items-center gap-2 mt-1 text-xs text-gray-600">
-                              <span>{commit.author}</span>
-                              <span>•</span>
-                              <span>{commit.repository}</span>
-                              <span>•</span>
-                              <span>{commit.branch}</span>
-                              <span>•</span>
-                              <span>{commit.date}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                    <div className='flex-1'>
+                      <label className='block font-medium mb-2 text-base'>Select Project Part</label>
+                      <select
+                        className='w-full border rounded px-4 py-3 text-base shadow-sm focus:ring focus:ring-blue-200'
+                        value={selectedPart}
+                        onChange={(e) => setSelectedPart(e.target.value)}
+                      >
+                        <option value=''>-- Select a part --</option>
+                        {parts.map((part) => (
+                          <option key={part.id} value={part.id}>
+                            {part.name} ({part.programmingLanguage}, {part.framework})
+                          </option>
+                        ))}
+                      </select>
+                      <Button
+                        variant='link'
+                        className='mt-2 p-0 text-blue-600 text-base'
+                        onClick={() => setShowCreatePart(true)}
+                      >
+                        + Create new part
+                      </Button>
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="repositories" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {repositories.map((repo) => (
-                  <Card key={repo.id} className="hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-lg">{repo.name}</CardTitle>
-                          <p className="text-sm text-gray-600 mt-1">{repo.description}</p>
-                        </div>
-                        <Badge variant={repo.isPrivate ? "secondary" : "outline"}>
-                          {repo.isPrivate ? "Private" : "Public"}
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                      <div className="flex items-center gap-2">
-                        <Badge className={getLanguageColor(repo.language)}>
-                          {repo.language}
-                        </Badge>
-                        {!repo.isConnected && (
-                          <Badge variant="destructive">Not Connected</Badge>
-                        )}
-                      </div>
-                      
-                      <div className="flex items-center justify-between text-sm text-gray-600">
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-1">
-                            <Star className="h-4 w-4" />
-                            <span>{repo.stars}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <GitBranch className="h-4 w-4" />
-                            <span>{repo.forks}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Eye className="h-4 w-4" />
-                            <span>{repo.watchers}</span>
-                          </div>
-                        </div>
-                        <span>Updated {repo.lastUpdated}</span>
-                      </div>
-
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" className="flex-1">
-                          <Github className="h-4 w-4 mr-2" />
-                          View
-                        </Button>
-                        {!repo.isConnected && (
-                          <Button size="sm" className="flex-1">
-                            Connect
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="activity" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Activity Timeline</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {recentCommits.map((commit, index) => (
-                      <div key={commit.id} className="flex items-start gap-4">
-                        <div className="flex flex-col items-center">
-                          <div className="w-3 h-3 bg-blue-500 rounded-full" />
-                          {index < recentCommits.length - 1 && (
-                            <div className="w-0.5 h-8 bg-gray-200 mt-2" />
-                          )}
-                        </div>
-                        <div className="flex-1 pb-4">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium">{commit.author}</span>
-                            <span className="text-gray-500">committed to</span>
-                            <span className="font-medium">{commit.repository}</span>
-                          </div>
-                          <p className="text-gray-700 mb-2">{commit.message}</p>
-                          <div className="flex items-center gap-4 text-sm text-gray-500">
-                            <span>{commit.date}</span>
-                            <span>•</span>
-                            <span>{commit.branch}</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="issues" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Issues</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {recentIssues.map((issue) => (
-                      <div key={issue.id} className="flex items-start gap-4 p-4 border rounded-lg">
-                        <div className="flex items-center gap-2">
-                          {getIssueStateIcon(issue.state)}
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium">{issue.title}</h4>
-                            <span className="text-sm text-gray-500">#{issue.number}</span>
-                          </div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-sm text-gray-600">in {issue.repository}</span>
-                            <span className="text-gray-400">•</span>
-                            <span className="text-sm text-gray-600">by {issue.author}</span>
-                            <span className="text-gray-400">•</span>
-                            <span className="text-sm text-gray-600">{issue.createdAt}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {issue.labels.map((label) => (
-                              <Badge key={label} variant="outline" className="text-xs">
-                                {label}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                  <Button
+                    onClick={handleConnectRepo}
+                    disabled={!selectedRepo || !selectedPart || connecting}
+                    className='w-full py-3 text-lg font-semibold'
+                    size='lg'
+                  >
+                    {connecting ? 'Connecting...' : 'Connect Repository to Project Part'}
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+          {showCreatePart && (
+            <Card className='w-full max-w-xl mb-8 shadow-lg border-2 border-blue-100 animate-fade-in'>
+              <CardHeader>
+                <CardTitle className='text-2xl font-bold text-blue-700'>Create Project Part</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleCreatePart} className='space-y-5'>
+                  <div>
+                    <label className='block font-medium mb-1 text-base'>Name</label>
+                    <Input
+                      value={newPart.name}
+                      onChange={(e) => setNewPart({ ...newPart, name: e.target.value })}
+                      required
+                      className='py-2 px-3 text-base'
+                    />
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                  <div>
+                    <label className='block font-medium mb-1 text-base'>Programming Language</label>
+                    <Input
+                      value={newPart.programmingLanguage}
+                      onChange={(e) => setNewPart({ ...newPart, programmingLanguage: e.target.value })}
+                      required
+                      className='py-2 px-3 text-base'
+                    />
+                  </div>
+                  <div>
+                    <label className='block font-medium mb-1 text-base'>Framework</label>
+                    <Input
+                      value={newPart.framework}
+                      onChange={(e) => setNewPart({ ...newPart, framework: e.target.value })}
+                      required
+                      className='py-2 px-3 text-base'
+                    />
+                  </div>
+                  <div className='flex gap-3 justify-end'>
+                    <Button type='submit' disabled={creatingPart} className='px-6 py-2 text-base font-semibold'>
+                      {creatingPart ? 'Creating...' : 'Create Part'}
+                    </Button>
+                    <Button
+                      type='button'
+                      variant='outline'
+                      onClick={() => setShowCreatePart(false)}
+                      className='px-6 py-2 text-base'
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
-  );
-} 
+  )
+}

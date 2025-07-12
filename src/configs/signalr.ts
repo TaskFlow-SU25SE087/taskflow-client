@@ -30,9 +30,7 @@ export class SignalRService {
         .withUrl(SIGNALR_CONFIG.HUB_URL, {
           accessTokenFactory: () => {
             const rememberMe = localStorage.getItem('rememberMe') === 'true'
-            return rememberMe 
-              ? localStorage.getItem('accessToken') || ''
-              : sessionStorage.getItem('accessToken') || ''
+            return rememberMe ? localStorage.getItem('accessToken') || '' : sessionStorage.getItem('accessToken') || ''
           }
         })
         .withAutomaticReconnect([0, 2000, 10000, 30000])
@@ -41,7 +39,7 @@ export class SignalRService {
 
       // Register event handlers
       this.registerEventHandlers()
-      
+
       console.log('[SignalR] Đang kết nối tới:', SIGNALR_CONFIG.HUB_URL)
       await this.connection.start()
       console.log('✅ SignalR Connected!')

@@ -42,28 +42,28 @@ export const useActivateAccount = () => {
 
     try {
       await activate(email, username, newPassword, confirmPassword, tokenResetPassword)
-      
+
       toast({
         title: 'Success',
-        description: 'Account activated successfully! You can now login.',
+        description: 'Account activated successfully! You can now login.'
       })
-      
+
       // Redirect to login page after a short delay
       setTimeout(() => {
         navigate('/login', { replace: true })
       }, 2000)
-      
+
       return true
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to activate account'
       setError(errorMessage)
-      
+
       toast({
         title: 'Error',
         description: errorMessage,
         variant: 'destructive'
       })
-      
+
       return false
     } finally {
       setIsLoading(false)
@@ -80,4 +80,4 @@ export const useActivateAccount = () => {
     error,
     clearError
   }
-} 
+}

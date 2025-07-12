@@ -15,49 +15,54 @@ const HomePage: React.FC = () => {
 
   // Header animation
   useEffect(() => {
-    if (!headerRef.current) return;
-    const header = headerRef.current;
-    const navItems = Array.from(header.querySelectorAll('nav li'));
-    const headerButton = header.querySelector('button');
-    const logo = header.querySelector('.text-2xl');
-    const targets = [logo, ...navItems, headerButton].filter(Boolean);
-    const mainTl = gsap.timeline();
-    mainTl.from(header, { yPercent: -100, duration: 0.6, ease: 'power2.out' });
+    if (!headerRef.current) return
+    const header = headerRef.current
+    const navItems = Array.from(header.querySelectorAll('nav li'))
+    const headerButton = header.querySelector('button')
+    const logo = header.querySelector('.text-2xl')
+    const targets = [logo, ...navItems, headerButton].filter(Boolean)
+    const mainTl = gsap.timeline()
+    mainTl.from(header, { yPercent: -100, duration: 0.6, ease: 'power2.out' })
     if (targets.length > 0) {
-      mainTl.from(targets, { y: -20, opacity: 0, duration: 0.4, stagger: 0.05, ease: 'power2.out' }, '-=0.3');
+      mainTl.from(targets, { y: -20, opacity: 0, duration: 0.4, stagger: 0.05, ease: 'power2.out' }, '-=0.3')
     }
-    return () => { mainTl.kill(); };
-  }, []);
+    return () => {
+      mainTl.kill()
+    }
+  }, [])
 
   // Hero animation
   useEffect(() => {
-    if (!heroRef.current) return;
-    const hero = heroRef.current;
-    const heading = hero.querySelector('h1');
-    const heroParagraph = hero.querySelector('p');
-    const heroButtons = Array.from(hero.querySelectorAll('.flex.space-x-4 a'));
-    const heroImage = hero.querySelector('.hero-image');
-    const tl = gsap.timeline();
-    if (heading) tl.from(heading, { opacity: 0, y: 30, duration: 0.4, ease: 'power2.out' });
-    if (heroParagraph) tl.from(heroParagraph, { opacity: 0, y: 20, duration: 0.4, ease: 'power2.out' }, '-=0.2');
-    if (heroButtons.length > 0) tl.from(heroButtons, { opacity: 0, y: 20, duration: 0.3, stagger: 0.1, ease: 'power2.out' }, '-=0.2');
-    if (heroImage) tl.from(heroImage, { opacity: 0, y: 30, duration: 0.5, ease: 'power2.out' }, '-=0.3');
-    return () => { tl.kill(); };
-  }, []);
+    if (!heroRef.current) return
+    const hero = heroRef.current
+    const heading = hero.querySelector('h1')
+    const heroParagraph = hero.querySelector('p')
+    const heroButtons = Array.from(hero.querySelectorAll('.flex.space-x-4 a'))
+    const heroImage = hero.querySelector('.hero-image')
+    const tl = gsap.timeline()
+    if (heading) tl.from(heading, { opacity: 0, y: 30, duration: 0.4, ease: 'power2.out' })
+    if (heroParagraph) tl.from(heroParagraph, { opacity: 0, y: 20, duration: 0.4, ease: 'power2.out' }, '-=0.2')
+    if (heroButtons.length > 0)
+      tl.from(heroButtons, { opacity: 0, y: 20, duration: 0.3, stagger: 0.1, ease: 'power2.out' }, '-=0.2')
+    if (heroImage) tl.from(heroImage, { opacity: 0, y: 30, duration: 0.5, ease: 'power2.out' }, '-=0.3')
+    return () => {
+      tl.kill()
+    }
+  }, [])
 
   // Features animation
   useEffect(() => {
-    if (!featuresRef.current) return;
-    const features = featuresRef.current;
-    const featureHeading = features.querySelector('h2');
-    const cards = Array.from(features.querySelectorAll('.feature-card'));
+    if (!featuresRef.current) return
+    const features = featuresRef.current
+    const featureHeading = features.querySelector('h2')
+    const cards = Array.from(features.querySelectorAll('.feature-card'))
     if (featureHeading) {
       gsap.from(featureHeading, {
         scrollTrigger: { trigger: featureHeading, start: 'top 100%' },
         opacity: 0,
         duration: 0.5,
         ease: 'power2.out'
-      });
+      })
     }
     if (cards.length > 0) {
       gsap.from(cards, {
@@ -66,22 +71,24 @@ const HomePage: React.FC = () => {
         duration: 0.4,
         stagger: 0.1,
         ease: 'power2.out'
-      });
+      })
     }
-    return () => { ScrollTrigger.getAll().forEach((trigger) => trigger.kill()); };
-  }, []);
+    return () => {
+      ScrollTrigger.getAll().forEach((trigger) => trigger.kill())
+    }
+  }, [])
 
   // CTA animation
   useEffect(() => {
-    if (!ctaRef.current) return;
-    const cta = ctaRef.current;
-    const ctaHeading = cta.querySelector('h2');
-    const ctaParagraph = cta.querySelector('p');
-    const ctaButton = cta.querySelector('button');
-    const ctaTargets = [ctaHeading, ctaParagraph, ctaButton].filter(Boolean);
+    if (!ctaRef.current) return
+    const cta = ctaRef.current
+    const ctaHeading = cta.querySelector('h2')
+    const ctaParagraph = cta.querySelector('p')
+    const ctaButton = cta.querySelector('button')
+    const ctaTargets = [ctaHeading, ctaParagraph, ctaButton].filter(Boolean)
     const ctaTl = gsap.timeline({
       scrollTrigger: { trigger: cta, start: 'top 75%' }
-    });
+    })
     if (ctaTargets.length > 0) {
       ctaTl.from(ctaTargets, {
         opacity: 0,
@@ -89,17 +96,19 @@ const HomePage: React.FC = () => {
         duration: 0.4,
         stagger: 0.1,
         ease: 'power2.out'
-      });
+      })
     }
-    return () => { ctaTl.kill(); };
-  }, []);
+    return () => {
+      ctaTl.kill()
+    }
+  }, [])
 
   // Footer animation
   useEffect(() => {
-    if (!footerRef.current) return;
-    const footer = footerRef.current;
-    const columns = Array.from(footer.querySelectorAll('.grid > div'));
-    const copyright = footer.querySelector('.mt-12');
+    if (!footerRef.current) return
+    const footer = footerRef.current
+    const columns = Array.from(footer.querySelectorAll('.grid > div'))
+    const copyright = footer.querySelector('.mt-12')
     if (columns.length > 0) {
       gsap.from(columns, {
         scrollTrigger: { trigger: footer, start: 'top 85%' },
@@ -108,7 +117,7 @@ const HomePage: React.FC = () => {
         duration: 0.4,
         stagger: 0.1,
         ease: 'power2.out'
-      });
+      })
     }
     if (copyright) {
       gsap.from(copyright, {
@@ -117,10 +126,12 @@ const HomePage: React.FC = () => {
         y: 20,
         duration: 0.3,
         ease: 'power2.out'
-      });
+      })
     }
-    return () => { ScrollTrigger.getAll().forEach((trigger) => trigger.kill()); };
-  }, []);
+    return () => {
+      ScrollTrigger.getAll().forEach((trigger) => trigger.kill())
+    }
+  }, [])
 
   return (
     <div className='bg-[url(endless.svg)] text-gray-800 min-h-screen overflow-x-hidden'>
@@ -164,7 +175,13 @@ const HomePage: React.FC = () => {
               onClick={() => setMobileMenuOpen((v) => !v)}
               aria-label='Open menu'
             >
-              <svg className='h-6 w-6 text-lavender-700' fill='none' stroke='currentColor' strokeWidth='2' viewBox='0 0 24 24'>
+              <svg
+                className='h-6 w-6 text-lavender-700'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2'
+                viewBox='0 0 24 24'
+              >
                 <path strokeLinecap='round' strokeLinejoin='round' d='M4 6h16M4 12h16M4 18h16' />
               </svg>
             </button>
@@ -174,22 +191,37 @@ const HomePage: React.FC = () => {
             <div className='md:hidden mt-2 bg-white rounded-lg shadow-lg py-2 px-4'>
               <ul className='flex flex-col gap-2'>
                 <li>
-                  <Link to='/' className='block py-2 text-gray-600 hover:text-lavender-700' onClick={() => setMobileMenuOpen(false)}>
+                  <Link
+                    to='/'
+                    className='block py-2 text-gray-600 hover:text-lavender-700'
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     Home
                   </Link>
                 </li>
                 <li>
-                  <Link to='about' className='block py-2 text-gray-600 hover:text-lavender-700' onClick={() => setMobileMenuOpen(false)}>
+                  <Link
+                    to='about'
+                    className='block py-2 text-gray-600 hover:text-lavender-700'
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     About
                   </Link>
                 </li>
                 <li>
-                  <Link to='contact' className='block py-2 text-gray-600 hover:text-lavender-700' onClick={() => setMobileMenuOpen(false)}>
+                  <Link
+                    to='contact'
+                    className='block py-2 text-gray-600 hover:text-lavender-700'
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     Contact
                   </Link>
                 </li>
                 <li>
-                  <button className='w-full bg-lavender-700 text-white px-4 py-2 rounded-full hover:bg-lavender-800 transition-colors mt-2' onClick={() => setMobileMenuOpen(false)}>
+                  <button
+                    className='w-full bg-lavender-700 text-white px-4 py-2 rounded-full hover:bg-lavender-800 transition-colors mt-2'
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     Get Started
                   </button>
                 </li>
@@ -291,23 +323,53 @@ const HomePage: React.FC = () => {
           <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-5'>
             <div className='min-w-0'>
               <h3 className='text-2xl font-bold mb-4 text-white'>TaskFlow</h3>
-              <p className='text-white'>Empowering students to achieve more through efficient project management and code quality tools.</p>
+              <p className='text-white'>
+                Empowering students to achieve more through efficient project management and code quality tools.
+              </p>
             </div>
             <div className='min-w-0'>
               <h4 className='text-lg font-semibold mb-4 text-white'>Quick Links</h4>
               <ul className='space-y-2'>
-                <li><a href='#' className='hover:text-lavender-500 transition-colors text-white'>Home</a></li>
-                <li><a href='#features' className='hover:text-lavender-500 transition-colors text-white'>Features</a></li>
-                <li><a href='#about' className='hover:text-lavender-500 transition-colors text-white'>About</a></li>
-                <li><a href='#contact' className='hover:text-lavender-500 transition-colors text-white'>Contact</a></li>
+                <li>
+                  <a href='#' className='hover:text-lavender-500 transition-colors text-white'>
+                    Home
+                  </a>
+                </li>
+                <li>
+                  <a href='#features' className='hover:text-lavender-500 transition-colors text-white'>
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href='#about' className='hover:text-lavender-500 transition-colors text-white'>
+                    About
+                  </a>
+                </li>
+                <li>
+                  <a href='#contact' className='hover:text-lavender-500 transition-colors text-white'>
+                    Contact
+                  </a>
+                </li>
               </ul>
             </div>
             <div className='min-w-0'>
               <h4 className='text-lg font-semibold mb-4 text-white'>Connect</h4>
               <ul className='space-y-2'>
-                <li><a href='#' className='hover:text-lavender-500 transition-colors text-white'>Twitter</a></li>
-                <li><a href='#' className='hover:text-lavender-500 transition-colors text-white'>LinkedIn</a></li>
-                <li><a href='#' className='hover:text-lavender-500 transition-colors text-white'>GitHub</a></li>
+                <li>
+                  <a href='#' className='hover:text-lavender-500 transition-colors text-white'>
+                    Twitter
+                  </a>
+                </li>
+                <li>
+                  <a href='#' className='hover:text-lavender-500 transition-colors text-white'>
+                    LinkedIn
+                  </a>
+                </li>
+                <li>
+                  <a href='#' className='hover:text-lavender-500 transition-colors text-white'>
+                    GitHub
+                  </a>
+                </li>
               </ul>
             </div>
             <div className='min-w-0'>

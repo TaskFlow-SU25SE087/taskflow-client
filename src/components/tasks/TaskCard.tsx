@@ -36,7 +36,11 @@ const getPriorityChevron = (priority: number) => {
   }
 }
 
-interface TaskCardProps { task: TaskP, compact?: boolean, children?: React.ReactNode }
+interface TaskCardProps {
+  task: TaskP
+  compact?: boolean
+  children?: React.ReactNode
+}
 export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { children?: React.ReactNode }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [assignedMember, setAssignedMember] = useState<ProjectMember | null>(null)
@@ -69,7 +73,7 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
 
   useEffect(() => {
     if (!currentProject) {
-      return;
+      return
     }
     fetchTaskDetailsAndMember()
   }, [currentProject, navigate, fetchTaskDetailsAndMember])
@@ -85,7 +89,7 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
     }
 
     notificationService.addListener(handleTaskNotification)
-    
+
     return () => {
       notificationService.removeListener(handleTaskNotification)
     }
@@ -96,27 +100,41 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
   }, [fetchTaskDetailsAndMember])
 
   if (!currentProject) {
-    return <div className='p-4 text-center text-gray-500'>Chưa chọn project</div>;
+    return <div className='p-4 text-center text-gray-500'>Chưa chọn project</div>
   }
 
   // Lấy số comment, số file, deadline, status, người tạo, ngày tạo, danh sách assignees
-  const commentCount = Array.isArray(task.comments) ? task.comments.length : (Array.isArray(task.commnets) ? task.commnets.length : 0);
-  const fileCount = Array.isArray(task.attachmentUrlsList) ? task.attachmentUrlsList.length : 0;
-  const deadline = sprint?.endDate ? format(new Date(sprint.endDate), 'MMM d, yyyy') : 'N/A';
-  const status = task.status || 'N/A';
-  const createdBy = task.reporter?.fullName || task.reporter?.email || 'Unknown';
-  const createdAt = task.created ? format(new Date(task.created), 'MMM d, yyyy') : 'N/A';
-  const assignees = Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0 ? task.taskAssignees : [];
+  const commentCount = Array.isArray(task.comments)
+    ? task.comments.length
+    : Array.isArray(task.commnets)
+      ? task.commnets.length
+      : 0
+  const fileCount = Array.isArray(task.attachmentUrlsList) ? task.attachmentUrlsList.length : 0
+  const deadline = sprint?.endDate ? format(new Date(sprint.endDate), 'MMM d, yyyy') : 'N/A'
+  const status = task.status || 'N/A'
+  const createdBy = task.reporter?.fullName || task.reporter?.email || 'Unknown'
+  const createdAt = task.created ? format(new Date(task.created), 'MMM d, yyyy') : 'N/A'
+  const assignees = Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0 ? task.taskAssignees : []
   const priorityText =
-    task.priority === 1 ? 'Low' :
-    task.priority === 2 ? 'Medium' :
-    task.priority === 3 ? 'High' :
-    task.priority === 4 ? 'Urgent' : 'N/A';
+    task.priority === 1
+      ? 'Low'
+      : task.priority === 2
+        ? 'Medium'
+        : task.priority === 3
+          ? 'High'
+          : task.priority === 4
+            ? 'Urgent'
+            : 'N/A'
   const priorityColor =
-    task.priority === 1 ? 'text-blue-500' :
-    task.priority === 2 ? 'text-orange-400' :
-    task.priority === 3 ? 'text-red-500' :
-    task.priority === 4 ? 'text-red-600' : 'text-gray-400';
+    task.priority === 1
+      ? 'text-blue-500'
+      : task.priority === 2
+        ? 'text-orange-400'
+        : task.priority === 3
+          ? 'text-red-500'
+          : task.priority === 4
+            ? 'text-red-600'
+            : 'text-gray-400'
 
   // --- AvatarStack nội bộ cho TaskCard ---
   const avatarColors = [
@@ -157,9 +175,7 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
         })}
         {assignees.length > 4 && (
           <Avatar className='h-7 w-7 border-2 border-white shadow'>
-            <AvatarFallback style={{ background: '#F3F4F6', color: '#6B7280' }}>
-              +{assignees.length - 4}
-            </AvatarFallback>
+            <AvatarFallback style={{ background: '#F3F4F6', color: '#6B7280' }}>+{assignees.length - 4}</AvatarFallback>
           </Avatar>
         )}
       </div>
@@ -168,26 +184,23 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
 
   if (compact) {
     return (
-      <div className="flex items-center gap-2 border border-gray-200 rounded px-2 py-1 text-xs bg-white min-h-[36px]">
+      <div className='flex items-center gap-2 border border-gray-200 rounded px-2 py-1 text-xs bg-white min-h-[36px]'>
         {/* Tags */}
         {task.tags && task.tags.length > 0 && (
-          <div className="flex gap-1">
+          <div className='flex gap-1'>
             {task.tags.map((tag: { id: string; name: string }, index: number) => (
-              <span
-                key={tag.id || index}
-                className="rounded px-1 py-0.5 bg-orange-100 text-orange-600"
-              >
+              <span key={tag.id || index} className='rounded px-1 py-0.5 bg-orange-100 text-orange-600'>
                 {tag.name}
               </span>
             ))}
           </div>
         )}
         {/* Title */}
-        <span className="font-semibold truncate max-w-[120px]">{task.title}</span>
+        <span className='font-semibold truncate max-w-[120px]'>{task.title}</span>
         {/* Description */}
-        <span className="text-gray-500 truncate max-w-[120px]">{task.description}</span>
+        <span className='text-gray-500 truncate max-w-[120px]'>{task.description}</span>
         {/* Move to Sprint button if present */}
-        <span className="ml-auto">{children}</span>
+        <span className='ml-auto'>{children}</span>
       </div>
     )
   }
@@ -200,7 +213,9 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
           style={{ marginLeft: '-3px' }}
         />
 
-        <Card className={`w-full border border-gray-300 cursor-pointer hover:border-gray-400 transition-colors ${compact ? 'p-2 rounded-md text-sm' : ''}`}>
+        <Card
+          className={`w-full border border-gray-300 cursor-pointer hover:border-gray-400 transition-colors ${compact ? 'p-2 rounded-md text-sm' : ''}`}
+        >
           <div className={compact ? 'p-2' : 'p-4'}>
             <div className={`flex gap-2 ${compact ? 'mb-1' : 'mb-3'}`}>
               {task.tags && task.tags.length > 0 && (
@@ -223,7 +238,9 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
               {getPriorityChevron(task.priority)}
             </div>
 
-            <p className={`text-gray-500 ${compact ? 'mb-2 truncate max-w-[180px] text-xs' : 'mb-4'}`}>{task.description}</p>
+            <p className={`text-gray-500 ${compact ? 'mb-2 truncate max-w-[180px] text-xs' : 'mb-4'}`}>
+              {task.description}
+            </p>
 
             <div className={`flex items-center ${compact ? 'gap-2 mb-1' : 'gap-6 mb-4'}`}>
               <div className='flex items-center gap-1 text-gray-400'>

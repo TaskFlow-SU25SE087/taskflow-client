@@ -17,24 +17,24 @@ axiosClient.interceptors.request.use(
     console.log('📤 [axiosClient] Request method:', config.method?.toUpperCase())
     console.log('📤 [axiosClient] Request headers:', config.headers)
     console.log('📤 [axiosClient] Request data:', config.data)
-    
+
     // Get access token from session storage
     const accessToken = sessionStorage.getItem('accessToken')
-    
+
     if (accessToken) {
       console.log('🔑 [axiosClient] Adding Authorization header with token')
       config.headers.Authorization = `Bearer ${accessToken}`
     } else {
       console.log('⚠️ [axiosClient] No access token found in session storage')
     }
-    
+
     console.log('📤 [axiosClient] Final request config:', {
       url: config.url,
       method: config.method,
       headers: config.headers,
       data: config.data
     })
-    
+
     return config
   },
   (error: AxiosError) => {
@@ -55,12 +55,12 @@ axiosClient.interceptors.response.use(
   },
   (error: AxiosError) => {
     console.error('❌ [axiosClient] Response interceptor error:', error)
-    
+
     if (error.response) {
       const { status, data } = error.response
       console.error('📡 [axiosClient] Error response status:', status)
       console.error('📡 [axiosClient] Error response data:', data)
-      
+
       if (status === 401) {
         console.error('🔒 [axiosClient] Unauthorized - removing token')
         localStorage.removeItem('token')
@@ -74,7 +74,7 @@ axiosClient.interceptors.response.use(
     } else {
       console.error('⚙️ [axiosClient] Request setup error:', error.message)
     }
-    
+
     return Promise.reject(error)
   }
 )

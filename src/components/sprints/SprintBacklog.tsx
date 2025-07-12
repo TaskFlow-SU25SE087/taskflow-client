@@ -22,14 +22,14 @@ interface SprintBacklogProps {
   isLoading?: boolean
 }
 
-export function SprintBacklog({ 
-  tasks, 
-  onMoveTask, 
-  projectId, 
-  onTaskCreated, 
-  onTaskUpdate, 
+export function SprintBacklog({
+  tasks,
+  onMoveTask,
+  projectId,
+  onTaskCreated,
+  onTaskUpdate,
   sprint,
-  isLoading = false 
+  isLoading = false
 }: SprintBacklogProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
@@ -40,7 +40,7 @@ export function SprintBacklog({
   const [loadingBatch, setLoadingBatch] = useState(false)
 
   const handleCheck = (taskId: string, checked: boolean) => {
-    setSelectedTaskIds(prev => checked ? [...prev, taskId] : prev.filter(id => id !== taskId))
+    setSelectedTaskIds((prev) => (checked ? [...prev, taskId] : prev.filter((id) => id !== taskId)))
   }
 
   return (
@@ -99,52 +99,57 @@ export function SprintBacklog({
                 <SprintSelector
                   sprints={sprints}
                   onSprintSelect={async (sprintId) => {
-                    setLoadingBatch(true);
+                    setLoadingBatch(true)
                     try {
-                      await sprintApi.assignTasksToSprint(projectId, sprintId, selectedTaskIds);
-                      toast({ title: 'Success', description: 'Tasks moved to sprint successfully!' });
-                      setSelectedTaskIds([]);
-                      setShowSprintSelector(false);
-                      await refreshSprints();
-                      onTaskUpdate();
+                      await sprintApi.assignTasksToSprint(projectId, sprintId, selectedTaskIds)
+                      toast({ title: 'Success', description: 'Tasks moved to sprint successfully!' })
+                      setSelectedTaskIds([])
+                      setShowSprintSelector(false)
+                      await refreshSprints()
+                      onTaskUpdate()
                     } catch (err) {
-                      toast({ title: 'Error', description: 'Failed to move tasks', variant: 'destructive' });
+                      toast({ title: 'Error', description: 'Failed to move tasks', variant: 'destructive' })
                     } finally {
-                      setLoadingBatch(false);
+                      setLoadingBatch(false)
                     }
                   }}
                   trigger={null}
                 />
               )}
-              <Button size='sm' variant='destructive' onClick={async () => {
-                if (!window.confirm('Are you sure you want to delete the selected tasks?')) return;
-                setLoadingBatch(true);
-                try {
-                  for (const id of selectedTaskIds) {
-                    await taskApi.deleteTask(projectId, id);
+              <Button
+                size='sm'
+                variant='destructive'
+                onClick={async () => {
+                  if (!window.confirm('Are you sure you want to delete the selected tasks?')) return
+                  setLoadingBatch(true)
+                  try {
+                    for (const id of selectedTaskIds) {
+                      await taskApi.deleteTask(projectId, id)
+                    }
+                    toast({ title: 'Success', description: 'Deleted selected tasks!' })
+                    setSelectedTaskIds([])
+                    onTaskUpdate()
+                  } catch {
+                    toast({ title: 'Error', description: 'Failed to delete tasks', variant: 'destructive' })
+                  } finally {
+                    setLoadingBatch(false)
                   }
-                  toast({ title: 'Success', description: 'Deleted selected tasks!' });
-                  setSelectedTaskIds([]);
-                  onTaskUpdate();
-                } catch {
-                  toast({ title: 'Error', description: 'Failed to delete tasks', variant: 'destructive' });
-                } finally {
-                  setLoadingBatch(false);
-                }
-              }} disabled={loadingBatch}>
+                }}
+                disabled={loadingBatch}
+              >
                 Delete selected
               </Button>
             </div>
           )}
-          
+
           {isLoading ? (
-            <div className="p-4">
+            <div className='p-4'>
               {Array.from({ length: 5 }).map((_, index) => (
                 <BacklogTaskRowSkeleton key={index} />
               ))}
             </div>
           ) : tasks.length > 0 ? (
-            <div className="p-4">
+            <div className='p-4'>
               <VirtualizedTaskList
                 tasks={tasks}
                 showMeta={true}

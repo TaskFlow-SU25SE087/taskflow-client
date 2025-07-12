@@ -21,7 +21,7 @@ const ProjectGroupManager: React.FC<ProjectGroupManagerProps> = ({ projectId }) 
       }
 
       joinGroup()
-      
+
       return () => {
         // Leave project group when component unmounts
         const leaveGroup = async () => {
@@ -42,4 +42,4 @@ const ProjectGroupManager: React.FC<ProjectGroupManagerProps> = ({ projectId }) 
   return null
 }
 
-export default ProjectGroupManager 
+export default ProjectGroupManager

@@ -31,7 +31,7 @@ export const boardApi = {
     return response.data.data
   },
 
-  updateBoardOrder: async (projectId: string, boards: {id: string, order: number}[]): Promise<boolean> => {
+  updateBoardOrder: async (projectId: string, boards: { id: string; order: number }[]): Promise<boolean> => {
     const response = await axiosClient.put(`/projects/${projectId}/boards/order`, boards)
     return response.data.data
   }

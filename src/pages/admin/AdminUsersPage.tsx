@@ -41,13 +41,15 @@ export default function AdminUsersPage() {
         setExporting(false)
         return
       }
-      const filteredAllUsers = allUsers.filter(user => {
-        const matchesSearch = user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                             user.email.toLowerCase().includes(searchTerm.toLowerCase())
+      const filteredAllUsers = allUsers.filter((user) => {
+        const matchesSearch =
+          user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.email.toLowerCase().includes(searchTerm.toLowerCase())
         const matchesRole = selectedRole === 'all' || user.role === selectedRole
-        const matchesStatus = selectedStatus === 'all' || 
-                             (selectedStatus === 'active' && user.isActive) ||
-                             (selectedStatus === 'inactive' && !user.isActive)
+        const matchesStatus =
+          selectedStatus === 'all' ||
+          (selectedStatus === 'active' && user.isActive) ||
+          (selectedStatus === 'inactive' && !user.isActive)
         const matchesSemester = selectedSemester === 'all' || user.term === selectedSemester
         return matchesSearch && matchesRole && matchesStatus && matchesSemester
       })
@@ -55,7 +57,7 @@ export default function AdminUsersPage() {
         setExporting(false)
         return
       }
-      const data = filteredAllUsers.map(user => ({
+      const data = filteredAllUsers.map((user) => ({
         ID: user.id,
         'Full Name': user.fullName,
         Email: user.email,
@@ -63,7 +65,7 @@ export default function AdminUsersPage() {
         'Student ID': user.studentId,
         Term: user.term,
         Role: user.role,
-        Status: user.isActive ? 'Active' : 'Inactive',
+        Status: user.isActive ? 'Active' : 'Inactive'
       }))
       const worksheet = XLSX.utils.json_to_sheet(data)
       const workbook = XLSX.utils.book_new()
@@ -92,55 +94,57 @@ export default function AdminUsersPage() {
     }
   }
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesRole = selectedRole === 'all' || user.role === selectedRole
-    const matchesStatus = selectedStatus === 'all' || 
-                         (selectedStatus === 'active' && user.isActive) ||
-                         (selectedStatus === 'inactive' && !user.isActive)
+    const matchesStatus =
+      selectedStatus === 'all' ||
+      (selectedStatus === 'active' && user.isActive) ||
+      (selectedStatus === 'inactive' && !user.isActive)
     const matchesSemester = selectedSemester === 'all' || user.term === selectedSemester
     return matchesSearch && matchesRole && matchesStatus && matchesSemester
   })
 
-  const roles = Array.from(new Set(users.map(user => user.role)))
-  const semesters = Array.from(new Set(users.map(user => user.term).filter(Boolean)))
+  const roles = Array.from(new Set(users.map((user) => user.role)))
+  const semesters = Array.from(new Set(users.map((user) => user.term).filter(Boolean)))
 
   if (loading) {
     return (
-      <AdminLayout title="User Management" description="Manage all users in the system">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
-          <div className="flex flex-1 gap-2 items-center">
+      <AdminLayout title='User Management' description='Manage all users in the system'>
+        <div className='flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4'>
+          <div className='flex flex-1 gap-2 items-center'>
             <Input
-              placeholder="Search by name or email"
+              placeholder='Search by name or email'
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="max-w-xs"
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className='max-w-xs'
               disabled
             />
-            <select disabled className="border rounded px-2 py-1 text-sm">
+            <select disabled className='border rounded px-2 py-1 text-sm'>
               <option>All Roles</option>
             </select>
-            <select disabled className="border rounded px-2 py-1 text-sm">
+            <select disabled className='border rounded px-2 py-1 text-sm'>
               <option>All Status</option>
             </select>
-            <select disabled className="border rounded px-2 py-1 text-sm">
+            <select disabled className='border rounded px-2 py-1 text-sm'>
               <option>All Semesters</option>
             </select>
           </div>
           <div>
-            <Button variant="outline" disabled>
-              <span className="hidden md:inline">Import Users</span>
-              <span className="md:hidden">Import</span>
+            <Button variant='outline' disabled>
+              <span className='hidden md:inline'>Import Users</span>
+              <span className='md:hidden'>Import</span>
             </Button>
-            <Button variant="outline" className="ml-2" disabled>
+            <Button variant='outline' className='ml-2' disabled>
               Export Excel
             </Button>
           </div>
         </div>
-        <div className="flex items-center justify-center min-h-64">
-          <div className="flex items-center space-x-2">
-            <Loader2 className="h-6 w-6 animate-spin" />
+        <div className='flex items-center justify-center min-h-64'>
+          <div className='flex items-center space-x-2'>
+            <Loader2 className='h-6 w-6 animate-spin' />
             <span>Loading users...</span>
           </div>
         </div>
@@ -149,76 +153,80 @@ export default function AdminUsersPage() {
   }
 
   return (
-    <AdminLayout title="User Management" description="Manage all users in the system">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
-        <div className="flex flex-1 gap-2 items-center">
+    <AdminLayout title='User Management' description='Manage all users in the system'>
+      <div className='flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4'>
+        <div className='flex flex-1 gap-2 items-center'>
           <Input
-            placeholder="Search by name or email"
+            placeholder='Search by name or email'
             value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="max-w-xs"
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className='max-w-xs'
           />
           <select
             value={selectedRole}
-            onChange={e => setSelectedRole(e.target.value)}
-            className="border rounded px-2 py-1 text-sm"
+            onChange={(e) => setSelectedRole(e.target.value)}
+            className='border rounded px-2 py-1 text-sm'
           >
-            <option value="all">All Roles</option>
-            {roles.map(role => (
-              <option key={role} value={role}>{role}</option>
+            <option value='all'>All Roles</option>
+            {roles.map((role) => (
+              <option key={role} value={role}>
+                {role}
+              </option>
             ))}
           </select>
           <select
             value={selectedStatus}
-            onChange={e => setSelectedStatus(e.target.value)}
-            className="border rounded px-2 py-1 text-sm"
+            onChange={(e) => setSelectedStatus(e.target.value)}
+            className='border rounded px-2 py-1 text-sm'
           >
-            <option value="all">All Status</option>
-            <option value="active">Active</option>
-            <option value="inactive">Inactive</option>
+            <option value='all'>All Status</option>
+            <option value='active'>Active</option>
+            <option value='inactive'>Inactive</option>
           </select>
           <select
             value={selectedSemester}
-            onChange={e => setSelectedSemester(e.target.value)}
-            className="border rounded px-2 py-1 text-sm"
+            onChange={(e) => setSelectedSemester(e.target.value)}
+            className='border rounded px-2 py-1 text-sm'
           >
-            <option value="all">All Semesters</option>
-            {semesters.map(term => (
-              <option key={term} value={term as string}>{term}</option>
+            <option value='all'>All Semesters</option>
+            {semesters.map((term) => (
+              <option key={term} value={term as string}>
+                {term}
+              </option>
             ))}
           </select>
         </div>
         <div>
-          <Button variant="outline" onClick={() => setShowFileUpload(v => !v)}>
-            <span className="hidden md:inline">Import Users</span>
-            <span className="md:hidden">Import</span>
+          <Button variant='outline' onClick={() => setShowFileUpload((v) => !v)}>
+            <span className='hidden md:inline'>Import Users</span>
+            <span className='md:hidden'>Import</span>
           </Button>
-          <Button variant="outline" className="ml-2" onClick={handleExportExcel} disabled={exporting}>
+          <Button variant='outline' className='ml-2' onClick={handleExportExcel} disabled={exporting}>
             {exporting ? 'Exporting...' : 'Export Excel'}
           </Button>
         </div>
       </div>
       {showFileUpload && (
-        <div className="mb-6">
+        <div className='mb-6'>
           <FileUpload onFileUpload={handleFileUpload} />
         </div>
       )}
       {error ? (
-        <Card className="w-full max-w-md mx-auto">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <p className="text-destructive mb-4">{error}</p>
+        <Card className='w-full max-w-md mx-auto'>
+          <CardContent className='pt-6'>
+            <div className='text-center'>
+              <p className='text-destructive mb-4'>{error}</p>
               <Button onClick={() => fetchUsers()}>Retry</Button>
             </div>
           </CardContent>
         </Card>
       ) : filteredUsers.length === 0 ? (
         <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-8">
-              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No users found</h3>
-              <p className="text-muted-foreground">
+          <CardContent className='pt-6'>
+            <div className='text-center py-8'>
+              <Users className='h-12 w-12 mx-auto text-muted-foreground mb-4' />
+              <h3 className='text-lg font-semibold mb-2'>No users found</h3>
+              <p className='text-muted-foreground'>
                 {searchTerm || selectedRole !== 'all' || selectedStatus !== 'all' || selectedSemester !== 'all'
                   ? 'Try adjusting your filters'
                   : 'No users available'}
@@ -227,19 +235,14 @@ export default function AdminUsersPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredUsers.map(user => (
-            <AdminUserCard
-              key={user.id}
-              user={user}
-              onBan={handleBanUser}
-              onUnban={handleUnbanUser}
-            />
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+          {filteredUsers.map((user) => (
+            <AdminUserCard key={user.id} user={user} onBan={handleBanUser} onUnban={handleUnbanUser} />
           ))}
         </div>
       )}
       {pagination.totalPages > 1 && !error && (
-        <div className="flex justify-center mt-8">
+        <div className='flex justify-center mt-8'>
           <AdminPagination
             currentPage={pagination.pageNumber}
             totalPages={pagination.totalPages}
@@ -249,4 +252,4 @@ export default function AdminUsersPage() {
       )}
     </AdminLayout>
   )
-} 
+}

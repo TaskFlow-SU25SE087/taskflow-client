@@ -22,7 +22,7 @@ export function ProjectEditMenu({ project, onProjectUpdated, trigger }: ProjectE
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
-    
+
     try {
       console.log('Updating project title:', {
         id: project.id,
@@ -31,9 +31,9 @@ export function ProjectEditMenu({ project, onProjectUpdated, trigger }: ProjectE
       })
 
       const response = await projectApi.updateProject(project.id, title, description)
-      
+
       console.log('Update response:', response)
-      
+
       toast({
         title: 'Success',
         description: 'Project name updated successfully'
@@ -43,7 +43,7 @@ export function ProjectEditMenu({ project, onProjectUpdated, trigger }: ProjectE
     } catch (error: any) {
       console.error('Update project error:', error)
       console.error('Error response:', error.response?.data)
-      
+
       const errorMessage = error.response?.data?.message || error.message || 'Failed to update project'
       toast({
         title: 'Error',
@@ -68,8 +68,8 @@ export function ProjectEditMenu({ project, onProjectUpdated, trigger }: ProjectE
     <>
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <DialogTrigger asChild>{trigger}</DialogTrigger>
-        <DialogContent className='sm:max-w-[425px]' aria-describedby="edit-project-desc">
-          <span id="edit-project-desc" className="sr-only">
+        <DialogContent className='sm:max-w-[425px]' aria-describedby='edit-project-desc'>
+          <span id='edit-project-desc' className='sr-only'>
             Edit the project name. The description will not be changed.
           </span>
           <DialogHeader>
@@ -102,20 +102,12 @@ export function ProjectEditMenu({ project, onProjectUpdated, trigger }: ProjectE
                 className='w-full border rounded p-2'
               />
             </div>
-            
+
             <div className='flex justify-end space-x-2'>
-              <Button 
-                type='button' 
-                variant='outline' 
-                onClick={() => setIsOpen(false)}
-                disabled={isSubmitting}
-              >
+              <Button type='button' variant='outline' onClick={() => setIsOpen(false)} disabled={isSubmitting}>
                 Cancel
               </Button>
-              <Button 
-                type='submit'
-                disabled={isSubmitting || !title.trim()}
-              >
+              <Button type='submit' disabled={isSubmitting || !title.trim()}>
                 {isSubmitting ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>

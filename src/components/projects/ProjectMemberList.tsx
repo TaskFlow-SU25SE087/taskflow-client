@@ -11,7 +11,13 @@ interface ProjectMemberListProps {
   isOwnerOrAdmin: boolean
 }
 
-export function ProjectMemberList({ projectId, members, onMemberRemoved, currentUserId, isOwnerOrAdmin }: ProjectMemberListProps) {
+export function ProjectMemberList({
+  projectId,
+  members,
+  onMemberRemoved,
+  currentUserId,
+  isOwnerOrAdmin
+}: ProjectMemberListProps) {
   const { removeMember, loading } = useProjectMembers()
   const [removingId, setRemovingId] = useState<string | null>(null)
 
@@ -29,9 +35,7 @@ export function ProjectMemberList({ projectId, members, onMemberRemoved, current
     <div className='space-y-2'>
       {members.map((member) => (
         <div key={member.id} className='flex items-center justify-between p-2 bg-gray-50 rounded'>
-          <div className='flex items-center gap-2'>
-            
-          </div>
+          <div className='flex items-center gap-2'></div>
           {isOwnerOrAdmin && member.userId !== currentUserId && (
             <Button
               variant='destructive'
@@ -46,4 +50,4 @@ export function ProjectMemberList({ projectId, members, onMemberRemoved, current
       ))}
     </div>
   )
-} 
+}

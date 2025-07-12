@@ -26,10 +26,10 @@ import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import {
-    arrayMove,
-    horizontalListSortingStrategy,
-    SortableContext,
-    verticalListSortingStrategy
+  arrayMove,
+  horizontalListSortingStrategy,
+  SortableContext,
+  verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { ChevronDown, Filter, Link2, Pencil, Plus, Search } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -58,12 +58,12 @@ const getBoardColor = (status: string): string => {
 }
 
 function MemberAvatar({ name, background, textColor, className = '' }: MemberAvatarProps) {
-  const safeName = name || '';
+  const safeName = name || ''
   const initials = safeName
     .split(' ')
     .map((n) => n[0])
     .join('')
-    .toUpperCase();
+    .toUpperCase()
 
   return (
     <div className={`relative transition-transform hover:scale-110 hover:z-10 ${className}`}>
@@ -76,7 +76,7 @@ function MemberAvatar({ name, background, textColor, className = '' }: MemberAva
         </AvatarFallback>
       </Avatar>
     </div>
-  );
+  )
 }
 
 const avatarColors = [
@@ -109,7 +109,7 @@ function MemberAvatarGroup({ members }: MemberAvatarGroupProps) {
     <div className='flex -space-x-3'>
       {members.slice(0, 4).map((member, index) => {
         const { bg, text } = getAvatarColor(index)
-        const name = member.fullName || member.email || member.userId;
+        const name = member.fullName || member.email || member.userId
         return <MemberAvatar key={member.userId || index} name={name} background={bg} textColor={text} />
       })}
       {members.length > 4 && <MemberAvatar name={`+${members.length - 4}`} background='#FFFFFF' textColor='#DFDFDF' />}
@@ -118,7 +118,11 @@ function MemberAvatarGroup({ members }: MemberAvatarGroupProps) {
 }
 
 // Đưa hàm fetchCurrentSprintAndTasks ra ngoài scope ProjectBoard
-const fetchCurrentSprintAndTasks = async (projectId: string | undefined, setSelectedSprintId: any, setSprintTasks: any) => {
+const fetchCurrentSprintAndTasks = async (
+  projectId: string | undefined,
+  setSelectedSprintId: any,
+  setSprintTasks: any
+) => {
   if (projectId) {
     try {
       const currentSprint = await sprintApi.getCurrentSprint(projectId)
@@ -127,7 +131,7 @@ const fetchCurrentSprintAndTasks = async (projectId: string | undefined, setSele
         // Lấy task của current sprint và set luôn
         const tasks = await sprintApi.getSprintTasks(projectId, currentSprint.id)
         setSprintTasks(Array.isArray(tasks) ? tasks : [])
-        return;
+        return
       }
     } catch (err) {
       setSprintTasks([])
@@ -156,34 +160,34 @@ export default function ProjectBoard() {
   const { leaveProject, loading: memberLoading, error: memberError } = useProjectMembers()
   const { user } = useAuth()
 
-  const boardContainerRef = useRef<HTMLDivElement>(null);
-  const isDragging = useRef(false);
-  const startX = useRef(0);
-  const scrollLeft = useRef(0);
+  const boardContainerRef = useRef<HTMLDivElement>(null)
+  const isDragging = useRef(false)
+  const startX = useRef(0)
+  const scrollLeft = useRef(0)
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    isDragging.current = true;
-    startX.current = e.pageX - (boardContainerRef.current?.offsetLeft || 0);
-    scrollLeft.current = boardContainerRef.current?.scrollLeft || 0;
-  };
+    isDragging.current = true
+    startX.current = e.pageX - (boardContainerRef.current?.offsetLeft || 0)
+    scrollLeft.current = boardContainerRef.current?.scrollLeft || 0
+  }
 
   const handleMouseLeave = () => {
-    isDragging.current = false;
-  };
+    isDragging.current = false
+  }
 
   const handleMouseUp = () => {
-    isDragging.current = false;
-  };
+    isDragging.current = false
+  }
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging.current) return;
-    e.preventDefault();
-    const x = e.pageX - (boardContainerRef.current?.offsetLeft || 0);
-    const walk = x - startX.current;
+    if (!isDragging.current) return
+    e.preventDefault()
+    const x = e.pageX - (boardContainerRef.current?.offsetLeft || 0)
+    const walk = x - startX.current
     if (boardContainerRef.current) {
-      boardContainerRef.current.scrollLeft = scrollLeft.current - walk;
+      boardContainerRef.current.scrollLeft = scrollLeft.current - walk
     }
-  };
+  }
 
   // Lấy sprint hiện tại (in progress) khi vào trang
   useEffect(() => {
@@ -281,12 +285,17 @@ export default function ProjectBoard() {
     if (isBoardDrag) {
       if (!currentProject?.id) {
         console.log('[DnD] Không có currentProject khi kéo board')
-        return;
+        return
       }
       const oldIndex = boards.findIndex((b) => b.id === active.id)
       const newIndex = boards.findIndex((b) => b.id === over.id)
       if (oldIndex === -1 || newIndex === -1) {
-        console.log('[DnD] Không tìm thấy oldIndex hoặc newIndex khi kéo board', { oldIndex, newIndex, activeId: active.id, overId: over.id })
+        console.log('[DnD] Không tìm thấy oldIndex hoặc newIndex khi kéo board', {
+          oldIndex,
+          newIndex,
+          activeId: active.id,
+          overId: over.id
+        })
         return
       }
       const newBoards = arrayMove(boards, oldIndex, newIndex)
@@ -303,7 +312,7 @@ export default function ProjectBoard() {
     if (allTaskIds.includes(active.id)) {
       if (!currentProject?.id) {
         console.log('[DnD] Không có currentProject khi kéo task')
-        return;
+        return
       }
       const taskId = active.id
       let newBoardId = over.id
@@ -313,22 +322,22 @@ export default function ProjectBoard() {
         if (foundBoard) newBoardId = foundBoard.id
         console.log('[DnD] over là task, tìm thấy board chứa task', { foundBoard, newBoardId })
       }
-      const taskObj = boards.flatMap(b => b.tasks).find(t => t.id === taskId);
+      const taskObj = boards.flatMap((b) => b.tasks).find((t) => t.id === taskId)
       if (taskObj && taskObj.boardId === newBoardId) {
-        console.log('[DnD] Task đã ở board này, không cần gọi API');
-        return;
+        console.log('[DnD] Task đã ở board này, không cần gọi API')
+        return
       }
       console.log('[DnD] moveTaskToBoard', { projectId: currentProject.id, taskId, newBoardId })
       try {
-        const boardObj = boards.find(b => b.id === newBoardId);
-        console.log('[DnD] DEBUG taskObj:', taskObj);
-        console.log('[DnD] DEBUG boardObj:', boardObj);
+        const boardObj = boards.find((b) => b.id === newBoardId)
+        console.log('[DnD] DEBUG taskObj:', taskObj)
+        console.log('[DnD] DEBUG boardObj:', boardObj)
         await taskApi.moveTaskToBoard(currentProject.id, taskId, newBoardId)
         await fetchCurrentSprintAndTasks(currentProject?.id, setSelectedSprintId, setSprintTasks)
         console.log('[DnD] Đã chuyển task sang board mới thành công', { taskId, newBoardId })
       } catch (err) {
         // Log chi tiết lỗi trả về từ backend
-        const error = err as any;
+        const error = err as any
         if (error.response) {
           console.error('[DnD] API error', error.response.data)
         } else {
@@ -342,23 +351,23 @@ export default function ProjectBoard() {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
-  console.log('All tasks:', tasks);
+  console.log('All tasks:', tasks)
 
   // Lọc sprint đang active (IN_PROGRESS/status=1)
-  const activeSprints = sprints.filter(s => s.status === 1);
+  const activeSprints = sprints.filter((s) => s.status === 1)
   // Chọn sprint active có startDate mới nhất
   const latestActiveSprint = activeSprints.length
-    ? activeSprints.reduce((latest, curr) =>
-        new Date(curr.startDate) > new Date(latest.startDate) ? curr : latest
-      )
-    : null;
+    ? activeSprints.reduce((latest, curr) => (new Date(curr.startDate) > new Date(latest.startDate) ? curr : latest))
+    : null
 
   // Lọc task thuộc sprint active này (ưu tiên sprintId, fallback sang sprintName nếu chưa có sprintId)
- 
 
   // DEBUG: Log toàn bộ boards và tasks
-  console.log('DEBUG_BOARDS:', boards);
-  console.log('DEBUG_TASKS:', boards.flatMap(b => b.tasks));
+  console.log('DEBUG_BOARDS:', boards)
+  console.log(
+    'DEBUG_TASKS:',
+    boards.flatMap((b) => b.tasks)
+  )
 
   // Hiển thị task của từng board theo sprint (nếu có sprintTasks)
   const filteredBoards = boards.map((board) => ({
@@ -368,13 +377,13 @@ export default function ProjectBoard() {
 
   // UI chọn sprint (không còn dropdown)
   const SprintSelector = () => {
-    const currentSprint = sprints.find(s => s.id === selectedSprintId);
+    const currentSprint = sprints.find((s) => s.id === selectedSprintId)
     return (
       <div className='mb-4 flex items-center gap-2'>
         <span className='font-medium'>Sprint:</span>
         <span className='text-base font-semibold'>{currentSprint ? currentSprint.name : 'No sprint'}</span>
       </div>
-    );
+    )
   }
 
   if (isLoading || isBoardLoading || !currentProject) {
@@ -415,7 +424,11 @@ export default function ProjectBoard() {
                 project={currentProject}
                 onProjectUpdated={refreshBoards}
                 trigger={
-                  <Button variant='ghost' size='icon' className='h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-violet-100 hover:bg-violet-200'>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-violet-100 hover:bg-violet-200'
+                  >
                     <Pencil className='h-3 w-3 sm:h-4 sm:w-4 text-violet-600' />
                   </Button>
                 }
@@ -508,7 +521,10 @@ export default function ProjectBoard() {
                         <div key={board.id} className='...'>
                           <SortableBoardColumn id={board.id}>
                             <DroppableBoard boardId={board.id}>
-                              <SortableContext items={board.tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+                              <SortableContext
+                                items={board.tasks.map((t) => t.id)}
+                                strategy={verticalListSortingStrategy}
+                              >
                                 <SortableTaskColumn
                                   id={board.id}
                                   title={board.name}

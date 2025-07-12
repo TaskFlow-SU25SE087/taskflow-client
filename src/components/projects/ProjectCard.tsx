@@ -2,11 +2,11 @@ import { projectMemberApi } from '@/api/projectMembers'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { ProjectListItem, ProjectMember } from '@/types/project'
 import Avatar from 'boring-avatars'
@@ -43,7 +43,7 @@ export default function ProjectCard({ project, onSelect, onProjectUpdated }: Pro
     const date = new Date(dateString)
     const now = new Date()
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-    
+
     if (diffInHours < 1) return 'Just now'
     if (diffInHours < 24) return `${diffInHours}h ago`
     if (diffInHours < 168) return `${Math.floor(diffInHours / 24)}d ago`
@@ -96,11 +96,15 @@ export default function ProjectCard({ project, onSelect, onProjectUpdated }: Pro
                 </Button>
               }
             />
-            
+
             {/* More Options Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant='ghost' size='icon' className='h-7 w-7 sm:h-8 sm:w-8 rounded-lg text-gray-500 hover:bg-gray-100'>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  className='h-7 w-7 sm:h-8 sm:w-8 rounded-lg text-gray-500 hover:bg-gray-100'
+                >
                   <MoreHorizontal className='h-4 w-4 sm:h-5 sm:w-5' />
                 </Button>
               </DropdownMenuTrigger>
@@ -133,7 +137,7 @@ export default function ProjectCard({ project, onSelect, onProjectUpdated }: Pro
             <p className='text-xs sm:text-sm text-gray-600 line-clamp-2'>{project.description}</p>
           </div>
         )}
-        
+
         <div className='flex items-center justify-between mb-3 sm:mb-4 flex-wrap gap-2'>
           <div className='flex items-center gap-2'>
             <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-lavender-100 text-lavender-800'>
@@ -152,14 +156,21 @@ export default function ProjectCard({ project, onSelect, onProjectUpdated }: Pro
               <img
                 src={projectLeader.avatar}
                 alt={projectLeader.fullName}
-                className="h-6 w-6 sm:h-8 sm:w-8 rounded-full object-cover border flex-shrink-0"
-                onError={e => (e.currentTarget.src = '/public/logo.png')}
+                className='h-6 w-6 sm:h-8 sm:w-8 rounded-full object-cover border flex-shrink-0'
+                onError={(e) => (e.currentTarget.src = '/public/logo.png')}
               />
             ) : (
-              <Avatar size='24px' variant='beam' name={projectLeader.fullName || projectLeader.userId} className='sm:w-8 sm:h-8' />
+              <Avatar
+                size='24px'
+                variant='beam'
+                name={projectLeader.fullName || projectLeader.userId}
+                className='sm:w-8 sm:h-8'
+              />
             )}
             <div className='flex flex-col min-w-0 flex-1'>
-              <span className='text-xs sm:text-sm text-gray-600 font-medium truncate'>{projectLeader.fullName || 'No name'}</span>
+              <span className='text-xs sm:text-sm text-gray-600 font-medium truncate'>
+                {projectLeader.fullName || 'No name'}
+              </span>
               <span className='text-xs text-gray-400'>Project Leader</span>
             </div>
           </div>

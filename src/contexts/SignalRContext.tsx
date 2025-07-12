@@ -26,7 +26,7 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({ child
         // Connect to real SignalR hub
         await signalRService.connect()
         console.log('[SignalR] Kết nối thành công!')
-        
+
         // Set up connection state listeners
         signalRService.on('close', () => {
           setIsConnected(false)
@@ -48,7 +48,7 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         // Initialize notification service
         notificationService.initialize()
-        
+
         // Listen for notification count updates
         const handleCountUpdate = (event: CustomEvent) => {
           // Update notifications list if needed
@@ -56,11 +56,11 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
 
         document.addEventListener('notificationCountUpdate', handleCountUpdate as EventListener)
-        
+
         // Set connected state
         setIsConnected(true)
         setConnectionState('Connected')
-        
+
         return () => {
           document.removeEventListener('notificationCountUpdate', handleCountUpdate as EventListener)
         }
@@ -86,17 +86,13 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({ child
     connectionState
   }
 
-  return (
-    <SignalRContext.Provider value={value}>
-      {children}
-    </SignalRContext.Provider>
-  )
+  return <SignalRContext.Provider value={value}>{children}</SignalRContext.Provider>
 }
 
 export const useSignalR = () => {
   const context = useContext(SignalRContext)
   if (!context) {
-      throw new Error('useSignalR must be used within SignalRProvider')
+    throw new Error('useSignalR must be used within SignalRProvider')
   }
   return context
-} 
+}

@@ -17,13 +17,17 @@ export const taskApi = {
   // Create a new task for a project
   createTask: async (projectId: string, formData: FormData): Promise<boolean> => {
     const response = await axiosClient.post(`/projects/${projectId}/tasks`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { 'Content-Type': 'multipart/form-data' }
     })
     return response.data.data === true
   },
 
   // Update a task
-  updateTask: async (projectId: string, taskId: string, data: { title: string; description: string; priority: string }): Promise<any> => {
+  updateTask: async (
+    projectId: string,
+    taskId: string,
+    data: { title: string; description: string; priority: string }
+  ): Promise<any> => {
     const response = await axiosClient.put(`/projects/${projectId}/tasks/update/${taskId}`, data)
     return response.data.data
   },
@@ -54,11 +58,9 @@ export const taskApi = {
         formData.append('Files', file)
       })
     }
-    const response = await axiosClient.post(
-      `/projects/${projectId}/tasks/${taskId}/complete`,
-      formData,
-      { headers: { 'Content-Type': 'multipart/form-data' } }
-    )
+    const response = await axiosClient.post(`/projects/${projectId}/tasks/${taskId}/complete`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
     return response.data.data === true
   },
 
@@ -73,11 +75,9 @@ export const taskApi = {
     console.log('Assign action:', { projectId, taskId, implementerId })
     const formData = new FormData()
     formData.append('implementerId', implementerId)
-    const response = await axiosClient.post(
-      `/projects/${projectId}/tasks/${taskId}/assignments/assign`,
-      formData,
-      { headers: { 'Content-Type': 'multipart/form-data' } }
-    )
+    const response = await axiosClient.post(`/projects/${projectId}/tasks/${taskId}/assignments/assign`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
     console.log('Assign response:', response)
     return response.data.data === true
   },
@@ -88,19 +88,17 @@ export const taskApi = {
     taskId: string,
     body: { implementId: string; reason: string }
   ): Promise<boolean> => {
-    const response = await axiosClient.delete(
-      `/projects/${projectId}/tasks/${taskId}/assignments/remove`,
-      { data: body }
-    )
+    const response = await axiosClient.delete(`/projects/${projectId}/tasks/${taskId}/assignments/remove`, {
+      data: body
+    })
     return response.data.data === true
   },
 
   // Leave an assignment from a task
   leaveTaskAssignment: async (projectId: string, taskId: string, body: { reason: string }): Promise<boolean> => {
-    const response = await axiosClient.delete(
-      `/projects/${projectId}/tasks/${taskId}/assignments/leave`,
-      { data: body }
-    )
+    const response = await axiosClient.delete(`/projects/${projectId}/tasks/${taskId}/assignments/leave`, {
+      data: body
+    })
     return response.data.data === true
   },
 
@@ -113,11 +111,9 @@ export const taskApi = {
         formData.append('Files', file)
       })
     }
-    const response = await axiosClient.post(
-      `/projects/${projectId}/tasks/${taskId}/comments/comment/add`,
-      formData,
-      { headers: { 'Content-Type': 'multipart/form-data' } }
-    )
+    const response = await axiosClient.post(`/projects/${projectId}/tasks/${taskId}/comments/comment/add`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
     return response.data.data === true
   },
 
@@ -145,5 +141,5 @@ export const taskApi = {
   moveTaskToBoard: async (projectId: string, taskId: string, boardId: string): Promise<boolean> => {
     const response = await axiosClient.post(`/projects/${projectId}/tasks/${taskId}/status/board/${boardId}`)
     return response.data.data === true
-  },
+  }
 }

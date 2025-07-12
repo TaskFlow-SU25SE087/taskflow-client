@@ -15,7 +15,7 @@ export function useProjectCreate() {
   const [memberEmail, setMemberEmail] = useState('')
   const [addedEmails, setAddedEmails] = useState<string[]>([])
   const [isProjectCreated, setIsProjectCreated] = useState(false)
-  const [inviteLinks, setInviteLinks] = useState<{email: string, token: string}[]>([])
+  const [inviteLinks, setInviteLinks] = useState<{ email: string; token: string }[]>([])
   const navigate = useNavigate()
   const { toast } = useToast()
 
@@ -52,7 +52,7 @@ export function useProjectCreate() {
           setStep(1)
           if (addedEmails.length > 0) {
             const results = await Promise.all(
-              addedEmails.map(email => projectMemberApi.addMember(response.data.id, email))
+              addedEmails.map((email) => projectMemberApi.addMember(response.data.id, email))
             )
             setInviteLinks(results)
             toast({
@@ -65,7 +65,8 @@ export function useProjectCreate() {
         if (error.response?.data?.code === 3004) {
           toast({
             title: 'Project limit reached',
-            description: 'You have reached the maximum number of projects allowed. Please delete old projects or contact the administrator for support.',
+            description:
+              'You have reached the maximum number of projects allowed. Please delete old projects or contact the administrator for support.',
             variant: 'destructive'
           })
         } else if (error.response?.data?.errors?.description) {

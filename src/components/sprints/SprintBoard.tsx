@@ -52,9 +52,7 @@ export function SprintBoard({
   const getSprintStatus = () => {
     const status = typeof sprint.status === 'string' ? sprint.status : String(sprint.status)
     const map = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-600' }
-    return (
-      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${map.color}`}>{map.label}</span>
-    )
+    return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${map.color}`}>{map.label}</span>
   }
 
   const isActiveSprint = () => {
@@ -109,7 +107,7 @@ export function SprintBoard({
   }
 
   const handleCheck = (taskId: string, checked: boolean) => {
-    setSelectedTaskIds(prev => checked ? [...prev, taskId] : prev.filter(id => id !== taskId))
+    setSelectedTaskIds((prev) => (checked ? [...prev, taskId] : prev.filter((id) => id !== taskId)))
   }
 
   return (
@@ -198,22 +196,27 @@ export function SprintBoard({
           {selectedTaskIds.length > 0 && (
             <div className='mb-2 flex items-center gap-2'>
               <span className='text-xs text-gray-600'>{selectedTaskIds.length} selected</span>
-              <Button size='sm' variant='destructive' onClick={async () => {
-                if (!window.confirm('Bạn có chắc muốn xóa các task đã chọn?')) return;
-                setLoadingBatch(true);
-                try {
-                  for (const id of selectedTaskIds) {
-                    await taskApi.deleteTask(projectId, id);
+              <Button
+                size='sm'
+                variant='destructive'
+                onClick={async () => {
+                  if (!window.confirm('Bạn có chắc muốn xóa các task đã chọn?')) return
+                  setLoadingBatch(true)
+                  try {
+                    for (const id of selectedTaskIds) {
+                      await taskApi.deleteTask(projectId, id)
+                    }
+                    toast({ title: 'Success', description: 'Deleted selected tasks!' })
+                    setSelectedTaskIds([])
+                    onTaskUpdate()
+                  } catch {
+                    toast({ title: 'Error', description: 'Failed to delete tasks', variant: 'destructive' })
+                  } finally {
+                    setLoadingBatch(false)
                   }
-                  toast({ title: 'Success', description: 'Deleted selected tasks!' });
-                  setSelectedTaskIds([]);
-                  onTaskUpdate();
-                } catch {
-                  toast({ title: 'Error', description: 'Failed to delete tasks', variant: 'destructive' });
-                } finally {
-                  setLoadingBatch(false);
-                }
-              }} disabled={loadingBatch}>
+                }}
+                disabled={loadingBatch}
+              >
                 Delete selected
               </Button>
             </div>

@@ -13,7 +13,8 @@ export default function LegacyProjectMemberVerify() {
       return
     }
     // Gọi API để lấy projectId từ token (giả sử backend trả về projectId)
-    projectApi.verifyJoinProjectLegacy(token)
+    projectApi
+      .verifyJoinProjectLegacy(token)
       .then((result) => {
         if (result && result.projectId) {
           navigate(`/projects/${result.projectId}/members/verify-join?token=${token}`)

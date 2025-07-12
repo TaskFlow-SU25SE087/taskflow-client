@@ -223,4 +223,4 @@ export interface GitHubOAuthConnectRequest {
   repositoryId: number
   repositoryName: string
   repositoryFullName: string
-} 
+}

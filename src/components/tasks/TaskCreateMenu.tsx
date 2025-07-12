@@ -43,9 +43,7 @@ export default function TaskCreateMenu({
   const [file, setFile] = useState<File | null>(null)
 
   const handleTagChange = (tagId: string) => {
-    setSelectedTagIds((prev) =>
-      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
-    )
+    setSelectedTagIds((prev) => (prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]))
   }
 
   useEffect(() => {
@@ -87,9 +85,9 @@ export default function TaskCreateMenu({
     }
     setIsSubmitting(true)
     try {
-      const formData = new FormData();
-      formData.append('Title', title);
-      formData.append('Description', description);
+      const formData = new FormData()
+      formData.append('Title', title)
+      formData.append('Description', description)
       const priorityMap = {
         Low: 0,
         Medium: 10000,
@@ -98,15 +96,13 @@ export default function TaskCreateMenu({
       }
       formData.append('Priority', String(priorityMap[priority as 'Low' | 'Medium' | 'High' | 'Urgent']))
       formData.append('Deadline', deadline ? deadline.toISOString() : '')
-      if (file) formData.append('File', file);
-      if (sprintId) formData.append('SprintId', sprintId);
-      selectedTagIds.forEach((tagId) => formData.append('TagIds', tagId));
-      await taskApi.createTask(projectId, formData);
+      if (file) formData.append('File', file)
+      if (sprintId) formData.append('SprintId', sprintId)
+      selectedTagIds.forEach((tagId) => formData.append('TagIds', tagId))
+      await taskApi.createTask(projectId, formData)
       // Sau khi tạo, lấy lại danh sách task và tìm task vừa tạo
       const tasks = await taskApi.getTasksFromProject(projectId)
-      const createdTask = tasks.find(
-        t => t.title === title && t.description === description
-      )
+      const createdTask = tasks.find((t) => t.title === title && t.description === description)
       if (createdTask) {
         for (const tagId of selectedTagIds) {
           await taskApi.addTagToTask(projectId, createdTask.id, tagId)
@@ -194,7 +190,7 @@ export default function TaskCreateMenu({
           <div className='space-y-2'>
             <Label className='text-sm font-medium'>Tags</Label>
             <div className='flex flex-wrap gap-2'>
-              {tags.map(tag => (
+              {tags.map((tag) => (
                 <label key={tag.id} className='flex items-center gap-1'>
                   <input
                     type='checkbox'
@@ -209,7 +205,7 @@ export default function TaskCreateMenu({
                       borderRadius: '8px',
                       fontWeight: 500,
                       fontSize: '0.95em',
-                      display: 'inline-block',
+                      display: 'inline-block'
                     }}
                   >
                     {tag.name}
@@ -254,12 +250,7 @@ export default function TaskCreateMenu({
             <Label htmlFor='file' className='text-sm font-medium'>
               Attachment
             </Label>
-            <Input
-              id='file'
-              type='file'
-              className='h-11'
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
-            />
+            <Input id='file' type='file' className='h-11' onChange={(e) => setFile(e.target.files?.[0] || null)} />
           </div>
           {/* XÓA: <div className='space-y-2'>
             <label className='text-sm font-medium'>Assignee</label>
@@ -309,11 +300,11 @@ export default function TaskCreateMenu({
 function getContrastYIQ(hexcolor: string) {
   let color = hexcolor.replace('#', '')
   if (color.length === 3) {
-    color = color[0]+color[0]+color[1]+color[1]+color[2]+color[2]
+    color = color[0] + color[0] + color[1] + color[1] + color[2] + color[2]
   }
-  const r = parseInt(color.substr(0,2),16)
-  const g = parseInt(color.substr(2,2),16)
-  const b = parseInt(color.substr(4,2),16)
-  const yiq = ((r*299)+(g*587)+(b*114))/1000
-  return (yiq >= 128) ? '#222' : '#fff'
+  const r = parseInt(color.substr(0, 2), 16)
+  const g = parseInt(color.substr(2, 2), 16)
+  const b = parseInt(color.substr(4, 2), 16)
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000
+  return yiq >= 128 ? '#222' : '#fff'
 }

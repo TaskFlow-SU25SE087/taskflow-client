@@ -13,13 +13,8 @@ export const Sidebar = ({ isOpen, onToggle, currentProject }: MainSidebarProps) 
   return (
     <>
       {/* Mobile Overlay */}
-      {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden"
-          onClick={onToggle}
-        />
-      )}
-      
+      {isOpen && <div className='fixed inset-0 bg-black bg-opacity-50 z-20 lg:hidden' onClick={onToggle} />}
+
       {/* Sidebar */}
       <div
         className={`transition-all duration-300 ease-in-out ${
@@ -34,12 +29,7 @@ export const Sidebar = ({ isOpen, onToggle, currentProject }: MainSidebarProps) 
                 <span className='text-lg sm:text-xl font-semibold text-gray-800'>TaskFlow</span>
               </Link>
             </div>
-            <Button 
-              variant='ghost' 
-              size='icon' 
-              className='h-6 w-6 hover:bg-transparent lg:hidden' 
-              onClick={onToggle}
-            >
+            <Button variant='ghost' size='icon' className='h-6 w-6 hover:bg-transparent lg:hidden' onClick={onToggle}>
               <FiChevronLeft className='h-4 w-4' />
             </Button>
           </div>

@@ -21,7 +21,7 @@ export function SortableTaskColumn(props: SortableTaskColumnProps) {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    cursor: 'grab',
+    cursor: 'grab'
   }
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
@@ -41,7 +41,7 @@ export function SortableBoardColumn({ id, children }: SortableBoardColumnProps) 
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    cursor: 'grab',
+    cursor: 'grab'
   }
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>

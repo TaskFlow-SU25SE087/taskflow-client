@@ -1,19 +1,30 @@
 import { Button } from '@/components/ui/button'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/useAuth'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjects } from '@/hooks/useProjects'
 import Avatar from 'boring-avatars'
-import { ChevronDown, FolderKanban, HelpCircle, Layout, LogOut, Plus, Search, Settings, Shield, User } from 'lucide-react'
+import {
+  ChevronDown,
+  FolderKanban,
+  HelpCircle,
+  Layout,
+  LogOut,
+  Plus,
+  Search,
+  Settings,
+  Shield,
+  User
+} from 'lucide-react'
 import { FiMenu } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
 import ConnectionStatus from './ConnectionStatus'
@@ -131,15 +142,15 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
               className='w-[300px] xl:w-[400px] rounded-lg bg-gray-100 pl-10 focus-visible:ring-offset-0 focus-visible:ring-0'
             />
           </div>
-        
+
           {/* Help Icon - Hidden on mobile */}
           <div className='hidden md:block text-gray-500 px-2 hover:bg-transparent cursor-pointer'>
             <HelpCircle className='h-5 w-5' />
           </div>
-          
+
           {/* Notification Center */}
           <NotificationCenter />
-          
+
           {/* Connection Status - Hidden on mobile */}
           <div className='hidden sm:block'>
             <ConnectionStatus />
@@ -150,15 +161,13 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
             <DropdownMenuTrigger asChild>
               <div className='cursor-pointer relative h-8 w-fit flex items-center gap-1 sm:gap-2 px-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'>
                 {user?.avatar ? (
-                  <img
-                    src={user.avatar}
-                    alt="avatar"
-                    className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover"
-                  />
+                  <img src={user.avatar} alt='avatar' className='w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover' />
                 ) : (
                   <Avatar size='28px' variant='beam' name={user?.id || 'unknown'} className='sm:w-8 sm:h-8' />
                 )}
-                <span className='hidden sm:block ml-2 font-medium text-black text-sm'>{user?.fullName || user?.email || 'No name'}</span>
+                <span className='hidden sm:block ml-2 font-medium text-black text-sm'>
+                  {user?.fullName || user?.email || 'No name'}
+                </span>
                 <ChevronDown className='hidden sm:block h-4 w-4 text-gray-500' />
               </div>
             </DropdownMenuTrigger>
@@ -177,14 +186,14 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
               {(user?.role === 'Admin' || user?.role === 'admin' || user?.role === 0 || user?.role === '0') && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => navigate('/admin/dashboard')}
                     className='gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                   >
                     <Layout className='h-4 w-4' />
                     Admin Dashboard
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     onClick={() => navigate('/admin/users')}
                     className='gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                   >

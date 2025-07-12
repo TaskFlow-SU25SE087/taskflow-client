@@ -41,8 +41,8 @@ export const sprintApi = {
 
   // Gán nhiều task vào sprint
   assignTasksToSprint: async (projectId: string, sprintId: string, taskIds: string[]): Promise<boolean> => {
-    const response = await axiosClient.post(`/projects/${projectId}/sprints/${sprintId}/tasks/assign`, taskIds);
-    return response.data.data;
+    const response = await axiosClient.post(`/projects/${projectId}/sprints/${sprintId}/tasks/assign`, taskIds)
+    return response.data.data
   },
 
   // Alias fetchSprints cho getAllSprintsByProjectId

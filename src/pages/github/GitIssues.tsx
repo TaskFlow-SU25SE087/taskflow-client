@@ -18,7 +18,8 @@ const MOCK_ISSUES = [
     id: '1',
     number: 123,
     title: 'Fix authentication bug in login flow',
-    description: 'Users are experiencing issues with the login authentication process. The session is not being properly maintained after successful login.',
+    description:
+      'Users are experiencing issues with the login authentication process. The session is not being properly maintained after successful login.',
     state: 'open',
     author: {
       name: 'Sarah Chen',
@@ -38,7 +39,8 @@ const MOCK_ISSUES = [
     id: '2',
     number: 124,
     title: 'Add dark mode support to dashboard',
-    description: 'Implement a dark mode theme option for the dashboard to improve user experience in low-light environments.',
+    description:
+      'Implement a dark mode theme option for the dashboard to improve user experience in low-light environments.',
     state: 'closed',
     author: {
       name: 'Alex Rodriguez',
@@ -58,7 +60,8 @@ const MOCK_ISSUES = [
     id: '3',
     number: 125,
     title: 'Performance optimization for large datasets',
-    description: 'The application is experiencing slow loading times when handling large datasets. Need to implement pagination and lazy loading.',
+    description:
+      'The application is experiencing slow loading times when handling large datasets. Need to implement pagination and lazy loading.',
     state: 'open',
     author: {
       name: 'Mike Johnson',
@@ -107,7 +110,7 @@ function IssueCard({ issue }: IssueCardProps) {
             </Avatar>
           )}
         </div>
-        
+
         <div className='flex-1 min-w-0'>
           <div className='flex items-center gap-2 mb-2'>
             <Badge className={cn('text-xs', getStateColor(issue.state))}>
@@ -117,19 +120,17 @@ function IssueCard({ issue }: IssueCardProps) {
             <span className='text-gray-500'>•</span>
             <span className='text-sm text-gray-500'>{format(issue.updatedAt, 'MMM d, yyyy')}</span>
           </div>
-          
-          <h3 className='text-gray-900 font-medium mb-2 hover:text-lavender-700 cursor-pointer'>
-            {issue.title}
-          </h3>
-          
+
+          <h3 className='text-gray-900 font-medium mb-2 hover:text-lavender-700 cursor-pointer'>{issue.title}</h3>
+
           <p className='text-gray-600 text-sm mb-3 line-clamp-2'>{issue.description}</p>
-          
+
           <div className='flex items-center gap-4 text-sm'>
             <div className='flex items-center gap-2'>
               <span className='text-gray-500'>by</span>
               <span className='font-medium text-gray-900'>{issue.author.name}</span>
             </div>
-            
+
             {issue.assignee && (
               <>
                 <span className='text-gray-500'>•</span>
@@ -139,14 +140,14 @@ function IssueCard({ issue }: IssueCardProps) {
                 </div>
               </>
             )}
-            
+
             <span className='text-gray-500'>•</span>
             <div className='flex items-center gap-1 text-gray-500'>
               <AlertCircle className='h-4 w-4' />
               <span>{issue.comments}</span>
             </div>
           </div>
-          
+
           <div className='flex items-center gap-2 mt-3'>
             {issue.labels.map((label) => (
               <Badge key={label} variant='secondary' className='text-xs'>
@@ -161,7 +162,7 @@ function IssueCard({ issue }: IssueCardProps) {
             )}
           </div>
         </div>
-        
+
         <Button variant='ghost' size='icon' className='h-8 w-8 rounded-lg hover:bg-gray-100'>
           <ArrowRight className='h-4 w-4 text-gray-500' />
         </Button>
@@ -208,9 +209,7 @@ export default function GitIssues() {
                 <span className='font-medium'>{currentProject.title}</span>
               </div>
             </div>
-            <Button className='bg-lavender-600 hover:bg-lavender-700'>
-              New Issue
-            </Button>
+            <Button className='bg-lavender-600 hover:bg-lavender-700'>New Issue</Button>
           </div>
 
           <div className='pb-6 flex items-center justify-between'>
@@ -259,4 +258,4 @@ export default function GitIssues() {
       </div>
     </div>
   )
-} 
+}

@@ -1,7 +1,17 @@
 import gsap from 'gsap'
 import { LucideLayoutDashboard } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { FiAlertCircle, FiBarChart2, FiClock, FiGitBranch, FiGithub, FiLayers, FiPackage, FiSettings, FiUsers } from 'react-icons/fi'
+import {
+  FiAlertCircle,
+  FiBarChart2,
+  FiClock,
+  FiGitBranch,
+  FiGithub,
+  FiLayers,
+  FiPackage,
+  FiSettings,
+  FiUsers
+} from 'react-icons/fi'
 import { useLocation, useNavigate } from 'react-router-dom'
 import GitHubSidebarItem from './github/GitHubSidebarItem'
 
@@ -19,7 +29,13 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
   }, [activeTab])
 
   const navItems = [
-    { id: 'timeline', icon: <FiClock className='h-5 w-5' />, label: 'Timeline', section: 1, path: projectId ? `/projects/${projectId}/timeline` : '/timeline' },
+    {
+      id: 'timeline',
+      icon: <FiClock className='h-5 w-5' />,
+      label: 'Timeline',
+      section: 1,
+      path: projectId ? `/projects/${projectId}/timeline` : '/timeline'
+    },
     {
       id: 'board',
       icon: <LucideLayoutDashboard className='h-5 w-5' />,
@@ -27,13 +43,55 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
       section: 1,
       path: projectId ? `/projects/${projectId}/board` : '/board'
     },
-    { id: 'backlog', icon: <FiLayers className='h-5 w-5' />, label: 'Backlog', section: 1, path: projectId ? `/projects/${projectId}/backlog` : '/backlog' },
-    { id: 'members', icon: <FiUsers className='h-5 w-5' />, label: 'Members', section: 1, path: projectId ? `/projects/${projectId}/members` : '/members' },
-    { id: 'parts', icon: <FiPackage className='h-5 w-5' />, label: 'Parts', section: 1, path: projectId ? `/projects/${projectId}/parts` : '/parts' },
-    { id: 'reports', icon: <FiBarChart2 className='h-5 w-5' />, label: 'Reports', section: 1, path: projectId ? `/projects/${projectId}/reports` : '/reports' },
-    { id: 'commits', icon: <FiGitBranch className='h-5 w-5' />, label: 'Commits', section: 2, path: projectId ? `/projects/${projectId}/commits` : '/commits' },
-    { id: 'issues', icon: <FiAlertCircle className='h-5 w-5' />, label: 'Issues', section: 2, path: projectId ? `/projects/${projectId}/issues` : '/issues' },
-    { id: 'github', icon: <FiGithub className='h-5 w-5' />, label: 'GitHub', section: 2, path: projectId ? `/projects/${projectId}/github` : '/github' },
+    {
+      id: 'backlog',
+      icon: <FiLayers className='h-5 w-5' />,
+      label: 'Backlog',
+      section: 1,
+      path: projectId ? `/projects/${projectId}/backlog` : '/backlog'
+    },
+    {
+      id: 'members',
+      icon: <FiUsers className='h-5 w-5' />,
+      label: 'Members',
+      section: 1,
+      path: projectId ? `/projects/${projectId}/members` : '/members'
+    },
+    {
+      id: 'parts',
+      icon: <FiPackage className='h-5 w-5' />,
+      label: 'Parts',
+      section: 1,
+      path: projectId ? `/projects/${projectId}/parts` : '/parts'
+    },
+    {
+      id: 'reports',
+      icon: <FiBarChart2 className='h-5 w-5' />,
+      label: 'Reports',
+      section: 1,
+      path: projectId ? `/projects/${projectId}/reports` : '/reports'
+    },
+    {
+      id: 'commits',
+      icon: <FiGitBranch className='h-5 w-5' />,
+      label: 'Commits',
+      section: 2,
+      path: projectId ? `/projects/${projectId}/commits` : '/commits'
+    },
+    {
+      id: 'issues',
+      icon: <FiAlertCircle className='h-5 w-5' />,
+      label: 'Issues',
+      section: 2,
+      path: projectId ? `/projects/${projectId}/issues` : '/issues'
+    },
+    {
+      id: 'github',
+      icon: <FiGithub className='h-5 w-5' />,
+      label: 'GitHub',
+      section: 2,
+      path: projectId ? `/projects/${projectId}/github` : '/github'
+    },
     { id: 'settings', icon: <FiSettings className='h-5 w-5' />, label: 'Settings', section: 3, path: '/settings' }
   ]
 
@@ -140,7 +198,7 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
               <div key={item.id} data-tab-id={item.id}>
                 <GitHubSidebarItem
                   projectId={projectId}
-                  partId="part-123" // Mock partId for now
+                  partId='part-123' // Mock partId for now
                   isActive={activeTab === item.id}
                   onClick={() => handleClick(item.id)}
                 />

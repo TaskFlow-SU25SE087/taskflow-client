@@ -1,14 +1,14 @@
 import { boardApi } from '@/api/boards'
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
@@ -48,8 +48,8 @@ export function BoardDeleteButton({ projectId, boardId, onDeleted }: BoardDelete
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-100">
-          <Trash2 className="w-5 h-5" />
+        <Button variant='ghost' size='icon' className='text-red-500 hover:bg-red-100'>
+          <Trash2 className='w-5 h-5' />
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
@@ -61,7 +61,7 @@ export function BoardDeleteButton({ projectId, boardId, onDeleted }: BoardDelete
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} disabled={loading} className="bg-red-500 hover:bg-red-600">
+          <AlertDialogAction onClick={handleDelete} disabled={loading} className='bg-red-500 hover:bg-red-600'>
             {loading ? 'Deleting...' : 'Delete'}
           </AlertDialogAction>
         </AlertDialogFooter>

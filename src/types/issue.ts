@@ -57,4 +57,4 @@ export interface IssueResponse {
   code: number
   message: string
   data: boolean
-} 
+}

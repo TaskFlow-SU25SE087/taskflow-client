@@ -19,12 +19,12 @@ export const useCurrentProject = () => {
         const response = await projectApi.getProjectById(projectId)
         console.log('[useCurrentProject] API response:', response)
         console.log('[useCurrentProject] response.data:', response.data)
-        
+
         if (!response.data) {
           console.error('[useCurrentProject] No data in response')
           throw new Error('No data received from API')
         }
-        
+
         setCurrentProject({
           ...response.data,
           analysisResults: [],

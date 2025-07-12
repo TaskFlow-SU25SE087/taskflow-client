@@ -10,10 +10,10 @@ interface FileUploadProps {
   maxFileSize?: number // in MB
 }
 
-export default function FileUpload({ 
-  onFileUpload, 
-  acceptedFileTypes = ".csv,.xlsx,.xls",
-  maxFileSize = 5 
+export default function FileUpload({
+  onFileUpload,
+  acceptedFileTypes = '.csv,.xlsx,.xls',
+  maxFileSize = 5
 }: FileUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -24,7 +24,7 @@ export default function FileUpload({
     // Validate file type
     const fileExtension = file.name.split('.').pop()?.toLowerCase()
     const allowedExtensions = acceptedFileTypes.replace(/\./g, '').split(',')
-    
+
     if (!allowedExtensions.includes(fileExtension || '')) {
       alert(`Please select a valid file type: ${acceptedFileTypes}`)
       return
@@ -49,9 +49,9 @@ export default function FileUpload({
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    if (e.type === "dragenter" || e.type === "dragover") {
+    if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true)
-    } else if (e.type === "dragleave") {
+    } else if (e.type === 'dragleave') {
       setDragActive(false)
     }
   }
@@ -60,7 +60,7 @@ export default function FileUpload({
     e.preventDefault()
     e.stopPropagation()
     setDragActive(false)
-    
+
     const file = e.dataTransfer.files?.[0]
     if (file) {
       handleFileSelect(file)
@@ -91,68 +91,55 @@ export default function FileUpload({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <Upload className="h-5 w-5" />
+        <CardTitle className='flex items-center space-x-2'>
+          <Upload className='h-5 w-5' />
           <span>Import Users</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className='space-y-4'>
         <div
           className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-            dragActive 
-              ? 'border-primary bg-primary/5' 
-              : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+            dragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-muted-foreground/50'
           }`}
           onDragEnter={handleDrag}
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
         >
-          <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-          <p className="text-sm text-muted-foreground mb-2">
+          <Upload className='h-8 w-8 mx-auto text-muted-foreground mb-2' />
+          <p className='text-sm text-muted-foreground mb-2'>
             Drag and drop your file here, or{' '}
-            <button
-              type="button"
-              onClick={handleBrowseClick}
-              className="text-primary hover:underline"
-            >
+            <button type='button' onClick={handleBrowseClick} className='text-primary hover:underline'>
               browse
             </button>
             .
           </p>
-          <Button
-            type="button"
-            onClick={handleBrowseClick}
-            variant="outline"
-            className="mb-2"
-          >
+          <Button type='button' onClick={handleBrowseClick} variant='outline' className='mb-2'>
             Choose File
           </Button>
-          <p className="text-xs text-muted-foreground">
+          <p className='text-xs text-muted-foreground'>
             Supported formats: {acceptedFileTypes} (Max {maxFileSize}MB)
           </p>
-          
+
           <Input
             ref={fileInputRef}
-            type="file"
+            type='file'
             accept={acceptedFileTypes}
             onChange={handleFileInputChange}
-            className="hidden"
+            className='hidden'
           />
         </div>
 
         {selectedFile && (
-          <div className="flex items-center space-x-3 p-3 bg-muted/50 rounded-lg">
-            <FileText className="h-5 w-5 text-primary" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{selectedFile.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-              </p>
+          <div className='flex items-center space-x-3 p-3 bg-muted/50 rounded-lg'>
+            <FileText className='h-5 w-5 text-primary' />
+            <div className='flex-1 min-w-0'>
+              <p className='text-sm font-medium truncate'>{selectedFile.name}</p>
+              <p className='text-xs text-muted-foreground'>{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
             </div>
             <Button
-              variant="outline"
-              size="sm"
+              variant='outline'
+              size='sm'
               onClick={() => {
                 setSelectedFile(null)
                 if (fileInputRef.current) {
@@ -165,19 +152,15 @@ export default function FileUpload({
           </div>
         )}
 
-        <Button
-          onClick={handleUpload}
-          disabled={!selectedFile || isUploading}
-          className="w-full"
-        >
+        <Button onClick={handleUpload} disabled={!selectedFile || isUploading} className='w-full'>
           {isUploading ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              <Loader2 className='h-4 w-4 animate-spin mr-2' />
               Uploading...
             </>
           ) : (
             <>
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className='h-4 w-4 mr-2' />
               Upload File
             </>
           )}
@@ -185,4 +168,4 @@ export default function FileUpload({
       </CardContent>
     </Card>
   )
-} 
+}

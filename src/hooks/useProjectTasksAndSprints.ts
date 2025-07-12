@@ -15,11 +15,11 @@ export function useProjectTasksAndSprints() {
     if (!tasks || !sprints) return
     // Mapping sprintId -> list task
     const map: Record<string, TaskP[]> = {}
-    sprints.forEach(sprint => {
-      map[sprint.id] = tasks.filter(task => task.sprintId === sprint.id)
+    sprints.forEach((sprint) => {
+      map[sprint.id] = tasks.filter((task) => task.sprintId === sprint.id)
     })
     setSprintTaskMap(map)
-    setBacklogTasks(tasks.filter(task => !task.sprintId))
+    setBacklogTasks(tasks.filter((task) => !task.sprintId))
   }, [tasks, sprints])
 
   return {
@@ -32,4 +32,4 @@ export function useProjectTasksAndSprints() {
     refreshTasks,
     refreshSprints
   }
-} 
+}

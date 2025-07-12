@@ -10,16 +10,7 @@ import { useTasks } from '@/hooks/useTasks'
 import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { SortableContext } from '@dnd-kit/sortable'
-import {
-  Bug,
-  CheckCircle,
-  Circle,
-  FileText,
-  PlayCircle,
-  Rocket,
-  Settings,
-  Zap
-} from 'lucide-react'
+import { Bug, CheckCircle, Circle, FileText, PlayCircle, Rocket, Settings, Zap } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { SortableTaskCard } from './SortableTaskCard'
 
@@ -127,7 +118,7 @@ export function TaskList({ tasks, className = '', onMoveToSprint, onTaskUpdate, 
     try {
       setUpdatingTaskId(taskId)
       if (!currentProject?.id) throw new Error('No projectId')
-      const board = boards.find(b => (b.name || '').toLowerCase() === newStatus.toLowerCase())
+      const board = boards.find((b) => (b.name || '').toLowerCase() === newStatus.toLowerCase())
       if (!board) throw new Error('No board found for status: ' + newStatus)
       await taskApi.moveTaskToBoard(currentProject.id, taskId, board.id)
       await refreshTasks()
@@ -151,61 +142,61 @@ export function TaskList({ tasks, className = '', onMoveToSprint, onTaskUpdate, 
   }
 
   const handleDeleteTask = async (taskId: string) => {
-    if (!currentProject?.id) return;
+    if (!currentProject?.id) return
     try {
-      await taskApi.deleteTask(currentProject.id, taskId);
-      await refreshTasks();
+      await taskApi.deleteTask(currentProject.id, taskId)
+      await refreshTasks()
       toast({
         title: 'Success',
-        description: 'Task deleted successfully',
-      });
-      if (onTaskUpdate) onTaskUpdate();
+        description: 'Task deleted successfully'
+      })
+      if (onTaskUpdate) onTaskUpdate()
     } catch (error) {
       toast({
         title: 'Error',
         description: 'Failed to delete task',
-        variant: 'destructive',
-      });
+        variant: 'destructive'
+      })
     }
-  };
+  }
 
   const handleAssignTask = async (taskId: string, assigneeId: string) => {
-    if (!currentProject?.id) return;
+    if (!currentProject?.id) return
     try {
-      await taskApi.assignTask(currentProject.id, taskId, assigneeId);
-      await refreshTasks();
+      await taskApi.assignTask(currentProject.id, taskId, assigneeId)
+      await refreshTasks()
       toast({
         title: 'Success',
-        description: 'Task assigned successfully',
-      });
-      if (onTaskUpdate) onTaskUpdate();
+        description: 'Task assigned successfully'
+      })
+      if (onTaskUpdate) onTaskUpdate()
     } catch (error) {
       toast({
         title: 'Error',
         description: 'Failed to assign task',
-        variant: 'destructive',
-      });
+        variant: 'destructive'
+      })
     }
-  };
+  }
 
   const handleMoveToSprint = async (taskId: string, sprintId: string) => {
-    if (!currentProject?.id) return;
+    if (!currentProject?.id) return
     try {
-      await sprintApi.assignTasksToSprint(currentProject.id, sprintId, [taskId]);
-      await refreshTasks();
+      await sprintApi.assignTasksToSprint(currentProject.id, sprintId, [taskId])
+      await refreshTasks()
       toast({
         title: 'Success',
-        description: 'Task moved to sprint successfully',
-      });
-      if (onTaskUpdate) onTaskUpdate();
+        description: 'Task moved to sprint successfully'
+      })
+      if (onTaskUpdate) onTaskUpdate()
     } catch (error) {
       toast({
         title: 'Error',
         description: 'Failed to move task to sprint',
-        variant: 'destructive',
-      });
+        variant: 'destructive'
+      })
     }
-  };
+  }
 
   return (
     <SortableContext items={tasks.map((task) => task.id)}>

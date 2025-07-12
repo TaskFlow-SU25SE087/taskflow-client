@@ -72,7 +72,9 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const [isUpdating, setIsUpdating] = useState(false)
   const [editTitle, setEditTitle] = useState(task.title)
   const [editDescription, setEditDescription] = useState(task.description)
-  const [editPriority, setEditPriority] = useState<number>(typeof task.priority === 'number' ? task.priority : parseInt(task.priority as string) || 1)
+  const [editPriority, setEditPriority] = useState<number>(
+    typeof task.priority === 'number' ? task.priority : parseInt(task.priority as string) || 1
+  )
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false)
 
   // State cho edit mode
@@ -91,10 +93,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const [acceptLoading, setAcceptLoading] = useState(false)
 
   // State cho từng assignee
-  const [removeReasonMap, setRemoveReasonMap] = useState<{ [id: string]: string }>({});
-  const [removeLoadingMap, setRemoveLoadingMap] = useState<{ [id: string]: boolean }>({});
-  const [leaveReasonMap, setLeaveReasonMap] = useState<{ [id: string]: string }>({});
-  const [leaveLoadingMap, setLeaveLoadingMap] = useState<{ [id: string]: boolean }>({});
+  const [removeReasonMap, setRemoveReasonMap] = useState<{ [id: string]: string }>({})
+  const [removeLoadingMap, setRemoveLoadingMap] = useState<{ [id: string]: boolean }>({})
+  const [leaveReasonMap, setLeaveReasonMap] = useState<{ [id: string]: string }>({})
+  const [leaveLoadingMap, setLeaveLoadingMap] = useState<{ [id: string]: boolean }>({})
 
   const getPriorityChevron = (priority: number) => {
     switch (priority) {
@@ -121,7 +123,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
   useEffect(() => {
     if (!currentProject) {
-      return;
+      return
     }
     const fetchAssigneeAndMembers = async () => {
       try {
@@ -133,30 +135,30 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         setProjectMembers(members)
 
         // Kiểm tra nhiều trường hợp role Leader
-        const leader = members.find((member) => 
-          member.role === 'Leader' || 
-          member.role === 'leader' || 
-          member.role === 'ProjectLeader' ||
-          member.role === 'projectLeader'
+        const leader = members.find(
+          (member) =>
+            member.role === 'Leader' ||
+            member.role === 'leader' ||
+            member.role === 'ProjectLeader' ||
+            member.role === 'projectLeader'
         )
         console.log('Debug members and leader:', {
-          members: members.map(m => ({ 
-            userId: m.userId, 
+          members: members.map((m) => ({
+            userId: m.userId,
             id: (m as any).id,
-            role: m.role, 
-            fullName: m.fullName 
+            role: m.role,
+            fullName: m.fullName
           })),
           leader,
           currentUser: user?.id
         })
-        
+
         // Kiểm tra role của user hiện tại trong members list
-        const currentUserMember = members.find((member) => 
-          member.userId === user?.id || 
-          (member as any).id === user?.id
-        );
-        console.log('Current user member:', currentUserMember);
-        console.log('Current user role in members:', currentUserMember?.role);
+        const currentUserMember = members.find(
+          (member) => member.userId === user?.id || (member as any).id === user?.id
+        )
+        console.log('Current user member:', currentUserMember)
+        console.log('Current user role in members:', currentUserMember?.role)
         if (leader) {
           setProjectLeader(leader)
         }
@@ -165,24 +167,30 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         const taskDetails = tasks?.find((t) => t.id === task.id)
         const sprintId = taskDetails?.sprintId
         if (taskDetails?.taskAssignees) {
-          console.log('Task assignees:', taskDetails.taskAssignees);
+          console.log('Task assignees:', taskDetails.taskAssignees)
           // Lấy assignee đầu tiên từ taskDetails.taskAssignees
-          const assigneeFromTask = Array.isArray(taskDetails.taskAssignees) && taskDetails.taskAssignees.length > 0 ? taskDetails.taskAssignees[0] : null;
-          console.log('Found assignee:', assigneeFromTask);
+          const assigneeFromTask =
+            Array.isArray(taskDetails.taskAssignees) && taskDetails.taskAssignees.length > 0
+              ? taskDetails.taskAssignees[0]
+              : null
+          console.log('Found assignee:', assigneeFromTask)
           if (assigneeFromTask) {
             setAssignee({
               userId: assigneeFromTask.projectMemberId,
               fullName: assigneeFromTask.executor,
               avatar: assigneeFromTask.avatar,
-              role: assigneeFromTask.role,
+              role: assigneeFromTask.role
             })
           } else {
-            console.log('Assignee not found in members list');
-            console.log('Available members:', members.map(m => ({ 
-              userId: m.userId, 
-              id: (m as any).id,
-              fullName: m.fullName 
-            })));
+            console.log('Assignee not found in members list')
+            console.log(
+              'Available members:',
+              members.map((m) => ({
+                userId: m.userId,
+                id: (m as any).id,
+                fullName: m.fullName
+              }))
+            )
           }
         }
       } catch (error) {
@@ -197,47 +205,57 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     fetchAssigneeAndMembers()
   }, [currentProject, navigate, task.id, toast])
 
-  console.log('projectMembers:', projectMembers);
-  console.log('current user:', user);
+  console.log('projectMembers:', projectMembers)
+  console.log('current user:', user)
 
   // State để lưu role của user trong project hiện tại
-  const [myProjectRole, setMyProjectRole] = useState<string | undefined>(undefined);
+  const [myProjectRole, setMyProjectRole] = useState<string | undefined>(undefined)
 
   useEffect(() => {
     const fetchMyRole = async () => {
       try {
-        const res = await projectApi.getProjects(); // gọi GET /project
-        console.log('[TaskDetailMenu] Project API response:', res);
+        const res = await projectApi.getProjects() // gọi GET /project
+        console.log('[TaskDetailMenu] Project API response:', res)
         if (res?.data && currentProject) {
-          const myProject = res.data.find((p: any) => p.id === currentProject.id);
-          console.log('[TaskDetailMenu] My project:', myProject);
-          console.log('[TaskDetailMenu] My role:', myProject?.role);
-          console.log('[TaskDetailMenu] Current project ID:', currentProject.id);
-          console.log('[TaskDetailMenu] All projects:', res.data.map((p: any) => ({ id: p.id, role: p.role })));
-          setMyProjectRole(myProject?.role);
+          const myProject = res.data.find((p: any) => p.id === currentProject.id)
+          console.log('[TaskDetailMenu] My project:', myProject)
+          console.log('[TaskDetailMenu] My role:', myProject?.role)
+          console.log('[TaskDetailMenu] Current project ID:', currentProject.id)
+          console.log(
+            '[TaskDetailMenu] All projects:',
+            res.data.map((p: any) => ({ id: p.id, role: p.role }))
+          )
+          setMyProjectRole(myProject?.role)
         } else {
-          console.log('[TaskDetailMenu] No data or currentProject:', { hasData: !!res?.data, currentProject: !!currentProject });
+          console.log('[TaskDetailMenu] No data or currentProject:', {
+            hasData: !!res?.data,
+            currentProject: !!currentProject
+          })
         }
       } catch (e) {
-        console.error('[TaskDetailMenu] Error fetching role:', e);
-        setMyProjectRole(undefined);
+        console.error('[TaskDetailMenu] Error fetching role:', e)
+        setMyProjectRole(undefined)
       }
-    };
-    fetchMyRole();
-  }, [currentProject]);
+    }
+    fetchMyRole()
+  }, [currentProject])
 
   // Kiểm tra role từ members list để so sánh
-  const currentUserMember = projectMembers.find((member) => 
-    member.userId === user?.id || 
-    (member as any).id === user?.id
-  );
-  
+  const currentUserMember = projectMembers.find(
+    (member) => member.userId === user?.id || (member as any).id === user?.id
+  )
+
   // Logic phân quyền: xác định quyền dựa trên myProjectRole hoặc fallback về members list
-  const effectiveRole = myProjectRole || currentUserMember?.role;
-  const isUserLeader = effectiveRole === 'Leader' || effectiveRole === 'leader';
-  const isUserOwnerOrAdmin = effectiveRole === 'Owner' || effectiveRole === 'Admin' || effectiveRole === 'owner' || effectiveRole === 'admin' || effectiveRole === '0';
-  const canAssignTask = isUserLeader || isUserOwnerOrAdmin;
-  
+  const effectiveRole = myProjectRole || currentUserMember?.role
+  const isUserLeader = effectiveRole === 'Leader' || effectiveRole === 'leader'
+  const isUserOwnerOrAdmin =
+    effectiveRole === 'Owner' ||
+    effectiveRole === 'Admin' ||
+    effectiveRole === 'owner' ||
+    effectiveRole === 'admin' ||
+    effectiveRole === '0'
+  const canAssignTask = isUserLeader || isUserOwnerOrAdmin
+
   console.log('[TaskDetailMenu] Role check:', {
     myProjectRole,
     effectiveRole,
@@ -246,51 +264,54 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     canAssignTask,
     currentUserMemberRole: currentUserMember?.role,
     currentUserMember
-  });
+  })
 
   const handleAssignMember = async (memberId: string) => {
-    console.log('Assign memberId:', memberId);
-    console.log('Available projectMembers:', projectMembers);
-    
+    console.log('Assign memberId:', memberId)
+    console.log('Available projectMembers:', projectMembers)
+
     // Tìm member bằng userId hoặc id (để xử lý cả hai trường hợp)
-    const member = projectMembers.find((m) => m.userId === memberId || (m as any).id === memberId);
-    console.log('Assign member object:', member);
-    console.log('Member keys:', member ? Object.keys(member) : 'No member found');
-    
+    const member = projectMembers.find((m) => m.userId === memberId || (m as any).id === memberId)
+    console.log('Assign member object:', member)
+    console.log('Member keys:', member ? Object.keys(member) : 'No member found')
+
     if (!member) {
-      console.error('Member not found for ID:', memberId);
-      console.log('Available member IDs:', projectMembers.map(m => ({ 
-        userId: m.userId, 
-        id: (m as any).id,
-        fullName: m.fullName 
-      })));
-      return;
+      console.error('Member not found for ID:', memberId)
+      console.log(
+        'Available member IDs:',
+        projectMembers.map((m) => ({
+          userId: m.userId,
+          id: (m as any).id,
+          fullName: m.fullName
+        }))
+      )
+      return
     }
-    
+
     // Sử dụng member.userId hoặc member.id cho implementerId
-    const implementerId = member.userId || (member as any).id;
-    console.log('Assign implementerId:', implementerId);
-    
-    setIsAssigning(true);
+    const implementerId = member.userId || (member as any).id
+    console.log('Assign implementerId:', implementerId)
+
+    setIsAssigning(true)
     try {
-      await taskApi.assignTask(currentProject!.id, task.id, implementerId);
-      setAssignee(member);
-      onTaskUpdated();
+      await taskApi.assignTask(currentProject!.id, task.id, implementerId)
+      setAssignee(member)
+      onTaskUpdated()
       toast({
         title: 'Success',
         description: `Task assigned to ${member.fullName || member.email || member.userId || (member as any).id}`
-      });
+      })
     } catch (error) {
-      console.error('Assignment error:', error);
-      console.error('Assignment error response:', error.response?.data);
-      console.error('Assignment error status:', error.response?.status);
+      console.error('Assignment error:', error)
+      console.error('Assignment error response:', error.response?.data)
+      console.error('Assignment error status:', error.response?.status)
       toast({
         title: 'Error',
         description: `Failed to assign task: ${error.response?.data?.message || error.message}`,
         variant: 'destructive'
-      });
+      })
     } finally {
-      setIsAssigning(false);
+      setIsAssigning(false)
     }
   }
 
@@ -465,29 +486,31 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   }, [isPrioritySelectOpen, isTagSelectOpen])
 
   // Tìm project member hiện tại dựa trên email (vì userId không trùng id)
-  const myProjectMember = projectMembers.find(m => m.email === user?.email);
-  const myProjectMemberId = myProjectMember?.id;
+  const myProjectMember = projectMembers.find((m) => m.email === user?.email)
+  const myProjectMemberId = myProjectMember?.id
 
   // Debug chi tiết mapping
-  console.log('projectMembers:', projectMembers);
-  console.log('current user:', user);
-  console.log('myProjectMember:', myProjectMember);
-  console.log('myProjectMemberId:', myProjectMemberId);
-  console.log('taskAssignees:', task.taskAssignees);
+  console.log('projectMembers:', projectMembers)
+  console.log('current user:', user)
+  console.log('myProjectMember:', myProjectMember)
+  console.log('myProjectMemberId:', myProjectMemberId)
+  console.log('taskAssignees:', task.taskAssignees)
 
   // Hỗ trợ nhiều assignee
-  const assigneeProjectMemberIds = task.taskAssignees?.map(a => a.projectMemberId) || [];
-  const isUserAssignee = !!myProjectMemberId && Array.isArray(task.taskAssignees) && task.taskAssignees.some(a => a.projectMemberId === myProjectMemberId);
+  const assigneeProjectMemberIds = task.taskAssignees?.map((a) => a.projectMemberId) || []
+  const isUserAssignee =
+    !!myProjectMemberId &&
+    Array.isArray(task.taskAssignees) &&
+    task.taskAssignees.some((a) => a.projectMemberId === myProjectMemberId)
 
   // Debug chi tiết
-  console.log('myProjectMember:', myProjectMember);
-  console.log('myProjectMemberId:', myProjectMemberId);
-  console.log('assigneeProjectMemberIds:', assigneeProjectMemberIds);
+  console.log('myProjectMember:', myProjectMember)
+  console.log('myProjectMemberId:', myProjectMemberId)
+  console.log('assigneeProjectMemberIds:', assigneeProjectMemberIds)
 
   const isTaskAccepted = !!task.assignmentAccepted
-  
-  // Kiểm tra role từ currentProject và projectLeader
 
+  // Kiểm tra role từ currentProject và projectLeader
 
   // Debug info
   console.log('Debug assignment logic:', {
@@ -520,10 +543,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
   // Đảm bảo khai báo biến trước khi log
   // Log điều kiện hiển thị nút Leave
-  console.log('[TaskDetailMenu] isUserAssignee:', isUserAssignee);
-  console.log('[TaskDetailMenu] myProjectMember:', myProjectMember);
-  console.log('[TaskDetailMenu] myProjectMemberId:', myProjectMemberId);
-  console.log('[TaskDetailMenu] assigneeProjectMemberIds:', assigneeProjectMemberIds);
+  console.log('[TaskDetailMenu] isUserAssignee:', isUserAssignee)
+  console.log('[TaskDetailMenu] myProjectMember:', myProjectMember)
+  console.log('[TaskDetailMenu] myProjectMemberId:', myProjectMemberId)
+  console.log('[TaskDetailMenu] assigneeProjectMemberIds:', assigneeProjectMemberIds)
 
   const handleLeaveTask = async () => {
     console.log('[TaskDetailMenu] User clicked Leave:', {
@@ -531,19 +554,19 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       myProjectMember,
       myProjectMemberId,
       taskId: task.id,
-      assigneeProjectMemberIds,
-    });
+      assigneeProjectMemberIds
+    })
     try {
-      await taskApi.leaveTaskAssignment(task.id, myProjectMemberId);
-      console.log('[TaskDetailMenu] Leave task success:', { taskId: task.id, myProjectMemberId });
+      await taskApi.leaveTaskAssignment(task.id, myProjectMemberId)
+      console.log('[TaskDetailMenu] Leave task success:', { taskId: task.id, myProjectMemberId })
       // ... existing code ...
     } catch (error) {
-      console.error('[TaskDetailMenu] Leave task failed:', error);
+      console.error('[TaskDetailMenu] Leave task failed:', error)
     }
-  };
+  }
 
   if (!currentProject) {
-    return <div className='p-4 text-center text-gray-500'>Chưa chọn project</div>;
+    return <div className='p-4 text-center text-gray-500'>Chưa chọn project</div>
   }
 
   return (
@@ -751,11 +774,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             {completeLoading ? 'Completing...' : 'Complete'}
           </Button>
           {currentProject && (
-            <IssueCreateMenu
-              projectId={currentProject.id}
-              taskId={task.id}
-              onIssueCreated={onTaskUpdated}
-            />
+            <IssueCreateMenu projectId={currentProject.id} taskId={task.id} onIssueCreated={onTaskUpdated} />
           )}
         </div>
 
@@ -763,22 +782,32 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         <div className='grid grid-cols-2 gap-6 mb-6'>
           {/* Assignee Section */}
           <div>
-            <h1 className='text-base font-semibold mb-3 flex items-center gap-2'>
-              Assignee
-            </h1>
+            <h1 className='text-base font-semibold mb-3 flex items-center gap-2'>Assignee</h1>
             <div className='flex flex-col gap-4 p-3 bg-white rounded-lg shadow-sm border max-w-xs'>
               {/* Danh sách tất cả assignees */}
               {Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0 ? (
                 task.taskAssignees.map((a, idx) => {
-                  const isCurrentUser = String(myProjectMemberId) === String(a.projectMemberId);
-                  const isLeader = isUserLeader;
-                  console.log('DEBUG: myProjectMemberId =', myProjectMemberId, '| assignee.projectMemberId =', a.projectMemberId, '| isCurrentUser =', isCurrentUser, '| isLeader =', isLeader);
-                  const removeReason = removeReasonMap[a.projectMemberId] || '';
-                  const removeLoading = removeLoadingMap[a.projectMemberId] || false;
-                  const leaveReason = leaveReasonMap[a.projectMemberId] || '';
-                  const leaveLoading = leaveLoadingMap[a.projectMemberId] || false;
+                  const isCurrentUser = String(myProjectMemberId) === String(a.projectMemberId)
+                  const isLeader = isUserLeader
+                  console.log(
+                    'DEBUG: myProjectMemberId =',
+                    myProjectMemberId,
+                    '| assignee.projectMemberId =',
+                    a.projectMemberId,
+                    '| isCurrentUser =',
+                    isCurrentUser,
+                    '| isLeader =',
+                    isLeader
+                  )
+                  const removeReason = removeReasonMap[a.projectMemberId] || ''
+                  const removeLoading = removeLoadingMap[a.projectMemberId] || false
+                  const leaveReason = leaveReasonMap[a.projectMemberId] || ''
+                  const leaveLoading = leaveLoadingMap[a.projectMemberId] || false
                   return (
-                    <div key={a.projectMemberId || idx} className='flex flex-col gap-2 border-b last:border-b-0 pb-3 last:pb-0 mb-3 last:mb-0'>
+                    <div
+                      key={a.projectMemberId || idx}
+                      className='flex flex-col gap-2 border-b last:border-b-0 pb-3 last:pb-0 mb-3 last:mb-0'
+                    >
                       <div className='flex items-center gap-3'>
                         <Avatar className='w-10 h-10 border border-gray-200 shadow'>
                           <AvatarImage src={a.avatar} alt={a.executor} />
@@ -794,23 +823,25 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                             type='text'
                             placeholder='Lý do rời task...'
                             value={leaveReason}
-                            onChange={e => setLeaveReasonMap(prev => ({ ...prev, [a.projectMemberId]: e.target.value }))}
+                            onChange={(e) =>
+                              setLeaveReasonMap((prev) => ({ ...prev, [a.projectMemberId]: e.target.value }))
+                            }
                             className='rounded border px-2 py-1 text-sm focus:border-blue-400 transition bg-gray-50'
                             disabled={leaveLoading}
                           />
                           <Button
                             onClick={async () => {
-                              setLeaveLoadingMap(prev => ({ ...prev, [a.projectMemberId]: true }));
+                              setLeaveLoadingMap((prev) => ({ ...prev, [a.projectMemberId]: true }))
                               try {
-                                await taskApi.leaveTaskAssignment(currentProject.id, task.id, { reason: leaveReason });
-                                toast({ title: 'Success', description: 'You have left this task!' });
-                                setAssignee(null);
-                                setLeaveReasonMap(prev => ({ ...prev, [a.projectMemberId]: '' }));
-                                onTaskUpdated();
+                                await taskApi.leaveTaskAssignment(currentProject.id, task.id, { reason: leaveReason })
+                                toast({ title: 'Success', description: 'You have left this task!' })
+                                setAssignee(null)
+                                setLeaveReasonMap((prev) => ({ ...prev, [a.projectMemberId]: '' }))
+                                onTaskUpdated()
                               } catch (error: any) {
-                                toast({ title: 'Error', description: 'Failed to leave task', variant: 'destructive' });
+                                toast({ title: 'Error', description: 'Failed to leave task', variant: 'destructive' })
                               } finally {
-                                setLeaveLoadingMap(prev => ({ ...prev, [a.projectMemberId]: false }));
+                                setLeaveLoadingMap((prev) => ({ ...prev, [a.projectMemberId]: false }))
                               }
                             }}
                             disabled={leaveLoading}
@@ -825,32 +856,39 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                         </div>
                       ) : (
                         // Remove chỉ hiển thị cho leader và không phải chính mình
-                        isLeader && !isCurrentUser && (
+                        isLeader &&
+                        !isCurrentUser && (
                           <div className='flex flex-col gap-2'>
                             <input
                               type='text'
                               placeholder='Lý do xóa assignee...'
                               value={removeReason}
-                              onChange={e => setRemoveReasonMap(prev => ({ ...prev, [a.projectMemberId]: e.target.value }))}
+                              onChange={(e) =>
+                                setRemoveReasonMap((prev) => ({ ...prev, [a.projectMemberId]: e.target.value }))
+                              }
                               className='rounded border px-2 py-1 text-sm focus:border-red-400 transition bg-gray-50'
                               disabled={removeLoading}
                             />
                             <Button
                               onClick={async () => {
-                                setRemoveLoadingMap(prev => ({ ...prev, [a.projectMemberId]: true }));
+                                setRemoveLoadingMap((prev) => ({ ...prev, [a.projectMemberId]: true }))
                                 try {
                                   await taskApi.removeTaskAssignment(currentProject.id, task.id, {
                                     implementId: a.projectMemberId,
                                     reason: removeReason
-                                  });
-                                  toast({ title: 'Success', description: 'Assignee removed from task!' });
-                                  setAssignee(null);
-                                  setRemoveReasonMap(prev => ({ ...prev, [a.projectMemberId]: '' }));
-                                  onTaskUpdated();
+                                  })
+                                  toast({ title: 'Success', description: 'Assignee removed from task!' })
+                                  setAssignee(null)
+                                  setRemoveReasonMap((prev) => ({ ...prev, [a.projectMemberId]: '' }))
+                                  onTaskUpdated()
                                 } catch (error: any) {
-                                  toast({ title: 'Error', description: 'Failed to remove assignee', variant: 'destructive' });
+                                  toast({
+                                    title: 'Error',
+                                    description: 'Failed to remove assignee',
+                                    variant: 'destructive'
+                                  })
                                 } finally {
-                                  setRemoveLoadingMap(prev => ({ ...prev, [a.projectMemberId]: false }));
+                                  setRemoveLoadingMap((prev) => ({ ...prev, [a.projectMemberId]: false }))
                                 }
                               }}
                               disabled={removeLoading}
@@ -866,7 +904,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                         )
                       )}
                     </div>
-                  );
+                  )
                 })
               ) : (
                 <span className='text-gray-400 italic'>Chưa có assignee</span>
@@ -876,10 +914,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                 <div className='mt-2'>
                   <Select
                     onValueChange={async (memberId) => {
-                      await handleAssignMember(memberId);
+                      await handleAssignMember(memberId)
                       setTimeout(() => {
-                        onTaskUpdated();
-                      }, 500);
+                        onTaskUpdated()
+                      }, 500)
                     }}
                     value={assignee?.userId || (assignee as any)?.id || ''}
                     disabled={!user?.id}
@@ -903,7 +941,11 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                       >
                         {assignee ? (
                           <div style={{ display: 'flex', alignItems: 'center' }}>
-                            <img src={assignee.avatar} alt={assignee.fullName} style={{ width: 24, height: 24, borderRadius: '50%', marginRight: 8 }} />
+                            <img
+                              src={assignee.avatar}
+                              alt={assignee.fullName}
+                              style={{ width: 24, height: 24, borderRadius: '50%', marginRight: 8 }}
+                            />
                             <span>{assignee.fullName}</span>
                           </div>
                         ) : (
@@ -914,9 +956,17 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     {user?.id && (
                       <SelectContent className='p-0'>
                         {projectMembers.map((member) => {
-                          const memberId = member.userId || (member as any).id;
-                          const displayName = member.fullName?.trim() || member.email?.trim() || (memberId ? memberId.slice(0, 6) : 'Unknown');
-                          const avatarChar = (member.fullName?.[0] || member.email?.[0] || memberId?.[0] || '?').toUpperCase();
+                          const memberId = member.userId || (member as any).id
+                          const displayName =
+                            member.fullName?.trim() ||
+                            member.email?.trim() ||
+                            (memberId ? memberId.slice(0, 6) : 'Unknown')
+                          const avatarChar = (
+                            member.fullName?.[0] ||
+                            member.email?.[0] ||
+                            memberId?.[0] ||
+                            '?'
+                          ).toUpperCase()
                           return (
                             <SelectItem
                               key={memberId}
@@ -931,7 +981,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                                 <span>{displayName}</span>
                               </div>
                             </SelectItem>
-                          );
+                          )
                         })}
                       </SelectContent>
                     )}
@@ -956,7 +1006,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             </h1>
             <div className='flex items-center gap-2 flex-wrap'>
               {taskTags.map((tag, idx) => (
-                <span key={tag.id || idx} className='px-3 py-1 bg-orange-100 text-orange-600 rounded-full text-sm font-medium'>
+                <span
+                  key={tag.id || idx}
+                  className='px-3 py-1 bg-orange-100 text-orange-600 rounded-full text-sm font-medium'
+                >
                   {tag.name}
                 </span>
               ))}
@@ -1039,8 +1092,13 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           {/* Comment Input */}
           <div className='flex gap-3 mb-6 items-center'>
             <Avatar>
-              <AvatarImage src={user?.avatar} alt={user?.fullName || user?.username || user?.email || user?.id || 'Unknown'} />
-              <AvatarFallback>{(user?.fullName?.[0] || user?.username?.[0] || user?.email?.[0] || user?.id?.[0] || '?').toUpperCase()}</AvatarFallback>
+              <AvatarImage
+                src={user?.avatar}
+                alt={user?.fullName || user?.username || user?.email || user?.id || 'Unknown'}
+              />
+              <AvatarFallback>
+                {(user?.fullName?.[0] || user?.username?.[0] || user?.email?.[0] || user?.id?.[0] || '?').toUpperCase()}
+              </AvatarFallback>
             </Avatar>
             <input
               type='text'
@@ -1075,7 +1133,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               <div className='text-center text-gray-500 py-4 font-medium'>No activity yet</div>
             ) : (
               comments.map((c, idx) => (
-                <div key={c.id || (c.commenter + idx)} className='flex items-start gap-2'>
+                <div key={c.id || c.commenter + idx} className='flex items-start gap-2'>
                   <Avatar>
                     <AvatarImage src={c.avatar} alt={c.commenter || 'Unknown'} />
                     <AvatarFallback>{(c.commenter?.[0] || '?').toUpperCase()}</AvatarFallback>

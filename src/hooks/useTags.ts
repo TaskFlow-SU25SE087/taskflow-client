@@ -46,10 +46,7 @@ export const useTags = () => {
     }
   }
 
-  const updateTag = async (
-    tagId: string,
-    tag: { name: string; description: string; color: string }
-  ) => {
+  const updateTag = async (tagId: string, tag: { name: string; description: string; color: string }) => {
     if (!currentProject || !currentProject.id) return false
     setIsLoading(true)
     try {
@@ -88,4 +85,4 @@ export const useTags = () => {
     updateTag,
     deleteTag
   }
-} 
+}

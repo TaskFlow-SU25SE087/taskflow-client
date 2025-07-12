@@ -9,15 +9,13 @@ interface BoardDragDropWrapperProps {
 }
 
 export function BoardDragDropWrapper({ children, boardIds, onDragEnd }: BoardDragDropWrapperProps) {
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-  )
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
   return (
     <DndContext
       sensors={sensors}
       collisionDetection={closestCenter}
-      onDragEnd={event => {
+      onDragEnd={(event) => {
         const { active, over } = event
         if (active.id !== over?.id) {
           const oldIndex = boardIds.indexOf(active.id as string)

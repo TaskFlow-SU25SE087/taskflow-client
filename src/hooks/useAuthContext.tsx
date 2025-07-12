@@ -17,9 +17,20 @@ interface AuthContextType {
   verifyEmail: (token: string) => Promise<void>
   verifyOtp: (otp: string) => Promise<void>
   addUsername: (username: string, avatar: File | null, phoneNumber: string) => Promise<void>
-  activate: (email: string, username: string, newPassword: string, confirmPassword: string, tokenResetPassword: string) => Promise<void>
+  activate: (
+    email: string,
+    username: string,
+    newPassword: string,
+    confirmPassword: string,
+    tokenResetPassword: string
+  ) => Promise<void>
   getCurrentUser: () => Promise<void>
-  resetPassword: (email: string, newPassword: string, confirmPassword: string, tokenResetPassword: string) => Promise<void>
+  resetPassword: (
+    email: string,
+    newPassword: string,
+    confirmPassword: string,
+    tokenResetPassword: string
+  ) => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null)
@@ -37,9 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedOtpStatus = sessionStorage.getItem('otp_verified')
     // Ưu tiên lấy accessToken từ localStorage nếu có rememberMe
     const rememberMe = localStorage.getItem('rememberMe') === 'true'
-    const storedAccessToken = rememberMe
-      ? localStorage.getItem('accessToken')
-      : sessionStorage.getItem('accessToken')
+    const storedAccessToken = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken')
     console.log('[AuthProvider] useEffect mount:')
     console.log('  storedUser:', storedUser)
     console.log('  storedOtpStatus:', storedOtpStatus)
@@ -72,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
     setAuthLoading(false)
-    
+
     if (storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser)
@@ -81,21 +90,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Nếu user thiếu fullName, tự động lấy lại từ API /user/{userId}
         if (storedOtpStatus === 'true' && (!parsedUser.fullName || parsedUser.fullName === '')) {
           // Lấy userId từ token
-          let userId = '';
+          let userId = ''
           if (storedAccessToken) {
             try {
-              const tokenPayload = JSON.parse(atob(storedAccessToken.split('.')[1]));
-              userId = tokenPayload.ID;
-            } catch (e) { userId = ''; }
+              const tokenPayload = JSON.parse(atob(storedAccessToken.split('.')[1]))
+              userId = tokenPayload.ID
+            } catch (e) {
+              userId = ''
+            }
           }
           if (userId) {
-            authApi.getUserById(userId)
-              .then(currentUser => {
+            authApi
+              .getUserById(userId)
+              .then((currentUser) => {
                 setUser({ ...parsedUser, ...currentUser })
                 sessionStorage.setItem('auth_user', JSON.stringify({ ...parsedUser, ...currentUser }))
                 console.log('Auto-fetched user info from /user/{userId}:', currentUser)
               })
-              .catch(error => {
+              .catch((error) => {
                 console.warn('Could not auto-fetch user info from /user/{userId}:', error)
               })
           }
@@ -136,7 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         // Decode JWT token to get user info
         const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]))
-        
+
         currentUser = {
           id: tokenPayload.ID || '',
           email: tokenPayload.Email || '',
@@ -145,7 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           phoneNumber: '',
           username: username
         }
-        
+
         setUser(currentUser)
         sessionStorage.setItem('auth_user', JSON.stringify(currentUser))
         sessionStorage.setItem('otp_verified', 'true')
@@ -163,7 +175,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Login successful, redirecting...')
       setTimeout(() => {
         // Check if user is admin and redirect accordingly
-        if (currentUser && (currentUser.role === 0 || currentUser.role === '0' || currentUser.role === 'Admin' || currentUser.role === 'admin')) {
+        if (
+          currentUser &&
+          (currentUser.role === 0 ||
+            currentUser.role === '0' ||
+            currentUser.role === 'Admin' ||
+            currentUser.role === 'admin')
+        ) {
           navigate('/admin/users', { replace: true })
         } else {
           navigate('/projects', { replace: true })
@@ -260,7 +278,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Starting addUsername process...')
       console.log('Current authorization header:', axiosClient.defaults.headers.common['Authorization'])
       console.log('Access token from session storage:', sessionStorage.getItem('accessToken'))
-      
+
       setError(null)
       const updatedUser = await authApi.addUsername(username, avatar, phoneNumber)
       console.log('Add username response:', updatedUser)
@@ -271,7 +289,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('Add username successful, redirecting...')
       setTimeout(() => {
         // Check if user is admin and redirect accordingly
-        if (updatedUser && (updatedUser.role === 0 || updatedUser.role === '0' || updatedUser.role === 'Admin' || updatedUser.role === 'admin')) {
+        if (
+          updatedUser &&
+          (updatedUser.role === 0 ||
+            updatedUser.role === '0' ||
+            updatedUser.role === 'Admin' ||
+            updatedUser.role === 'admin')
+        ) {
           navigate('/admin/users', { replace: true })
         } else {
           navigate('/projects/new', { replace: true })
@@ -284,7 +308,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const activate = async (email: string, username: string, newPassword: string, confirmPassword: string, tokenResetPassword: string) => {
+  const activate = async (
+    email: string,
+    username: string,
+    newPassword: string,
+    confirmPassword: string,
+    tokenResetPassword: string
+  ) => {
     try {
       await authApi.activate(email, username, newPassword, confirmPassword, tokenResetPassword)
     } catch (error: any) {
@@ -310,7 +340,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const resetPassword = async (email: string, newPassword: string, confirmPassword: string, tokenResetPassword: string) => {
+  const resetPassword = async (
+    email: string,
+    newPassword: string,
+    confirmPassword: string,
+    tokenResetPassword: string
+  ) => {
     try {
       await authApi.resetPassword(email, newPassword, confirmPassword, tokenResetPassword)
     } catch (error: any) {
@@ -336,10 +371,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         addUsername,
         activate,
         getCurrentUser,
-        resetPassword,
+        resetPassword
       }}
     >
       {children}
     </AuthContext.Provider>
   )
-} 
+}

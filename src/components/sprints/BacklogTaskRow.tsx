@@ -21,27 +21,27 @@ interface BacklogTaskRowProps {
 const statusColorMap: Record<string, string> = {
   'to do': 'bg-gray-200 text-gray-700',
   'in progress': 'bg-blue-100 text-blue-700',
-  'done': 'bg-green-100 text-green-700',
-  'review': 'bg-yellow-100 text-yellow-700',
-  'blocked': 'bg-red-100 text-red-700',
+  done: 'bg-green-100 text-green-700',
+  review: 'bg-yellow-100 text-yellow-700',
+  blocked: 'bg-red-100 text-red-700'
 }
 
 const getBoardColorClass = (board: any) => {
   if (board?.color) {
-    return `bg-[${board.color}] text-white`;
+    return `bg-[${board.color}] text-white`
   }
-  return statusColorMap[board?.name?.toLowerCase?.()] || 'bg-gray-100 text-gray-600';
+  return statusColorMap[board?.name?.toLowerCase?.()] || 'bg-gray-100 text-gray-600'
 }
 
 // Helper function to get deadline color based on urgency
 const getDeadlineColor = (deadline: string | null) => {
   if (!deadline) return 'text-gray-400'
-  
+
   const now = new Date()
   const deadlineDate = new Date(deadline)
   const diffTime = deadlineDate.getTime() - now.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  
+
   if (diffDays < 0) return 'text-red-500' // Overdue
   if (diffDays <= 1) return 'text-orange-500' // Due today/tomorrow
   if (diffDays <= 3) return 'text-yellow-600' // Due soon
@@ -51,12 +51,12 @@ const getDeadlineColor = (deadline: string | null) => {
 // Helper function to get deadline icon
 const getDeadlineIcon = (deadline: string | null) => {
   if (!deadline) return Calendar
-  
+
   const now = new Date()
   const deadlineDate = new Date(deadline)
   const diffTime = deadlineDate.getTime() - now.getTime()
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-  
+
   if (diffDays < 0) return AlertCircle // Overdue
   return Calendar
 }
@@ -111,20 +111,27 @@ function AvatarStack({ assignees }: { assignees: any[] }) {
   )
 }
 
-export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({ task, showMeta, checked = false, onCheck, onTaskUpdate }) => {
+export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
+  task,
+  showMeta,
+  checked = false,
+  onCheck,
+  onTaskUpdate
+}) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [statusLoading, setStatusLoading] = useState(false)
   const { boards, refreshBoards } = useBoards()
   const { currentProject } = useCurrentProject()
   const { toast } = useToast()
-  
+
   // Map assignee từ taskAssignees (lấy người đầu tiên nếu có)
-  const assignee = Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0
-    ? { fullName: task.taskAssignees[0].executor, avatar: task.taskAssignees[0].avatar }
-    : null;
+  const assignee =
+    Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0
+      ? { fullName: task.taskAssignees[0].executor, avatar: task.taskAssignees[0].avatar }
+      : null
 
   // Comment count
-  const commentCount = Array.isArray(task.commnets) ? task.commnets.length : 0;
+  const commentCount = Array.isArray(task.commnets) ? task.commnets.length : 0
 
   // File count: attachmentUrl + completionAttachmentUrls + file trong comment
   const fileCount =
@@ -132,46 +139,46 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({ task, showMeta, 
     (Array.isArray(task.completionAttachmentUrls) ? task.completionAttachmentUrls.length : 0) +
     (Array.isArray(task.commnets)
       ? task.commnets.reduce((acc, c) => acc + (Array.isArray(c.attachmentUrls) ? c.attachmentUrls.length : 0), 0)
-      : 0);
+      : 0)
 
   // Deadline: deadline -> updatedAt -> createdAt -> N/A
-  const rawDeadline: string | null = task.deadline ?? task.updatedAt ?? task.createdAt ?? null;
-  const deadline = rawDeadline ? new Date(rawDeadline).toLocaleDateString('en-GB') : 'N/A';
-  const deadlineColor = getDeadlineColor(rawDeadline);
-  const DeadlineIcon = getDeadlineIcon(rawDeadline);
+  const rawDeadline: string | null = task.deadline ?? task.updatedAt ?? task.createdAt ?? null
+  const deadline = rawDeadline ? new Date(rawDeadline).toLocaleDateString('en-GB') : 'N/A'
+  const deadlineColor = getDeadlineColor(rawDeadline)
+  const DeadlineIcon = getDeadlineIcon(rawDeadline)
 
   return (
     <TooltipProvider>
       <>
         <div
-          className="flex items-center border border-gray-200 rounded px-2 py-1 text-xs bg-white min-h-[36px] mb-2 cursor-pointer hover:bg-gray-50"
+          className='flex items-center border border-gray-200 rounded px-2 py-1 text-xs bg-white min-h-[36px] mb-2 cursor-pointer hover:bg-gray-50'
           onClick={(e) => {
             if ((e.target as HTMLElement).closest('button')) return
             setIsDetailOpen(true)
           }}
         >
           {/* Checkbox */}
-          <div className="flex-shrink-0 w-6 flex justify-center">
+          <div className='flex-shrink-0 w-6 flex justify-center'>
             {onCheck && (
               <input
-                type="checkbox"
+                type='checkbox'
                 checked={checked}
-                onChange={e => onCheck(task.id, e.target.checked)}
-                onClick={e => e.stopPropagation()}
-                className="form-checkbox h-4 w-4 text-lavender-600"
+                onChange={(e) => onCheck(task.id, e.target.checked)}
+                onClick={(e) => e.stopPropagation()}
+                className='form-checkbox h-4 w-4 text-lavender-600'
               />
             )}
           </div>
-          
+
           {/* Tags */}
-          <div className="flex-shrink-0 min-w-[60px] max-w-[80px]">
+          <div className='flex-shrink-0 min-w-[60px] max-w-[80px]'>
             {task.tags && task.tags.length > 0 && (
-              <div className="flex gap-1">
+              <div className='flex gap-1'>
                 {task.tags.map((tag: { id: string; name: string }, index: number) => (
                   <Tooltip key={tag.id || index}>
                     <TooltipTrigger>
                       <span
-                        className="rounded px-1 py-0.5 bg-orange-100 text-orange-600 truncate block"
+                        className='rounded px-1 py-0.5 bg-orange-100 text-orange-600 truncate block'
                         title={tag.name}
                       >
                         {tag.name}
@@ -185,32 +192,30 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({ task, showMeta, 
               </div>
             )}
           </div>
-          
+
           {/* Title */}
           <Tooltip>
             <TooltipTrigger>
-              <div className="flex-shrink-0 min-w-[100px] max-w-[140px] font-semibold truncate">
-                {task.title}
-              </div>
+              <div className='flex-shrink-0 min-w-[100px] max-w-[140px] font-semibold truncate'>{task.title}</div>
             </TooltipTrigger>
             <TooltipContent>
               <p>{task.title}</p>
             </TooltipContent>
           </Tooltip>
-          
+
           {/* Status (dropdown) */}
-          <div className="flex-shrink-0 min-w-[90px] max-w-[110px]">
+          <div className='flex-shrink-0 min-w-[90px] max-w-[110px]'>
             {task.status && boards.length > 0 ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className={`px-2 py-0.5 rounded text-xs font-medium w-full text-left ${getBoardColorClass(boards.find(b => b.id === task.boardId) || { name: task.status })} ${statusLoading ? 'opacity-60' : ''}`}
+                    className={`px-2 py-0.5 rounded text-xs font-medium w-full text-left ${getBoardColorClass(boards.find((b) => b.id === task.boardId) || { name: task.status })} ${statusLoading ? 'opacity-60' : ''}`}
                     disabled={statusLoading}
                   >
                     {task.status}
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
+                <DropdownMenuContent align='start'>
                   {boards.map((board) => (
                     <DropdownMenuItem
                       key={board.id}
@@ -237,61 +242,67 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({ task, showMeta, 
               </DropdownMenu>
             ) : (
               task.status && (
-                <span className={`px-2 py-0.5 rounded text-xs font-medium ${statusColorMap[task.status.toLowerCase()] || 'bg-gray-100 text-gray-600'}`}>
+                <span
+                  className={`px-2 py-0.5 rounded text-xs font-medium ${statusColorMap[task.status.toLowerCase()] || 'bg-gray-100 text-gray-600'}`}
+                >
                   {task.status}
                 </span>
               )
             )}
           </div>
-          
+
           {/* Meta info for sprint board */}
           {showMeta && (
             <>
               {/* Assignee */}
               <Tooltip>
                 <TooltipTrigger>
-                  <div className="flex-shrink-0 min-w-[70px] flex items-center justify-center h-7 ml-3">
+                  <div className='flex-shrink-0 min-w-[70px] flex items-center justify-center h-7 ml-3'>
                     <AvatarStack assignees={Array.isArray(task.taskAssignees) ? task.taskAssignees : []} />
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>
                     {Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0
-                      ? task.taskAssignees.map(a => a.executor).join(', ')
+                      ? task.taskAssignees.map((a) => a.executor).join(', ')
                       : 'Unassigned'}
                   </p>
                 </TooltipContent>
               </Tooltip>
-              
+
               {/* Comments */}
               <Tooltip>
                 <TooltipTrigger>
-                  <div className="flex-shrink-0 w-10 flex items-center justify-center text-gray-400">
-                    <MessageSquare className="w-4 h-4 mr-1" /> {commentCount}
+                  <div className='flex-shrink-0 w-10 flex items-center justify-center text-gray-400'>
+                    <MessageSquare className='w-4 h-4 mr-1' /> {commentCount}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{commentCount} comment{commentCount !== 1 ? 's' : ''}</p>
+                  <p>
+                    {commentCount} comment{commentCount !== 1 ? 's' : ''}
+                  </p>
                 </TooltipContent>
               </Tooltip>
-              
+
               {/* Files */}
               <Tooltip>
                 <TooltipTrigger>
-                  <div className="flex-shrink-0 w-10 flex items-center justify-center text-gray-400">
-                    <FileText className="w-4 h-4 mr-1" /> {fileCount}
+                  <div className='flex-shrink-0 w-10 flex items-center justify-center text-gray-400'>
+                    <FileText className='w-4 h-4 mr-1' /> {fileCount}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>{fileCount} file{fileCount !== 1 ? 's' : ''} attached</p>
+                  <p>
+                    {fileCount} file{fileCount !== 1 ? 's' : ''} attached
+                  </p>
                 </TooltipContent>
               </Tooltip>
-              
+
               {/* Due date */}
               <Tooltip>
                 <TooltipTrigger>
                   <div className={`flex-shrink-0 w-16 flex items-center justify-center ${deadlineColor}`}>
-                    <DeadlineIcon className="w-4 h-4 mr-1" /> {deadline}
+                    <DeadlineIcon className='w-4 h-4 mr-1' /> {deadline}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -300,23 +311,23 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({ task, showMeta, 
               </Tooltip>
             </>
           )}
-          
+
           {/* Nút xóa task */}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
-                className="ml-2 px-2 py-1 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors"
+                className='ml-2 px-2 py-1 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50 transition-colors'
                 onClick={async (e) => {
-                  e.stopPropagation();
-                  if (!currentProject?.id) return;
-                  if (!window.confirm('Are you sure you want to delete this task?')) return;
+                  e.stopPropagation()
+                  if (!currentProject?.id) return
+                  if (!window.confirm('Are you sure you want to delete this task?')) return
                   try {
-                    await taskApi.deleteTask(currentProject.id, task.id);
-                    toast({ title: 'Success', description: 'Task deleted!' });
-                    if (typeof refreshBoards === 'function') await refreshBoards();
-                    if (typeof onTaskUpdate === 'function') onTaskUpdate();
+                    await taskApi.deleteTask(currentProject.id, task.id)
+                    toast({ title: 'Success', description: 'Task deleted!' })
+                    if (typeof refreshBoards === 'function') await refreshBoards()
+                    if (typeof onTaskUpdate === 'function') onTaskUpdate()
                   } catch {
-                    toast({ title: 'Error', description: 'Failed to delete task', variant: 'destructive' });
+                    toast({ title: 'Error', description: 'Failed to delete task', variant: 'destructive' })
                   }
                 }}
               >
@@ -337,4 +348,4 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({ task, showMeta, 
       </>
     </TooltipProvider>
   )
-} 
+}

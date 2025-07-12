@@ -13,7 +13,8 @@ export const useBoards = () => {
     console.log('useBoards useEffect: currentProject', currentProject)
     if (!currentProject?.id) return
     setIsLoading(true)
-    boardApi.getAllBoardsByProjectId(currentProject.id)
+    boardApi
+      .getAllBoardsByProjectId(currentProject.id)
       .then((fetchedBoards) => {
         setBoards(fetchedBoards)
         setError(null)
@@ -42,7 +43,7 @@ export const useBoards = () => {
     }
   }
 
-  console.log('Boards in useBoards hook:', boards);
+  console.log('Boards in useBoards hook:', boards)
 
   return {
     boards,

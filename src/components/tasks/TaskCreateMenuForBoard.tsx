@@ -84,9 +84,7 @@ export default function TaskCreateMenuForBoard({
   }, [isOpen, projectId, toast])
 
   const handleTagChange = (tagId: string) => {
-    setSelectedTagIds((prev) =>
-      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
-    )
+    setSelectedTagIds((prev) => (prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]))
   }
 
   const handleSubmit = async () => {
@@ -124,15 +122,15 @@ export default function TaskCreateMenuForBoard({
     }
     setIsSubmitting(true)
     try {
-      const formData = new FormData();
-      formData.append('Title', title);
-      formData.append('Description', description);
-      formData.append('Priority', priority);
-      formData.append('Deadline', deadline);
-      if (file) formData.append('File', file);
-      formData.append('SprintId', selectedSprintId);
-      selectedTagIds.forEach((tagId) => formData.append('TagIds', tagId));
-      await taskApi.createTask(projectId, formData);
+      const formData = new FormData()
+      formData.append('Title', title)
+      formData.append('Description', description)
+      formData.append('Priority', priority)
+      formData.append('Deadline', deadline)
+      if (file) formData.append('File', file)
+      formData.append('SprintId', selectedSprintId)
+      selectedTagIds.forEach((tagId) => formData.append('TagIds', tagId))
+      await taskApi.createTask(projectId, formData)
       toast({
         title: 'Success',
         description: 'Task created successfully'
@@ -208,21 +206,23 @@ export default function TaskCreateMenuForBoard({
               </SelectContent>
             </Select>
             {/* Show selected sprint time in English */}
-            {selectedSprintId && (() => {
-              const sprint = sprints.find((s) => s.id === selectedSprintId)
-              if (!sprint) return null
-              return (
-                <div className='text-xs text-gray-500 mt-1'>
-                  Time: {sprint.startDate ? new Date(sprint.startDate).toLocaleDateString('en-GB') : '...'} - {sprint.endDate ? new Date(sprint.endDate).toLocaleDateString('en-GB') : '...'}
-                </div>
-              )
-            })()}
+            {selectedSprintId &&
+              (() => {
+                const sprint = sprints.find((s) => s.id === selectedSprintId)
+                if (!sprint) return null
+                return (
+                  <div className='text-xs text-gray-500 mt-1'>
+                    Time: {sprint.startDate ? new Date(sprint.startDate).toLocaleDateString('en-GB') : '...'} -{' '}
+                    {sprint.endDate ? new Date(sprint.endDate).toLocaleDateString('en-GB') : '...'}
+                  </div>
+                )
+              })()}
           </div>
 
           <div className='space-y-2'>
             <Label className='text-sm font-medium'>Tags</Label>
             <div className='flex flex-wrap gap-2'>
-              {tags.map(tag => (
+              {tags.map((tag) => (
                 <label key={tag.id} className='flex items-center gap-1'>
                   <input
                     type='checkbox'

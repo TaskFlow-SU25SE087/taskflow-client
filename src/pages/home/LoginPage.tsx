@@ -104,7 +104,7 @@ export default function LoginPage() {
               </div>
             </div>
             <div className='flex items-center space-x-2'>
-              <Checkbox id='remember' checked={rememberMe} onCheckedChange={val => setRememberMe(val === true)} />
+              <Checkbox id='remember' checked={rememberMe} onCheckedChange={(val) => setRememberMe(val === true)} />
               <label htmlFor='remember' className='text-sm font-medium text-gray-700 cursor-pointer'>
                 Remember me
               </label>

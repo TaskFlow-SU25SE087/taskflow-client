@@ -51,7 +51,7 @@ export const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = ({
 
   if (tasks.length === 0) {
     return (
-      <div className="p-4 text-center text-gray-500" style={{ height }}>
+      <div className='p-4 text-center text-gray-500' style={{ height }}>
         No tasks in backlog
       </div>
     )
@@ -73,14 +73,8 @@ export const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = ({
   }
 
   return (
-    <List
-      height={height}
-      itemCount={tasks.length}
-      itemSize={ITEM_HEIGHT}
-      width="100%"
-      overscanCount={5}
-    >
+    <List height={height} itemCount={tasks.length} itemSize={ITEM_HEIGHT} width='100%' overscanCount={5}>
       {Row}
     </List>
   )
-} 
+}

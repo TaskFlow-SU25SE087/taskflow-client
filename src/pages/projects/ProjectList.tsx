@@ -16,13 +16,13 @@ import { FiPlus } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
 
 export default function ProjectList() {
-  const { 
-    projects, 
-    isLoading, 
-    setSearchQuery, 
-    filterStatus, 
-    setFilterStatus, 
-    sortBy, 
+  const {
+    projects,
+    isLoading,
+    setSearchQuery,
+    filterStatus,
+    setFilterStatus,
+    sortBy,
     setSortBy,
     currentPage,
     totalPages,
@@ -56,7 +56,7 @@ export default function ProjectList() {
     const pages = []
     const maxVisiblePages = 5
     let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2))
-    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1)
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1)
 
     if (endPage - startPage + 1 < maxVisiblePages) {
       startPage = Math.max(1, endPage - maxVisiblePages + 1)
@@ -78,12 +78,7 @@ export default function ProjectList() {
 
     return (
       <div className='flex items-center justify-center gap-2 mt-6'>
-        <Button
-          variant='outline'
-          size='sm'
-          onClick={() => goToPage(currentPage - 1)}
-          disabled={currentPage === 1}
-        >
+        <Button variant='outline' size='sm' onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>
           <ChevronLeft className='h-4 w-4' />
         </Button>
         {pages}
@@ -108,9 +103,7 @@ export default function ProjectList() {
           <div className='flex items-center justify-between'>
             <div className='flex items-center gap-4'>
               <h1 className='text-4xl font-bold'>Projects</h1>
-              {totalItems > 0 && (
-                <span className='text-sm text-gray-500'>({totalItems} projects)</span>
-              )}
+              {totalItems > 0 && <span className='text-sm text-gray-500'>({totalItems} projects)</span>}
             </div>
             <div className='flex items-center gap-3'>
               <Button
@@ -163,12 +156,12 @@ export default function ProjectList() {
               [...Array(6)].map((_, index) => <ProjectCardSkeleton key={index} />)
             ) : projects.length > 0 ? (
               projects.map((project) => (
-                <ProjectCard 
-                  key={project.id} 
-                  project={project} 
+                <ProjectCard
+                  key={project.id}
+                  project={project}
                   onSelect={handleSelectProject}
                   onProjectUpdated={() => {
-                    if (typeof fetchProjects === 'function') fetchProjects();
+                    if (typeof fetchProjects === 'function') fetchProjects()
                   }}
                 />
               ))

@@ -41,12 +41,13 @@ export default function ProjectBacklog() {
   // Memoize filtered tasks to avoid unnecessary recalculations
   const filteredTasks = useMemo(() => {
     if (!taskSearchQuery) return tasks
-    
+
     const searchLower = taskSearchQuery.toLowerCase()
-    return tasks.filter(task => 
-      task.description.toLowerCase().includes(searchLower) ||
-      task.status.toLowerCase().includes(searchLower) ||
-      task.title?.toLowerCase().includes(searchLower)
+    return tasks.filter(
+      (task) =>
+        task.description.toLowerCase().includes(searchLower) ||
+        task.status.toLowerCase().includes(searchLower) ||
+        task.title?.toLowerCase().includes(searchLower)
     )
   }, [tasks, taskSearchQuery])
 
@@ -75,7 +76,12 @@ export default function ProjectBacklog() {
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
-  const handleCreateSprint = async (data: { name: string; description: string; startDate: string; endDate: string }) => {
+  const handleCreateSprint = async (data: {
+    name: string
+    description: string
+    startDate: string
+    endDate: string
+  }) => {
     if (!currentProject) return false
     try {
       const result = await createSprint({
@@ -170,7 +176,7 @@ export default function ProjectBacklog() {
   const filteredSprintTasks = Object.entries(sprintTasks).reduce(
     (acc, [sprintId, tasks]) => ({
       ...acc,
-      [sprintId]: tasks.filter(task => {
+      [sprintId]: tasks.filter((task) => {
         if (!taskSearchQuery) return true
         const searchLower = taskSearchQuery.toLowerCase()
         return (

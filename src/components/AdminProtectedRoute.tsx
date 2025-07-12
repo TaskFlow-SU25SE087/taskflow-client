@@ -19,7 +19,7 @@ export default function AdminProtectedRoute({ children }: AdminProtectedRoutePro
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />
+    return <Navigate to='/login' replace />
   }
 
   // Check if user has admin role (0 = admin, 1 = regular user, or "Admin" = admin)
@@ -27,21 +27,20 @@ export default function AdminProtectedRoute({ children }: AdminProtectedRoutePro
 
   if (!isAdmin) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <AlertTriangle className="h-6 w-6 text-red-600" />
+      <div className='flex items-center justify-center min-h-screen bg-gray-50'>
+        <Card className='w-full max-w-md'>
+          <CardHeader className='text-center'>
+            <div className='mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100'>
+              <AlertTriangle className='h-6 w-6 text-red-600' />
             </div>
-            <CardTitle className="text-xl">Access Denied</CardTitle>
+            <CardTitle className='text-xl'>Access Denied</CardTitle>
           </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-muted-foreground mb-4">
-              You don't have permission to access the admin panel. 
-              Only administrators can view this page.
+          <CardContent className='text-center'>
+            <p className='text-muted-foreground mb-4'>
+              You don't have permission to access the admin panel. Only administrators can view this page.
             </p>
-            <div className="flex items-center justify-center space-x-2 text-sm text-muted-foreground">
-              <Shield className="h-4 w-4" />
+            <div className='flex items-center justify-center space-x-2 text-sm text-muted-foreground'>
+              <Shield className='h-4 w-4' />
               <span>Admin access required</span>
             </div>
           </CardContent>
@@ -51,4 +50,4 @@ export default function AdminProtectedRoute({ children }: AdminProtectedRoutePro
   }
 
   return <>{children}</>
-} 
+}

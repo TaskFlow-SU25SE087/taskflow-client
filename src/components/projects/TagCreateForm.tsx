@@ -26,11 +26,7 @@ export default function TagCreateForm() {
       {error && <div className='text-red-500'>{error.message}</div>}
       {success && <div className='text-green-600 mb-2'>{success}</div>}
       <div className='flex flex-col gap-2 mb-2'>
-        <Input
-          placeholder='Tag name'
-          value={tag.name}
-          onChange={(e) => setTag({ ...tag, name: e.target.value })}
-        />
+        <Input placeholder='Tag name' value={tag.name} onChange={(e) => setTag({ ...tag, name: e.target.value })} />
         <Input
           placeholder='Description'
           value={tag.description}

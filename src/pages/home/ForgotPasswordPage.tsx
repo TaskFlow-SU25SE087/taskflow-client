@@ -17,7 +17,7 @@ export default function ForgotPasswordPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!email) {
       toast({
         title: 'Error',
@@ -28,13 +28,13 @@ export default function ForgotPasswordPage() {
     }
 
     setIsLoading(true)
-    
+
     try {
       await authApi.sendResetPasswordMail(email)
       setIsSubmitted(true)
       toast({
         title: 'Success',
-        description: 'Password reset email sent! Please check your inbox.',
+        description: 'Password reset email sent! Please check your inbox.'
       })
     } catch (err: any) {
       toast({
@@ -49,36 +49,32 @@ export default function ForgotPasswordPage() {
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white p-4">
-        <Card className="w-full max-w-md shadow-lg">
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-gray-900">
-              Check Your Email
-            </CardTitle>
-            <CardDescription>
-              We've sent a password reset link to {email}
-            </CardDescription>
+      <div className='min-h-screen flex items-center justify-center bg-white p-4'>
+        <Card className='w-full max-w-md shadow-lg'>
+          <CardHeader className='text-center'>
+            <CardTitle className='text-2xl font-bold text-gray-900'>Check Your Email</CardTitle>
+            <CardDescription>We've sent a password reset link to {email}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-center text-sm text-gray-600">
+          <CardContent className='space-y-4'>
+            <div className='text-center text-sm text-gray-600'>
               <p>Didn't receive the email? Check your spam folder or try again.</p>
             </div>
-            
-            <div className="space-y-3">
+
+            <div className='space-y-3'>
               <Button
                 onClick={() => {
                   setIsSubmitted(false)
                   setEmail('')
                 }}
-                className="w-full bg-green-600 hover:bg-green-700 text-white"
+                className='w-full bg-green-600 hover:bg-green-700 text-white'
               >
                 Try Again
               </Button>
-              
+
               <Button
-                variant="outline"
+                variant='outline'
                 onClick={() => navigate('/login')}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white border-blue-600"
+                className='w-full bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
               >
                 Back to Login
               </Button>
@@ -90,40 +86,38 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white p-4">
-      <Card className="w-full max-w-md shadow-lg">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-gray-900">
-            Forgot Password
-          </CardTitle>
-          <CardDescription>
-            Enter your email address and we'll send you a link to reset your password
-          </CardDescription>
+    <div className='min-h-screen flex items-center justify-center bg-white p-4'>
+      <Card className='w-full max-w-md shadow-lg'>
+        <CardHeader className='text-center'>
+          <CardTitle className='text-2xl font-bold text-gray-900'>Forgot Password</CardTitle>
+          <CardDescription>Enter your email address and we'll send you a link to reset your password</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-700 font-medium">Email</Label>
+          <form onSubmit={handleSubmit} className='space-y-4'>
+            <div className='space-y-2'>
+              <Label htmlFor='email' className='text-gray-700 font-medium'>
+                Email
+              </Label>
               <Input
-                id="email"
-                type="email"
+                id='email'
+                type='email'
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
+                placeholder='Enter your email'
                 required
                 disabled={isLoading}
-                className="border-gray-300 focus:border-green-500 focus:ring-green-500"
+                className='border-gray-300 focus:border-green-500 focus:ring-green-500'
               />
             </div>
 
             <Button
-              type="submit"
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3"
+              type='submit'
+              className='w-full bg-green-600 hover:bg-green-700 text-white font-medium py-3'
               disabled={isLoading}
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                   Sending...
                 </>
               ) : (
@@ -132,22 +126,19 @@ export default function ForgotPasswordPage() {
             </Button>
           </form>
 
-          <div className="mt-4 text-center space-y-3">
+          <div className='mt-4 text-center space-y-3'>
             <Button
-              variant="ghost"
+              variant='ghost'
               onClick={() => navigate('/login')}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+              className='w-full bg-blue-600 hover:bg-blue-700 text-white'
             >
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft className='mr-2 h-4 w-4' />
               Back to Login
             </Button>
-            
-            <div className="text-sm text-gray-600">
+
+            <div className='text-sm text-gray-600'>
               Remember your password?{' '}
-              <Link
-                to="/login"
-                className="text-green-600 hover:text-green-700 font-medium"
-              >
+              <Link to='/login' className='text-green-600 hover:text-green-700 font-medium'>
                 Sign in
               </Link>
             </div>
@@ -156,4 +147,4 @@ export default function ForgotPasswordPage() {
       </Card>
     </div>
   )
-} 
+}

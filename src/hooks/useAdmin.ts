@@ -77,16 +77,16 @@ export const useAdmin = () => {
     let allUsers: AdminUser[] = []
     let page = 1
     let totalPages = 1
-    let maxLoop = 100; // Prevent infinite loop
+    const maxLoop = 100 // Prevent infinite loop
     try {
       do {
         const response: AdminUsersResponse = await adminApi.getUsers({ page })
         if (response.code === 0 || response.code === 200) {
-          if (!response.data.items.length) break; // Stop if no more users
+          if (!response.data.items.length) break // Stop if no more users
           allUsers = allUsers.concat(response.data.items)
           totalPages = response.data.totalPages
           page++
-          if (page > maxLoop) break; // Prevent infinite loop
+          if (page > maxLoop) break // Prevent infinite loop
         } else {
           setError(response.message || 'Failed to fetch users')
           toast({
@@ -126,4 +126,4 @@ export const useAdmin = () => {
     refetch: () => fetchUsers(pagination.pageNumber, pagination.pageSize || 10),
     fetchAllUsers
   }
-} 
+}

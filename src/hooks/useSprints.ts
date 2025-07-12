@@ -31,7 +31,13 @@ export const useSprints = () => {
 
   const refreshSprints = fetchSprints
 
-  const createSprint = async (sprint: { name: string; description: string; startDate: string; endDate: string; status: string | number }) => {
+  const createSprint = async (sprint: {
+    name: string
+    description: string
+    startDate: string
+    endDate: string
+    status: string | number
+  }) => {
     if (!currentProject || !currentProject.id) return { ok: false, message: 'No project selected' }
     setIsLoading(true)
     try {
@@ -72,12 +78,15 @@ export const useSprints = () => {
   }
 
   // Lấy tasks của 1 sprint (cần cả projectId và sprintId)
-  const getSprintTasks = useCallback(async (sprintId: string, projectId?: string) => {
-    const pid = projectId || currentProject?.id
-    if (!pid) return []
-    // Đảm bảo truyền đúng thứ tự projectId, sprintId cho API
-    return sprintApi.getSprintTasks(pid, sprintId)
-  }, [currentProject?.id])
+  const getSprintTasks = useCallback(
+    async (sprintId: string, projectId?: string) => {
+      const pid = projectId || currentProject?.id
+      if (!pid) return []
+      // Đảm bảo truyền đúng thứ tự projectId, sprintId cho API
+      return sprintApi.getSprintTasks(pid, sprintId)
+    },
+    [currentProject?.id]
+  )
 
   // Gán 1 task vào sprint
   const addTaskToSprint = async (sprintId: string, taskId: string) => {

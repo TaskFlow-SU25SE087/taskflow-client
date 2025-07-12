@@ -1,11 +1,11 @@
 import { Button } from '@/components/ui/button'
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -20,7 +20,13 @@ interface SprintEditMenuProps {
     endDate: string
     status: number
   }
-  onUpdateSprint: (data: { name: string; description: string; startDate: string; endDate: string; status: number }) => Promise<void>
+  onUpdateSprint: (data: {
+    name: string
+    description: string
+    startDate: string
+    endDate: string
+    status: number
+  }) => Promise<void>
 }
 
 export function SprintEditMenu({ sprint, onUpdateSprint }: SprintEditMenuProps) {
@@ -52,7 +58,9 @@ export function SprintEditMenu({ sprint, onUpdateSprint }: SprintEditMenuProps) 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">Edit</Button>
+        <Button variant='outline' size='sm'>
+          Edit
+        </Button>
       </DialogTrigger>
       <DialogContent className='sm:max-w-[425px]'>
         <DialogHeader>
@@ -62,26 +70,32 @@ export function SprintEditMenu({ sprint, onUpdateSprint }: SprintEditMenuProps) 
         <form onSubmit={handleSubmit} className='space-y-4'>
           <div className='space-y-2'>
             <Label htmlFor='name'>Sprint Name</Label>
-            <Input id='name' value={name} onChange={e => setName(e.target.value)} required />
+            <Input id='name' value={name} onChange={(e) => setName(e.target.value)} required />
           </div>
           <div className='space-y-2'>
             <Label htmlFor='description'>Description</Label>
-            <Input id='description' value={description} onChange={e => setDescription(e.target.value)} />
+            <Input id='description' value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
           <div className='space-y-2'>
             <Label htmlFor='startDate'>Start Date</Label>
-            <Input id='startDate' type='date' value={startDate} onChange={e => setStartDate(e.target.value)} required />
+            <Input
+              id='startDate'
+              type='date'
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              required
+            />
           </div>
           <div className='space-y-2'>
             <Label htmlFor='endDate'>End Date</Label>
-            <Input id='endDate' type='date' value={endDate} onChange={e => setEndDate(e.target.value)} required />
+            <Input id='endDate' type='date' value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
           </div>
           <div className='space-y-2'>
             <Label htmlFor='status'>Status</Label>
             <select
               id='status'
               value={status}
-              onChange={e => setStatus(e.target.value)}
+              onChange={(e) => setStatus(e.target.value)}
               className='w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-lavender-500'
               required
             >

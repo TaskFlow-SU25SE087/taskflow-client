@@ -38,20 +38,11 @@ const ConnectionStatus: React.FC = () => {
   const IconComponent = statusInfo.icon
 
   return (
-    <div className={cn(
-      "flex items-center gap-2 px-2 py-1 rounded-full text-xs",
-      statusInfo.bgColor,
-      statusInfo.color
-    )}>
-      <IconComponent 
-        className={cn(
-          "h-3 w-3",
-          connectionState === 'Reconnecting' && "animate-spin"
-        )} 
-      />
-      <span className="font-medium">{statusInfo.text}</span>
+    <div className={cn('flex items-center gap-2 px-2 py-1 rounded-full text-xs', statusInfo.bgColor, statusInfo.color)}>
+      <IconComponent className={cn('h-3 w-3', connectionState === 'Reconnecting' && 'animate-spin')} />
+      <span className='font-medium'>{statusInfo.text}</span>
     </div>
   )
 }
 
-export default ConnectionStatus 
+export default ConnectionStatus
