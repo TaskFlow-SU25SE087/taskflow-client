@@ -8,14 +8,13 @@ import {
   FiGitBranch,
   FiGithub,
   FiLayers,
-  FiPackage,
   FiSettings,
   FiUsers
 } from 'react-icons/fi'
 import { useLocation, useNavigate } from 'react-router-dom'
 import GitHubSidebarItem from './github/GitHubSidebarItem'
 
-export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
+export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: string, connectionStatus?: boolean | null }) => {
   const [activeTab, setActiveTab] = useState('board')
   const [hoveredTab, setHoveredTab] = useState<string | null>(null)
   const highlightRef = useRef<HTMLDivElement>(null)
@@ -57,13 +56,13 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
       section: 1,
       path: projectId ? `/projects/${projectId}/members` : '/members'
     },
-    {
-      id: 'parts',
-      icon: <FiPackage className='h-5 w-5' />,
-      label: 'Parts',
-      section: 1,
-      path: projectId ? `/projects/${projectId}/parts` : '/parts'
-    },
+    // {
+    //   id: 'parts',
+    //   icon: <FiPackage className='h-5 w-5' />,
+    //   label: 'Parts',
+    //   section: 1,
+    //   path: projectId ? `/projects/${projectId}/parts` : '/parts'
+    // },
     {
       id: 'reports',
       icon: <FiBarChart2 className='h-5 w-5' />,
@@ -197,10 +196,7 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
             return (
               <div key={item.id} data-tab-id={item.id}>
                 <GitHubSidebarItem
-                  projectId={projectId}
-                  partId='part-123' // Mock partId for now
-                  isActive={activeTab === item.id}
-                  onClick={() => handleClick(item.id)}
+                  connectionStatus={connectionStatus}
                 />
               </div>
             )

@@ -1,3 +1,4 @@
+import { connectRepoToPart, createProjectPart } from '@/api/projectParts'
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
 import { Button } from '@/components/ui/button'
@@ -17,9 +18,9 @@ interface Repo {
 }
 interface ProjectPart {
   id: string
-  name: string
-  programmingLanguage: string
-  framework: string
+  Name: string
+  ProgrammingLanguage: string
+  Framework: string
 }
 
 export default function ProjectGitHub() {
@@ -47,48 +48,34 @@ export default function ProjectGitHub() {
   const [selectedRepo, setSelectedRepo] = useState<string>('')
   const [selectedPart, setSelectedPart] = useState<string>('')
   const [connecting, setConnecting] = useState(false)
+  const [lastConnectedPartId, setLastConnectedPartId] = useState<string | null>(null);
+
+  const fetchData = async () => {
+    setLoading(true)
+    try {
+      const res = await axiosClient.get('/api/github/connection-status')
+      setConnectionStatus(res.data.data)
+      if (res.data.data) {
+        const repoRes = await axiosClient.get('/api/github/repos')
+        setRepos(repoRes.data.data)
+      }
+      // Lấy parts từ backend nếu có API
+      if (projectId) {
+        try {
+          const partsRes = await axiosClient.get(`/projects/${projectId}/parts`)
+          setParts(partsRes.data.data)
+        } catch (err) {
+          setParts([])
+        }
+      }
+    } catch (err) {
+      setError('Error loading data')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function fetchData() {
-      setLoading(true)
-      try {
-        const res = await axiosClient.get('/api/github/connection-status')
-        setConnectionStatus(res.data.data)
-        if (res.data.data) {
-          const repoRes = await axiosClient.get('/api/github/repos')
-          setRepos(repoRes.data.data)
-        }
-        // Since backend doesn't have GET /projects/{projectId}/parts endpoint,
-        // we'll use mock data for now
-        if (projectId) {
-          const mockParts: ProjectPart[] = [
-            {
-              id: 'part-1',
-              name: 'Frontend',
-              programmingLanguage: 'TypeScript',
-              framework: 'React'
-            },
-            {
-              id: 'part-2',
-              name: 'Backend',
-              programmingLanguage: 'C#',
-              framework: '.NET'
-            },
-            {
-              id: 'part-3',
-              name: 'Database',
-              programmingLanguage: 'SQL',
-              framework: 'Entity Framework'
-            }
-          ]
-          setParts(mockParts)
-        }
-      } catch (err) {
-        setError('Error loading data')
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchData()
   }, [projectId])
 
@@ -107,43 +94,69 @@ export default function ProjectGitHub() {
 
   const handleCreatePart = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!newPart.name.trim() || !newPart.programmingLanguage || !newPart.framework) {
+      setError('Please fill in all fields (Name is required)')
+      return
+    }
     setCreatingPart(true)
     setError(null)
     try {
-      // Since backend doesn't have POST /projects/{projectId}/parts endpoint,
-      // we'll add to local state for now
-      const newPartWithId = {
-        ...newPart,
-        id: `part-${Date.now()}`
+      const response = await createProjectPart(projectId!, {
+        Name: newPart.name,
+        ProgrammingLanguage: newPart.programmingLanguage,
+        Framework: newPart.framework
+      });
+      console.log('API response khi tạo part:', response);
+      let partId = response.data;
+      if (typeof partId === 'object' && partId.id) {
+        partId = partId.id;
       }
-      setParts((prev) => [...prev, newPartWithId])
-      setShowCreatePart(false)
-      setNewPart({ name: '', programmingLanguage: '', framework: '' })
-      setSuccess('Project Part created successfully!')
-    } catch {
-      setError('Error creating project part')
+      const newPartWithId = {
+        id: partId,
+        Name: newPart.name,
+        ProgrammingLanguage: newPart.programmingLanguage,
+        Framework: newPart.framework
+      };
+      setParts((prev) => [...prev, newPartWithId]);
+      setShowCreatePart(false);
+      setNewPart({ name: '', programmingLanguage: '', framework: '' });
+      setSuccess('Project Part created successfully!');
+    } catch (err: any) {
+      console.error('Error creating project part:', err);
+      const errorMessage = err.response?.data?.message || 
+                        err.response?.data?.error || 
+                        err.message || 
+                        'Error creating project part';
+      setError(errorMessage);
     } finally {
-      setCreatingPart(false)
+      setCreatingPart(false);
     }
   }
 
   const handleConnectRepo = async () => {
-    if (!selectedRepo || !selectedPart) return
+    if (!selectedRepo || !selectedPart) {
+      setError('Please select both repository and project part')
+      return
+    }
     setConnecting(true)
     setError(null)
     setSuccess(null)
     try {
-      // Since backend doesn't have PATCH /projects/{projectId}/parts/{partId}/connect-repo endpoint,
-      // we'll simulate the connection for now
+      await connectRepoToPart(projectId!, selectedPart, { 
+        repoUrl: selectedRepo
+      })
       setSuccess('Repository connected to Project Part successfully!')
-      // In a real implementation, you would call the API here
-      // await axiosClient.patch(
-      //   `/projects/${projectId}/parts/${selectedPart}/connect-repo`,
-      //   { repoUrl: selectedRepo },
-      //   { headers: { 'Content-Type': 'application/json-patch+json' } }
-      // )
-    } catch {
-      setError('Error connecting repository to Project Part')
+      setSelectedRepo('')
+      setSelectedPart('')
+      setLastConnectedPartId(selectedPart)
+      await fetchData();
+    } catch (err: any) {
+      console.error('Error connecting repository:', err)
+      const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.error || 
+                          err.message || 
+                          'Error connecting repository to Project Part'
+      setError(errorMessage)
     } finally {
       setConnecting(false)
     }
@@ -192,7 +205,7 @@ export default function ProjectGitHub() {
 
   return (
     <div className='flex h-screen bg-gray-100'>
-      <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
+      <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} connectionStatus={connectionStatus} />
       <div className='flex-1 flex flex-col overflow-hidden'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
         <div className='flex-1 overflow-y-auto flex flex-col items-center justify-center p-6'>
@@ -247,43 +260,48 @@ export default function ProjectGitHub() {
                 </div>
               ) : (
                 <>
-                  <div className='mb-6 flex flex-col md:flex-row md:items-end md:gap-6'>
-                    <div className='flex-1 mb-4 md:mb-0'>
-                      <label className='block font-medium mb-2 text-base'>Select Repository</label>
-                      <select
-                        className='w-full border rounded px-4 py-3 text-base shadow-sm focus:ring focus:ring-blue-200'
-                        value={selectedRepo}
-                        onChange={(e) => setSelectedRepo(e.target.value)}
-                      >
-                        <option value=''>-- Select a repository --</option>
-                        {repos.map((repo) => (
-                          <option key={repo.fullName} value={repo.htmlUrl}>
-                            {repo.fullName}
-                          </option>
-                        ))}
-                      </select>
+                  <div className='mb-6 space-y-4'>
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                      <div>
+                        <label className='block font-medium mb-2 text-base'>Select Repository</label>
+                        <select
+                          className='w-full border rounded px-4 py-3 text-base shadow-sm focus:ring focus:ring-blue-200'
+                          value={selectedRepo}
+                          onChange={(e) => setSelectedRepo(e.target.value)}
+                        >
+                          <option value=''>-- Select a repository --</option>
+                          {repos.map((repo) => (
+                            <option key={repo.fullName} value={repo.htmlUrl}>
+                              {repo.fullName}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className='block font-medium mb-2 text-base'>Select Project Part</label>
+                        <select
+                          className='w-full border rounded px-4 py-3 text-base shadow-sm focus:ring focus:ring-blue-200'
+                          value={selectedPart}
+                          onChange={(e) => setSelectedPart(e.target.value)}
+                        >
+                          <option value=''>-- Select a part --</option>
+                          {parts.map((part) => (
+                            <option key={part.id} value={part.id}>
+                              {part.Name} ({part.ProgrammingLanguage}, {part.Framework})
+                            </option>
+                          ))}
+                        </select>
+                        <Button
+                          variant='link'
+                          className='mt-2 p-0 text-blue-600 text-base'
+                          onClick={() => setShowCreatePart(true)}
+                        >
+                          + Create new part
+                        </Button>
+                      </div>
                     </div>
-                    <div className='flex-1'>
-                      <label className='block font-medium mb-2 text-base'>Select Project Part</label>
-                      <select
-                        className='w-full border rounded px-4 py-3 text-base shadow-sm focus:ring focus:ring-blue-200'
-                        value={selectedPart}
-                        onChange={(e) => setSelectedPart(e.target.value)}
-                      >
-                        <option value=''>-- Select a part --</option>
-                        {parts.map((part) => (
-                          <option key={part.id} value={part.id}>
-                            {part.name} ({part.programmingLanguage}, {part.framework})
-                          </option>
-                        ))}
-                      </select>
-                      <Button
-                        variant='link'
-                        className='mt-2 p-0 text-blue-600 text-base'
-                        onClick={() => setShowCreatePart(true)}
-                      >
-                        + Create new part
-                      </Button>
+                    <div>
+                      {/* Đã xoá input accessToken ở đây */}
                     </div>
                   </div>
                   <Button
@@ -292,7 +310,14 @@ export default function ProjectGitHub() {
                     className='w-full py-3 text-lg font-semibold'
                     size='lg'
                   >
-                    {connecting ? 'Connecting...' : 'Connect Repository to Project Part'}
+                    {connecting ? (
+                      <>
+                        <Loader className='mr-2 h-5 w-5 animate-spin' />
+                        Connecting...
+                      </>
+                    ) : (
+                      'Connect Repository to Project Part'
+                    )}
                   </Button>
                 </>
               )}
@@ -316,21 +341,29 @@ export default function ProjectGitHub() {
                   </div>
                   <div>
                     <label className='block font-medium mb-1 text-base'>Programming Language</label>
-                    <Input
+                    <select
                       value={newPart.programmingLanguage}
-                      onChange={(e) => setNewPart({ ...newPart, programmingLanguage: e.target.value })}
+                      onChange={e => setNewPart({ ...newPart, programmingLanguage: e.target.value })}
                       required
-                      className='py-2 px-3 text-base'
-                    />
+                      className='py-2 px-3 text-base w-full border rounded'
+                    >
+                      {["None", "Csharp", "Java", "JavaScript", "TypeScript", "Python", "PHP", "Go", "Ruby", "CPlusPlus", "Swift", "Kotlin"].map(lang => (
+                        <option key={lang} value={lang}>{lang}</option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className='block font-medium mb-1 text-base'>Framework</label>
-                    <Input
+                    <select
                       value={newPart.framework}
-                      onChange={(e) => setNewPart({ ...newPart, framework: e.target.value })}
+                      onChange={e => setNewPart({ ...newPart, framework: e.target.value })}
                       required
-                      className='py-2 px-3 text-base'
-                    />
+                      className='py-2 px-3 text-base w-full border rounded'
+                    >
+                      {["None", "ASPNETCore", "DotNetCore", "SpringBoot", "ExpressJs", "NestJs", "React", "Angular", "VueJs", "NextJs", "NuxtJs", "Django", "Flask", "FastAPI", "Laravel", "RubyOnRails", "Ktor"].map(fw => (
+                        <option key={fw} value={fw}>{fw}</option>
+                      ))}
+                    </select>
                   </div>
                   <div className='flex gap-3 justify-end'>
                     <Button type='submit' disabled={creatingPart} className='px-6 py-2 text-base font-semibold'>
