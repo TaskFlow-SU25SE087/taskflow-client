@@ -65,14 +65,8 @@ export async function disconnectRepositoryFromPart(
   return res.data;
 }
 
-// API để lấy thông tin repository connection status
-export async function getRepositoryConnectionStatus(
-  projectId: string,
-  partId: string
-): Promise<RepositoryConnectionResponse> {
-  const res = await axiosClient.get(`/projects/${projectId}/parts/${partId}/repo-status`);
-  return res.data;
-}
+// Note: getRepositoryConnectionStatus endpoint doesn't exist on backend
+// Removed: /projects/{projectId}/parts/{partId}/repo-status
 
 // GitHub OAuth APIs
 export async function initiateGitHubOAuth(

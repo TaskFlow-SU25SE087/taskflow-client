@@ -223,7 +223,7 @@ function App() {
 
           {/* GitHub OAuth Callback */}
           <Route
-            path='/github/oauth/callback'
+            path='/github/callback'
             element={<GitHubOAuthCallback />}
           />
 

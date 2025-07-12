@@ -1,7 +1,7 @@
 import gsap from 'gsap'
 import { LucideLayoutDashboard } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { FiAlertCircle, FiBarChart2, FiClock, FiGitBranch, FiGithub, FiLayers, FiSettings, FiUsers } from 'react-icons/fi'
+import { FiAlertCircle, FiBarChart2, FiClock, FiGitBranch, FiGithub, FiLayers, FiPackage, FiSettings, FiUsers } from 'react-icons/fi'
 import { useLocation, useNavigate } from 'react-router-dom'
 import GitHubSidebarItem from './github/GitHubSidebarItem'
 
@@ -29,6 +29,7 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
     },
     { id: 'backlog', icon: <FiLayers className='h-5 w-5' />, label: 'Backlog', section: 1, path: projectId ? `/projects/${projectId}/backlog` : '/backlog' },
     { id: 'members', icon: <FiUsers className='h-5 w-5' />, label: 'Members', section: 1, path: projectId ? `/projects/${projectId}/members` : '/members' },
+    { id: 'parts', icon: <FiPackage className='h-5 w-5' />, label: 'Parts', section: 1, path: projectId ? `/projects/${projectId}/parts` : '/parts' },
     { id: 'reports', icon: <FiBarChart2 className='h-5 w-5' />, label: 'Reports', section: 1, path: projectId ? `/projects/${projectId}/reports` : '/reports' },
     { id: 'commits', icon: <FiGitBranch className='h-5 w-5' />, label: 'Commits', section: 2, path: projectId ? `/projects/${projectId}/commits` : '/commits' },
     { id: 'issues', icon: <FiAlertCircle className='h-5 w-5' />, label: 'Issues', section: 2, path: projectId ? `/projects/${projectId}/issues` : '/issues' },

@@ -5,38 +5,36 @@ import {
     disconnectRepositoryFromPart,
     getProjectPartCommits,
     getProjectPartQuality,
-    getRepositoryConnectionStatus,
     handleGitHubOAuthCallback,
     initiateGitHubOAuth
 } from '../api/webhooks';
 import {
-    CodeQualityResult,
-    CommitRecord,
-    CommitStatus,
+    CodeQualityResponse,
+    CommitsResponse,
     GitHubOAuthCallback,
     GitHubOAuthConnectRequest,
     GitHubOAuthRepositoryResponse,
-    RepositoryConnection,
     RepositoryConnectionResponse
 } from '../types/webhook';
 import { useToast } from './useToast';
 
+export type CommitStatus = 'success' | 'failed' | 'pending';
+
 export function useWebhooks() {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-
-  // Commits state
-  const [commits, setCommits] = useState<CommitRecord[]>([]);
-  const [commitsLoading, setCommitsLoading] = useState(false);
-
-  // Code quality state
-  const [qualityResults, setQualityResults] = useState<CodeQualityResult[]>([]);
-  const [qualityLoading, setQualityLoading] = useState(false);
-
-  // Repository connection state
+  
+  // State
+  const [commits, setCommits] = useState<CommitsResponse['data']>([]);
+  const [qualityResults, setQualityResults] = useState<CodeQualityResponse['data']>([]);
   const [connectionStatus, setConnectionStatus] = useState<RepositoryConnectionResponse['data'] | null>(null);
+  
+  // Loading states
+  const [commitsLoading, setCommitsLoading] = useState(false);
+  const [qualityLoading, setQualityLoading] = useState(false);
   const [connectionLoading, setConnectionLoading] = useState(false);
+  
+  // Error state
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch commits for a project part
   const fetchCommits = useCallback(async (projectId: string, partId: string) => {
@@ -46,6 +44,7 @@ export function useWebhooks() {
       const response = await getProjectPartCommits(projectId, partId);
       if (response.code === 0) {
         setCommits(response.data);
+        return response.data;
       } else {
         throw new Error(response.message);
       }
@@ -57,12 +56,13 @@ export function useWebhooks() {
         description: errorMessage,
         variant: 'destructive'
       });
+      throw err;
     } finally {
       setCommitsLoading(false);
     }
   }, [toast]);
 
-  // Fetch code quality results for a project part
+  // Fetch quality results for a project part
   const fetchQualityResults = useCallback(async (projectId: string, partId: string) => {
     setQualityLoading(true);
     setError(null);
@@ -70,6 +70,7 @@ export function useWebhooks() {
       const response = await getProjectPartQuality(projectId, partId);
       if (response.code === 0) {
         setQualityResults(response.data);
+        return response.data;
       } else {
         throw new Error(response.message);
       }
@@ -81,6 +82,7 @@ export function useWebhooks() {
         description: errorMessage,
         variant: 'destructive'
       });
+      throw err;
     } finally {
       setQualityLoading(false);
     }
@@ -90,12 +92,16 @@ export function useWebhooks() {
   const connectRepository = useCallback(async (
     projectId: string,
     partId: string,
-    connection: RepositoryConnection
+    repoUrl: string,
+    accessToken: string
   ) => {
     setConnectionLoading(true);
     setError(null);
     try {
-      const response = await connectRepositoryToPart(projectId, partId, connection);
+      const response = await connectRepositoryToPart(projectId, partId, {
+        repoUrl,
+        accessToken
+      });
       if (response.code === 0) {
         setConnectionStatus(response.data);
         toast({
@@ -242,25 +248,7 @@ export function useWebhooks() {
     }
   }, [toast]);
 
-  // Get repository connection status
-  const fetchConnectionStatus = useCallback(async (projectId: string, partId: string) => {
-    setConnectionLoading(true);
-    setError(null);
-    try {
-      const response = await getRepositoryConnectionStatus(projectId, partId);
-      if (response.code === 0) {
-        setConnectionStatus(response.data);
-      } else {
-        throw new Error(response.message);
-      }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch connection status';
-      setError(errorMessage);
-      // Don't show toast for this as it might be called frequently
-    } finally {
-      setConnectionLoading(false);
-    }
-  }, []);
+  // Note: fetchConnectionStatus function removed because /projects/{projectId}/parts/{partId}/repo-status endpoint doesn't exist
 
   // Get commits by status
   const getCommitsByStatus = useCallback((status: CommitStatus) => {
@@ -296,7 +284,6 @@ export function useWebhooks() {
     fetchQualityResults,
     connectRepository,
     disconnectRepository,
-    fetchConnectionStatus,
 
     // Utilities
     getCommitsByStatus,

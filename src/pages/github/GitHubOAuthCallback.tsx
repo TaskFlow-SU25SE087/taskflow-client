@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Loader } from '../../components/ui/loader';
-import { useWebhooks } from '../../hooks/useWebhooks';
+import { useGitHubProjectPartIntegration } from '../../hooks/useGitHubProjectPartIntegration';
 
 export default function GitHubOAuthCallback() {
-  const { handleOAuthCallback } = useWebhooks();
+  const { handleOAuthCallback } = useGitHubProjectPartIntegration();
   const location = useLocation();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
@@ -21,25 +21,32 @@ export default function GitHubOAuthCallback() {
       return;
     }
 
-    if (!code || !state) {
-      setError('Missing OAuth parameters');
+    if (!code) {
+      setError('Missing authorization code');
       return;
     }
 
     const processCallback = async () => {
       try {
-        await handleOAuthCallback({ code, state });
-        // Success - redirect back to the original page
-        // The state parameter should contain the return URL
-        const stateData = JSON.parse(decodeURIComponent(state));
-        navigate(stateData.returnUrl || '/projects', { replace: true });
+        // Call the OAuth callback API
+        await handleOAuthCallback(code);
+        
+        // Success - redirect back to GitHub page
+        // Try to get the project ID from localStorage or redirect to projects list
+        const currentProjectId = localStorage.getItem('currentProjectId');
+        if (currentProjectId) {
+          navigate(`/projects/${currentProjectId}/github`, { replace: true });
+        } else {
+          navigate('/github', { replace: true });
+        }
       } catch (err) {
+        console.error('OAuth callback error:', err);
         setError(err instanceof Error ? err.message : 'Failed to process OAuth callback');
       }
     };
 
     processCallback();
-  }, [location, handleOAuthCallback, navigate]);
+  }, [location.search]);
 
   if (error) {
     return (
@@ -54,7 +61,7 @@ export default function GitHubOAuthCallback() {
             <h3 className="text-lg font-medium text-gray-900 mb-2">Authentication Failed</h3>
             <p className="text-sm text-gray-600 mb-6">{error}</p>
             <button
-              onClick={() => navigate('/projects')}
+              onClick={() => navigate('/github')}
               className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors"
             >
               Go Back to Projects
