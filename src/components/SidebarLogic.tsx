@@ -194,10 +194,13 @@ export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: stri
           // Special handling for GitHub item
           if (item.id === 'github' && projectId) {
             return (
-              <div key={item.id} data-tab-id={item.id}>
-                <GitHubSidebarItem
-                  connectionStatus={connectionStatus}
-                />
+              <div
+                key={item.id}
+                data-tab-id={item.id}
+                className={`relative flex items-center gap-3 px-2 py-3 cursor-pointer rounded-md transition-colors duration-200 ${getTabStyles(item.id).text}`}
+                onClick={() => handleClick(item.id)}
+              >
+                <GitHubSidebarItem connectionStatus={connectionStatus} />
               </div>
             )
           }

@@ -20,6 +20,9 @@ interface SprintBoardProps {
   onTaskCreated: () => void
   onTaskUpdate: () => void
   onSprintUpdate: () => void
+  onLoadTasks: () => void
+  loadingTasks: boolean
+  hasLoadedTasks: boolean
 }
 
 export function SprintBoard({
@@ -29,7 +32,10 @@ export function SprintBoard({
   projectId,
   onTaskCreated,
   onTaskUpdate,
-  onSprintUpdate
+  onSprintUpdate,
+  onLoadTasks,
+  loadingTasks,
+  hasLoadedTasks
 }: SprintBoardProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
@@ -114,7 +120,18 @@ export function SprintBoard({
     <div className='bg-white border border-gray-200 rounded-lg shadow-sm'>
       <div className='p-4 flex items-center justify-between border-b border-gray-200'>
         <div className='flex items-center gap-2'>
-          <Button variant='ghost' size='icon' className='h-6 w-6' onClick={() => setIsExpanded(!isExpanded)}>
+          <Button
+            variant='ghost'
+            size='icon'
+            className='h-6 w-6'
+            onClick={() => {
+              const next = !isExpanded
+              setIsExpanded(next)
+              if (next && !hasLoadedTasks) {
+                onLoadTasks()
+              }
+            }}
+          >
             {isExpanded ? <ChevronDown className='h-4 w-4' /> : <ChevronRight className='h-4 w-4' />}
           </Button>
           <div>
@@ -193,48 +210,55 @@ export function SprintBoard({
       </div>
       {isExpanded && (
         <div className='overflow-x-auto'>
-          {selectedTaskIds.length > 0 && (
-            <div className='mb-2 flex items-center gap-2'>
-              <span className='text-xs text-gray-600'>{selectedTaskIds.length} selected</span>
-              <Button
-                size='sm'
-                variant='destructive'
-                onClick={async () => {
-                  if (!window.confirm('Bạn có chắc muốn xóa các task đã chọn?')) return
-                  setLoadingBatch(true)
-                  try {
-                    for (const id of selectedTaskIds) {
-                      await taskApi.deleteTask(projectId, id)
-                    }
-                    toast({ title: 'Success', description: 'Deleted selected tasks!' })
-                    setSelectedTaskIds([])
-                    onTaskUpdate()
-                  } catch {
-                    toast({ title: 'Error', description: 'Failed to delete tasks', variant: 'destructive' })
-                  } finally {
-                    setLoadingBatch(false)
-                  }
-                }}
-                disabled={loadingBatch}
-              >
-                Delete selected
-              </Button>
-            </div>
+          {loadingTasks && (
+            <div className='p-4 text-center text-gray-500'>Đang tải tasks...</div>
           )}
-          {tasks.length > 0 ? (
-            <div>
-              {tasks.map((task) => (
-                <BacklogTaskRow
-                  key={task.id}
-                  task={task}
-                  showMeta={true}
-                  checked={selectedTaskIds.includes(task.id)}
-                  onCheck={handleCheck}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className='p-4 text-center text-gray-500'>No tasks in this sprint yet</div>
+          {!loadingTasks && hasLoadedTasks && (
+            <>
+              {selectedTaskIds.length > 0 && (
+                <div className='mb-2 flex items-center gap-2'>
+                  <span className='text-xs text-gray-600'>{selectedTaskIds.length} selected</span>
+                  <Button
+                    size='sm'
+                    variant='destructive'
+                    onClick={async () => {
+                      if (!window.confirm('Bạn có chắc muốn xóa các task đã chọn?')) return
+                      setLoadingBatch(true)
+                      try {
+                        for (const id of selectedTaskIds) {
+                          await taskApi.deleteTask(projectId, id)
+                        }
+                        toast({ title: 'Success', description: 'Deleted selected tasks!' })
+                        setSelectedTaskIds([])
+                        onTaskUpdate()
+                      } catch {
+                        toast({ title: 'Error', description: 'Failed to delete tasks', variant: 'destructive' })
+                      } finally {
+                        setLoadingBatch(false)
+                      }
+                    }}
+                    disabled={loadingBatch}
+                  >
+                    Delete selected
+                  </Button>
+                </div>
+              )}
+              {tasks.length > 0 ? (
+                <div>
+                  {tasks.map((task) => (
+                    <BacklogTaskRow
+                      key={task.id}
+                      task={task}
+                      showMeta={true}
+                      checked={selectedTaskIds.includes(task.id)}
+                      onCheck={handleCheck}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className='p-4 text-center text-gray-400'>No tasks in this sprint.</div>
+              )}
+            </>
           )}
         </div>
       )}

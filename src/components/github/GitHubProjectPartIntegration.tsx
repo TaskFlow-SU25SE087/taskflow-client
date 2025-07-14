@@ -18,6 +18,9 @@ interface GitHubProjectPartIntegrationProps {
 }
 
 export default function GitHubProjectPartIntegration({ projectId, partId }: GitHubProjectPartIntegrationProps) {
+  console.log('!!! FILE LOADED: src/components/github/GitHubProjectPartIntegration.tsx');
+  console.log('RENDER GitHubProjectPartIntegration');
+  console.log('PROPS projectId:', projectId, 'partId:', partId);
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -40,6 +43,8 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
     disconnectRepository
   } = useGitHubProjectPartIntegration()
 
+  // Thêm log kiểm tra dữ liệu parts lấy từ hook
+  console.log('[DEBUG] projectParts from hook:', projectParts);
   // Local states
   const [selectedPart, setSelectedPart] = useState<string>('')
   const [selectedRepo, setSelectedRepo] = useState<string>('')
@@ -144,19 +149,41 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
     }
   }
 
-  // Mock project parts for demo (since backend doesn't have GET endpoint)
-  const mockProjectParts = [
-    { id: 'part-1', name: 'Frontend', programmingLanguage: 'TypeScript', framework: 'React', isConnected: false },
-    { id: 'part-2', name: 'Backend', programmingLanguage: 'C#', framework: '.NET', isConnected: false },
-    { id: 'part-3', name: 'Database', programmingLanguage: 'SQL', framework: 'Entity Framework', isConnected: false }
-  ]
-
   // Initialize project parts if empty
   useEffect(() => {
     if (projectParts.length === 0) {
+      // Mock project parts for demo (since backend doesn't have GET endpoint)
+      const mockProjectParts = [
+        { id: 'part-1', name: 'Frontend', programmingLanguage: 'TypeScript', framework: 'React', isConnected: false },
+        { id: 'part-2', name: 'Backend', programmingLanguage: 'C#', framework: '.NET', isConnected: false },
+        { id: 'part-3', name: 'Database', programmingLanguage: 'SQL', framework: 'Entity Framework', isConnected: false }
+      ]
       setProjectPartsData(mockProjectParts)
     }
   }, [projectParts.length, setProjectPartsData])
+
+  // Log khi fetch xong projectParts
+  useEffect(() => {
+    console.log('EFFECT projectParts:', projectParts);
+    projectParts.forEach((p, i) => {
+      console.log(`EFFECT Part ${i}:`, p);
+    });
+  }, [projectParts]);
+
+  // Map lại dữ liệu nếu cần (chuyển các trường viết hoa về đúng định dạng FE)
+  const mappedProjectParts = projectParts.map(part => {
+    const p = part as any;
+    const programmingLanguage = (p.programmingLanguage || p.ProgrammingLanguage || '').trim();
+    const framework = (p.framework || p.Framework || '').trim();
+    return {
+      id: p.id,
+      name: (p.name || p.Name || '[No name]').toString().trim(),
+      programmingLanguage: programmingLanguage && programmingLanguage !== 'null' ? programmingLanguage : '[No language]',
+      framework: framework && framework !== 'null' ? framework : '[No framework]',
+    };
+  });
+  // Thêm log kiểm tra mappedProjectParts
+  console.log('[DEBUG] mappedProjectParts:', mappedProjectParts);
 
   if (isProcessingCallback) {
     return (
@@ -172,235 +199,244 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
   }
 
   return (
-    <div className='space-y-6'>
-      <Card>
-        <CardHeader>
-          <CardTitle>GitHub Integration</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue='status' className='w-full'>
-            <TabsList className='grid w-full grid-cols-3'>
-              <TabsTrigger value='status'>Connection Status</TabsTrigger>
-              <TabsTrigger value='oauth'>OAuth Setup</TabsTrigger>
-              <TabsTrigger value='connect'>Connect Repository</TabsTrigger>
-            </TabsList>
+    <>
+      {console.log('RENDER RETURN mappedProjectParts:', mappedProjectParts)}
+      <div className='space-y-6'>
+        <Card>
+          <CardHeader>
+            <CardTitle>GitHub Integration</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue='status' className='w-full'>
+              <TabsList className='grid w-full grid-cols-3'>
+                <TabsTrigger value='status'>Connection Status</TabsTrigger>
+                <TabsTrigger value='oauth'>OAuth Setup</TabsTrigger>
+                <TabsTrigger value='connect'>Connect Repository</TabsTrigger>
+              </TabsList>
 
-            <TabsContent value='status' className='space-y-4'>
-              <div className='flex items-center justify-between'>
-                <div>
-                  <h3 className='text-lg font-medium'>GitHub Connection</h3>
-                  <p className='text-sm text-gray-600'>
-                    {connectionStatus?.isConnected
-                      ? `Connected as ${connectionStatus.username}`
-                      : 'Not connected to GitHub'}
-                  </p>
-                </div>
-                <Badge variant={connectionStatus?.isConnected ? 'default' : 'secondary'}>
-                  {connectionStatus?.isConnected ? 'Connected' : 'Disconnected'}
-                </Badge>
-              </div>
-
-              {connectionStatus?.isConnected && (
-                <div className='flex items-center gap-3 p-3 bg-green-50 rounded-lg'>
-                  <div className='w-8 h-8 bg-green-100 rounded-full flex items-center justify-center'>
-                    <span className='text-green-600 text-sm'>✓</span>
-                  </div>
+              <TabsContent value='status' className='space-y-4'>
+                <div className='flex items-center justify-between'>
                   <div>
-                    <p className='font-medium text-green-900'>GitHub Connected</p>
-                    <p className='text-sm text-green-700'>You can now connect repositories to your project parts</p>
-                  </div>
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value='oauth' className='space-y-4'>
-              {!connectionStatus?.isConnected ? (
-                <div className='space-y-4'>
-                  <div>
-                    <h3 className='text-lg font-medium mb-2'>Connect to GitHub</h3>
-                    <p className='text-sm text-gray-600 mb-4'>
-                      Connect your GitHub account to enable repository integration
+                    <h3 className='text-lg font-medium'>GitHub Connection</h3>
+                    <p className='text-sm text-gray-600'>
+                      {connectionStatus?.isConnected
+                        ? `Connected as ${connectionStatus.username}`
+                        : 'Not connected to GitHub'}
                     </p>
                   </div>
-
-                  <Button onClick={startGitHubOAuth} disabled={oauthLoading} className='w-full'>
-                    {oauthLoading ? (
-                      <>
-                        <Loader className='mr-2 h-4 w-4' />
-                        Connecting...
-                      </>
-                    ) : (
-                      'Connect with GitHub'
-                    )}
-                  </Button>
+                  <Badge variant={connectionStatus?.isConnected ? 'default' : 'secondary'}>
+                    {connectionStatus?.isConnected ? 'Connected' : 'Disconnected'}
+                  </Badge>
                 </div>
-              ) : (
-                <div className='flex items-center gap-3 p-3 bg-green-50 rounded-lg'>
-                  <div className='w-8 h-8 bg-green-100 rounded-full flex items-center justify-center'>
-                    <span className='text-green-600 text-sm'>✓</span>
-                  </div>
-                  <div>
-                    <p className='font-medium text-green-900'>Already Connected</p>
-                    <p className='text-sm text-green-700'>Your GitHub account is connected and ready to use</p>
-                  </div>
-                </div>
-              )}
-            </TabsContent>
 
-            <TabsContent value='connect' className='space-y-4'>
-              {!connectionStatus?.isConnected ? (
-                <div className='text-center py-8'>
-                  <p className='text-gray-600 mb-4'>Please connect to GitHub first to access repositories</p>
-                  <Button onClick={startGitHubOAuth} disabled={oauthLoading}>
-                    {oauthLoading ? (
-                      <>
-                        <Loader className='mr-2 h-4 w-4' />
-                        Connecting...
-                      </>
-                    ) : (
-                      'Connect with GitHub'
-                    )}
-                  </Button>
-                </div>
-              ) : (
-                <div className='space-y-4'>
-                  <div className='flex items-center justify-between'>
-                    <h3 className='text-lg font-medium'>Connect Repository</h3>
-                    <Dialog open={showCreatePartDialog} onOpenChange={setShowCreatePartDialog}>
-                      <DialogTrigger asChild>
-                        <Button variant='outline' size='sm'>
-                          Create New Part
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Create New Project Part</DialogTitle>
-                        </DialogHeader>
-                        <div className='space-y-4'>
-                          <div>
-                            <Label htmlFor='partName'>Part Name</Label>
-                            <Input
-                              id='partName'
-                              value={newPartData.name}
-                              onChange={(e) => setNewPartData((prev) => ({ ...prev, name: e.target.value }))}
-                              placeholder='e.g., Frontend, Backend, Database'
-                            />
-                          </div>
-                          <div>
-                            <Label htmlFor='programmingLanguage'>Programming Language</Label>
-                            <Select
-                              value={newPartData.programmingLanguage}
-                              onValueChange={(value) =>
-                                setNewPartData((prev) => ({ ...prev, programmingLanguage: value }))
-                              }
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder='Select language' />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value='TypeScript'>TypeScript</SelectItem>
-                                <SelectItem value='JavaScript'>JavaScript</SelectItem>
-                                <SelectItem value='C#'>C#</SelectItem>
-                                <SelectItem value='Java'>Java</SelectItem>
-                                <SelectItem value='Python'>Python</SelectItem>
-                                <SelectItem value='Go'>Go</SelectItem>
-                                <SelectItem value='Rust'>Rust</SelectItem>
-                                <SelectItem value='PHP'>PHP</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div>
-                            <Label htmlFor='framework'>Framework</Label>
-                            <Select
-                              value={newPartData.framework}
-                              onValueChange={(value) => setNewPartData((prev) => ({ ...prev, framework: value }))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder='Select framework' />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value='React'>React</SelectItem>
-                                <SelectItem value='Vue'>Vue</SelectItem>
-                                <SelectItem value='Angular'>Angular</SelectItem>
-                                <SelectItem value='.NET'>.NET</SelectItem>
-                                <SelectItem value='Spring'>Spring</SelectItem>
-                                <SelectItem value='Django'>Django</SelectItem>
-                                <SelectItem value='Express'>Express</SelectItem>
-                                <SelectItem value='Laravel'>Laravel</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <Button onClick={handleCreatePart} disabled={creatingPart} className='w-full'>
-                            {creatingPart ? (
-                              <>
-                                <Loader className='mr-2 h-4 w-4' />
-                                Creating...
-                              </>
-                            ) : (
-                              'Create Part'
-                            )}
-                          </Button>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
+                {connectionStatus?.isConnected && (
+                  <div className='flex items-center gap-3 p-3 bg-green-50 rounded-lg'>
+                    <div className='w-8 h-8 bg-green-100 rounded-full flex items-center justify-center'>
+                      <span className='text-green-600 text-sm'>✓</span>
+                    </div>
+                    <div>
+                      <p className='font-medium text-green-900'>GitHub Connected</p>
+                      <p className='text-sm text-green-700'>You can now connect repositories to your project parts</p>
+                    </div>
                   </div>
+                )}
+              </TabsContent>
 
-                  <Separator />
-
+              <TabsContent value='oauth' className='space-y-4'>
+                {!connectionStatus?.isConnected ? (
                   <div className='space-y-4'>
                     <div>
-                      <Label htmlFor='projectPart'>Project Part</Label>
-                      <Select value={selectedPart} onValueChange={setSelectedPart}>
-                        <SelectTrigger>
-                          <SelectValue placeholder='Select a project part' />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {projectParts.map((part) => (
-                            <SelectItem key={part.id} value={part.id}>
-                              {part.name} ({part.programmingLanguage} + {part.framework})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <h3 className='text-lg font-medium mb-2'>Connect to GitHub</h3>
+                      <p className='text-sm text-gray-600 mb-4'>
+                        Connect your GitHub account to enable repository integration
+                      </p>
                     </div>
 
-                    <div>
-                      <Label htmlFor='repository'>GitHub Repository</Label>
-                      <Select value={selectedRepo} onValueChange={setSelectedRepo}>
-                        <SelectTrigger>
-                          <SelectValue placeholder='Select a repository' />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {repositories.map((repo) => (
-                            <SelectItem key={repo.id} value={repo.htmlUrl}>
-                              {repo.fullName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <Button
-                      onClick={handleConnectRepository}
-                      disabled={!selectedPart || !selectedRepo || connectingRepo}
-                      className='w-full'
-                    >
-                      {connectingRepo ? (
+                    <Button onClick={startGitHubOAuth} disabled={oauthLoading} className='w-full'>
+                      {oauthLoading ? (
                         <>
                           <Loader className='mr-2 h-4 w-4' />
                           Connecting...
                         </>
                       ) : (
-                        'Connect Repository'
+                        'Connect with GitHub'
                       )}
                     </Button>
                   </div>
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
+                ) : (
+                  <div className='flex items-center gap-3 p-3 bg-green-50 rounded-lg'>
+                    <div className='w-8 h-8 bg-green-100 rounded-full flex items-center justify-center'>
+                      <span className='text-green-600 text-sm'>✓</span>
+                    </div>
+                    <div>
+                      <p className='font-medium text-green-900'>Already Connected</p>
+                      <p className='text-sm text-green-700'>Your GitHub account is connected and ready to use</p>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value='connect' className='space-y-4'>
+                {!connectionStatus?.isConnected ? (
+                  <div className='text-center py-8'>
+                    <p className='text-gray-600 mb-4'>Please connect to GitHub first to access repositories</p>
+                    <Button onClick={startGitHubOAuth} disabled={oauthLoading}>
+                      {oauthLoading ? (
+                        <>
+                          <Loader className='mr-2 h-4 w-4' />
+                          Connecting...
+                        </>
+                      ) : (
+                        'Connect with GitHub'
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className='space-y-4'>
+                    <div className='flex items-center justify-between'>
+                      <h3 className='text-lg font-medium'>Connect Repository</h3>
+                      <Dialog open={showCreatePartDialog} onOpenChange={setShowCreatePartDialog}>
+                        <DialogTrigger asChild>
+                          <Button variant='outline' size='sm'>
+                            Create New Part
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                          <DialogHeader>
+                            <DialogTitle>Create New Project Part</DialogTitle>
+                          </DialogHeader>
+                          <div className='space-y-4'>
+                            <div>
+                              <Label htmlFor='partName'>Part Name</Label>
+                              <Input
+                                id='partName'
+                                value={newPartData.name}
+                                onChange={(e) => setNewPartData((prev) => ({ ...prev, name: e.target.value }))}
+                                placeholder='e.g., Frontend, Backend, Database'
+                              />
+                            </div>
+                            <div>
+                              <Label htmlFor='programmingLanguage'>Programming Language</Label>
+                              <Select
+                                value={newPartData.programmingLanguage}
+                                onValueChange={(value) =>
+                                  setNewPartData((prev) => ({ ...prev, programmingLanguage: value }))
+                                }
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder='Select language' />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value='TypeScript'>TypeScript</SelectItem>
+                                  <SelectItem value='JavaScript'>JavaScript</SelectItem>
+                                  <SelectItem value='C#'>C#</SelectItem>
+                                  <SelectItem value='Java'>Java</SelectItem>
+                                  <SelectItem value='Python'>Python</SelectItem>
+                                  <SelectItem value='Go'>Go</SelectItem>
+                                  <SelectItem value='Rust'>Rust</SelectItem>
+                                  <SelectItem value='PHP'>PHP</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <Label htmlFor='framework'>Framework</Label>
+                              <Select
+                                value={newPartData.framework}
+                                onValueChange={(value) => setNewPartData((prev) => ({ ...prev, framework: value }))}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder='Select framework' />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value='React'>React</SelectItem>
+                                  <SelectItem value='Vue'>Vue</SelectItem>
+                                  <SelectItem value='Angular'>Angular</SelectItem>
+                                  <SelectItem value='.NET'>.NET</SelectItem>
+                                  <SelectItem value='Spring'>Spring</SelectItem>
+                                  <SelectItem value='Django'>Django</SelectItem>
+                                  <SelectItem value='Express'>Express</SelectItem>
+                                  <SelectItem value='Laravel'>Laravel</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <Button onClick={handleCreatePart} disabled={creatingPart} className='w-full'>
+                              {creatingPart ? (
+                                <>
+                                  <Loader className='mr-2 h-4 w-4' />
+                                  Creating...
+                                </>
+                              ) : (
+                                'Create Part'
+                              )}
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+
+                    <Separator />
+
+                    <div className='space-y-4'>
+                      <div>
+                        <Label htmlFor='projectPart'>Project Part</Label>
+                        <Select value={selectedPart} onValueChange={setSelectedPart}>
+                          <SelectTrigger>
+                            <SelectValue placeholder='Select a project part' />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {/* Thêm log trước khi render dropdown */}
+                            {console.log('[DEBUG] Render dropdown mappedProjectParts:', mappedProjectParts)}
+                            {mappedProjectParts.map((part, idx) => {
+                              // Thêm log trong map render dropdown
+                              console.log('[DEBUG] Render dropdown part', idx, part);
+                              return (
+                                <SelectItem key={part.id} value={part.id}>
+                                  {part.name} ({part.programmingLanguage} + {part.framework})
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label htmlFor='repository'>GitHub Repository</Label>
+                        <Select value={selectedRepo} onValueChange={setSelectedRepo}>
+                          <SelectTrigger>
+                            <SelectValue placeholder='Select a repository' />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {repositories.map((repo) => (
+                              <SelectItem key={repo.id} value={repo.htmlUrl}>
+                                {repo.fullName}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <Button
+                        onClick={handleConnectRepository}
+                        disabled={!selectedPart || !selectedRepo || connectingRepo}
+                        className='w-full'
+                      >
+                        {connectingRepo ? (
+                          <>
+                            <Loader className='mr-2 h-4 w-4' />
+                            Connecting...
+                          </>
+                        ) : (
+                          'Connect Repository'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
+      </div>
+    </>
   )
 }

@@ -37,6 +37,19 @@ export default function ProjectBacklog() {
   } = useSprints()
 
   const [sprintTasks, setSprintTasks] = useState<Record<string, TaskP[]>>({})
+  const [loadingSprintIds, setLoadingSprintIds] = useState<string[]>([])
+
+  // Hàm lazy load tasks cho sprint
+  const handleLoadSprintTasks = async (sprintId: string) => {
+    if (sprintTasks[sprintId] || loadingSprintIds.includes(sprintId) || !currentProject?.id) return
+    setLoadingSprintIds((prev) => [...prev, sprintId])
+    try {
+      const tasks = await getSprintTasks(sprintId, currentProject.id)
+      setSprintTasks((prev) => ({ ...prev, [sprintId]: tasks }))
+    } finally {
+      setLoadingSprintIds((prev) => prev.filter((id) => id !== sprintId))
+    }
+  }
 
   // Memoize filtered tasks to avoid unnecessary recalculations
   const filteredTasks = useMemo(() => {
@@ -285,6 +298,9 @@ export default function ProjectBacklog() {
                 onTaskUpdate={handleTaskUpdate}
                 onTaskCreated={handleTaskUpdate}
                 onSprintUpdate={handleSprintUpdate}
+                onLoadTasks={() => handleLoadSprintTasks(sprint.id)}
+                loadingTasks={loadingSprintIds.includes(sprint.id)}
+                hasLoadedTasks={!!sprintTasks[sprint.id]}
               />
             ))}
             <SprintBacklog

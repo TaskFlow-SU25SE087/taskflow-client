@@ -1,3 +1,4 @@
+import { useProjectParts } from '@/hooks/useProjectParts'
 import { CheckCircle, ExternalLink, Github, Plus, Settings, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import GitHubProjectPartIntegration from '../github/GitHubProjectPartIntegration'
@@ -24,38 +25,14 @@ export default function ProjectPartsList({ projectId }: ProjectPartsListProps) {
   const [loading, setLoading] = useState(true)
   const [showGitHubIntegration, setShowGitHubIntegration] = useState(false)
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null)
+  const { fetchParts } = useProjectParts()
 
-  // Mock project parts since backend doesn't have GET endpoint
-  const mockProjectParts: ProjectPart[] = [
-    {
-      id: 'part-1',
-      name: 'Frontend',
-      programmingLanguage: 'TypeScript',
-      framework: 'React',
-      isConnected: false
-    },
-    {
-      id: 'part-2',
-      name: 'Backend',
-      programmingLanguage: 'C#',
-      framework: '.NET',
-      isConnected: false
-    },
-    {
-      id: 'part-3',
-      name: 'Database',
-      programmingLanguage: 'SQL',
-      framework: 'Entity Framework',
-      isConnected: false
-    }
-  ]
-
-  const fetchParts = async () => {
+  const fetchPartsFromApi = async () => {
     try {
       setLoading(true)
-      // Since the backend doesn't have GET /projects/{projectId}/parts endpoint,
-      // we'll use mock data for now
-      setParts(mockProjectParts)
+      const res = await fetchParts(projectId)
+      // Giả sử API trả về { code, message, data }, lấy data là mảng parts
+      setParts(res.data || [])
     } catch (error) {
       console.error('Error fetching project parts:', error)
     } finally {
@@ -64,11 +41,11 @@ export default function ProjectPartsList({ projectId }: ProjectPartsListProps) {
   }
 
   useEffect(() => {
-    fetchParts()
+    fetchPartsFromApi()
   }, [projectId])
 
   const handleGitHubIntegrationSuccess = () => {
-    fetchParts() // Refresh the list after successful integration
+    fetchPartsFromApi() // Refresh the list after successful integration
     setShowGitHubIntegration(false)
   }
 

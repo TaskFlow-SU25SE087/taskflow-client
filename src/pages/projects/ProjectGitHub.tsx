@@ -17,10 +17,14 @@ interface Repo {
   htmlUrl: string
 }
 interface ProjectPart {
-  id: string
-  Name: string
-  ProgrammingLanguage: string
-  Framework: string
+  id: string;
+  name: string;
+  programmingLanguage: string;
+  framework: string;
+  repoUrl?: string;
+  ownerId?: string;
+  ownerName?: string;
+  avatrarUrl?: string;
 }
 
 export default function ProjectGitHub() {
@@ -285,11 +289,13 @@ export default function ProjectGitHub() {
                           onChange={(e) => setSelectedPart(e.target.value)}
                         >
                           <option value=''>-- Select a part --</option>
-                          {parts.map((part) => (
-                            <option key={part.id} value={part.id}>
-                              {part.Name} ({part.ProgrammingLanguage}, {part.Framework})
-                            </option>
-                          ))}
+                          {parts
+                            .filter((part) => !(part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl))
+                            .map((part) => (
+                              <option key={part.id} value={part.id}>
+                                {part.name} ({part.programmingLanguage}, {part.framework})
+                              </option>
+                            ))}
                         </select>
                         <Button
                           variant='link'

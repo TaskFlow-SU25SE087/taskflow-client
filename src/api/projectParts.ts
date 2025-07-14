@@ -23,3 +23,9 @@ export async function connectRepoToPart(
   })
   return res.data
 }
+
+// Lấy danh sách Project Parts
+export async function getProjectParts(projectId: string) {
+  const res = await axiosClient.get(`/projects/${projectId}/parts`)
+  return res.data
+}

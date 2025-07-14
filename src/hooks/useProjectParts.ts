@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { connectRepoToPart, createProjectPart } from '../api/projectParts'
+import { connectRepoToPart, createProjectPart, getProjectParts } from '../api/projectParts'
 
 export function useProjectParts() {
   const [loading, setLoading] = useState(false)
@@ -39,5 +39,21 @@ export function useProjectParts() {
     }
   }
 
-  return { createPart, connectRepo, loading, error, result }
+  // Lấy danh sách parts
+  const fetchParts = async (projectId: string) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await getProjectParts(projectId)
+      setResult(data)
+      return data
+    } catch (err) {
+      setError(err)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return { createPart, connectRepo, fetchParts, loading, error, result }
 }
