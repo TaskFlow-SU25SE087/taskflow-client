@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useToast } from '@/hooks/use-toast'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { Pencil } from 'lucide-react'
 import { useState } from 'react'
 
@@ -16,7 +16,7 @@ interface BoardEditMenuProps {
 }
 
 export function BoardEditMenu({ projectId, boardId, currentName, currentDescription, onEdited }: BoardEditMenuProps) {
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
   const [isOpen, setIsOpen] = useState(false)
   const [name, setName] = useState(currentName)
   const [description, setDescription] = useState(currentDescription)
@@ -25,19 +25,12 @@ export function BoardEditMenu({ projectId, boardId, currentName, currentDescript
   const handleEdit = async () => {
     setLoading(true)
     try {
-      await boardApi.editBoard(projectId, boardId, name, description)
-      toast({
-        title: 'Board updated',
-        description: 'Board name and description updated successfully.'
-      })
-      setIsOpen(false)
+      const res = await boardApi.editBoard(projectId, boardId, name, description)
+      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Board updated successfully', variant: res?.code === 200 ? 'default' : 'destructive' })
       onEdited()
+      setIsOpen(false)
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update board.',
-        variant: 'destructive'
-      })
+      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to update board.', variant: 'destructive' })
     } finally {
       setLoading(false)
     }

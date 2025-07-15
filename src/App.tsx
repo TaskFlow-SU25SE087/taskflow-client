@@ -1,6 +1,7 @@
 import AdminProtectedRoute from '@/components/AdminProtectedRoute'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
-import { Toaster } from '@/components/ui/toaster'
+import { ToastContainer } from '@/components/ui/ToastContainer'
+import { ToastProvider } from '@/components/ui/ToastContext'
 import { SignalRProvider } from '@/contexts/SignalRContext'
 import { AuthProvider } from '@/hooks/useAuthContext.tsx'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
@@ -49,295 +50,297 @@ const AuthRedirect = ({ children }: { children: React.ReactNode }) => {
 function App() {
   return (
     <BrowserRouter>
-      <Toaster />
-      <AuthProvider>
-        <SignalRProvider>
-          <Routes>
-            <Route
-              path='/'
-              element={
-                <AuthRedirect>
-                  <HomePage />
-                </AuthRedirect>
-              }
-            />
+      <ToastProvider>
+        <ToastContainer />
+        <AuthProvider>
+          <SignalRProvider>
+            <Routes>
+              <Route
+                path='/'
+                element={
+                  <AuthRedirect>
+                    <HomePage />
+                  </AuthRedirect>
+                }
+              />
 
-            <Route
-              path='/about'
-              element={
-                <AuthRedirect>
-                  <AboutPage />
-                </AuthRedirect>
-              }
-            />
+              <Route
+                path='/about'
+                element={
+                  <AuthRedirect>
+                    <AboutPage />
+                  </AuthRedirect>
+                }
+              />
 
-            <Route
-              path='/contact'
-              element={
-                <AuthRedirect>
-                  <ContactPage />
-                </AuthRedirect>
-              }
-            />
+              <Route
+                path='/contact'
+                element={
+                  <AuthRedirect>
+                    <ContactPage />
+                  </AuthRedirect>
+                }
+              />
 
-            <Route
-              path='login'
-              element={
-                <AuthRedirect>
-                  <LoginPage />
-                </AuthRedirect>
-              }
-            />
-            <Route
-              path='forgot-password'
-              element={
-                <AuthRedirect>
-                  <ForgotPasswordPage />
-                </AuthRedirect>
-              }
-            />
-            <Route
-              path='signup'
-              element={
-                <AuthRedirect>
-                  <SignUpPage />
-                </AuthRedirect>
-              }
-            />
+              <Route
+                path='login'
+                element={
+                  <AuthRedirect>
+                    <LoginPage />
+                  </AuthRedirect>
+                }
+              />
+              <Route
+                path='forgot-password'
+                element={
+                  <AuthRedirect>
+                    <ForgotPasswordPage />
+                  </AuthRedirect>
+                }
+              />
+              <Route
+                path='signup'
+                element={
+                  <AuthRedirect>
+                    <SignUpPage />
+                  </AuthRedirect>
+                }
+              />
 
-            <Route
-              path='verify-email'
-              element={
-                <AuthRedirect>
-                  <VerifyEmailPage />
-                </AuthRedirect>
-              }
-            />
+              <Route
+                path='verify-email'
+                element={
+                  <AuthRedirect>
+                    <VerifyEmailPage />
+                  </AuthRedirect>
+                }
+              />
 
-            <Route
-              path='verify-otp'
-              element={
-                <AuthRedirect>
-                  <OtpPage />
-                </AuthRedirect>
-              }
-            />
+              <Route
+                path='verify-otp'
+                element={
+                  <AuthRedirect>
+                    <OtpPage />
+                  </AuthRedirect>
+                }
+              />
 
-            <Route
-              path='activate'
-              element={
-                <AuthRedirect>
-                  <ActivateAccountPage />
-                </AuthRedirect>
-              }
-            />
+              <Route
+                path='activate'
+                element={
+                  <AuthRedirect>
+                    <ActivateAccountPage />
+                  </AuthRedirect>
+                }
+              />
 
-            <Route
-              path='/add-info'
-              element={
-                <AuthRedirect>
-                  <AddUserInfoPage />
-                </AuthRedirect>
-              }
-            />
+              <Route
+                path='/add-info'
+                element={
+                  <AuthRedirect>
+                    <AddUserInfoPage />
+                  </AuthRedirect>
+                }
+              />
 
-            <Route path='/reset-password' element={<ResetPasswordPage />} />
+              <Route path='/reset-password' element={<ResetPasswordPage />} />
 
-            {/* Protected routes require authentication */}
-            <Route
-              path='/timeline'
-              element={
-                <ProtectedRoute>
-                  <ProjectTimeline />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/backlog/'
-              element={
-                <ProtectedRoute>
-                  <ProjectBacklog />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/projects/new'
-              element={
-                <ProtectedRoute>
-                  <ProjectCreate />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/projects/'
-              element={
-                <ProtectedRoute>
-                  <ProjectList />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/board'
-              element={
-                <ProtectedRoute>
-                  <ProjectBoard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/reports'
-              element={
-                <ProtectedRoute>
-                  <ProjectReports />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/commits'
-              element={
-                <ProtectedRoute>
-                  <GitCommits />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/issues'
-              element={
-                <ProtectedRoute>
-                  <GitIssues />
-                </ProtectedRoute>
-              }
-            />
+              {/* Protected routes require authentication */}
+              <Route
+                path='/timeline'
+                element={
+                  <ProtectedRoute>
+                    <ProjectTimeline />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/backlog/'
+                element={
+                  <ProtectedRoute>
+                    <ProjectBacklog />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/projects/new'
+                element={
+                  <ProtectedRoute>
+                    <ProjectCreate />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/projects/'
+                element={
+                  <ProtectedRoute>
+                    <ProjectList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/board'
+                element={
+                  <ProtectedRoute>
+                    <ProjectBoard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/reports'
+                element={
+                  <ProtectedRoute>
+                    <ProjectReports />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/commits'
+                element={
+                  <ProtectedRoute>
+                    <GitCommits />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/issues'
+                element={
+                  <ProtectedRoute>
+                    <GitIssues />
+                  </ProtectedRoute>
+                }
+              />
 
-            <Route
-              path='/github'
-              element={
-                <ProtectedRoute>
-                  <ProjectGitHub />
-                </ProtectedRoute>
-              }
-            />
+              <Route
+                path='/github'
+                element={
+                  <ProtectedRoute>
+                    <ProjectGitHub />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* GitHub OAuth Callback */}
-            <Route path='/github/callback' element={<GitHubOAuthCallback />} />
+              {/* GitHub OAuth Callback */}
+              <Route path='/github/callback' element={<GitHubOAuthCallback />} />
 
-            {/* Dynamic project routes */}
-            <Route
-              path='/projects/:projectId/board'
-              element={
-                <ProtectedRoute>
-                  <ProjectBoard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/projects/:projectId/timeline'
-              element={
-                <ProtectedRoute>
-                  <ProjectTimeline />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/projects/:projectId/backlog'
-              element={
-                <ProtectedRoute>
-                  <ProjectBacklog />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/projects/:projectId/reports'
-              element={
-                <ProtectedRoute>
-                  <ProjectReports />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/projects/:projectId/members'
-              element={
-                <ProtectedRoute>
-                  <ProjectMembers />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/projects/:projectId/github'
-              element={
-                <ProtectedRoute>
-                  <ProjectGitHub />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/projects/:projectId/commits'
-              element={
-                <ProtectedRoute>
-                  <GitCommits />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/projects/:projectId/issues'
-              element={
-                <ProtectedRoute>
-                  <GitIssues />
-                </ProtectedRoute>
-              }
-            />
+              {/* Dynamic project routes */}
+              <Route
+                path='/projects/:projectId/board'
+                element={
+                  <ProtectedRoute>
+                    <ProjectBoard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/projects/:projectId/timeline'
+                element={
+                  <ProtectedRoute>
+                    <ProjectTimeline />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/projects/:projectId/backlog'
+                element={
+                  <ProtectedRoute>
+                    <ProjectBacklog />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/projects/:projectId/reports'
+                element={
+                  <ProtectedRoute>
+                    <ProjectReports />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/projects/:projectId/members'
+                element={
+                  <ProtectedRoute>
+                    <ProjectMembers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/projects/:projectId/github'
+                element={
+                  <ProtectedRoute>
+                    <ProjectGitHub />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/projects/:projectId/commits'
+                element={
+                  <ProtectedRoute>
+                    <GitCommits />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/projects/:projectId/issues'
+                element={
+                  <ProtectedRoute>
+                    <GitIssues />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Admin routes */}
-            <Route
-              path='/admin/users'
-              element={
-                <AdminProtectedRoute>
-                  <AdminUsersPage />
-                </AdminProtectedRoute>
-              }
-            />
+              {/* Admin routes */}
+              <Route
+                path='/admin/users'
+                element={
+                  <AdminProtectedRoute>
+                    <AdminUsersPage />
+                  </AdminProtectedRoute>
+                }
+              />
 
-            <Route
-              path='/admin/dashboard'
-              element={
-                <AdminProtectedRoute>
-                  <AdminDashboard />
-                </AdminProtectedRoute>
-              }
-            />
+              <Route
+                path='/admin/dashboard'
+                element={
+                  <AdminProtectedRoute>
+                    <AdminDashboard />
+                  </AdminProtectedRoute>
+                }
+              />
 
-            <Route
-              path='/profile'
-              element={
-                <ProtectedRoute>
-                  <UserProfilePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path='/members'
-              element={
-                <ProtectedRoute>
-                  <ProjectMembers />
-                </ProtectedRoute>
-              }
-            />
-            <Route path='/projects/:projectId/members/verify-join' element={<ProjectMemberVerify />} />
-            <Route path='/project/:projectId/member/verify-join' element={<ProjectMemberVerify />} />
-            <Route path='/project/member/verify-join' element={<LegacyProjectMemberVerify />} />
-            <Route
-              path='/admin/terms'
-              element={
-                <AdminProtectedRoute>
-                  <AdminTermPage />
-                </AdminProtectedRoute>
-              }
-            />
+              <Route
+                path='/profile'
+                element={
+                  <ProtectedRoute>
+                    <UserProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/members'
+                element={
+                  <ProtectedRoute>
+                    <ProjectMembers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path='/projects/:projectId/members/verify-join' element={<ProjectMemberVerify />} />
+              <Route path='/project/:projectId/member/verify-join' element={<ProjectMemberVerify />} />
+              <Route path='/project/member/verify-join' element={<LegacyProjectMemberVerify />} />
+              <Route
+                path='/admin/terms'
+                element={
+                  <AdminProtectedRoute>
+                    <AdminTermPage />
+                  </AdminProtectedRoute>
+                }
+              />
 
-            <Route path='/project' element={<Navigate to='/projects/' />} />
-          </Routes>
-        </SignalRProvider>
-      </AuthProvider>
+              <Route path='/project' element={<Navigate to='/projects/' />} />
+            </Routes>
+          </SignalRProvider>
+        </AuthProvider>
+      </ToastProvider>
     </BrowserRouter>
   )
 }

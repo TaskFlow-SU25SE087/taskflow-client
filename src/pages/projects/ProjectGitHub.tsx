@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Loader } from '@/components/ui/loader'
+import { useToastContext } from '@/components/ui/ToastContext'
 import axiosClient from '@/configs/axiosClient'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { CheckCircle, Github, XCircle } from 'lucide-react'
@@ -30,6 +31,7 @@ interface ProjectPart {
 export default function ProjectGitHub() {
   const { projectId: urlProjectId } = useParams<{ projectId: string }>()
   const { currentProject, isLoading } = useCurrentProject()
+  const { showToast } = useToastContext()
 
   // Use projectId from URL if available, otherwise use currentProject.id
   const projectId = urlProjectId || currentProject?.id
@@ -99,7 +101,7 @@ export default function ProjectGitHub() {
   const handleCreatePart = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newPart.name.trim() || !newPart.programmingLanguage || !newPart.framework) {
-      setError('Please fill in all fields (Name is required)')
+      showToast({ title: 'Error', description: 'Please fill in all fields (Name is required)', variant: 'destructive' })
       return
     }
     setCreatingPart(true)
@@ -110,7 +112,6 @@ export default function ProjectGitHub() {
         ProgrammingLanguage: newPart.programmingLanguage,
         Framework: newPart.framework
       });
-      console.log('API response khi tạo part:', response);
       let partId = response.data;
       if (typeof partId === 'object' && partId.id) {
         partId = partId.id;
@@ -124,14 +125,10 @@ export default function ProjectGitHub() {
       setParts((prev) => [...prev, newPartWithId]);
       setShowCreatePart(false);
       setNewPart({ name: '', programmingLanguage: '', framework: '' });
-      setSuccess('Project Part created successfully!');
+      showToast({ title: 'Success', description: 'Project Part created successfully!' })
     } catch (err: any) {
-      console.error('Error creating project part:', err);
-      const errorMessage = err.response?.data?.message || 
-                        err.response?.data?.error || 
-                        err.message || 
-                        'Error creating project part';
-      setError(errorMessage);
+      const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || 'Error creating project part';
+      showToast({ title: 'Error', description: errorMessage, variant: 'destructive' })
     } finally {
       setCreatingPart(false);
     }

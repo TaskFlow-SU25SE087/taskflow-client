@@ -1,7 +1,7 @@
 import { projectMemberApi } from '@/api/projectMembers'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { useToast } from '@/hooks/use-toast'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { AxiosError } from 'axios'
 import { Loader2, Users } from 'lucide-react'
 import { useState } from 'react'
@@ -17,14 +17,14 @@ export function ProjectInviteDialog({ isOpen, onClose, projectId, onMemberAdded 
   const [memberEmail, setMemberEmail] = useState('')
   const [addedEmails, setAddedEmails] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
 
   const handleAddMember = async (email: string) => {
     const trimmedEmail = email.trim()
     if (!trimmedEmail) return
 
     if (!trimmedEmail.includes('@')) {
-      toast({
+      showToast({
         title: 'Invalid email',
         description: 'Please enter a valid email address',
         variant: 'destructive'
@@ -33,7 +33,7 @@ export function ProjectInviteDialog({ isOpen, onClose, projectId, onMemberAdded 
     }
 
     if (addedEmails.includes(trimmedEmail)) {
-      toast({
+      showToast({
         title: 'Duplicate email',
         description: 'This email has already been added',
         variant: 'destructive'
@@ -47,7 +47,7 @@ export function ProjectInviteDialog({ isOpen, onClose, projectId, onMemberAdded 
 
   const handleFinish = async () => {
     if (addedEmails.length === 0) {
-      toast({
+      showToast({
         title: 'No members added',
         description: 'Please add at least one member to invite',
         variant: 'destructive'
@@ -62,7 +62,7 @@ export function ProjectInviteDialog({ isOpen, onClose, projectId, onMemberAdded 
           await projectMemberApi.addMember(projectId, email)
         })
       )
-      toast({
+      showToast({
         title: 'Success',
         description: `Invited ${addedEmails.length} member${addedEmails.length > 1 ? 's' : ''}`
       })
@@ -80,7 +80,7 @@ export function ProjectInviteDialog({ isOpen, onClose, projectId, onMemberAdded 
         }
       }
 
-      toast({
+      showToast({
         title: 'Error',
         description: errorMessage,
         variant: 'destructive'

@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useToast } from '@/hooks/useToast'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
@@ -12,14 +12,14 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isSubmitted, setIsSubmitted] = useState(false)
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!email) {
-      toast({
+      showToast({
         title: 'Error',
         description: 'Please enter your email address',
         variant: 'destructive'
@@ -32,12 +32,12 @@ export default function ForgotPasswordPage() {
     try {
       await authApi.sendResetPasswordMail(email)
       setIsSubmitted(true)
-      toast({
+      showToast({
         title: 'Success',
         description: 'Password reset email sent! Please check your inbox.'
       })
     } catch (err: any) {
-      toast({
+      showToast({
         title: 'Error',
         description: err.message || 'Failed to send reset email',
         variant: 'destructive'

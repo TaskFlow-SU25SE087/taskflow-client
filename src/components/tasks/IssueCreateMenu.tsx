@@ -1,16 +1,17 @@
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useIssues } from '@/hooks/useIssues'
 import { CreateIssueRequest, IssuePriority, IssueType } from '@/types/issue'
 import { AlertCircle } from 'lucide-react'
@@ -40,6 +41,7 @@ const typeOptions = [
 
 export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, taskId, onIssueCreated }) => {
   const { createIssue, isLoading } = useIssues()
+  const { showToast } = useToastContext()
   const [open, setOpen] = useState(false)
   const [files, setFiles] = useState<File[]>([])
 
@@ -91,25 +93,26 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
       issueData
     })
 
-    const success = await createIssue(projectId, taskId, issueData)
-
-    console.log('📊 [IssueCreateMenu] createIssue result:', success)
-
-    if (success) {
-      console.log('✅ [IssueCreateMenu] Issue created successfully, closing dialog')
-      setOpen(false)
-      setFormData({
-        title: '',
-        description: '',
-        priority: IssuePriority.Medium,
-        explanation: '',
-        example: '',
-        type: IssueType.Bug
-      })
-      setFiles([])
-      onIssueCreated?.()
-    } else {
-      console.log('❌ [IssueCreateMenu] Issue creation failed, keeping dialog open')
+    try {
+      const res = await createIssue(projectId, taskId, issueData)
+      if (res?.code === 200) {
+        showToast({ title: 'Success', description: res?.message || 'Issue created successfully' })
+        setOpen(false)
+        setFormData({
+          title: '',
+          description: '',
+          priority: IssuePriority.Medium,
+          explanation: '',
+          example: '',
+          type: IssueType.Bug
+        })
+        setFiles([])
+        onIssueCreated?.()
+      } else {
+        showToast({ title: 'Error', description: res?.message || 'Failed to create issue', variant: 'destructive' })
+      }
+    } catch (error: any) {
+      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to create issue', variant: 'destructive' })
     }
   }
 

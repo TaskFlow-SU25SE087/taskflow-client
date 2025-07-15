@@ -1,6 +1,6 @@
 import { taskApi } from '@/api/tasks'
 import { Button } from '@/components/ui/button'
-import { useToast } from '@/hooks/use-toast'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useSprints } from '@/hooks/useSprints'
 import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
@@ -41,7 +41,7 @@ export function SprintBoard({
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
   const [isStartDialogOpen, setIsStartDialogOpen] = useState(false)
   const { startSprint, completeSprint, updateSprint } = useSprints(projectId)
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
   const [showSprintSelector, setShowSprintSelector] = useState(false)
   const [loadingBatch, setLoadingBatch] = useState(false)
@@ -76,39 +76,21 @@ export function SprintBoard({
 
   const handleStartSprint = async (startDate: string, endDate: string) => {
     try {
-      await startSprint(sprint.id, startDate, endDate)
+      const res = await startSprint(sprint.id, startDate, endDate)
+      showToast({ title: res?.code === 200 ? 'Sprint Started' : 'Error', description: res?.message || `${sprint.name} has been started successfully`, variant: res?.code === 200 ? 'default' : 'destructive' })
       onSprintUpdate()
-      toast({
-        title: 'Sprint Started',
-        description: `${sprint.name} has been started successfully`,
-        variant: 'default'
-      })
     } catch (error) {
-      console.error('Failed to start sprint:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to start sprint. Please try again.',
-        variant: 'destructive'
-      })
+      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to start sprint.', variant: 'destructive' })
     }
   }
 
   const handleCompleteSprint = async () => {
     try {
-      await completeSprint(sprint.id)
+      const res = await completeSprint(sprint.id)
+      showToast({ title: res?.code === 200 ? 'Sprint Completed' : 'Error', description: res?.message || `${sprint.name} has been completed successfully`, variant: res?.code === 200 ? 'default' : 'destructive' })
       onSprintUpdate()
-      toast({
-        title: 'Sprint Completed',
-        description: `${sprint.name} has been completed successfully`,
-        variant: 'default'
-      })
     } catch (error) {
-      console.error('Failed to complete sprint:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to complete sprint. Please try again.',
-        variant: 'destructive'
-      })
+      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to complete sprint.', variant: 'destructive' })
     }
   }
 
@@ -225,14 +207,22 @@ export function SprintBoard({
                       if (!window.confirm('Bạn có chắc muốn xóa các task đã chọn?')) return
                       setLoadingBatch(true)
                       try {
+                        let lastRes = null
                         for (const id of selectedTaskIds) {
-                          await taskApi.deleteTask(projectId, id)
+                          lastRes = await taskApi.deleteTask(projectId, id)
                         }
-                        toast({ title: 'Success', description: 'Deleted selected tasks!' })
+                        if (lastRes && typeof lastRes === 'object' && 'code' in (lastRes as any)) {
+                          const r: any = lastRes;
+                          showToast({ title: r.code === 200 ? 'Success' : 'Error', description: r.message || 'Deleted selected tasks!', variant: r.code === 200 ? 'default' : 'destructive' })
+                        } else if (lastRes === true) {
+                          showToast({ title: 'Success', description: 'Deleted selected tasks!' })
+                        } else {
+                          showToast({ title: 'Error', description: 'Failed to delete tasks', variant: 'destructive' })
+                        }
                         setSelectedTaskIds([])
                         onTaskUpdate()
-                      } catch {
-                        toast({ title: 'Error', description: 'Failed to delete tasks', variant: 'destructive' })
+                      } catch (err: any) {
+                        showToast({ title: 'Error', description: err.response?.data?.message || err.message || 'Failed to delete tasks', variant: 'destructive' })
                       } finally {
                         setLoadingBatch(false)
                       }

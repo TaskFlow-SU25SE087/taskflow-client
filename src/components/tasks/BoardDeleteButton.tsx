@@ -1,17 +1,17 @@
 import { boardApi } from '@/api/boards'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
-import { useToast } from '@/hooks/use-toast'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -22,24 +22,17 @@ interface BoardDeleteButtonProps {
 }
 
 export function BoardDeleteButton({ projectId, boardId, onDeleted }: BoardDeleteButtonProps) {
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
   const [loading, setLoading] = useState(false)
 
   const handleDelete = async () => {
     setLoading(true)
     try {
-      await boardApi.deleteBoard(projectId, boardId)
-      toast({
-        title: 'Board deleted',
-        description: 'The board was deleted successfully.'
-      })
+      const res = await boardApi.deleteBoard(projectId, boardId)
+      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Board deleted successfully', variant: res?.code === 200 ? 'default' : 'destructive' })
       onDeleted()
     } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete board.',
-        variant: 'destructive'
-      })
+      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to delete board.', variant: 'destructive' })
     } finally {
       setLoading(false)
     }

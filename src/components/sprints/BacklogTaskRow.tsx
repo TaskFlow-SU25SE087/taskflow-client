@@ -1,6 +1,6 @@
 import { taskApi } from '@/api/tasks'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { useToast } from '@/hooks/use-toast'
 import { useBoards } from '@/hooks/useBoards'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { TaskP } from '@/types/task'
@@ -122,7 +122,7 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
   const [statusLoading, setStatusLoading] = useState(false)
   const { boards, refreshBoards } = useBoards()
   const { currentProject } = useCurrentProject()
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
 
   // Map assignee từ taskAssignees (lấy người đầu tiên nếu có)
   const assignee =
@@ -225,11 +225,11 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
                         setStatusLoading(true)
                         try {
                           await taskApi.moveTaskToBoard(currentProject.id, task.id, board.id)
-                          toast({ title: 'Success', description: `Status changed to ${board.name}` })
+                          showToast({ title: 'Success', description: `Status changed to ${board.name}` })
                           await refreshBoards()
                           window.location.reload()
                         } catch (err) {
-                          toast({ title: 'Error', description: 'Failed to change status', variant: 'destructive' })
+                          showToast({ title: 'Error', description: 'Failed to change status', variant: 'destructive' })
                         } finally {
                           setStatusLoading(false)
                         }
@@ -322,12 +322,19 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
                   if (!currentProject?.id) return
                   if (!window.confirm('Are you sure you want to delete this task?')) return
                   try {
-                    await taskApi.deleteTask(currentProject.id, task.id)
-                    toast({ title: 'Success', description: 'Task deleted!' })
+                    const res = await taskApi.deleteTask(currentProject.id, task.id)
+                    if (res && typeof res === 'object' && 'code' in (res as any)) {
+                      const r: any = res;
+                      showToast({ title: r.code === 200 ? 'Success' : 'Error', description: r.message || 'Task deleted!', variant: r.code === 200 ? 'default' : 'destructive' })
+                    } else if (res === true) {
+                      showToast({ title: 'Success', description: 'Task deleted!' })
+                    } else {
+                      showToast({ title: 'Error', description: 'Failed to delete task', variant: 'destructive' })
+                    }
                     if (typeof refreshBoards === 'function') await refreshBoards()
                     if (typeof onTaskUpdate === 'function') onTaskUpdate()
-                  } catch {
-                    toast({ title: 'Error', description: 'Failed to delete task', variant: 'destructive' })
+                  } catch (err: any) {
+                    showToast({ title: 'Error', description: err.response?.data?.message || err.message || 'Failed to delete task', variant: 'destructive' })
                   }
                 }}
               >

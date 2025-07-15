@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useToast } from '@/hooks/use-toast'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useTags } from '@/hooks/useTags'
@@ -16,23 +16,23 @@ import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
 import { formatDistanceToNow } from 'date-fns'
 import {
-  Calendar,
-  ChevronDown,
-  ChevronsDown,
-  ChevronsUp,
-  ChevronUp,
-  Eye,
-  Filter,
-  Link,
-  ListTodo,
-  Loader2,
-  MessageCircle,
-  Paperclip,
-  Pencil,
-  Plus,
-  Settings,
-  UserPlus,
-  X
+    Calendar,
+    ChevronDown,
+    ChevronsDown,
+    ChevronsUp,
+    ChevronUp,
+    Eye,
+    Filter,
+    Link,
+    ListTodo,
+    Loader2,
+    MessageCircle,
+    Paperclip,
+    Pencil,
+    Plus,
+    Settings,
+    UserPlus,
+    X
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -47,7 +47,7 @@ interface TaskDetailMenuProps {
 }
 
 export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDetailMenuProps) {
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
   const [assignee, setAssignee] = useState<ProjectMember | null>(null)
   const [sprint, setSprint] = useState<Sprint | null>(null)
   const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([])
@@ -195,7 +195,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         }
       } catch (error) {
         console.error('Error fetching data:', error)
-        toast({
+        showToast({
           title: 'Error',
           description: 'Failed to load task details. Please try again.',
           variant: 'destructive'
@@ -203,7 +203,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       }
     }
     fetchAssigneeAndMembers()
-  }, [currentProject, navigate, task.id, toast])
+  }, [currentProject, navigate, task.id, showToast])
 
   console.log('projectMembers:', projectMembers)
   console.log('current user:', user)
@@ -294,29 +294,19 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
     setIsAssigning(true)
     try {
-      await taskApi.assignTask(currentProject!.id, task.id, implementerId)
+      const res = await taskApi.assignTask(currentProject!.id, task.id, implementerId)
       setAssignee(member)
       onTaskUpdated()
-      toast({
-        title: 'Success',
-        description: `Task assigned to ${member.fullName || member.email || member.userId || (member as any).id}`
-      })
-    } catch (error) {
-      console.error('Assignment error:', error)
-      console.error('Assignment error response:', error.response?.data)
-      console.error('Assignment error status:', error.response?.status)
-      toast({
-        title: 'Error',
-        description: `Failed to assign task: ${error.response?.data?.message || error.message}`,
-        variant: 'destructive'
-      })
+      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || `Task assigned to ${member.fullName || member.email || member.userId || (member as any).id}`, variant: res?.code === 200 ? 'default' : 'destructive' })
+    } catch (error: any) {
+      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to assign task.', variant: 'destructive' })
     } finally {
       setIsAssigning(false)
     }
   }
 
   const handleAttach = () => {
-    toast({
+    showToast({
       title: 'Coming Soon',
       description: 'File attachments will be available soon!'
     })
@@ -329,29 +319,14 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const handleTagSelect = async (tagId: string) => {
     if (!currentProject) return
     try {
-      await taskApi.addTagToTask(currentProject.id, task.id, tagId)
+      const res = await taskApi.addTagToTask(currentProject.id, task.id, tagId)
       const tag = tags.find((t) => t.id === tagId)
       if (tag) setTaskTags([...taskTags, tag])
-      toast({ title: 'Success', description: 'Tag added to task!' })
+      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Tag added to task!', variant: res?.code === 200 ? 'default' : 'destructive' })
       setIsTagSelectOpen(false)
       setSelectedTagId('')
-    } catch {
-      toast({ title: 'Error', description: 'Failed to add tag', variant: 'destructive' })
-    }
-  }
-
-  const handleCompleteTask = async () => {
-    if (!currentProject) return
-    setCompleteLoading(true)
-    try {
-      await taskApi.completeTask(currentProject.id, task.id)
-      toast({ title: 'Success', description: 'Task marked as complete!' })
-      onTaskUpdated()
-      onClose()
-    } catch {
-      toast({ title: 'Error', description: 'Failed to complete task', variant: 'destructive' })
-    } finally {
-      setCompleteLoading(false)
+    } catch (error: any) {
+      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to add tag', variant: 'destructive' })
     }
   }
 
@@ -365,14 +340,14 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     if (!currentProject || !comment.trim()) return
     setIsCommentLoading(true)
     try {
-      await taskApi.addTaskComment(currentProject.id, task.id, comment, commentFiles)
-      toast({ title: 'Success', description: 'Comment added!' })
+      const res = await taskApi.addTaskComment(currentProject.id, task.id, comment, commentFiles)
+      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Comment added!', variant: res?.code === 200 ? 'default' : 'destructive' })
       setComment('')
       setCommentFiles([])
       // TODO: reload comments/activity if needed
       await fetchComments()
-    } catch {
-      toast({ title: 'Error', description: 'Failed to add comment', variant: 'destructive' })
+    } catch (error: any) {
+      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to add comment', variant: 'destructive' })
     } finally {
       setIsCommentLoading(false)
     }
@@ -382,16 +357,16 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     if (!currentProject || !assignee) return
     setRemoveLoading(true)
     try {
-      await taskApi.removeTaskAssignment(currentProject.id, task.id, {
+      const res = await taskApi.removeTaskAssignment(currentProject.id, task.id, {
         implementId: assignee.userId,
         reason: removeReason
       })
-      toast({ title: 'Success', description: 'Assignee removed from task!' })
+      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Assignee removed from task!', variant: res?.code === 200 ? 'default' : 'destructive' })
       setAssignee(null)
       setRemoveReason('')
       onTaskUpdated()
     } catch (error: any) {
-      toast({ title: 'Error', description: 'Failed to remove assignee', variant: 'destructive' })
+      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to remove assignee', variant: 'destructive' })
     } finally {
       setRemoveLoading(false)
     }
@@ -401,13 +376,13 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     if (!currentProject || !assignee || (user?.id !== assignee.userId && user?.id !== (assignee as any).id)) return
     setLeaveLoading(true)
     try {
-      await taskApi.leaveTaskAssignment(currentProject.id, task.id, { reason: leaveReason })
-      toast({ title: 'Success', description: 'You have left this task!' })
+      const res = await taskApi.leaveTaskAssignment(currentProject.id, task.id, { reason: leaveReason })
+      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'You have left this task!', variant: res?.code === 200 ? 'default' : 'destructive' })
       setAssignee(null)
       setLeaveReason('')
       onTaskUpdated()
     } catch (error: any) {
-      toast({ title: 'Error', description: 'Failed to leave task', variant: 'destructive' })
+      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to leave task', variant: 'destructive' })
     } finally {
       setLeaveLoading(false)
     }
@@ -423,15 +398,15 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     if (!currentProject) return
     setIsUpdating(true)
     try {
-      await taskApi.updateTask(currentProject.id, task.id, {
+      const res = await taskApi.updateTask(currentProject.id, task.id, {
         title: editTitle,
         description: editDescription,
         priority: editPriority.toString()
       })
-      toast({ title: 'Success', description: 'Task updated!' })
+      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Task updated!', variant: res?.code === 200 ? 'default' : 'destructive' })
       onTaskUpdated()
-    } catch {
-      toast({ title: 'Error', description: 'Failed to update task', variant: 'destructive' })
+    } catch (error: any) {
+      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to update task', variant: 'destructive' })
     } finally {
       setIsUpdating(false)
     }
@@ -465,6 +440,30 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
   const priorityDropdownRef = useRef<HTMLDivElement>(null)
   const tagDropdownRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [completeFiles, setCompleteFiles] = useState<File[]>([]);
+
+  // Đảm bảo khai báo hàm handleCompleteTask trong component
+  const handleCompleteTask = async () => {
+    if (!currentProject) return;
+    if (!completeFiles.length) {
+      // Nếu chưa chọn file, mở file picker
+      fileInputRef.current?.click();
+      return;
+    }
+    setCompleteLoading(true);
+    try {
+      const res = await taskApi.completeTaskWithUpload(currentProject.id, task.id, completeFiles);
+      showToast({ title: res ? 'Success' : 'Error', description: res ? 'Task marked as complete!' : 'Failed to complete task', variant: res ? 'default' : 'destructive' });
+      onTaskUpdated();
+      onClose();
+    } catch (error: any) {
+      showToast({ title: 'Error', description: error?.response?.data?.message || error?.message || 'Failed to complete task', variant: 'destructive' });
+    } finally {
+      setCompleteLoading(false);
+      setCompleteFiles([]);
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -532,10 +531,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setAcceptLoading(true)
     try {
       await taskApi.acceptTaskAssignment(currentProject.id, task.id)
-      toast({ title: 'Success', description: 'Bạn đã chấp nhận task!' })
+      showToast({ title: 'Success', description: 'Bạn đã chấp nhận task!' })
       onTaskUpdated()
     } catch {
-      toast({ title: 'Error', description: 'Chấp nhận task thất bại', variant: 'destructive' })
+      showToast({ title: 'Error', description: 'Chấp nhận task thất bại', variant: 'destructive' })
     } finally {
       setAcceptLoading(false)
     }
@@ -766,6 +765,19 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             <Paperclip className='h-4 w-4' />
             <span>Attach</span>
           </button>
+          <input
+            type="file"
+            multiple
+            ref={fileInputRef}
+            style={{ display: 'none' }}
+            onChange={e => {
+              if (e.target.files) {
+                setCompleteFiles(Array.from(e.target.files));
+                // Sau khi chọn file, tự động gọi handleCompleteTask
+                setTimeout(() => handleCompleteTask(), 0);
+              }
+            }}
+          />
           <Button
             onClick={handleCompleteTask}
             disabled={completeLoading}
@@ -834,12 +846,12 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                               setLeaveLoadingMap((prev) => ({ ...prev, [a.projectMemberId]: true }))
                               try {
                                 await taskApi.leaveTaskAssignment(currentProject.id, task.id, { reason: leaveReason })
-                                toast({ title: 'Success', description: 'You have left this task!' })
+                                showToast({ title: 'Success', description: 'You have left this task!' })
                                 setAssignee(null)
                                 setLeaveReasonMap((prev) => ({ ...prev, [a.projectMemberId]: '' }))
                                 onTaskUpdated()
                               } catch (error: any) {
-                                toast({ title: 'Error', description: 'Failed to leave task', variant: 'destructive' })
+                                showToast({ title: 'Error', description: 'Failed to leave task', variant: 'destructive' })
                               } finally {
                                 setLeaveLoadingMap((prev) => ({ ...prev, [a.projectMemberId]: false }))
                               }
@@ -877,12 +889,12 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                                     implementId: a.projectMemberId,
                                     reason: removeReason
                                   })
-                                  toast({ title: 'Success', description: 'Assignee removed from task!' })
+                                  showToast({ title: 'Success', description: 'Assignee removed from task!' })
                                   setAssignee(null)
                                   setRemoveReasonMap((prev) => ({ ...prev, [a.projectMemberId]: '' }))
                                   onTaskUpdated()
                                 } catch (error: any) {
-                                  toast({
+                                  showToast({
                                     title: 'Error',
                                     description: 'Failed to remove assignee',
                                     variant: 'destructive'

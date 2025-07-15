@@ -2,7 +2,7 @@ import { projectMemberApi } from '@/api/projectMembers'
 import { sprintApi } from '@/api/sprints'
 import { taskApi } from '@/api/tasks'
 import { Button } from '@/components/ui/button'
-import { toast } from '@/hooks/use-toast'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useBoards } from '@/hooks/useBoards'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useSprints } from '@/hooks/useSprints'
@@ -30,6 +30,7 @@ export function TaskList({ tasks, className = '', onMoveToSprint, onTaskUpdate, 
   const { boards } = useBoards()
   const { currentProject } = useCurrentProject()
   const { sprints } = useSprints(currentProject?.id)
+  const { showToast } = useToastContext()
 
   useEffect(() => {
     const fetchMembers = async () => {
@@ -41,7 +42,7 @@ export function TaskList({ tasks, className = '', onMoveToSprint, onTaskUpdate, 
         setProjectMembers(members)
       } catch (error) {
         console.error('Failed to fetch project members:', error)
-        toast({
+        showToast({
           title: 'Error',
           description: 'Failed to load project members',
           variant: 'destructive'
@@ -120,20 +121,21 @@ export function TaskList({ tasks, className = '', onMoveToSprint, onTaskUpdate, 
       if (!currentProject?.id) throw new Error('No projectId')
       const board = boards.find((b) => (b.name || '').toLowerCase() === newStatus.toLowerCase())
       if (!board) throw new Error('No board found for status: ' + newStatus)
-      await taskApi.moveTaskToBoard(currentProject.id, taskId, board.id)
+      const res = await taskApi.moveTaskToBoard(currentProject.id, taskId, board.id)
       await refreshTasks()
-      toast({
-        title: 'Success',
-        description: `Task status updated successfully to "${newStatus}"`
+      showToast({
+        title: res?.code === 200 ? 'Success' : 'Error',
+        description: res?.message || `Task status updated successfully to "${newStatus}"`,
+        variant: res?.code === 200 ? 'default' : 'destructive'
       })
       if (onTaskUpdate) {
         onTaskUpdate()
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error updating task status:', error)
-      toast({
+      showToast({
         title: 'Error',
-        description: 'Failed to update task status',
+        description: error.response?.data?.message || error.message || 'Failed to update task status',
         variant: 'destructive'
       })
     } finally {
@@ -144,17 +146,18 @@ export function TaskList({ tasks, className = '', onMoveToSprint, onTaskUpdate, 
   const handleDeleteTask = async (taskId: string) => {
     if (!currentProject?.id) return
     try {
-      await taskApi.deleteTask(currentProject.id, taskId)
+      const res = await taskApi.deleteTask(currentProject.id, taskId)
       await refreshTasks()
-      toast({
-        title: 'Success',
-        description: 'Task deleted successfully'
+      showToast({
+        title: res?.code === 200 ? 'Success' : 'Error',
+        description: res?.message || 'Task deleted successfully',
+        variant: res?.code === 200 ? 'default' : 'destructive'
       })
       if (onTaskUpdate) onTaskUpdate()
-    } catch (error) {
-      toast({
+    } catch (error: any) {
+      showToast({
         title: 'Error',
-        description: 'Failed to delete task',
+        description: error.response?.data?.message || error.message || 'Failed to delete task',
         variant: 'destructive'
       })
     }
@@ -163,17 +166,18 @@ export function TaskList({ tasks, className = '', onMoveToSprint, onTaskUpdate, 
   const handleAssignTask = async (taskId: string, assigneeId: string) => {
     if (!currentProject?.id) return
     try {
-      await taskApi.assignTask(currentProject.id, taskId, assigneeId)
+      const res = await taskApi.assignTask(currentProject.id, taskId, assigneeId)
       await refreshTasks()
-      toast({
-        title: 'Success',
-        description: 'Task assigned successfully'
+      showToast({
+        title: res?.code === 200 ? 'Success' : 'Error',
+        description: res?.message || 'Task assigned successfully',
+        variant: res?.code === 200 ? 'default' : 'destructive'
       })
       if (onTaskUpdate) onTaskUpdate()
-    } catch (error) {
-      toast({
+    } catch (error: any) {
+      showToast({
         title: 'Error',
-        description: 'Failed to assign task',
+        description: error.response?.data?.message || error.message || 'Failed to assign task',
         variant: 'destructive'
       })
     }
@@ -182,17 +186,18 @@ export function TaskList({ tasks, className = '', onMoveToSprint, onTaskUpdate, 
   const handleMoveToSprint = async (taskId: string, sprintId: string) => {
     if (!currentProject?.id) return
     try {
-      await sprintApi.assignTasksToSprint(currentProject.id, sprintId, [taskId])
+      const res = await sprintApi.assignTasksToSprint(currentProject.id, sprintId, [taskId])
       await refreshTasks()
-      toast({
-        title: 'Success',
-        description: 'Task moved to sprint successfully'
+      showToast({
+        title: res?.code === 200 ? 'Success' : 'Error',
+        description: res?.message || 'Task moved to sprint successfully',
+        variant: res?.code === 200 ? 'default' : 'destructive'
       })
       if (onTaskUpdate) onTaskUpdate()
-    } catch (error) {
-      toast({
+    } catch (error: any) {
+      showToast({
         title: 'Error',
-        description: 'Failed to move task to sprint',
+        description: error.response?.data?.message || error.message || 'Failed to move task to sprint',
         variant: 'destructive'
       })
     }

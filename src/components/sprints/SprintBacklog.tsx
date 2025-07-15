@@ -1,8 +1,8 @@
 import { sprintApi } from '@/api/sprints'
 import { taskApi } from '@/api/tasks'
 import { Button } from '@/components/ui/button'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { SprintStatusMap } from '@/constants/sprintStatus'
-import { useToast } from '@/hooks/use-toast'
 import { useSprints } from '@/hooks/useSprints'
 import { TaskP } from '@/types/task'
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react'
@@ -20,6 +20,8 @@ interface SprintBacklogProps {
   onTaskUpdate: () => void
   sprint?: { status: string } // Thêm prop sprint nếu có
   isLoading?: boolean
+  onLoadMore?: () => void
+  hasMore?: boolean
 }
 
 export function SprintBacklog({
@@ -29,13 +31,15 @@ export function SprintBacklog({
   onTaskCreated,
   onTaskUpdate,
   sprint,
-  isLoading = false
+  isLoading = false,
+  onLoadMore,
+  hasMore
 }: SprintBacklogProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
   const { sprints, refreshSprints } = useSprints()
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
   const [showSprintSelector, setShowSprintSelector] = useState(false)
   const [loadingBatch, setLoadingBatch] = useState(false)
 
@@ -101,14 +105,21 @@ export function SprintBacklog({
                   onSprintSelect={async (sprintId) => {
                     setLoadingBatch(true)
                     try {
-                      await sprintApi.assignTasksToSprint(projectId, sprintId, selectedTaskIds)
-                      toast({ title: 'Success', description: 'Tasks moved to sprint successfully!' })
+                      const res = await sprintApi.assignTasksToSprint(projectId, sprintId, selectedTaskIds)
+                      if (typeof res === 'object' && res !== null && 'code' in (res as any)) {
+                        const r: any = res;
+                        showToast({ title: r.code === 200 ? 'Success' : 'Error', description: r.message || 'Tasks moved to sprint successfully!', variant: r.code === 200 ? 'default' : 'destructive' })
+                      } else if (res === true) {
+                        showToast({ title: 'Success', description: 'Tasks moved to sprint successfully!' })
+                      } else {
+                        showToast({ title: 'Error', description: 'Failed to move tasks', variant: 'destructive' })
+                      }
                       setSelectedTaskIds([])
                       setShowSprintSelector(false)
                       await refreshSprints()
                       onTaskUpdate()
-                    } catch (err) {
-                      toast({ title: 'Error', description: 'Failed to move tasks', variant: 'destructive' })
+                    } catch (err: any) {
+                      showToast({ title: 'Error', description: err.response?.data?.message || err.message || 'Failed to move tasks', variant: 'destructive' })
                     } finally {
                       setLoadingBatch(false)
                     }
@@ -123,14 +134,22 @@ export function SprintBacklog({
                   if (!window.confirm('Are you sure you want to delete the selected tasks?')) return
                   setLoadingBatch(true)
                   try {
+                    let lastRes = null
                     for (const id of selectedTaskIds) {
-                      await taskApi.deleteTask(projectId, id)
+                      lastRes = await taskApi.deleteTask(projectId, id)
                     }
-                    toast({ title: 'Success', description: 'Deleted selected tasks!' })
+                    if (lastRes && typeof lastRes === 'object' && 'code' in (lastRes as any)) {
+                      const r: any = lastRes;
+                      showToast({ title: r.code === 200 ? 'Success' : 'Error', description: r.message || 'Deleted selected tasks!', variant: r.code === 200 ? 'default' : 'destructive' })
+                    } else if (lastRes === true) {
+                      showToast({ title: 'Success', description: 'Deleted selected tasks!' })
+                    } else {
+                      showToast({ title: 'Error', description: 'Failed to delete tasks', variant: 'destructive' })
+                    }
                     setSelectedTaskIds([])
                     onTaskUpdate()
-                  } catch {
-                    toast({ title: 'Error', description: 'Failed to delete tasks', variant: 'destructive' })
+                  } catch (err: any) {
+                    showToast({ title: 'Error', description: err.response?.data?.message || err.message || 'Failed to delete tasks', variant: 'destructive' })
                   } finally {
                     setLoadingBatch(false)
                   }
@@ -157,6 +176,8 @@ export function SprintBacklog({
                 onCheck={handleCheck}
                 onTaskUpdate={onTaskUpdate}
                 height={Math.min(tasks.length * 44, 400)} // Dynamic height based on task count
+                onLoadMore={onLoadMore}
+                hasMore={hasMore}
               />
             </div>
           ) : (

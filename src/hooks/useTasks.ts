@@ -1,13 +1,15 @@
-import { TaskP } from '@/types/task'
-import { useState, useEffect } from 'react'
-import { useCurrentProject } from './useCurrentProject'
 import { taskApi } from '@/api/tasks'
+import { useToastContext } from '@/components/ui/ToastContext'
+import { TaskP } from '@/types/task'
+import { useEffect, useState } from 'react'
+import { useCurrentProject } from './useCurrentProject'
 
 export const useTasks = () => {
   const [tasks, setTasks] = useState<TaskP[]>([])
   const [isTaskLoading, setIsTaskLoading] = useState(true)
   const [taskError, setTaskError] = useState<Error | null>(null)
   const { currentProject, isLoading: isProjectLoading } = useCurrentProject()
+  const { showToast } = useToastContext()
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -31,13 +33,14 @@ export const useTasks = () => {
 
   const addTask = async (projectId: string, newTask: { type: string; title: string }) => {
     try {
-      await taskApi.createTask(projectId, newTask.title)
+      const res = await taskApi.createTask(projectId, newTask.title)
+      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Task created successfully', variant: res?.code === 200 ? 'default' : 'destructive' })
       // Refresh tasks after adding a new one
       const updatedTasks = await taskApi.getTasksFromProject(projectId)
       setTasks(updatedTasks)
     } catch (error) {
       setTaskError(error as Error)
-      console.error('Failed to add task:', error)
+      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to add task', variant: 'destructive' })
       throw error
     }
   }

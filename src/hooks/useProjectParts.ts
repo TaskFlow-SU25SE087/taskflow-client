@@ -1,7 +1,9 @@
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useState } from 'react'
 import { connectRepoToPart, createProjectPart, getProjectParts } from '../api/projectParts'
 
 export function useProjectParts() {
+  const { showToast } = useToastContext()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<any>(null)
   const [result, setResult] = useState<any>(null)
@@ -15,9 +17,11 @@ export function useProjectParts() {
     try {
       const data = await createProjectPart(projectId, payload)
       setResult(data)
+      showToast({ title: data?.code === 200 ? 'Success' : 'Error', description: data?.message || 'Project part created successfully', variant: data?.code === 200 ? 'default' : 'destructive' })
       return data
     } catch (err) {
       setError(err)
+      showToast({ title: 'Error', description: err.response?.data?.message || err.message || 'Failed to create project part', variant: 'destructive' })
       throw err
     } finally {
       setLoading(false)
@@ -30,9 +34,11 @@ export function useProjectParts() {
     try {
       const data = await connectRepoToPart(projectId, partId, payload)
       setResult(data)
+      showToast({ title: data?.code === 200 ? 'Success' : 'Error', description: data?.message || 'Repository connected successfully', variant: data?.code === 200 ? 'default' : 'destructive' })
       return data
     } catch (err) {
       setError(err)
+      showToast({ title: 'Error', description: err.response?.data?.message || err.message || 'Failed to connect repository', variant: 'destructive' })
       throw err
     } finally {
       setLoading(false)

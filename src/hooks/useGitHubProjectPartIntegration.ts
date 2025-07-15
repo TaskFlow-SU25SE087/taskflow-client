@@ -1,3 +1,4 @@
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useCallback, useState } from 'react'
 import {
   connectRepositoryToPart,
@@ -6,7 +7,6 @@ import {
   getGitHubRepositories,
   handleGitHubOAuthCallback
 } from '../api/github'
-import { useToast } from './useToast'
 
 export interface GitHubConnectionStatus {
   isConnected: boolean
@@ -35,7 +35,7 @@ export interface ProjectPart {
 }
 
 export function useGitHubProjectPartIntegration() {
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
 
   // States
   const [connectionStatus, setConnectionStatus] = useState<GitHubConnectionStatus | null>(null)
@@ -65,17 +65,13 @@ export function useGitHubProjectPartIntegration() {
         return mockStatus
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to check connection status'
-        toast({
-          title: 'Error',
-          description: errorMessage,
-          variant: 'destructive'
-        })
+        showToast({ title: 'Error', description: errorMessage, variant: 'destructive' })
         throw error
       } finally {
         setLoading(false)
       }
     },
-    [toast]
+    [showToast]
   )
 
   // Step 2.1: Get GitHub OAuth login URL
@@ -92,16 +88,12 @@ export function useGitHubProjectPartIntegration() {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to start GitHub OAuth'
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive'
-      })
+      showToast({ title: 'Error', description: errorMessage, variant: 'destructive' })
       throw error
     } finally {
       setOauthLoading(false)
     }
-  }, [toast])
+  }, [showToast])
 
   // Step 3: Fetch GitHub repositories
   const fetchRepositories = useCallback(async () => {
@@ -116,16 +108,12 @@ export function useGitHubProjectPartIntegration() {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch GitHub repositories'
-      toast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive'
-      })
+      showToast({ title: 'Error', description: errorMessage, variant: 'destructive' })
       throw error
     } finally {
       setReposLoading(false)
     }
-  }, [toast])
+  }, [showToast])
 
   // Step 2.4: Handle OAuth callback
   const handleOAuthCallback = useCallback(
@@ -142,17 +130,13 @@ export function useGitHubProjectPartIntegration() {
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to handle OAuth callback'
-        toast({
-          title: 'Error',
-          description: errorMessage,
-          variant: 'destructive'
-        })
+        showToast({ title: 'Error', description: errorMessage, variant: 'destructive' })
         throw error
       } finally {
         setOauthLoading(false)
       }
     },
-    [toast, fetchRepositories]
+    [showToast, fetchRepositories]
   )
 
   // Step 4: Create new project part
@@ -169,27 +153,20 @@ export function useGitHubProjectPartIntegration() {
       try {
         const response = await createProjectPart(projectId, partData)
         if (response.code === 0) {
-          toast({
-            title: 'Success',
-            description: 'Project part created successfully'
-          })
+          showToast({ title: 'Success', description: 'Project part created successfully' })
           return response.data
         } else {
           throw new Error(response.message || 'Failed to create project part')
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to create project part'
-        toast({
-          title: 'Error',
-          description: errorMessage,
-          variant: 'destructive'
-        })
+        showToast({ title: 'Error', description: errorMessage, variant: 'destructive' })
         throw error
       } finally {
         setCreatingPart(false)
       }
     },
-    [toast]
+    [showToast]
   )
 
   // Step 5: Connect repository to project part
@@ -199,27 +176,20 @@ export function useGitHubProjectPartIntegration() {
       try {
         const response = await connectRepositoryToPart(projectId, partId, { repoUrl, accessToken })
         if (response.code === 0) {
-          toast({
-            title: 'Success',
-            description: 'Repository connected successfully'
-          })
+          showToast({ title: 'Success', description: 'Repository connected successfully' })
           return response.data
         } else {
           throw new Error(response.message || 'Failed to connect repository')
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to connect repository'
-        toast({
-          title: 'Error',
-          description: errorMessage,
-          variant: 'destructive'
-        })
+        showToast({ title: 'Error', description: errorMessage, variant: 'destructive' })
         throw error
       } finally {
         setConnectingRepo(false)
       }
     },
-    [toast]
+    [showToast]
   )
 
   // Note: Since getProjectParts endpoint doesn't exist, we'll manage project parts locally
@@ -231,12 +201,9 @@ export function useGitHubProjectPartIntegration() {
   // Disconnect repository (placeholder - implement if backend supports it)
   const disconnectRepository = useCallback(
     async (projectId: string, partId: string) => {
-      toast({
-        title: 'Info',
-        description: 'Disconnect functionality not yet implemented'
-      })
+      showToast({ title: 'Info', description: 'Disconnect functionality not yet implemented' })
     },
-    [toast]
+    [showToast]
   )
 
   return {

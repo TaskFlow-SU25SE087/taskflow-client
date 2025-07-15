@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useAuth } from '@/hooks/useAuth'
-import { useToast } from '@/hooks/useToast'
 import { Loader2, Mail } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
@@ -9,7 +9,7 @@ export default function VerifyEmailPage() {
   const [isSending, setIsSending] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
   const { resendVerificationEmail, verifyEmail } = useAuth()
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token')
@@ -20,14 +20,14 @@ export default function VerifyEmailPage() {
         setIsVerifying(true)
         try {
           await verifyEmail(token)
-          toast({
+          showToast({
             title: 'Success',
             description: 'Email verified successfully',
             variant: 'default'
           })
           navigate('/login')
         } catch (error: any) {
-          toast({
+          showToast({
             title: 'Error',
             description: error.message || 'Failed to verify email',
             variant: 'destructive'
@@ -39,19 +39,19 @@ export default function VerifyEmailPage() {
     }
 
     verifyEmailToken()
-  }, [token, verifyEmail, toast, navigate])
+  }, [token, verifyEmail, showToast, navigate])
 
   const handleResendEmail = async () => {
     setIsSending(true)
     try {
       await resendVerificationEmail()
-      toast({
+      showToast({
         title: 'Success',
         description: 'Verification email sent successfully',
         variant: 'default'
       })
     } catch (error: any) {
-      toast({
+      showToast({
         title: 'Error',
         description: error.message || 'Failed to send verification email',
         variant: 'destructive'

@@ -1,9 +1,9 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useToastContext } from '@/components/ui/ToastContext'
 import axiosClient from '@/configs/axiosClient'
 import { useAuth } from '@/hooks/useAuth'
-import { useToast } from '@/hooks/useToast'
 import { ArrowLeft, Camera } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -24,7 +24,7 @@ interface UserProfileData {
 
 export default function UserProfilePage() {
   const { user } = useAuth()
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
   const navigate = useNavigate()
   const [profile, setProfile] = useState<UserProfileData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -52,9 +52,9 @@ export default function UserProfilePage() {
       })
       .catch((err) => {
         if (err.response?.status === 404) {
-          toast({ title: 'Not found', description: 'Không tìm thấy profile người dùng.', variant: 'destructive' })
+          showToast({ title: 'Not found', description: 'Không tìm thấy profile người dùng.', variant: 'destructive' })
         } else {
-          toast({ title: 'Error', description: 'Failed to load profile', variant: 'destructive' })
+          showToast({ title: 'Error', description: 'Failed to load profile', variant: 'destructive' })
         }
       })
       .finally(() => setLoading(false))
@@ -86,7 +86,7 @@ export default function UserProfilePage() {
     e.preventDefault()
     if (!user?.id) return
     if (!editData.fullName.trim()) {
-      toast({ title: 'Lỗi', description: 'Vui lòng nhập họ tên.', variant: 'destructive' })
+      showToast({ title: 'Lỗi', description: 'Vui lòng nhập họ tên.', variant: 'destructive' })
       return
     }
     setSaving(true)
@@ -109,9 +109,9 @@ export default function UserProfilePage() {
         avatar: res.data.data.avatar || ''
       })
       setAvatarFile(null)
-      toast({ title: 'Success', description: 'Profile updated!' })
+      showToast({ title: 'Success', description: 'Profile updated!' })
     } catch {
-      toast({ title: 'Error', description: 'Failed to update profile', variant: 'destructive' })
+      showToast({ title: 'Error', description: 'Failed to update profile', variant: 'destructive' })
     } finally {
       setSaving(false)
     }

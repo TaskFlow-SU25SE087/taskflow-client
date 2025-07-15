@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useAuth } from '@/hooks/useAuth'
-import { useToast } from '@/hooks/useToast'
 import { Loader2, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -12,7 +12,7 @@ export default function OtpPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isResending, setIsResending] = useState(false)
   const { verifyOtp, resendVerificationEmail } = useAuth()
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,7 +21,7 @@ export default function OtpPage() {
 
     try {
       await verifyOtp(otp)
-      toast({
+      showToast({
         title: 'Success',
         description: 'OTP verified successfully',
         variant: 'default'
@@ -30,7 +30,7 @@ export default function OtpPage() {
         navigate('/add-info')
       }, 200)
     } catch (error: any) {
-      toast({
+      showToast({
         title: 'Error',
         description: error.message || 'Failed to verify OTP',
         variant: 'destructive'
@@ -44,13 +44,13 @@ export default function OtpPage() {
     setIsResending(true)
     try {
       await resendVerificationEmail()
-      toast({
+      showToast({
         title: 'Success',
         description: 'OTP has been resent to your email',
         variant: 'default'
       })
     } catch (error: any) {
-      toast({
+      showToast({
         title: 'Error',
         description: error.message || 'Failed to resend OTP',
         variant: 'destructive'

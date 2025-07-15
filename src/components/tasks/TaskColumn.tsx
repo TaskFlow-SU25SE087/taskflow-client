@@ -1,5 +1,4 @@
 import TaskCreateMenuForBoard from '@/components/tasks/TaskCreateMenuForBoard'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { TaskP } from '@/types/task'
 import { Inbox } from 'lucide-react'
@@ -29,7 +28,7 @@ export function TaskColumn({ title, tasks, color, onTaskCreated, boardId }: Task
   )
 
   return (
-    <div className='bg-white rounded-lg border w-[400px] border-gray-300 flex flex-col'>
+    <div className='bg-white rounded-lg border w-[400px] border-gray-300 flex flex-col min-h-0'>
       <div className='flex-none'>
         <div className='flex items-center justify-between px-6 pt-6 pb-4'>
           <div className='flex items-center gap-x-3'>
@@ -69,14 +68,12 @@ export function TaskColumn({ title, tasks, color, onTaskCreated, boardId }: Task
       {tasks.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className='flex-1 overflow-hidden min-h-[200px] max-h-[calc(100vh-320px)]'>
-          <ScrollArea className='h-full px-6'>
-            <div className='space-y-4 pb-4'>
-              {tasks.map((task) => (
-                <SortableTaskCard key={task.id} task={task} />
-              ))}
-            </div>
-          </ScrollArea>
+        <div className='flex-1 min-h-0 overflow-y-auto px-6'>
+          <div className='space-y-4 pb-4'>
+            {tasks.map((task) => (
+              <SortableTaskCard key={task.id} task={task} />
+            ))}
+          </div>
         </div>
       )}
     </div>

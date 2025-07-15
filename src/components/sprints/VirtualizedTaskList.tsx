@@ -26,6 +26,8 @@ interface VirtualizedTaskListProps {
   onTaskUpdate?: () => void
   isLoading?: boolean
   height?: number
+  onLoadMore?: () => void
+  hasMore?: boolean
 }
 
 const ITEM_HEIGHT = 44 // Height of each task row including margin
@@ -37,8 +39,18 @@ export const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = ({
   onCheck,
   onTaskUpdate,
   isLoading = false,
-  height = 400
+  height = 400,
+  onLoadMore,
+  hasMore
 }) => {
+  // Thêm effect để gọi onLoadMore khi scroll đến cuối
+  const listRef = React.useRef<any>(null)
+  const handleItemsRendered = ({ visibleStopIndex }: { visibleStopIndex: number }) => {
+    if (hasMore && onLoadMore && visibleStopIndex >= tasks.length - 1) {
+      onLoadMore()
+    }
+  }
+
   if (isLoading) {
     return (
       <div style={{ height }}>
@@ -73,7 +85,15 @@ export const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = ({
   }
 
   return (
-    <List height={height} itemCount={tasks.length} itemSize={ITEM_HEIGHT} width='100%' overscanCount={5}>
+    <List
+      height={height}
+      itemCount={tasks.length}
+      itemSize={ITEM_HEIGHT}
+      width='100%'
+      overscanCount={5}
+      onItemsRendered={({ visibleStopIndex }) => handleItemsRendered({ visibleStopIndex })}
+      ref={listRef}
+    >
       {Row}
     </List>
   )

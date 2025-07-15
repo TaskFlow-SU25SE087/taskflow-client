@@ -20,7 +20,7 @@ export const Sidebar = ({ isOpen, onToggle, currentProject, connectionStatus }: 
       <div
         className={`transition-all duration-300 ease-in-out ${
           isOpen ? 'w-64' : 'w-0'
-        } border-r border-gray-300 bg-white overflow-hidden fixed lg:relative h-full z-30 lg:z-auto`}
+        } border-r border-gray-300 bg-white overflow-hidden fixed lg:sticky lg:top-0 lg:self-start h-full min-h-screen z-30 lg:z-auto`}
       >
         <div className='p-3 sm:p-4 h-full flex flex-col'>
           <div className='flex items-center justify-between pb-3 sm:pb-4 border-b border-gray-300 mb-4 sm:mb-6'>

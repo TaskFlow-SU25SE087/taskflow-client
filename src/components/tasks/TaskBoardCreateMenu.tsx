@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useToast } from '@/hooks/use-toast'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { Loader2, SquarePlus } from 'lucide-react'
 import { useState } from 'react'
 
@@ -22,14 +22,14 @@ export default function TaskBoardCreateMenu({
   onBoardCreated,
   trigger
 }: TaskBoardCreateMenuProps) {
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [status, setStatus] = useState('')
   const [description, setDescription] = useState('')
 
   const handleSubmit = async () => {
     if (!status.trim()) {
-      toast({
+      showToast({
         title: 'Validation Error',
         description: 'Please enter a board name',
         variant: 'destructive'
@@ -38,22 +38,14 @@ export default function TaskBoardCreateMenu({
     }
     setIsSubmitting(true)
     try {
-      await boardApi.createBoard(projectId, status.trim(), description.trim())
-      toast({
-        title: 'Success',
-        description: 'Board created successfully'
-      })
+      const res = await boardApi.createBoard(projectId, status.trim(), description.trim())
+      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Board created successfully', variant: res?.code === 200 ? 'default' : 'destructive' })
       onBoardCreated()
       onOpenChange(false)
       setStatus('')
       setDescription('')
     } catch (error) {
-      console.error(error)
-      toast({
-        title: 'Error',
-        description: 'Failed to create board. Please try again.',
-        variant: 'destructive'
-      })
+      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to create board.', variant: 'destructive' })
     } finally {
       setIsSubmitting(false)
     }

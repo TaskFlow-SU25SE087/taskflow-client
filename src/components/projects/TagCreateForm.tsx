@@ -1,21 +1,27 @@
-import { useState } from 'react'
-import { useTags } from '@/hooks/useTags'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useToastContext } from '@/components/ui/ToastContext'
+import { useTags } from '@/hooks/useTags'
+import { useState } from 'react'
 
 export default function TagCreateForm() {
   const { createTag, isLoading, error } = useTags()
+  const { showToast } = useToastContext()
   const [tag, setTag] = useState({ name: '', description: '', color: '#000000' })
   const [success, setSuccess] = useState('')
 
   const handleCreate = async () => {
     if (!tag.name) return
-    const ok = await createTag(tag)
-    if (ok) {
-      setSuccess('Tag created successfully!')
-      setTag({ name: '', description: '', color: '#000000' })
-    } else {
-      setSuccess('')
+    try {
+      const res = await createTag(tag)
+      if (res?.code === 200) {
+        showToast({ title: 'Success', description: res?.message || 'Tag created successfully' })
+        setTag({ name: '', description: '', color: '#000000' })
+      } else {
+        showToast({ title: 'Error', description: res?.message || 'Failed to create tag', variant: 'destructive' })
+      }
+    } catch (error: any) {
+      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to create tag', variant: 'destructive' })
     }
   }
 

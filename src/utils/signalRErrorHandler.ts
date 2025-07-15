@@ -1,12 +1,13 @@
+import { useToastContext } from '@/components/ui/ToastContext'
 import { SignalRService } from '@/configs/signalr'
-import { toast } from '@/hooks/use-toast'
 
 export class SignalRErrorHandler {
   static handleConnectionError(error: any, signalRService: SignalRService) {
     console.error('❌ SignalR Connection Error:', error)
 
+    const { showToast } = useToastContext()
     // Show error notification to user
-    toast({
+    showToast({
       title: 'Connection Lost',
       description: 'Attempting to reconnect...',
       variant: 'destructive'
@@ -21,7 +22,8 @@ export class SignalRErrorHandler {
   static handleMethodError(error: any, methodName: string) {
     console.error(`❌ SignalR Method Error (${methodName}):`, error)
 
-    toast({
+    const { showToast } = useToastContext()
+    showToast({
       title: 'Operation Failed',
       description: `Failed to ${methodName}. Please try again.`,
       variant: 'destructive'
@@ -31,7 +33,8 @@ export class SignalRErrorHandler {
   static handleNotificationError(error: any) {
     console.error('❌ Notification Error:', error)
 
-    toast({
+    const { showToast } = useToastContext()
+    showToast({
       title: 'Notification Error',
       description: 'Failed to process notification. Please refresh the page.',
       variant: 'destructive'
@@ -41,7 +44,8 @@ export class SignalRErrorHandler {
   static handleProjectGroupError(error: any, projectId: string, action: 'join' | 'leave') {
     console.error(`❌ Project Group Error (${action} ${projectId}):`, error)
 
-    toast({
+    const { showToast } = useToastContext()
+    showToast({
       title: 'Project Group Error',
       description: `Failed to ${action} project group. Notifications may not work properly.`,
       variant: 'destructive'
@@ -51,8 +55,9 @@ export class SignalRErrorHandler {
   static handleReconnectionAttempt(attemptNumber: number, maxAttempts: number) {
     console.log(`🔄 SignalR Reconnection attempt ${attemptNumber}/${maxAttempts}`)
 
+    const { showToast } = useToastContext()
     if (attemptNumber === maxAttempts) {
-      toast({
+      showToast({
         title: 'Connection Failed',
         description: 'Unable to establish connection. Please refresh the page.',
         variant: 'destructive'
@@ -63,7 +68,8 @@ export class SignalRErrorHandler {
   static handleAuthenticationError() {
     console.error('❌ SignalR Authentication Error')
 
-    toast({
+    const { showToast } = useToastContext()
+    showToast({
       title: 'Authentication Error',
       description: 'Please log in again to receive real-time notifications.',
       variant: 'destructive'

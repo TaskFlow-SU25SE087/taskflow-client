@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useAuth } from '@/hooks/useAuth'
-import { useToast } from '@/hooks/useToast'
 import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -12,7 +12,7 @@ export default function AddUserInfoPage() {
   const [phoneNumber, setPhoneNumber] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { addUsername, error } = useAuth()
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,7 +23,7 @@ export default function AddUserInfoPage() {
     try {
       await addUsername(username, avatar, phoneNumber)
     } catch (err: any) {
-      toast({
+      showToast({
         title: 'Error',
         description: err.message || 'Failed to update user information.',
         variant: 'destructive'

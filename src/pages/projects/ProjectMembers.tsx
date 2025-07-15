@@ -1,9 +1,19 @@
 import { projectApi } from '@/api/projects'
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { toast } from '@/hooks/use-toast'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useEffect, useState } from 'react'
@@ -35,6 +45,8 @@ export default function ProjectMembers() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const { user } = useAuth()
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [pendingRemove, setPendingRemove] = useState<string | null>(null)
+  const { showToast } = useToastContext()
 
   const fetchMembers = async () => {
     if (!projectId) return
@@ -77,13 +89,11 @@ export default function ProjectMembers() {
     try {
       console.log('Calling API addMemberToProject')
       const res = await projectApi.addMemberToProject(projectId, inviteEmail)
-      console.log('[ProjectMembers] addMemberToProject response:', res)
-      setInviteEmail('')
-      fetchMembers()
-      toast({ title: 'Success', description: 'Member invited!', variant: 'default' })
+      console.log('Show toast:', res);
+      showToast({ title: 'Success', description: res?.message || 'Member invited!', variant: 'default' })
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to invite member')
-      toast({ title: 'Error', description: 'Failed to invite member!', variant: 'destructive' })
+      showToast({ title: 'Error', description: err.response?.data?.message || err.message || 'Failed to invite member!', variant: 'destructive' })
     } finally {
       setInviteLoading(false)
     }
@@ -91,9 +101,10 @@ export default function ProjectMembers() {
 
   const handleRemove = async (userId: string) => {
     if (!projectId) return
-    if (!window.confirm('Remove this member?')) return
     try {
-      await projectApi.removeProjectMember(projectId, userId)
+      const res = await projectApi.removeProjectMember(projectId, userId)
+      console.log('Show toast after remove:', res)
+      showToast({ title: res.code === 200 ? 'Success' : 'Error', description: res.message || 'Member removed', variant: res.code === 200 ? 'default' : 'destructive' })
       fetchMembers()
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to remove member')
@@ -112,70 +123,103 @@ export default function ProjectMembers() {
   }
 
   return (
-    <div className='flex min-h-screen bg-gray-50'>
-      <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen((v) => !v)} />
-      <div className='flex-1 flex flex-col'>
-        <Navbar isSidebarOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen((v) => !v)} />
-        <main className='flex-1 max-w-2xl mx-auto p-6'>
-          <h1 className='text-2xl font-bold mb-4'>Project Members</h1>
-          <div className='flex gap-2 mb-6'>
-            <Input
-              placeholder='Invite by email...'
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-            />
-            <Button
-              onClick={() => {
-                console.log('Invite button clicked', inviteEmail)
-                handleInvite()
-              }}
-              disabled={inviteLoading || !inviteEmail}
+    <>
+      <div className='flex min-h-screen bg-gray-50'>
+        <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen((v) => !v)} />
+        <div className='flex-1 flex flex-col'>
+          <Navbar isSidebarOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen((v) => !v)} />
+          <main className='flex-1 max-w-2xl mx-auto p-6'>
+            <h1 className='text-2xl font-bold mb-4'>Project Members</h1>
+            <div className='flex gap-2 mb-6'>
+              <Input
+                placeholder='Invite by email...'
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+              />
+              <Button
+                onClick={() => {
+                  console.log('Invite button clicked', inviteEmail)
+                  handleInvite()
+                }}
+                disabled={inviteLoading || !inviteEmail}
+              >
+                {inviteLoading ? 'Inviting...' : 'Invite'}
+              </Button>
+              <Button variant='outline' color='red' onClick={handleLeave}>
+                Leave project
+              </Button>
+            </div>
+            {/* <Button
+              onClick={() => showToast({ title: 'Test', description: 'This is a test toast!' })}
+              variant="outline"
+              className="mb-4"
             >
-              {inviteLoading ? 'Inviting...' : 'Invite'}
-            </Button>
-            <Button variant='outline' color='red' onClick={handleLeave}>
-              Leave project
-            </Button>
-          </div>
-          {loading && <div>Loading...</div>}
-          {error && <div className='text-red-500'>{error}</div>}
-          <ul className='divide-y'>
-            {members.map((m) => {
-              console.log('[ProjectMembers] render member:', m)
-              return (
-                <li
-                  key={m.id}
-                  className='flex items-center gap-4 py-3 cursor-pointer hover:bg-gray-100 rounded transition'
-                  onClick={() => {
-                    console.log('Clicked member:', m.userId)
-                    setSelectedUserId(m.userId)
-                  }}
-                >
-                  <img src={m.avatar} alt={m.fullName} className='w-10 h-10 rounded-full object-cover' />
-                  <div className='flex-1'>
-                    <div className='font-semibold'>{m.fullName}</div>
-                    <div className='text-sm text-gray-500'>{m.email}</div>
-                    <div className='text-xs text-gray-400'>{m.role}</div>
-                  </div>
-                  {selfRole?.toLowerCase() === 'leader' && m.id !== selfId && (
-                    <Button
-                      variant='destructive'
-                      size='sm'
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleRemove(m.userId)
+              Test Toast
+            </Button> */}
+            {loading && <div>Loading...</div>}
+            {error && <div className='text-red-500'>{error}</div>}
+            <ul className='divide-y'>
+              {members.map((m) => {
+                console.log('[ProjectMembers] render member:', m)
+                return (
+                  <li
+                    key={m.id}
+                    className='flex items-center gap-4 py-3 cursor-pointer hover:bg-gray-100 rounded transition'
+                    onClick={() => {
+                      console.log('Clicked member:', m.userId)
+                      setSelectedUserId(m.userId)
+                    }}
+                  >
+                    <img src={m.avatar} alt={m.fullName} className='w-10 h-10 rounded-full object-cover' />
+                    <div className='flex-1'>
+                      <div className='font-semibold'>{m.fullName}</div>
+                      <div className='text-sm text-gray-500'>{m.email}</div>
+                      <div className='text-xs text-gray-400'>{m.role}</div>
+                    </div>
+                    {selfRole?.toLowerCase() === 'leader' && m.id !== selfId && (
+                      <Button
+                        variant='destructive'
+                        size='sm'
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setPendingRemove(m.id)
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+            {selectedUserId && <UserProfileDialog userId={selectedUserId} onClose={() => setSelectedUserId(null)} />}
+            {pendingRemove && (
+              <AlertDialog open={!!pendingRemove} onOpenChange={open => !open && setPendingRemove(null)}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Confirm member removal</AlertDialogTitle>
+                    <AlertDialogDescription>Are you sure you want to remove this member from the project?</AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setPendingRemove(null)}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={async () => {
+                        if (pendingRemove) {
+                          await handleRemove(pendingRemove)
+                          // Để setPendingRemove(null) sau một chút, hoặc sau khi toast đã được gọi
+                          setTimeout(() => setPendingRemove(null), 100)
+                        }
                       }}
                     >
                       Remove
-                    </Button>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
-          {selectedUserId && <UserProfileDialog userId={selectedUserId} onClose={() => setSelectedUserId(null)} />}
-        </main>
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </main>
+        </div>
       </div>
-    </div>
+    </>
   )
 }

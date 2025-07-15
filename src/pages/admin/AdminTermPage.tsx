@@ -1,6 +1,6 @@
 import { adminApi } from '@/api/admin'
 import AdminLayout from '@/components/admin/AdminLayout'
-import { toast } from '@/hooks/use-toast'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useAdminTerm } from '@/hooks/useAdminTerm'
 import { useState } from 'react'
 
@@ -51,10 +51,10 @@ export default function AdminTermPage() {
       setEndDate('')
       setPage(1)
       setReloadFlag((f) => f + 1)
-      toast({ title: 'Success', description: 'Term created successfully!', variant: 'default' })
+      showToast({ title: 'Success', description: 'Term created successfully!', variant: 'default' })
     } catch (err: any) {
       setCreateError(err.message || 'Create term failed')
-      toast({ title: 'Error', description: 'Failed to create term!', variant: 'destructive' })
+      showToast({ title: 'Error', description: 'Failed to create term!', variant: 'destructive' })
     } finally {
       setCreating(false)
     }
@@ -80,9 +80,9 @@ export default function AdminTermPage() {
       setEditingId(null)
       setPage(1)
       setReloadFlag((f) => f + 1)
-      toast({ title: 'Success', description: 'Term updated successfully!', variant: 'default' })
+      showToast({ title: 'Success', description: 'Term updated successfully!', variant: 'default' })
     } catch (err: any) {
-      toast({ title: 'Error', description: 'Failed to update term!', variant: 'destructive' })
+      showToast({ title: 'Error', description: 'Failed to update term!', variant: 'destructive' })
     } finally {
       setEditLoading(false)
     }
@@ -95,9 +95,9 @@ export default function AdminTermPage() {
       await adminApi.deleteTerm(id)
       setPage(1)
       setReloadFlag((f) => f + 1)
-      toast({ title: 'Success', description: 'Term deleted successfully!', variant: 'default' })
+      showToast({ title: 'Success', description: 'Term deleted successfully!', variant: 'default' })
     } catch (err: any) {
-      toast({ title: 'Error', description: 'Failed to delete term!', variant: 'destructive' })
+      showToast({ title: 'Error', description: 'Failed to delete term!', variant: 'destructive' })
     }
   }
 
@@ -108,9 +108,9 @@ export default function AdminTermPage() {
       await adminApi.lockTerm(id)
       setPage(1)
       setReloadFlag((f) => f + 1)
-      toast({ title: 'Success', description: 'Term locked!', variant: 'default' })
+      showToast({ title: 'Success', description: 'Term locked!', variant: 'default' })
     } catch (err: any) {
-      toast({ title: 'Error', description: 'Failed to lock term!', variant: 'destructive' })
+      showToast({ title: 'Error', description: 'Failed to lock term!', variant: 'destructive' })
     }
   }
 
@@ -123,7 +123,7 @@ export default function AdminTermPage() {
       setDetail(res.data.data)
     } catch (err) {
       setDetail(null)
-      toast({ title: 'Error', description: 'Failed to fetch term detail!', variant: 'destructive' })
+      showToast({ title: 'Error', description: 'Failed to fetch term detail!', variant: 'destructive' })
     } finally {
       setDetailLoading(false)
     }
@@ -151,6 +151,8 @@ export default function AdminTermPage() {
     const year = String(d.getFullYear()).slice(-2)
     return `${day}/${month}/${year}`
   }
+
+  const { showToast } = useToastContext()
 
   return (
     <AdminLayout title='Term Management'>

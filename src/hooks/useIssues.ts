@@ -1,11 +1,11 @@
 import { issueApi } from '@/api/issues'
-import { useToast } from '@/hooks/useToast'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { CreateIssueRequest } from '@/types/issue'
 import { useState } from 'react'
 
 export const useIssues = () => {
   const [isLoading, setIsLoading] = useState(false)
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
 
   const createIssue = async (projectId: string, taskId: string, issueData: CreateIssueRequest): Promise<boolean> => {
     console.log('🎯 [useIssues] createIssue called with:', {
@@ -25,7 +25,7 @@ export const useIssues = () => {
 
       if (success) {
         console.log('✅ [useIssues] Issue created successfully, showing success toast')
-        toast({
+        showToast({
           title: 'Success',
           description: 'Issue created successfully',
           variant: 'default'
@@ -33,7 +33,7 @@ export const useIssues = () => {
         return true
       } else {
         console.log('❌ [useIssues] API returned false, showing error toast')
-        toast({
+        showToast({
           title: 'Error',
           description: 'Failed to create issue',
           variant: 'destructive'
@@ -42,7 +42,7 @@ export const useIssues = () => {
       }
     } catch (error) {
       console.error('💥 [useIssues] Exception caught:', error)
-      toast({
+      showToast({
         title: 'Error',
         description: 'An error occurred while creating the issue',
         variant: 'destructive'
@@ -62,7 +62,7 @@ export const useIssues = () => {
       return result
     } catch (error) {
       console.error('❌ [useIssues] getTaskIssues error:', error)
-      toast({
+      showToast({
         title: 'Error',
         description: 'Failed to fetch task issues',
         variant: 'destructive'
@@ -79,7 +79,7 @@ export const useIssues = () => {
       return result
     } catch (error) {
       console.error('❌ [useIssues] getProjectIssues error:', error)
-      toast({
+      showToast({
         title: 'Error',
         description: 'Failed to fetch project issues',
         variant: 'destructive'

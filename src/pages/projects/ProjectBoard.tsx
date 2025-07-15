@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Loader } from '@/components/ui/loader'
-import { useToast } from '@/hooks/use-toast'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useBoards } from '@/hooks/useBoards'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
@@ -156,7 +156,7 @@ export default function ProjectBoard() {
   const [sprintTasks, setSprintTasks] = useState<TaskP[]>([])
   const [selectedSprintId, setSelectedSprintId] = useState<string | null>(null)
 
-  const toast = useToast().toast
+  const { showToast } = useToastContext()
   const { leaveProject, loading: memberLoading, error: memberError } = useProjectMembers()
   const { user } = useAuth()
 
@@ -232,7 +232,7 @@ export default function ProjectBoard() {
   const handleCopyProjectId = () => {
     if (!currentProject?.id) return
     navigator.clipboard.writeText(currentProject.id)
-    toast({
+    showToast({
       title: 'Success',
       description: 'Project ID copied to clipboard'
     })
@@ -245,7 +245,7 @@ export default function ProjectBoard() {
       setProjectMembers(members || [])
     } catch (error) {
       console.log(error)
-      toast({
+      showToast({
         title: 'Error',
         description: 'Failed to refresh member list',
         variant: 'destructive'
@@ -257,13 +257,13 @@ export default function ProjectBoard() {
     if (!currentProject?.id) return
     try {
       await leaveProject(currentProject.id)
-      toast({
+      showToast({
         title: 'Left project successfully',
         description: 'You have left this project.'
       })
       navigate('/projects')
     } catch (err) {
-      toast({
+      showToast({
         title: 'Error',
         description: memberError || 'Could not leave the project',
         variant: 'destructive'
@@ -406,16 +406,16 @@ export default function ProjectBoard() {
   console.log('Boards in ProjectBoard:', boards)
 
   return (
-    <div className='flex h-screen bg-gray-100'>
+    <div className='flex bg-gray-100 min-h-screen'>
       <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
 
-      <div className='flex-1 flex flex-col overflow-hidden'>
+      <div className='flex-1 flex flex-col'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
         {/* SignalR Project Group Manager */}
         {currentProject?.id && <ProjectGroupManager projectId={currentProject.id} />}
 
-        <div className='flex flex-col h-full p-3 sm:p-6'>
+        <div className='flex flex-col p-3 sm:p-6'>
           <SprintSelector />
           <div className='flex-none w-full flex flex-col sm:flex-row sm:items-center justify-between pb-4 gap-4'>
             <div className='flex items-center gap-2 flex-wrap'>
@@ -503,19 +503,19 @@ export default function ProjectBoard() {
             </div>
           </div>
 
-          <div className='min-h-0 flex-1'>
+          <div className='flex flex-col overflow-x-auto'>
             {/* DndContext chung cho cả board và task */}
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={filteredBoards.map((b) => b.id)} strategy={horizontalListSortingStrategy}>
                 <div
                   ref={boardContainerRef}
-                  className='w-full h-full overflow-x-auto overflow-y-hidden cursor-grab select-none'
+                  className='w-full h-full overflow-x-auto overflow-y-hidden cursor-grab select-none min-h-0'
                   onMouseDown={handleMouseDown}
                   onMouseLeave={handleMouseLeave}
                   onMouseUp={handleMouseUp}
                   onMouseMove={handleMouseMove}
                 >
-                  <div className='inline-flex gap-6 p-1 h-full'>
+                  <div className='inline-flex gap-6 p-1 h-full' style={{ minWidth: '900px' }}>
                     {filteredBoards && filteredBoards.length > 0 ? (
                       filteredBoards.map((board) => (
                         <div key={board.id} className='...'>

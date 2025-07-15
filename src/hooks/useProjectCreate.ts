@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { projectMemberApi } from '@/api/projectMembers'
 import { projectApi } from '@/api/projects'
+import { useToastContext } from '@/components/ui/ToastContext'
 import axiosClient from '@/configs/axiosClient'
-import { useToast } from '@/hooks/use-toast'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -17,7 +17,7 @@ export function useProjectCreate() {
   const [isProjectCreated, setIsProjectCreated] = useState(false)
   const [inviteLinks, setInviteLinks] = useState<{ email: string; token: string }[]>([])
   const navigate = useNavigate()
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
 
   const handleAddMember = async (email: string) => {
     if (!email.trim()) return
@@ -28,16 +28,9 @@ export function useProjectCreate() {
       })
       setAddedEmails((prev) => [...prev, email])
       setMemberEmail('')
-      toast({
-        title: 'Member added',
-        description: 'Team member has been added successfully.'
-      })
+      showToast({ title: 'Member added', description: 'Team member has been added successfully.' })
     } catch (error) {
-      toast({
-        title: 'Failed to add member',
-        description: 'The email address is not associated with any account.',
-        variant: 'destructive'
-      })
+      showToast({ title: 'Failed to add member', description: 'The email address is not associated with any account.', variant: 'destructive' })
     }
   }
 
@@ -55,32 +48,16 @@ export function useProjectCreate() {
               addedEmails.map((email) => projectMemberApi.addMember(response.data.id, email))
             )
             setInviteLinks(results)
-            toast({
-              title: 'Đã mời thành viên',
-              description: `Đã gửi lời mời cho ${addedEmails.length} thành viên.`
-            })
+            showToast({ title: 'Đã mời thành viên', description: `Đã gửi lời mời cho ${addedEmails.length} thành viên.` })
           }
         })
       } catch (error: any) {
         if (error.response?.data?.code === 3004) {
-          toast({
-            title: 'Project limit reached',
-            description:
-              'You have reached the maximum number of projects allowed. Please delete old projects or contact the administrator for support.',
-            variant: 'destructive'
-          })
+          showToast({ title: 'Project limit reached', description: 'You have reached the maximum number of projects allowed. Please delete old projects or contact the administrator for support.', variant: 'destructive' })
         } else if (error.response?.data?.errors?.description) {
-          toast({
-            title: 'Validation error',
-            description: error.response.data.errors.description[0],
-            variant: 'destructive'
-          })
+          showToast({ title: 'Validation error', description: error.response.data.errors.description[0], variant: 'destructive' })
         } else {
-          toast({
-            title: 'Project creation failed',
-            description: 'Unable to create the project. Please try again.',
-            variant: 'destructive'
-          })
+          showToast({ title: 'Project creation failed', description: 'Unable to create the project. Please try again.', variant: 'destructive' })
         }
       } finally {
         setIsLoading(false)

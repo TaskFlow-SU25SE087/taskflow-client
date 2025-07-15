@@ -1,7 +1,7 @@
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from './useAuth'
-import { useToast } from './useToast'
 
 interface ActivateAccountParams {
   email: string
@@ -15,7 +15,7 @@ export const useActivateAccount = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { activate } = useAuth()
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
   const navigate = useNavigate()
 
   const activateAccount = async (params: ActivateAccountParams) => {
@@ -43,7 +43,7 @@ export const useActivateAccount = () => {
     try {
       await activate(email, username, newPassword, confirmPassword, tokenResetPassword)
 
-      toast({
+      showToast({
         title: 'Success',
         description: 'Account activated successfully! You can now login.'
       })
@@ -58,7 +58,7 @@ export const useActivateAccount = () => {
       const errorMessage = err.message || 'Failed to activate account'
       setError(errorMessage)
 
-      toast({
+      showToast({
         title: 'Error',
         description: errorMessage,
         variant: 'destructive'

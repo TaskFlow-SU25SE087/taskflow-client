@@ -1,14 +1,14 @@
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
-import { useToast } from '@/hooks/useToast'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useState } from 'react'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
@@ -24,7 +24,7 @@ export function SprintCreateMenu({ onCreateSprint }: SprintCreateMenuProps) {
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
   const [status, setStatus] = useState('0') // NotStarted mặc định
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
 
   const toISOString = (date: string) => {
     if (!date) return ''
@@ -40,26 +40,28 @@ export function SprintCreateMenu({ onCreateSprint }: SprintCreateMenuProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) {
-      toast({
-        title: 'Lỗi',
-        description: 'Vui lòng nhập tên Sprint.',
-        variant: 'destructive'
-      })
+      showToast({ title: 'Error', description: 'Vui lòng nhập tên Sprint.', variant: 'destructive' })
       return
     }
-    const result = await onCreateSprint({
-      name,
-      description,
-      startDate: startDate ? startDate.toISOString() : '',
-      endDate: endDate ? endDate.toISOString() : ''
-    })
-    // Chỉ đóng dialog nếu tạo thành công (result !== false)
-    if (result !== false) {
-      setIsOpen(false)
-      setName('')
-      setDescription('')
-      setStartDate(null)
-      setEndDate(null)
+    try {
+      const res = await onCreateSprint({
+        name,
+        description,
+        startDate: startDate ? startDate.toISOString() : '',
+        endDate: endDate ? endDate.toISOString() : ''
+      })
+      if (res && res.message) {
+        showToast({ title: 'Success', description: res.message })
+      }
+      if (res !== false) {
+        setIsOpen(false)
+        setName('')
+        setDescription('')
+        setStartDate(null)
+        setEndDate(null)
+      }
+    } catch (error) {
+      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to create sprint.', variant: 'destructive' })
     }
   }
 

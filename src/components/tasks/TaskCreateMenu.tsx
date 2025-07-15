@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { useToast } from '@/hooks/use-toast'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useTags } from '@/hooks/useTags'
 import { useTasks } from '@/hooks/useTasks'
 import { Loader2, Plus } from 'lucide-react'
@@ -31,7 +31,7 @@ export default function TaskCreateMenu({
   sprintId,
   trigger
 }: CreateTaskDialogProps) {
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
   const { refreshTasks } = useTasks()
   const { tags } = useTags()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -60,27 +60,15 @@ export default function TaskCreateMenu({
 
   const handleSubmit = async () => {
     if (!title.trim()) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please enter a task title',
-        variant: 'destructive'
-      })
+      showToast({ title: 'Validation Error', description: 'Please enter a task title', variant: 'destructive' })
       return
     }
     if (!priority) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please select a priority',
-        variant: 'destructive'
-      })
+      showToast({ title: 'Validation Error', description: 'Please select a priority', variant: 'destructive' })
       return
     }
     if (!deadline) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please select a deadline',
-        variant: 'destructive'
-      })
+      showToast({ title: 'Validation Error', description: 'Please select a deadline', variant: 'destructive' })
       return
     }
     setIsSubmitting(true)
@@ -99,7 +87,12 @@ export default function TaskCreateMenu({
       if (file) formData.append('File', file)
       if (sprintId) formData.append('SprintId', sprintId)
       selectedTagIds.forEach((tagId) => formData.append('TagIds', tagId))
-      await taskApi.createTask(projectId, formData)
+      const res = await taskApi.createTask(projectId, formData)
+      if (res === true) {
+        showToast({ title: 'Success', description: 'Task created successfully', variant: 'default' })
+      } else {
+        showToast({ title: 'Error', description: 'Failed to create task', variant: 'destructive' })
+      }
       // Sau khi tạo, lấy lại danh sách task và tìm task vừa tạo
       const tasks = await taskApi.getTasksFromProject(projectId)
       const createdTask = tasks.find((t) => t.title === title && t.description === description)
@@ -107,18 +100,9 @@ export default function TaskCreateMenu({
         for (const tagId of selectedTagIds) {
           await taskApi.addTagToTask(projectId, createdTask.id, tagId)
         }
-        // XÓA: if (assigneeId) { await taskApi.assignTask(projectId, createdTask.id, assigneeId) }
       } else {
-        toast({
-          title: 'Cảnh báo',
-          description: 'Task đã được tạo nhưng không tìm thấy để gán tag hoặc assignee.',
-          variant: 'destructive'
-        })
+        showToast({ title: 'Warning', description: 'Task created but not found for tag/assignee.', variant: 'default' })
       }
-      toast({
-        title: 'Success',
-        description: 'Task created successfully'
-      })
       await refreshTasks()
       onTaskCreated()
       onOpenChange(false)
@@ -128,14 +112,8 @@ export default function TaskCreateMenu({
       setSelectedTagIds([])
       setPriority('Medium')
       setDeadline(null)
-      // XÓA: setAssigneeId('')
     } catch (error) {
-      console.error(error)
-      toast({
-        title: 'Error',
-        description: 'Failed to create task. Please try again.',
-        variant: 'destructive'
-      })
+      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to create task.', variant: 'destructive' })
     } finally {
       setIsSubmitting(false)
     }

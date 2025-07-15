@@ -8,17 +8,17 @@ import { SprintSelector } from '@/components/sprints/SprintSelector'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useOptimizedTasks } from '@/hooks/useOptimizedTasks'
 import { useSprints } from '@/hooks/useSprints'
-import { useToast } from '@/hooks/useToast'
 import { TaskP } from '@/types/task'
 import { Filter, Search, Share2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 export default function ProjectBacklog() {
-  const { toast } = useToast()
-  const { tasks, isLoading: tasksLoading, refreshTasks } = useOptimizedTasks()
+  const { showToast } = useToastContext()
+  const { tasks, isLoading: tasksLoading, refreshTasks, loadMore, hasMore } = useOptimizedTasks()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [taskSearchQuery, setTaskSearchQuery] = useState('')
   const [sprintSearchQuery, setSprintSearchQuery] = useState('')
@@ -105,13 +105,13 @@ export default function ProjectBacklog() {
         status: '0'
       })
       if (result.ok) {
-        toast({
+        showToast({
           title: 'Success',
           description: 'Sprint created successfully'
         })
         return true
       } else {
-        toast({
+        showToast({
           title: 'Error',
           description: result.message,
           variant: 'destructive'
@@ -119,7 +119,7 @@ export default function ProjectBacklog() {
         return false
       }
     } catch (error: any) {
-      toast({
+      showToast({
         title: 'Error',
         description: 'Failed to create sprint. Please try again.',
         variant: 'destructive'
@@ -134,13 +134,13 @@ export default function ProjectBacklog() {
     try {
       await addTaskToSprint(sprintId, selectedTaskId)
       await fetchSprints()
-      toast({
+      showToast({
         title: 'Success',
         description: 'Task moved to sprint successfully'
       })
     } catch (error) {
       console.log(error)
-      toast({
+      showToast({
         title: 'Error',
         description: 'Failed to move task to sprint. Please try again.',
         variant: 'destructive'
@@ -304,12 +304,14 @@ export default function ProjectBacklog() {
               />
             ))}
             <SprintBacklog
-              tasks={backlogTasks}
+              tasks={backlogTasks as any as TaskP[]}
               onMoveTask={setSelectedTaskId}
               projectId={currentProject?.id || ''}
               onTaskCreated={handleTaskUpdate}
               onTaskUpdate={handleTaskUpdate}
               isLoading={tasksLoading}
+              onLoadMore={loadMore}
+              hasMore={hasMore}
             />
           </div>
         </div>

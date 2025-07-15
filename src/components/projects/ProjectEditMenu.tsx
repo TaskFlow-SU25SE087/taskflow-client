@@ -2,7 +2,7 @@ import { projectApi } from '@/api/projects'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { useToast } from '@/hooks/use-toast'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { Project } from '@/types/project'
 import { useState } from 'react'
 
@@ -17,7 +17,7 @@ export function ProjectEditMenu({ project, onProjectUpdated, trigger }: ProjectE
   const [description, setDescription] = useState(project.description || '')
   const [isOpen, setIsOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,10 +34,7 @@ export function ProjectEditMenu({ project, onProjectUpdated, trigger }: ProjectE
 
       console.log('Update response:', response)
 
-      toast({
-        title: 'Success',
-        description: 'Project name updated successfully'
-      })
+      showToast({ title: response?.code === 200 ? 'Success' : 'Error', description: response?.message || 'Project name updated successfully', variant: response?.code === 200 ? 'default' : 'destructive' })
       onProjectUpdated()
       setIsOpen(false)
     } catch (error: any) {
@@ -45,11 +42,7 @@ export function ProjectEditMenu({ project, onProjectUpdated, trigger }: ProjectE
       console.error('Error response:', error.response?.data)
 
       const errorMessage = error.response?.data?.message || error.message || 'Failed to update project'
-      toast({
-        title: 'Error',
-        description: `Update failed: ${errorMessage}`,
-        variant: 'destructive'
-      })
+      showToast({ title: 'Error', description: `Update failed: ${errorMessage}`, variant: 'destructive' })
     } finally {
       setIsSubmitting(false)
     }

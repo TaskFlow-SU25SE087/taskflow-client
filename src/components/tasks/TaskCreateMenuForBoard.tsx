@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useToast } from '@/hooks/use-toast'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useBoards } from '@/hooks/useBoards'
 import { useTags } from '@/hooks/useTags'
 import { useTasks } from '@/hooks/useTasks'
@@ -33,7 +33,7 @@ export default function TaskCreateMenuForBoard({
 }: CreateTaskDialogProps) {
   const { boards } = useBoards()
   const [board, setBoard] = useState<Board | null>(null)
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
   const { refreshTasks } = useTasks()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [title, setTitle] = useState('')
@@ -70,18 +70,14 @@ export default function TaskCreateMenuForBoard({
         }
       } catch (error) {
         console.error('Failed to fetch sprints:', error)
-        toast({
-          title: 'Error',
-          description: 'Failed to fetch sprints',
-          variant: 'destructive'
-        })
+        showToast({ title: 'Error', description: 'Failed to fetch sprints', variant: 'destructive' })
       }
     }
 
     if (isOpen) {
       fetchSprints()
     }
-  }, [isOpen, projectId, toast])
+  }, [isOpen, projectId, showToast])
 
   const handleTagChange = (tagId: string) => {
     setSelectedTagIds((prev) => (prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]))
@@ -89,35 +85,19 @@ export default function TaskCreateMenuForBoard({
 
   const handleSubmit = async () => {
     if (!title.trim()) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please enter a task title',
-        variant: 'destructive'
-      })
+      showToast({ title: 'Validation Error', description: 'Please enter a task title', variant: 'destructive' })
       return
     }
     if (!selectedSprintId) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please select a sprint',
-        variant: 'destructive'
-      })
+      showToast({ title: 'Validation Error', description: 'Please select a sprint', variant: 'destructive' })
       return
     }
     if (!board) {
-      toast({
-        title: 'Error',
-        description: 'Board not found',
-        variant: 'destructive'
-      })
+      showToast({ title: 'Error', description: 'Board not found', variant: 'destructive' })
       return
     }
     if (!deadline) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please select a deadline',
-        variant: 'destructive'
-      })
+      showToast({ title: 'Validation Error', description: 'Please select a deadline', variant: 'destructive' })
       return
     }
     setIsSubmitting(true)
@@ -130,11 +110,8 @@ export default function TaskCreateMenuForBoard({
       if (file) formData.append('File', file)
       formData.append('SprintId', selectedSprintId)
       selectedTagIds.forEach((tagId) => formData.append('TagIds', tagId))
-      await taskApi.createTask(projectId, formData)
-      toast({
-        title: 'Success',
-        description: 'Task created successfully'
-      })
+      const res = await taskApi.createTask(projectId, formData)
+      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Task created successfully', variant: res?.code === 200 ? 'default' : 'destructive' })
       await refreshTasks()
       onTaskCreated()
       onOpenChange(false)
@@ -143,12 +120,7 @@ export default function TaskCreateMenuForBoard({
       setFile(null)
       setSelectedTagIds([])
     } catch (error) {
-      console.error(error)
-      toast({
-        title: 'Error',
-        description: 'Failed to create task. Please try again.',
-        variant: 'destructive'
-      })
+      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to create task.', variant: 'destructive' })
     } finally {
       setIsSubmitting(false)
     }

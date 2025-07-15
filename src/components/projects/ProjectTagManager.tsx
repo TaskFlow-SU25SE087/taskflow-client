@@ -1,14 +1,14 @@
-import { useRef, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useTags } from '@/hooks/useTags'
-import { toast } from '@/hooks/use-toast'
-import { Plus, Search, Edit3, Trash2, Check, X, Tag } from 'lucide-react'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Check, Edit3, Plus, Search, Tag, Trash2, X } from 'lucide-react'
+import { useRef, useState } from 'react'
 
 export default function ProjectTagManager({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const { tags, isLoading, error, createTag, updateTag, deleteTag } = useTags()
@@ -18,6 +18,7 @@ export default function ProjectTagManager({ isOpen, onClose }: { isOpen: boolean
   const [search, setSearch] = useState('')
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const { showToast } = useToastContext()
 
   // Focus input when opening form
   const focusInput = () => {
@@ -27,17 +28,16 @@ export default function ProjectTagManager({ isOpen, onClose }: { isOpen: boolean
   // Create new tag
   const handleCreate = async () => {
     if (!newTag.name.trim()) {
-      toast({ title: 'Tag name is required', variant: 'destructive' })
+      showToast({ title: 'Tag name is required', variant: 'destructive' })
       return
     }
-
-    const success = await createTag(newTag)
-    if (success) {
-      toast({ title: 'Tag created successfully!' })
+    const res = await createTag(newTag)
+    if (res?.code === 200) {
+      showToast({ title: 'Success', description: res?.message || 'Tag created successfully' })
       setNewTag({ name: '', description: '', color: '#7B61FF' })
       focusInput()
     } else {
-      toast({ title: 'Failed to create tag', variant: 'destructive' })
+      showToast({ title: 'Error', description: res?.message || 'Failed to create tag', variant: 'destructive' })
     }
   }
 
@@ -49,16 +49,15 @@ export default function ProjectTagManager({ isOpen, onClose }: { isOpen: boolean
 
   const handleEdit = async (tagId: string) => {
     if (!editingTag.name.trim()) {
-      toast({ title: 'Tag name is required', variant: 'destructive' })
+      showToast({ title: 'Tag name is required', variant: 'destructive' })
       return
     }
-
-    const success = await updateTag(tagId, editingTag)
-    if (success) {
-      toast({ title: 'Tag updated successfully!' })
+    const res = await updateTag(tagId, editingTag)
+    if (res?.code === 200) {
+      showToast({ title: 'Success', description: res?.message || 'Tag updated successfully' })
       setEditingTagId(null)
     } else {
-      toast({ title: 'Failed to update tag', variant: 'destructive' })
+      showToast({ title: 'Error', description: res?.message || 'Failed to update tag', variant: 'destructive' })
     }
   }
 
@@ -73,11 +72,11 @@ export default function ProjectTagManager({ isOpen, onClose }: { isOpen: boolean
   }
 
   const confirmDelete = async (tagId: string) => {
-    const success = await deleteTag(tagId)
-    if (success) {
-      toast({ title: 'Tag deleted successfully!' })
+    const res = await deleteTag(tagId)
+    if (res?.code === 200) {
+      showToast({ title: 'Success', description: res?.message || 'Tag deleted successfully' })
     } else {
-      toast({ title: 'Failed to delete tag', variant: 'destructive' })
+      showToast({ title: 'Error', description: res?.message || 'Failed to delete tag', variant: 'destructive' })
     }
     setConfirmDeleteId(null)
   }

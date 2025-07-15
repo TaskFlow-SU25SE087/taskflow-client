@@ -1,7 +1,7 @@
 import { adminApi } from '@/api/admin'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { AdminUser, AdminUsersResponse } from '@/types/admin'
 import { useEffect, useState } from 'react'
-import { useToast } from './useToast'
 
 export const useAdmin = () => {
   const [users, setUsers] = useState<AdminUser[]>([])
@@ -13,7 +13,7 @@ export const useAdmin = () => {
     pageNumber: 1,
     pageSize: 0
   })
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
 
   const fetchUsers = async (page: number = 1, pageSize: number = 10) => {
     setLoading(true)
@@ -30,7 +30,7 @@ export const useAdmin = () => {
         })
       } else {
         setError(response.message || 'Failed to fetch users')
-        toast({
+        showToast({
           title: 'Error',
           description: response.message || 'Failed to fetch users',
           variant: 'destructive'
@@ -39,7 +39,7 @@ export const useAdmin = () => {
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch users'
       setError(errorMessage)
-      toast({
+      showToast({
         title: 'Error',
         description: errorMessage,
         variant: 'destructive'
@@ -52,7 +52,7 @@ export const useAdmin = () => {
   const importUsers = async (file: File) => {
     try {
       const result = await adminApi.importUsers(file)
-      toast({
+      showToast({
         title: 'Success',
         description: 'File uploaded successfully. Users will be imported.',
         variant: 'default'
@@ -61,7 +61,7 @@ export const useAdmin = () => {
       return result
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to upload file'
-      toast({
+      showToast({
         title: 'Error',
         description: errorMessage,
         variant: 'destructive'
@@ -89,7 +89,7 @@ export const useAdmin = () => {
           if (page > maxLoop) break // Prevent infinite loop
         } else {
           setError(response.message || 'Failed to fetch users')
-          toast({
+          showToast({
             title: 'Error',
             description: response.message || 'Failed to fetch users',
             variant: 'destructive'
@@ -101,7 +101,7 @@ export const useAdmin = () => {
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch users'
       setError(errorMessage)
-      toast({
+      showToast({
         title: 'Error',
         description: errorMessage,
         variant: 'destructive'

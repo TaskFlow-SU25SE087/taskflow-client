@@ -1,3 +1,4 @@
+import { useToastContext } from '@/components/ui/ToastContext'
 import { Github, Link, Plus, Settings } from 'lucide-react'
 import { useState } from 'react'
 import { useProjectParts } from '../../hooks/useProjectParts'
@@ -20,16 +21,31 @@ export default function ProjectPartManager({ projectId }: { projectId: string })
   const [repoUrl, setRepoUrl] = useState('')
   const [accessToken, setAccessToken] = useState('')
   const [showGitHubIntegration, setShowGitHubIntegration] = useState(false)
+  const { showToast } = useToastContext()
 
   // Tạo Project Part
   const handleCreatePart = async () => {
-    const res = await createPart(projectId, { name, programmingLanguage, framework })
-    if (res && res.data) setPartId(res.data)
+    try {
+      const res = await createPart(projectId, { name, programmingLanguage, framework })
+      if (res?.code === 200) {
+        setPartId(res.data)
+        showToast({ title: 'Success', description: res?.message || 'Project part created successfully' })
+      } else {
+        showToast({ title: 'Error', description: res?.message || 'Failed to create project part', variant: 'destructive' })
+      }
+    } catch (err: any) {
+      showToast({ title: 'Error', description: err.response?.data?.message || err.message || 'Failed to create project part', variant: 'destructive' })
+    }
   }
 
   // Kết nối repo
   const handleConnectRepo = async () => {
-    await connectRepo(projectId, partId, { repoUrl, accessToken })
+    try {
+      const res = await connectRepo(projectId, partId, { repoUrl, accessToken })
+      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Repository connected successfully', variant: res?.code === 200 ? 'default' : 'destructive' })
+    } catch (err: any) {
+      showToast({ title: 'Error', description: err.response?.data?.message || err.message || 'Failed to connect repository', variant: 'destructive' })
+    }
   }
 
   return (

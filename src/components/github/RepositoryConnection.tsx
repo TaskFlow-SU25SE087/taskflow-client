@@ -1,3 +1,4 @@
+import { useToastContext } from '@/components/ui/ToastContext'
 import { Github, Loader } from 'lucide-react'
 import { useState } from 'react'
 import { useWebhooks } from '../../hooks/useWebhooks'
@@ -18,12 +19,14 @@ export default function RepositoryConnection({ projectId, partId }: RepositoryCo
   const [isConnecting, setIsConnecting] = useState(false)
 
   const { connectionStatus, connectRepository, disconnectRepository } = useWebhooks()
+  const { showToast } = useToastContext()
 
   // Note: Removed fetchConnectionStatus because /projects/{projectId}/parts/{partId}/repo-status endpoint doesn't exist
   // Connection status will be managed through the connect/disconnect operations
 
   const handleConnect = async () => {
     if (!repoUrl || !accessToken) {
+      showToast({ title: 'Error', description: 'Please enter both repo URL and access token', variant: 'destructive' })
       return
     }
 
@@ -32,8 +35,9 @@ export default function RepositoryConnection({ projectId, partId }: RepositoryCo
       await connectRepository(projectId, partId, repoUrl, accessToken)
       setRepoUrl('')
       setAccessToken('')
+      showToast({ title: 'Success', description: 'Repository connected successfully' })
     } catch (error) {
-      console.error('Failed to connect repository:', error)
+      showToast({ title: 'Error', description: 'Failed to connect repository', variant: 'destructive' })
     } finally {
       setIsConnecting(false)
     }
@@ -42,8 +46,9 @@ export default function RepositoryConnection({ projectId, partId }: RepositoryCo
   const handleDisconnect = async () => {
     try {
       await disconnectRepository(projectId, partId)
+      showToast({ title: 'Success', description: 'Repository disconnected successfully' })
     } catch (error) {
-      console.error('Failed to disconnect repository:', error)
+      showToast({ title: 'Error', description: 'Failed to disconnect repository', variant: 'destructive' })
     }
   }
 

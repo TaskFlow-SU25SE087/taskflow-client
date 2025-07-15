@@ -1,5 +1,5 @@
+import { useToastContext } from '@/components/ui/ToastContext'
 import { NotificationData, SignalRService } from '@/configs/signalr'
-import { toast } from '@/hooks/use-toast'
 
 export class NotificationService {
   private signalRService: SignalRService
@@ -29,7 +29,8 @@ export class NotificationService {
   }
 
   private showToastNotification(notification: NotificationData) {
-    toast({
+    const { showToast } = useToastContext()
+    showToast({
       title: 'New Notification',
       description: notification.message,
       duration: 5000

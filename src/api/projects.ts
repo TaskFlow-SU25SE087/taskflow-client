@@ -144,9 +144,9 @@ export const projectApi = {
     return response.data.data
   },
 
-  removeProjectMember: async (projectId: string, userId: string): Promise<boolean> => {
+  removeProjectMember: async (projectId: string, userId: string): Promise<{ code: number, message: string, data: boolean }> => {
     const response = await axiosClient.delete(`/project/${projectId}/members/remove/${userId}`)
-    return response.data.data
+    return response.data
   },
 
   verifyJoinProject: async (projectId: string, token: string): Promise<boolean> => {

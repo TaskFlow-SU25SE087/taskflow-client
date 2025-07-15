@@ -141,5 +141,19 @@ export const taskApi = {
   moveTaskToBoard: async (projectId: string, taskId: string, boardId: string): Promise<boolean> => {
     const response = await axiosClient.post(`/projects/${projectId}/tasks/${taskId}/status/board/${boardId}`)
     return response.data.data === true
-  }
+  },
+
+  // Complete a task with file upload (custom endpoint)
+  completeTaskWithUpload: async (projectId: string, taskId: string, files?: File[]): Promise<boolean> => {
+    const formData = new FormData();
+    if (files && files.length > 0) {
+      files.forEach((file) => {
+        formData.append('Files', file);
+      });
+    }
+    const response = await axiosClient.post(`/projects/${projectId}/tasks/${taskId}/upflie`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data.data === true;
+  },
 }
