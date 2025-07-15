@@ -1020,7 +1020,15 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               {taskTags.map((tag, idx) => (
                 <span
                   key={tag.id || idx}
-                  className='px-3 py-1 bg-orange-100 text-orange-600 rounded-full text-sm font-medium'
+                  style={{
+                    backgroundColor: tag.color || '#eee',
+                    color: '#fff',
+                    borderRadius: '8px',
+                    padding: '6px 16px',
+                    fontWeight: 500,
+                    fontSize: '1em',
+                    display: 'inline-block'
+                  }}
                 >
                   {tag.name}
                 </span>

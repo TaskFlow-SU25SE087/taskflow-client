@@ -174,11 +174,19 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
           <div className='flex-shrink-0 min-w-[60px] max-w-[80px]'>
             {task.tags && task.tags.length > 0 && (
               <div className='flex gap-1'>
-                {task.tags.map((tag: { id: string; name: string }, index: number) => (
+                {task.tags.map((tag: { id: string; name: string; color?: string }, index: number) => (
                   <Tooltip key={tag.id || index}>
                     <TooltipTrigger>
                       <span
-                        className='rounded px-1 py-0.5 bg-orange-100 text-orange-600 truncate block'
+                        style={{
+                          backgroundColor: tag.color || '#eee',
+                          color: '#fff',
+                          borderRadius: '8px',
+                          padding: '2px 8px',
+                          fontWeight: 500,
+                          fontSize: '0.95em',
+                          display: 'inline-block'
+                        }}
                         title={tag.name}
                       >
                         {tag.name}

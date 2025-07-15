@@ -32,12 +32,13 @@ export default function ProjectTagManager({ isOpen, onClose }: { isOpen: boolean
       return
     }
     const res = await createTag(newTag)
-    if (res?.code === 200) {
-      showToast({ title: 'Success', description: res?.message || 'Tag created successfully' })
+    console.log('Create tag response:', res)
+    if (res) {
+      showToast({ title: 'Success', description: 'Tag created successfully' })
       setNewTag({ name: '', description: '', color: '#7B61FF' })
       focusInput()
     } else {
-      showToast({ title: 'Error', description: res?.message || 'Failed to create tag', variant: 'destructive' })
+      showToast({ title: 'Error', description: 'Failed to create tag', variant: 'destructive' })
     }
   }
 
@@ -53,11 +54,12 @@ export default function ProjectTagManager({ isOpen, onClose }: { isOpen: boolean
       return
     }
     const res = await updateTag(tagId, editingTag)
-    if (res?.code === 200) {
-      showToast({ title: 'Success', description: res?.message || 'Tag updated successfully' })
+    console.log('Edit tag response:', res)
+    if (res) {
+      showToast({ title: 'Success', description: 'Tag updated successfully' })
       setEditingTagId(null)
     } else {
-      showToast({ title: 'Error', description: res?.message || 'Failed to update tag', variant: 'destructive' })
+      showToast({ title: 'Error', description: 'Failed to update tag', variant: 'destructive' })
     }
   }
 
@@ -73,10 +75,11 @@ export default function ProjectTagManager({ isOpen, onClose }: { isOpen: boolean
 
   const confirmDelete = async (tagId: string) => {
     const res = await deleteTag(tagId)
-    if (res?.code === 200) {
-      showToast({ title: 'Success', description: res?.message || 'Tag deleted successfully' })
+    console.log('Delete tag response:', res)
+    if (res) {
+      showToast({ title: 'Success', description: 'Tag deleted successfully' })
     } else {
-      showToast({ title: 'Error', description: res?.message || 'Failed to delete tag', variant: 'destructive' })
+      showToast({ title: 'Error', description: 'Failed to delete tag', variant: 'destructive' })
     }
     setConfirmDeleteId(null)
   }
@@ -120,7 +123,7 @@ export default function ProjectTagManager({ isOpen, onClose }: { isOpen: boolean
                 Create New Tag
               </h3>
 
-              <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
+              <div className='grid grid-cols-1 md:grid-cols-4 gap-4 items-end'>
                 <div className='md:col-span-1'>
                   <Label htmlFor='tag-name' className='text-sm font-medium text-gray-700'>
                     Name
@@ -134,7 +137,6 @@ export default function ProjectTagManager({ isOpen, onClose }: { isOpen: boolean
                     className='mt-1'
                   />
                 </div>
-
                 <div className='md:col-span-2'>
                   <Label htmlFor='tag-description' className='text-sm font-medium text-gray-700'>
                     Description
@@ -147,9 +149,8 @@ export default function ProjectTagManager({ isOpen, onClose }: { isOpen: boolean
                     className='mt-1'
                   />
                 </div>
-
-                <div className='flex items-end gap-2'>
-                  <div className='flex-1'>
+                <div className='flex items-center gap-2'>
+                  <div className='flex flex-col items-start'>
                     <Label htmlFor='tag-color' className='text-sm font-medium text-gray-700'>
                       Color
                     </Label>
@@ -167,11 +168,12 @@ export default function ProjectTagManager({ isOpen, onClose }: { isOpen: boolean
                       />
                     </div>
                   </div>
-
+                </div>
+                <div className='flex items-end h-full'>
                   <Button
                     onClick={handleCreate}
                     disabled={isLoading || !newTag.name.trim()}
-                    className='bg-lavender-600 hover:bg-lavender-700 text-white px-6'
+                    // className='bg-lavender-600 hover:bg-lavender-700 text-white px-6'
                   >
                     {isLoading ? 'Creating...' : 'Add Tag'}
                   </Button>

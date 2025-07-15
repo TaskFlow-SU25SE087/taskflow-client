@@ -188,8 +188,19 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
         {/* Tags */}
         {task.tags && task.tags.length > 0 && (
           <div className='flex gap-1'>
-            {task.tags.map((tag: { id: string; name: string }, index: number) => (
-              <span key={tag.id || index} className='rounded px-1 py-0.5 bg-orange-100 text-orange-600'>
+            {task.tags.map((tag: { id: string; name: string; color?: string }, index: number) => (
+              <span
+                key={tag.id || index}
+                style={{
+                  backgroundColor: tag.color || '#eee',
+                  color: '#fff',
+                  borderRadius: '8px',
+                  padding: '2px 8px',
+                  fontWeight: 500,
+                  fontSize: '0.95em',
+                  display: 'inline-block'
+                }}
+              >
                 {tag.name}
               </span>
             ))}
@@ -220,10 +231,18 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
             <div className={`flex gap-2 ${compact ? 'mb-1' : 'mb-3'}`}>
               {task.tags && task.tags.length > 0 && (
                 <>
-                  {task.tags.map((tag: { id: string; name: string }, index: number) => (
+                  {task.tags.map((tag: { id: string; name: string; color?: string }, index: number) => (
                     <span
                       key={tag.id || index}
-                      className={`rounded px-2 py-0.5 text-xs bg-orange-100 text-orange-600 mr-1 ${compact ? '' : 'text-sm px-3 py-1'}`}
+                      style={{
+                        backgroundColor: tag.color || '#eee',
+                        color: '#fff',
+                        borderRadius: '8px',
+                        padding: '2px 8px',
+                        fontWeight: 500,
+                        fontSize: '0.95em',
+                        display: 'inline-block'
+                      }}
                     >
                       {tag.name}
                     </span>
