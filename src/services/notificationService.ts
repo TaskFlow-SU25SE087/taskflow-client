@@ -1,40 +1,59 @@
-import { useToastContext } from '@/components/ui/ToastContext'
-import { NotificationData, SignalRService } from '@/configs/signalr'
+import { NotificationData, SignalRService } from '@/configs/signalr';
 
 export class NotificationService {
   private signalRService: SignalRService
   private notifications: NotificationData[] = []
   private listeners: ((notification: NotificationData) => void)[] = []
+  private currentUserId: string | null = null;
+  private showToast: ((toast: { title?: React.ReactNode; description?: React.ReactNode; variant?: 'default' | 'destructive' }) => void) | null = null;
 
-  constructor(signalRService: SignalRService) {
+  constructor(signalRService: SignalRService, currentUserId: string | null, showToast: ((toast: { title?: React.ReactNode; description?: React.ReactNode; variant?: 'default' | 'destructive' }) => void) | null) {
     this.signalRService = signalRService
+    this.currentUserId = currentUserId;
+    this.showToast = showToast;
+  }
+
+  setCurrentUserId(userId: string | null) {
+    this.currentUserId = userId;
+  }
+
+  setShowToast(showToast: ((toast: { title?: React.ReactNode; description?: React.ReactNode; variant?: 'default' | 'destructive' }) => void) | null) {
+    this.showToast = showToast;
   }
 
   initialize() {
     this.signalRService.on('ReceiveNotification', (notification: NotificationData) => {
-      console.log('📨 New notification received:', notification)
-
-      // Add to notifications list
+      // // Lọc notification theo userId
+      // if (!notification.userId || notification.userId === this.currentUserId) {
+      //   console.log('📨 New notification received:', notification)
+      //   // Add to notifications list
+      //   this.notifications.unshift(notification)
+      //   // Show toast notification
+      //   this.showToastNotification(notification)
+      //   // Update badge count
+      //   this.updateNotificationBadge()
+      //   // Notify listeners
+      //   this.notifyListeners(notification)
+      // } else {
+      //   // Bỏ qua notification không dành cho user này
+      //   console.log('🔕 Notification filtered (not for this user):', notification)
+      // }
+      // Hiển thị mọi notification cho tất cả user
+      console.log('📨 New notification received (no filter):', notification)
       this.notifications.unshift(notification)
-
-      // Show toast notification
       this.showToastNotification(notification)
-
-      // Update badge count
       this.updateNotificationBadge()
-
-      // Notify listeners
       this.notifyListeners(notification)
     })
   }
 
   private showToastNotification(notification: NotificationData) {
-    const { showToast } = useToastContext()
-    showToast({
-      title: 'New Notification',
-      description: notification.message,
-      duration: 5000
-    })
+    if (this.showToast) {
+      this.showToast({
+        title: 'New Notification',
+        description: notification.message
+      })
+    }
   }
 
   private updateNotificationBadge() {

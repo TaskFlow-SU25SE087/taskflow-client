@@ -1,3 +1,4 @@
+import { useToastContext } from '@/components/ui/ToastContext'
 import { NotificationData, SignalRService } from '@/configs/signalr'
 import { NotificationService } from '@/services/notificationService'
 import React, { createContext, useContext, useEffect, useState } from 'react'
@@ -13,8 +14,12 @@ interface SignalRContextType {
 const SignalRContext = createContext<SignalRContextType | null>(null)
 
 export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { showToast } = useToastContext();
   const [signalRService] = useState(() => new SignalRService())
-  const [notificationService] = useState(() => new NotificationService(signalRService))
+  // Lấy userId hiện tại từ sessionStorage
+  const storedUser = sessionStorage.getItem('auth_user')
+  const currentUserId = storedUser ? JSON.parse(storedUser).id : null
+  const [notificationService] = useState(() => new NotificationService(signalRService, currentUserId, showToast))
   const [isConnected, setIsConnected] = useState(false)
   const [notifications, setNotifications] = useState<NotificationData[]>([])
   const [connectionState, setConnectionState] = useState('Disconnected')
@@ -60,6 +65,9 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({ child
         // Set connected state
         setIsConnected(true)
         setConnectionState('Connected')
+
+        // Join user group nếu đã đăng nhập
+        // (Đã bỏ logic joinUserGroup vì backend không hỗ trợ)
 
         return () => {
           document.removeEventListener('notificationCountUpdate', handleCountUpdate as EventListener)
