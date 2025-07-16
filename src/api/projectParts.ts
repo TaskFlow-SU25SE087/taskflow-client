@@ -3,9 +3,10 @@ import axiosClient from '../configs/axiosClient';
 // Tạo Project Part
 export async function createProjectPart(
   projectId: string,
-  payload: { Name: string; ProgrammingLanguage: string; Framework: string }
+  payload: { name: string; programmingLanguage: string; framework: string }
 ) {
-  console.log('Payload gửi lên:', payload)
+  console.log('Create Project Part payload:', payload, 'projectId:', projectId);
+  // Đảm bảo truyền đúng key viết thường cho backend
   const res = await axiosClient.post(`/projects/${projectId}/parts`, payload, {
     headers: { 'Content-Type': 'application/json-patch+json' }
   })

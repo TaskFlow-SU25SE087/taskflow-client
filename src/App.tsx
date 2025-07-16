@@ -7,11 +7,13 @@ import { AuthProvider } from '@/hooks/useAuthContext.tsx'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
 import AdminTermPage from '@/pages/admin/AdminTermPage'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage'
+import CodeQualityCommits from '@/pages/github/CodeQualityCommits'
 import ActivateAccountPage from '@/pages/home/ActivateAccountPage'
 import ForgotPasswordPage from '@/pages/home/ForgotPasswordPage'
 import HomePage from '@/pages/home/HomePage'
 import LoginPage from '@/pages/home/LoginPage'
 import SignUpPage from '@/pages/home/SignupPage'
+import AllProjectParts from '@/pages/projects/AllProjectParts'
 import LegacyProjectMemberVerify from '@/pages/projects/LegacyProjectMemberVerify'
 import ProjectBoard from '@/pages/projects/ProjectBoard'
 import ProjectCreate from '@/pages/projects/ProjectCreate'
@@ -337,6 +339,22 @@ function App() {
               />
 
               <Route path='/project' element={<Navigate to='/projects/' />} />
+              <Route
+                path='/all-parts'
+                element={
+                  <ProtectedRoute>
+                    <AllProjectParts />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/code-quality-commits'
+                element={
+                  <ProtectedRoute>
+                    <CodeQualityCommits />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </SignalRProvider>
         </AuthProvider>

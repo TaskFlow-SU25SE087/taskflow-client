@@ -99,18 +99,19 @@ export default function ProjectGitHub() {
   }
 
   const handleCreatePart = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newPart.name.trim() || !newPart.programmingLanguage || !newPart.framework) {
-      showToast({ title: 'Error', description: 'Please fill in all fields (Name is required)', variant: 'destructive' })
-      return
+    e.preventDefault();
+    console.log('Create Part Clicked:', newPart);
+    if (!newPart.name.trim()) {
+      showToast({ title: 'Error', description: 'Please fill in all fields (Name is required)', variant: 'destructive' });
+      return;
     }
-    setCreatingPart(true)
-    setError(null)
+    setCreatingPart(true);
+    setError(null);
     try {
       const response = await createProjectPart(projectId!, {
         Name: newPart.name,
-        ProgrammingLanguage: newPart.programmingLanguage,
-        Framework: newPart.framework
+        ProgrammingLanguage: newPart.programmingLanguage || 'None',
+        Framework: newPart.framework || 'None',
       });
       let partId = response.data;
       if (typeof partId === 'object' && partId.id) {
@@ -125,10 +126,10 @@ export default function ProjectGitHub() {
       setParts((prev) => [...prev, newPartWithId]);
       setShowCreatePart(false);
       setNewPart({ name: '', programmingLanguage: '', framework: '' });
-      showToast({ title: 'Success', description: 'Project Part created successfully!' })
+      showToast({ title: 'Success', description: 'Project Part created successfully!' });
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || 'Error creating project part';
-      showToast({ title: 'Error', description: errorMessage, variant: 'destructive' })
+      showToast({ title: 'Error', description: errorMessage, variant: 'destructive' });
     } finally {
       setCreatingPart(false);
     }

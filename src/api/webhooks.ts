@@ -1,14 +1,14 @@
 import axiosClient from '../configs/axiosClient'
 import {
-  CodeQualityResponse,
-  CommitsResponse,
-  GitHubOAuthCallback,
-  GitHubOAuthConnectRequest,
-  GitHubOAuthRepositoryResponse,
-  GitHubWebhookPayload,
-  RepositoryConnection,
-  RepositoryConnectionResponse,
-  WebhookResponse
+    CodeQualityResponse,
+    CommitsResponse,
+    GitHubOAuthCallback,
+    GitHubOAuthConnectRequest,
+    GitHubOAuthRepositoryResponse,
+    GitHubWebhookPayload,
+    RepositoryConnection,
+    RepositoryConnectionResponse,
+    WebhookResponse
 } from '../types/webhook'
 
 // GitHub Webhook API (được gọi bởi GitHub, không phải Frontend)
@@ -84,4 +84,16 @@ export async function connectGitHubRepository(
 ): Promise<RepositoryConnectionResponse> {
   const res = await axiosClient.post('/api/github/oauth/connect', request)
   return res.data
+}
+
+// API mới lấy danh sách commits của project part (có phân trang, chất lượng code)
+export async function getProjectPartCommitsV2(projectId: string, partId: string, page: number = 1) {
+  const res = await axiosClient.get(`/projects/${projectId}/parts/${partId}/commits`, { params: { page } });
+  return res.data;
+}
+
+// Lấy chi tiết commit (chất lượng code, rule, file, dòng...)
+export async function getProjectPartCommitDetail(projectId: string, partId: string, commitId: string) {
+  const res = await axiosClient.get(`/projects/${projectId}/parts/${partId}/commit/${commitId}`);
+  return res.data;
 }

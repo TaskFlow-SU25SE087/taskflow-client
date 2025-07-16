@@ -15,8 +15,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 export default function ProjectPartManager({ projectId }: { projectId: string }) {
   const { createPart, connectRepo, loading, error, result } = useProjectParts()
   const [name, setName] = useState('')
-  const [programmingLanguage, setProgrammingLanguage] = useState(0)
-  const [framework, setFramework] = useState(0)
+  const [programmingLanguage, setProgrammingLanguage] = useState('None')
+  const [framework, setFramework] = useState('None')
   const [partId, setPartId] = useState('')
   const [repoUrl, setRepoUrl] = useState('')
   const [accessToken, setAccessToken] = useState('')
@@ -25,8 +25,17 @@ export default function ProjectPartManager({ projectId }: { projectId: string })
 
   // Tạo Project Part
   const handleCreatePart = async () => {
+    console.log('Create Part Clicked:', { name, programmingLanguage, framework });
+    if (!name.trim()) {
+      showToast({ title: 'Error', description: 'Please fill in all fields (Name is required)', variant: 'destructive' });
+      return;
+    }
     try {
-      const res = await createPart(projectId, { name, programmingLanguage, framework })
+      const res = await createPart(projectId, {
+        name: name.trim(),
+        programmingLanguage: programmingLanguage || 'None',
+        framework: framework || 'None',
+      })
       if (res?.code === 200) {
         setPartId(res.data)
         showToast({ title: 'Success', description: res?.message || 'Project part created successfully' })
@@ -37,6 +46,8 @@ export default function ProjectPartManager({ projectId }: { projectId: string })
       showToast({ title: 'Error', description: err.response?.data?.message || err.message || 'Failed to create project part', variant: 'destructive' })
     }
   }
+
+  console.log('ProjectPartManager render', { name, programmingLanguage, framework });
 
   // Kết nối repo
   const handleConnectRepo = async () => {
@@ -111,27 +122,39 @@ export default function ProjectPartManager({ projectId }: { projectId: string })
                 </div>
                 <div>
                   <Label htmlFor='programming-language'>Programming Language</Label>
-                  <Input
+                  <select
                     id='programming-language'
                     value={programmingLanguage}
-                    onChange={(e) => setProgrammingLanguage(Number(e.target.value))}
-                    placeholder='0 = Java, 1 = C#, etc.'
-                    type='number'
-                  />
+                    onChange={(e) => setProgrammingLanguage(e.target.value)}
+                    className='w-full border rounded px-2 py-2'
+                  >
+                    <option value='None'>None</option>
+                    <option value='Java'>Java</option>
+                    <option value='C#'>C#</option>
+                    <option value='JavaScript'>JavaScript</option>
+                    <option value='Python'>Python</option>
+                    {/* Thêm các ngôn ngữ khác nếu cần */}
+                  </select>
                 </div>
                 <div>
                   <Label htmlFor='framework'>Framework</Label>
-                  <Input
+                  <select
                     id='framework'
                     value={framework}
-                    onChange={(e) => setFramework(Number(e.target.value))}
-                    placeholder='0 = Spring Boot, 1 = .NET, etc.'
-                    type='number'
-                  />
+                    onChange={(e) => setFramework(e.target.value)}
+                    className='w-full border rounded px-2 py-2'
+                  >
+                    <option value='None'>None</option>
+                    <option value='Spring Boot'>Spring Boot</option>
+                    <option value='.NET'>.NET</option>
+                    <option value='React'>React</option>
+                    <option value='Django'>Django</option>
+                    {/* Thêm các framework khác nếu cần */}
+                  </select>
                 </div>
               </div>
 
-              <Button onClick={handleCreatePart} disabled={loading || !name} className='w-full md:w-auto'>
+              <Button onClick={handleCreatePart} disabled={loading || !name.trim()} className='w-full md:w-auto'>
                 {loading ? 'Creating...' : 'Create Part'}
               </Button>
             </CardContent>

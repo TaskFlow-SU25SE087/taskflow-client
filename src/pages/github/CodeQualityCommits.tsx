@@ -1,74 +1,17 @@
-import { getProjectPartCommitDetail, getProjectPartCommitsV2 } from '@/api/webhooks';
+import { getProjectPartCommitsV2 } from '@/api/webhooks';
 import { Navbar } from '@/components/Navbar';
 import { Sidebar } from '@/components/Sidebar';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Loader } from '@/components/ui/loader';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCurrentProject } from '@/hooks/useCurrentProject';
 import { useProjectParts } from '@/hooks/useProjectParts';
-import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { ArrowRight, Calendar, ChevronDown, Filter, GitCommit, Search } from 'lucide-react';
+import { Calendar, ChevronDown, Filter, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-
-interface CommitCardProps {
-  commit: (typeof MOCK_COMMITS)[0]
-}
-
-function CommitCard({ commit }: CommitCardProps) {
-  const initials = commit.author.name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-
-  return (
-    <div className='bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:border-lavender-200 transition-colors'>
-      <div className='flex items-start gap-4'>
-        <Avatar className='h-10 w-10'>
-          <AvatarFallback className='bg-lavender-100 text-lavender-700'>{initials}</AvatarFallback>
-        </Avatar>
-        <div className='flex-1 min-w-0'>
-          <div className='flex items-center gap-2 mb-1'>
-            <span className='font-medium text-gray-900'>{commit.author.name}</span>
-            <span className='text-gray-500'>committed</span>
-            <span className='text-sm text-gray-500'>{format(commit.date, 'MMM d, yyyy')}</span>
-          </div>
-          <p className='text-gray-900 font-medium mb-2'>{commit.message}</p>
-          <div className='flex items-center gap-4 text-sm'>
-            <div className='flex items-center gap-1.5 text-gray-500'>
-              <GitCommit className='h-4 w-4' />
-              <span className='font-mono'>{commit.hash}</span>
-            </div>
-            <div className='flex items-center gap-2'>
-              <span
-                className={cn(
-                  'px-2 py-0.5 rounded-full text-xs font-medium',
-                  commit.branch === 'main' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                )}
-              >
-                {commit.branch}
-              </span>
-            </div>
-            <div className='flex items-center gap-2 text-gray-500'>
-              <span className='text-green-600'>+{commit.changes.additions}</span>
-              <span className='text-red-600'>-{commit.changes.deletions}</span>
-            </div>
-          </div>
-        </div>
-        <Button variant='ghost' size='icon' className='h-8 w-8 rounded-lg hover:bg-gray-100'>
-          <ArrowRight className='h-4 w-4 text-gray-500' />
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-export default function GitCommits() {
+export default function CodeQualityCommits() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const { currentProject, isLoading } = useCurrentProject();
@@ -79,10 +22,6 @@ export default function GitCommits() {
   const [loadingCommits, setLoadingCommits] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [showDetail, setShowDetail] = useState(false);
-  const [commitDetail, setCommitDetail] = useState<any>(null);
-  const [loadingDetail, setLoadingDetail] = useState(false);
-  const [selectedCommit, setSelectedCommit] = useState<any>(null);
 
   useEffect(() => {
     if (currentProject?.id) {
@@ -114,21 +53,6 @@ export default function GitCommits() {
   const filteredCommits = commits.filter((commit) =>
     commit.commitMessage?.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const handleShowDetail = async (commit: any) => {
-    if (!currentProject) return;
-    setSelectedCommit(commit);
-    setShowDetail(true);
-    setLoadingDetail(true);
-    try {
-      const res = await getProjectPartCommitDetail(currentProject.id, selectedPartId, commit.commitId);
-      setCommitDetail(res.data);
-    } catch (err) {
-      setCommitDetail(null);
-    } finally {
-      setLoadingDetail(false);
-    }
-  };
 
   if (isLoading || !currentProject) {
     return (
@@ -215,12 +139,6 @@ export default function GitCommits() {
                       <span className='bg-cyan-100 text-cyan-700 px-2 py-1 rounded'>Coverage: {commit.coverage}%</span>
                     </div>
                     <div className='text-xs text-gray-500'>Result: {commit.resultSummary}</div>
-                    {/* Nút View Detail */}
-                    <div className='mt-2'>
-                      <Button size='sm' variant='outline' onClick={() => handleShowDetail(commit)}>
-                        View Detail
-                      </Button>
-                    </div>
                   </div>
                 </div>
               ))
@@ -243,43 +161,6 @@ export default function GitCommits() {
           </div>
         </div>
       </div>
-      <Dialog open={showDetail} onOpenChange={setShowDetail}>
-        <DialogContent className='max-w-2xl'>
-          <DialogHeader>
-            <DialogTitle>Commit Detail</DialogTitle>
-          </DialogHeader>
-          {loadingDetail ? (
-            <div>Loading...</div>
-          ) : commitDetail && commitDetail.length > 0 ? (
-            <div className='overflow-x-auto'>
-              <table className='min-w-full text-sm'>
-                <thead>
-                  <tr>
-                    <th>Rule</th>
-                    <th>Severity</th>
-                    <th>Message</th>
-                    <th>File</th>
-                    <th>Line</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {commitDetail.map((item: any, idx: number) => (
-                    <tr key={idx}>
-                      <td>{item.rule}</td>
-                      <td>{item.severity}</td>
-                      <td>{item.message}</td>
-                      <td>{item.filePath}</td>
-                      <td>{item.line}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div>No detail found for this commit.</div>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
-}
+} 

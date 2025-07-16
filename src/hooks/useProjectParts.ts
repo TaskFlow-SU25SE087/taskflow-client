@@ -10,7 +10,7 @@ export function useProjectParts() {
 
   const createPart = async (
     projectId: string,
-    payload: { name: string; programmingLanguage: number; framework: number }
+    payload: { name: string; programmingLanguage: string; framework: string }
   ) => {
     setLoading(true)
     setError(null)

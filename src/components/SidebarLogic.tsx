@@ -56,6 +56,7 @@ export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: stri
       section: 1,
       path: projectId ? `/projects/${projectId}/members` : '/members'
     },
+  
     // {
     //   id: 'parts',
     //   icon: <FiPackage className='h-5 w-5' />,
@@ -69,6 +70,14 @@ export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: stri
       label: 'Reports',
       section: 1,
       path: projectId ? `/projects/${projectId}/reports` : '/reports'
+    },
+    // Section 2: GitHub, Commits, Issues
+    {
+      id: 'github',
+      icon: <FiGithub className='h-5 w-5' />,
+      label: 'GitHub',
+      section: 2,
+      path: projectId ? `/projects/${projectId}/github` : '/github'
     },
     {
       id: 'commits',
@@ -85,11 +94,18 @@ export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: stri
       path: projectId ? `/projects/${projectId}/issues` : '/issues'
     },
     {
-      id: 'github',
-      icon: <FiGithub className='h-5 w-5' />,
-      label: 'GitHub',
+      id: 'allparts',
+      icon: <FiLayers className='h-5 w-5' />,
+      label: 'All Parts',
       section: 2,
-      path: projectId ? `/projects/${projectId}/github` : '/github'
+      path: '/all-parts'
+    },
+    {
+      id: 'codequality',
+      icon: <FiBarChart2 className='h-5 w-5' />,
+      label: 'Code Quality',
+      section: 2,
+      path: '/code-quality-commits'
     },
     { id: 'settings', icon: <FiSettings className='h-5 w-5' />, label: 'Settings', section: 3, path: '/settings' }
   ]
