@@ -193,4 +193,84 @@
       background-color: transparent;
     }
   }
+  
+  /* Timeline-specific animations */
+  .timeline-sprint-row {
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform, box-shadow;
+  }
+  
+  .timeline-sprint-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 40px -8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .timeline-task-card {
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform, box-shadow, border-color;
+  }
+  
+  .timeline-task-card:hover {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .timeline-current-indicator {
+    animation: timeline-pulse 2s ease-in-out infinite;
+  }
+  
+  @keyframes timeline-pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.05);
+    }
+  }
+  
+  .timeline-header-day {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .timeline-header-day:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
+  }
+  
+  .timeline-sprint-container {
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  .timeline-sprint-container:hover {
+    transform: scale(1.01);
+    box-shadow: 0 10px 30px -5px rgba(139, 92, 246, 0.2);
+  }
+  
+  /* Smooth scrolling for timeline */
+  .timeline-scroll-container {
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+  }
+  
+  .timeline-scroll-container::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .timeline-scroll-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+  }
+  
+  .timeline-scroll-container::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.3);
+    border-radius: 4px;
+  }
+  
+  .timeline-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 92, 246, 0.5);
+  }
 }
