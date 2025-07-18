@@ -172,12 +172,17 @@ export default function ProjectBacklog() {
     setSprintTasks(tasksMap)
   }
 
+  // Lọc backlog: task chưa gán sprint hoặc sprintId đặc biệt/no sprint
   const backlogTasks = filteredTasks.filter(
     (task) =>
-      !Object.values(sprintTasks)
-        .flat()
-        .some((sprintTask) => sprintTask.id === task.id)
+      !task.sprintId ||
+      task.sprintId === '' ||
+      task.sprintId === null ||
+      task.sprintId === undefined ||
+      task.sprintId === '00000000-0000-0000-0000-000000000000' ||
+      (task.sprintName && task.sprintName.toLowerCase() === 'no sprint')
   )
+  console.log('DEBUG backlogTasks:', backlogTasks);
 
   // Filter sprints
   const filteredSprints = sprints.filter((sprint) => {
@@ -217,22 +222,30 @@ export default function ProjectBacklog() {
   }
 
   return (
-    <div className='flex h-screen bg-gray-100'>
+    <div className="flex h-screen bg-gradient-to-br from-indigo-50 via-white to-blue-50">
       <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
 
-      <div className='flex-1 overflow-hidden'>
+      <div className="flex-1 overflow-hidden flex flex-col">
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
-        <div ref={contentRef} className='p-6 overflow-auto h-[calc(100vh-64px)]'>
-          <div className='flex-none w-full flex items-center justify-between pb-4'>
-            <div className='flex items-center gap-4'>
-              <h1 className='text-4xl font-bold'>Backlog</h1>
-              <div className='text-2xl font-medium text-gray-500'>
+        <div
+          ref={contentRef}
+          className="p-2 sm:p-6 overflow-auto h-[calc(100vh-64px)] flex flex-col gap-4"
+        >
+          {/* Header */}
+          <div className="flex-none w-full flex flex-col sm:flex-row sm:items-center justify-between pb-2 sm:pb-4 gap-2 sm:gap-0">
+            <div className="flex items-center gap-4">
+              <h1 className="text-3xl sm:text-4xl font-bold text-indigo-700 flex items-center gap-2 drop-shadow-sm">
+                <span className="inline-block bg-indigo-100 rounded-full p-2">
+                  <Filter className="h-6 w-6 text-indigo-500" />
+                </span>
+                Backlog
+              </h1>
+              <div className="text-lg sm:text-2xl font-medium text-gray-500 bg-white/70 rounded px-3 py-1 shadow-sm">
                 {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
               </div>
             </div>
-
-            <div className='flex items-center gap-4'>
+            <div className="flex items-center gap-2 sm:gap-4">
               {currentProject && (
                 <>
                   <SprintCreateMenu onCreateSprint={handleCreateSprint} />
@@ -242,52 +255,52 @@ export default function ProjectBacklog() {
             </div>
           </div>
 
-          <div className='pb-6 flex items-center justify-between'>
-            <div className='flex items-center gap-4'>
-              <Button variant='outline' className='bg-white hover:bg-gray-50'>
-                <Filter className='mr-2 h-4 w-4' />
+          {/* Toolbar */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-0 bg-white/80 rounded-lg shadow px-3 py-2 mb-2 border border-gray-100">
+            <div className="flex items-center gap-2 sm:gap-4 flex-1">
+              <Button variant="outline" className="bg-white hover:bg-gray-50 border-indigo-100">
+                <Filter className="mr-2 h-4 w-4 text-indigo-400" />
                 Filter
               </Button>
-              <div className='flex gap-4'>
-                <div className='relative'>
-                  <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
-                  <Input
-                    placeholder='Search tasks...'
-                    value={taskSearchQuery}
-                    onChange={(e) => setTaskSearchQuery(e.target.value)}
-                    className='w-[280px] rounded-md bg-white pl-10 focus-visible:ring-offset-0 focus-visible:ring-0'
-                  />
-                </div>
-                <div className='relative'>
-                  <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
-                  <Input
-                    placeholder='Search sprints...'
-                    value={sprintSearchQuery}
-                    onChange={(e) => setSprintSearchQuery(e.target.value)}
-                    className='w-[280px] rounded-md bg-white pl-10 focus-visible:ring-offset-0 focus-visible:ring-0'
-                  />
-                </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+                <Input
+                  placeholder="Search tasks..."
+                  value={taskSearchQuery}
+                  onChange={(e) => setTaskSearchQuery(e.target.value)}
+                  className="w-[180px] sm:w-[240px] rounded-md bg-white pl-10 focus-visible:ring-2 focus-visible:ring-indigo-200"
+                />
+              </div>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400" />
+                <Input
+                  placeholder="Search sprints..."
+                  value={sprintSearchQuery}
+                  onChange={(e) => setSprintSearchQuery(e.target.value)}
+                  className="w-[140px] sm:w-[180px] rounded-md bg-white pl-10 focus-visible:ring-2 focus-visible:ring-indigo-200"
+                />
               </div>
             </div>
-            <div className='flex gap-2'>
-              <Button variant='outline' className='bg-white hover:bg-gray-50'>
-                <Share2 className='mr-2 h-4 w-4' />
+            <div className="flex gap-2 items-center">
+              <Button variant="outline" className="bg-white hover:bg-gray-50 border-indigo-100">
+                <Share2 className="mr-2 h-4 w-4 text-indigo-400" />
                 Share
               </Button>
-              <Select defaultValue='newest'>
-                <SelectTrigger className='w-[180px] bg-white'>
-                  <SelectValue placeholder='Sort by' />
+              <Select defaultValue="newest">
+                <SelectTrigger className="w-[120px] sm:w-[160px] bg-white border-indigo-100">
+                  <SelectValue placeholder="Sort by" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value='newest'>Newest</SelectItem>
-                  <SelectItem value='oldest'>Oldest</SelectItem>
-                  <SelectItem value='priority'>Priority</SelectItem>
+                  <SelectItem value="newest">Newest</SelectItem>
+                  <SelectItem value="oldest">Oldest</SelectItem>
+                  <SelectItem value="priority">Priority</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
 
-          <div className='space-y-6'>
+          {/* Sprint & Backlog List */}
+          <div className="space-y-6">
             {filteredSprints.map((sprint) => (
               <SprintBoard
                 key={sprint.id}

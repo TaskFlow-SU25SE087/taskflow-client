@@ -42,7 +42,8 @@ export default function LoginPage() {
   return (
     <div className='min-h-screen flex flex-col md:flex-row bg-gray-50'>
       <div className='md:w-1/2 bg-lavender-700 hidden md:flex items-center justify-center p-8'>
-        <div className='max-w-md w-full'>
+        <div className='max-w-md w-full flex flex-col items-center'>
+          <img src="/logo.png" alt="TaskFlow Logo" className="w-50 h-32 mb-2 mt-4" />
           <h1 className='text-white text-5xl font-bold mb-6'>Welcome to TaskFlow</h1>
           <p className='text-white text-xl'>
             Streamline your workflow, boost productivity, and collaborate seamlessly.

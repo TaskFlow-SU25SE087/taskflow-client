@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Loader } from '@/components/ui/loader'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { useAuth } from '@/hooks/useAuth'
 import { useBoards } from '@/hooks/useBoards'
@@ -26,12 +27,12 @@ import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import {
-    arrayMove,
-    horizontalListSortingStrategy,
-    SortableContext,
-    verticalListSortingStrategy
+  arrayMove,
+  horizontalListSortingStrategy,
+  SortableContext,
+  verticalListSortingStrategy
 } from '@dnd-kit/sortable'
-import { ChevronDown, Filter, Link2, Pencil, Plus, Search } from 'lucide-react'
+import { CheckCircle, ChevronDown, Clock, Filter, Link2, Pencil, Plus, Search, TrendingUp } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -141,6 +142,17 @@ const fetchCurrentSprintAndTasks = async (
   }
 }
 
+// Hàm tính toán thống kê giống timeline
+const calculateBoardProgress = (tasks: TaskP[]) => {
+  const total = tasks.length
+  const completed = tasks.filter((task: TaskP) => task.status?.toLowerCase() === 'done' || task.status?.toLowerCase() === 'completed').length
+  const inProgress = tasks.filter((task: TaskP) => task.status?.toLowerCase() === 'in progress').length
+  const blocked = tasks.filter((task: TaskP) => task.status?.toLowerCase() === 'blocked').length
+  const notStarted = tasks.filter((task: TaskP) => task.status?.toLowerCase() === 'not started' || task.status?.toLowerCase() === 'to do').length
+  const completionPercentage = total > 0 ? Math.round((completed / total) * 100) : 0
+  return { total, completed, inProgress, blocked, notStarted, completionPercentage }
+}
+
 export default function ProjectBoard() {
   const navigate = useNavigate()
   const { boards, isLoading: isBoardLoading, error: boardError, refreshBoards, setBoards } = useBoards()
@@ -155,6 +167,7 @@ export default function ProjectBoard() {
   const { tasks, isTaskLoading, refreshTasks } = useTasks()
   const [sprintTasks, setSprintTasks] = useState<TaskP[]>([])
   const [selectedSprintId, setSelectedSprintId] = useState<string | null>(null)
+  const [filterStatus, setFilterStatus] = useState<string>('all');
 
   const { showToast } = useToastContext()
   const { leaveProject, loading: memberLoading, error: memberError } = useProjectMembers()
@@ -287,8 +300,15 @@ export default function ProjectBoard() {
         console.log('[DnD] Không có currentProject khi kéo board')
         return
       }
-      const oldIndex = boards.findIndex((b) => b.id === active.id)
-      const newIndex = boards.findIndex((b) => b.id === over.id)
+      let oldIndex = boards.findIndex((b) => b.id === active.id);
+      let newIndex;
+      if (over.id === '__dropzone_start__') {
+        newIndex = 0;
+      } else if (over.id === '__dropzone_end__') {
+        newIndex = boards.length - 1;
+      } else {
+        newIndex = boards.findIndex((b) => b.id === over.id);
+      }
       if (oldIndex === -1 || newIndex === -1) {
         console.log('[DnD] Không tìm thấy oldIndex hoặc newIndex khi kéo board', {
           oldIndex,
@@ -307,8 +327,8 @@ export default function ProjectBoard() {
       return
     }
 
-    // Nếu kéo task (id của task nằm trong bất kỳ board.tasks)
-    const allTaskIds = boards.flatMap((b) => b.tasks.map((t) => t.id))
+    // Nếu kéo task (id của task nằm trong bất kỳ filteredBoards)
+    const allTaskIds = filteredBoards.flatMap((b) => b.tasks.map((t) => t.id))
     if (allTaskIds.includes(active.id)) {
       if (!currentProject?.id) {
         console.log('[DnD] Không có currentProject khi kéo task')
@@ -318,18 +338,18 @@ export default function ProjectBoard() {
       let newBoardId = over.id
       // Nếu over là taskId, tìm board chứa task đó
       if (allTaskIds.includes(over.id)) {
-        const foundBoard = boards.find((b) => b.tasks.some((t) => t.id === over.id))
+        const foundBoard = filteredBoards.find((b) => b.tasks.some((t) => t.id === over.id))
         if (foundBoard) newBoardId = foundBoard.id
         console.log('[DnD] over là task, tìm thấy board chứa task', { foundBoard, newBoardId })
       }
-      const taskObj = boards.flatMap((b) => b.tasks).find((t) => t.id === taskId)
+      const taskObj = filteredBoards.flatMap((b) => b.tasks).find((t) => t.id === taskId)
       if (taskObj && taskObj.boardId === newBoardId) {
         console.log('[DnD] Task đã ở board này, không cần gọi API')
         return
       }
       console.log('[DnD] moveTaskToBoard', { projectId: currentProject.id, taskId, newBoardId })
       try {
-        const boardObj = boards.find((b) => b.id === newBoardId)
+        const boardObj = filteredBoards.find((b) => b.id === newBoardId)
         console.log('[DnD] DEBUG taskObj:', taskObj)
         console.log('[DnD] DEBUG boardObj:', boardObj)
         await taskApi.moveTaskToBoard(currentProject.id, taskId, newBoardId)
@@ -369,11 +389,20 @@ export default function ProjectBoard() {
     boards.flatMap((b) => b.tasks)
   )
 
-  // Hiển thị task của từng board theo sprint (nếu có sprintTasks)
-  const filteredBoards = boards.map((board) => ({
-    ...board,
-    tasks: sprintTasks.filter((task) => task.boardId === board.id)
-  }))
+  // Filter boards/tasks đúng nguồn dữ liệu, search theo title + description + status
+  const filteredBoards = boards.map((board) => {
+    const boardTasks = sprintTasks.length > 0
+      ? sprintTasks.filter((task) => task.boardId === board.id)
+      : board.tasks;
+    const filteredTasks = boardTasks.filter(
+      (task) =>
+        (!searchQuery ||
+          (task.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (task.description || '').toLowerCase().includes(searchQuery.toLowerCase())) &&
+        (filterStatus === 'all' || (task.status || '').toLowerCase() === filterStatus.toLowerCase())
+    );
+    return { ...board, tasks: filteredTasks };
+  });
 
   // UI chọn sprint (không còn dropdown)
   const SprintSelector = () => {
@@ -433,6 +462,11 @@ export default function ProjectBoard() {
 
   // Log giá trị boards để debug
   console.log('Boards in ProjectBoard:', boards)
+  console.log('DEBUG boards:', boards);
+  console.log('DEBUG filteredBoards:', filteredBoards);
+  console.log('DEBUG sprintTasks:', sprintTasks);
+  console.log('DEBUG searchQuery:', searchQuery);
+  console.log('DEBUG filterStatus:', filterStatus);
 
   return (
     <div className='flex bg-gradient-to-br from-slate-50 via-white to-lavender-50 min-h-screen'>
@@ -446,6 +480,108 @@ export default function ProjectBoard() {
 
         <div className='flex flex-col p-3 sm:p-6 bg-white/50 backdrop-blur-sm'>
           <SprintSelector />
+          {/* Hiển thị deadline của sprint hiện tại */}
+          {(() => {
+            const currentSprint = sprints.find((s) => s.id === selectedSprintId)
+            if (currentSprint && currentSprint.startDate && currentSprint.endDate) {
+              return (
+                <div className="mb-4 flex items-center gap-2 text-base font-medium text-indigo-700 bg-indigo-50 rounded-lg px-4 py-2 w-fit shadow">
+                  <Clock className="h-5 w-5 text-indigo-400 mr-1" />
+                  <span>Deadline:</span>
+                  <span className="font-semibold text-indigo-900 ml-1">
+                    {new Date(currentSprint.startDate).toLocaleDateString()} - {new Date(currentSprint.endDate).toLocaleDateString()}
+                  </span>
+                </div>
+              )
+            }
+            return null
+          })()}
+          {/* Bảng thống kê kiểu timeline: Completed và Progress (task + thời gian) */}
+          <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-6'>
+            {(() => {
+              const stats = calculateBoardProgress(tasks)
+              // Tính progress thời gian sprint
+              let timeProgress = 0
+              const currentSprint = sprints.find((s) => s.id === selectedSprintId)
+              if (currentSprint && currentSprint.startDate && currentSprint.endDate) {
+                const now = new Date()
+                const start = new Date(currentSprint.startDate)
+                const end = new Date(currentSprint.endDate)
+                if (now >= start && now <= end) {
+                  timeProgress = Math.round(((now.getTime() - start.getTime()) / (end.getTime() - start.getTime())) * 100)
+                } else if (now > end) {
+                  timeProgress = 100
+                } else {
+                  timeProgress = 0
+                }
+              }
+              return <>
+                {/* Completed Card */}
+                <div className='bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300'>
+                  <div className='flex items-center justify-between'>
+                    <div>
+                      <p className='text-emerald-100 text-sm font-medium'>Completed</p>
+                      <p className='text-2xl font-bold'>{stats.completed}</p>
+                    </div>
+                    <div className='p-3 bg-emerald-400/30 rounded-xl'>
+                      <CheckCircle className='h-6 w-6' />
+                    </div>
+                  </div>
+                  <div className='mt-3 flex items-center gap-2'>
+                    <div className='flex-1 bg-emerald-400/30 rounded-full h-2'>
+                      <div 
+                        className='bg-white rounded-full h-2 transition-all duration-500'
+                        style={{ width: `${stats.completionPercentage}%` }}
+                      />
+                    </div>
+                    <span className='text-xs text-emerald-100'>{stats.completionPercentage}%</span>
+                  </div>
+                </div>
+                {/* Progress Card */}
+                <div className='bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300'>
+                  <div className='flex items-center justify-between'>
+                    <div>
+                      <p className='text-purple-100 text-sm font-medium'>Progress</p>
+                      <p className='text-2xl font-bold'>{stats.completionPercentage}%</p>
+                    </div>
+                    <div className='p-3 bg-purple-400/30 rounded-xl'>
+                      <TrendingUp className='h-6 w-6' />
+                    </div>
+                  </div>
+                  <div className='mt-3 flex items-center gap-2'>
+                    <div className='flex-1 bg-purple-400/30 rounded-full h-2'>
+                      <div 
+                        className='bg-white rounded-full h-2 transition-all duration-500'
+                        style={{ width: `${stats.completionPercentage}%` }}
+                      />
+                    </div>
+                    <span className='text-xs text-purple-100'>Completed</span>
+                  </div>
+                </div>
+                {/* Time Card */}
+                <div className='bg-gradient-to-br from-gray-400 to-gray-600 rounded-2xl p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300'>
+                  <div className='flex items-center justify-between'>
+                    <div>
+                      <p className='text-gray-100 text-sm font-medium'>Time</p>
+                      <p className='text-2xl font-bold'>{timeProgress}%</p>
+                    </div>
+                    <div className='p-3 bg-gray-400/30 rounded-xl'>
+                      <Clock className='h-6 w-6' />
+                    </div>
+                  </div>
+                  <div className='mt-3 flex items-center gap-2'>
+                    <div className='flex-1 bg-gray-400/30 rounded-full h-2'>
+                      <div 
+                        className='bg-gray-900 rounded-full h-2 transition-all duration-500'
+                        style={{ width: `${timeProgress}%` }}
+                      />
+                    </div>
+                    <span className='text-xs text-gray-100'>Time 100%</span>
+                  </div>
+                </div>
+              </>
+            })()}
+          </div>
           <div className='flex-none w-full flex flex-col sm:flex-row sm:items-center justify-between pb-6 gap-4'>
             <div className='flex items-center gap-3 flex-wrap'>
               <h1 className='text-2xl sm:text-4xl font-bold pr-2 text-gray-800 tracking-tight'>
@@ -515,6 +651,22 @@ export default function ProjectBoard() {
                 <span className='hidden sm:inline'>Filter</span>
                 <ChevronDown className='ml-2 h-4 w-4' />
               </Button>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className='w-[140px] bg-white'>
+                  <SelectValue placeholder='Filter status' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value='in progress'>In Progress</SelectItem>
+                  <SelectItem value='done'>Done</SelectItem>
+                  <SelectItem value='not started'>Not Started</SelectItem>
+                  <SelectItem value='completed'>Completed</SelectItem>
+                  <SelectItem value='blocked'>Blocked</SelectItem>
+                  <SelectItem value='review'>Review</SelectItem>
+                  <SelectItem value='on hold'>On Hold</SelectItem>
+                  <SelectItem value='cancelled'>Cancelled</SelectItem>
+                </SelectContent>
+              </Select>
               <div className='relative'>
                 <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
                 <Input
@@ -534,64 +686,53 @@ export default function ProjectBoard() {
             </div>
           </div>
 
-          <div className='flex flex-col overflow-x-auto bg-white/30 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50'>
-            {/* DndContext chung cho cả board và task */}
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={filteredBoards.map((b) => b.id)} strategy={horizontalListSortingStrategy}>
-                <div
-                  ref={boardContainerRef}
-                  className='w-full h-full overflow-x-auto overflow-y-hidden cursor-grab select-none min-h-0 p-4'
-                  onMouseDown={handleMouseDown}
-                  onMouseLeave={handleMouseLeave}
-                  onMouseUp={handleMouseUp}
-                  onMouseMove={handleMouseMove}
-                >
-                  <div className='inline-flex gap-6 h-full animate-fade-in' style={{ minWidth: '900px' }}>
-                    {filteredBoards && filteredBoards.length > 0 ? (
-                      filteredBoards.map((board) => (
-                        <div key={board.id} className='...'>
-                          <SortableBoardColumn id={board.id}>
-                            <DroppableBoard boardId={board.id}>
-                              <SortableContext
-                                items={board.tasks.map((t) => t.id)}
-                                strategy={verticalListSortingStrategy}
-                              >
-                                <SortableTaskColumn
-                                  id={board.id}
-                                  title={board.name}
-                                  description={board.description}
-                                  tasks={board.tasks}
-                                  color={getBoardColor(board.name)}
-                                  onTaskCreated={refreshBoards}
-                                  status={board.name}
-                                  boardId={board.id}
-                                />
-                              </SortableContext>
-                            </DroppableBoard>
-                          </SortableBoardColumn>
-                        </div>
-                      ))
-                                          ) : (
-                        <div className='flex flex-col items-center justify-center h-96 w-full text-center'>
-                          <div className='text-gray-400 mb-4'>
-                            <svg className='w-24 h-24 mx-auto' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                              <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={1.5} d='M9 17H7A5 5 0 0 1 7 7h2m0 10a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-2z' />
-                            </svg>
-                          </div>
-                          <h3 className='text-xl font-semibold text-gray-700 mb-2'>No boards yet</h3>
-                          <p className='text-gray-500 mb-6 max-w-md'>Get started by creating your first board to organize your tasks</p>
-                          <TaskBoardCreateMenu
-                            isOpen={isBoardDialogOpen}
-                            onOpenChange={setIsBoardDialogOpen}
-                            projectId={currentProject.id}
-                            onBoardCreated={refreshBoards}
-                          />
-                        </div>
-                      )}
+          <div className='flex flex-col overflow-x-auto bg-white/30 backdrop-blur-sm'>
+            {/* Responsive: cuộn ngang trên mobile, min-width cho board list */}
+            <div className="w-full overflow-x-auto pb-2">
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={filteredBoards.map((b) => b.id)} strategy={horizontalListSortingStrategy}>
+                  <div className="inline-flex gap-6 h-full animate-fade-in min-w-[600px] sm:min-w-[900px]">
+                    {/* Drop zone đầu */}
+                    <div
+                      style={{ width: 40, minHeight: 200 }}
+                      className="bg-white rounded-lg"
+                      data-dropzone='start'
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => handleDragEnd({ active: { id: '__dropzone_start__' }, over: { id: '__dropzone_start__' } })}
+                    />
+                    {filteredBoards.map((board) => (
+                      <SortableBoardColumn id={board.id} key={board.id}>
+                        <DroppableBoard boardId={board.id}>
+                          <SortableContext
+                            items={board.tasks.map((t) => t.id)}
+                            strategy={verticalListSortingStrategy}
+                          >
+                            <SortableTaskColumn
+                              id={board.id}
+                              title={board.name}
+                              description={board.description}
+                              tasks={board.tasks}
+                              color={getBoardColor(board.name)}
+                              onTaskCreated={refreshBoards}
+                              status={board.name}
+                              boardId={board.id}
+                            />
+                          </SortableContext>
+                        </DroppableBoard>
+                      </SortableBoardColumn>
+                    ))}
+                    {/* Drop zone cuối */}
+                    <div
+                      style={{ width: 40, minHeight: 200 }}
+                      className="bg-white rounded-lg"
+                      data-dropzone='end'
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => handleDragEnd({ active: { id: '__dropzone_end__' }, over: { id: '__dropzone_end__' } })}
+                    />
                   </div>
-                </div>
-              </SortableContext>
-            </DndContext>
+                </SortableContext>
+              </DndContext>
+            </div>
           </div>
         </div>
       </div>

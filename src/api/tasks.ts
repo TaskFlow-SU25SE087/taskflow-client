@@ -29,7 +29,7 @@ export const taskApi = {
     data: { title: string; description: string; priority: string }
   ): Promise<any> => {
     const response = await axiosClient.put(`/projects/${projectId}/tasks/update/${taskId}`, data)
-    return response.data.data
+    return response.data // Sửa lại trả về toàn bộ response.data
   },
 
   // Delete a task

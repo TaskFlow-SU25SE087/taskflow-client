@@ -1,7 +1,7 @@
 import TaskCreateMenuForBoard from '@/components/tasks/TaskCreateMenuForBoard'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { TaskP } from '@/types/task'
-import { Inbox, Plus, Settings, Trash2 } from 'lucide-react'
+import { Inbox, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { BoardDeleteButton } from './BoardDeleteButton'
 import { BoardEditMenu } from './BoardEditMenu'
@@ -101,7 +101,7 @@ export function TaskColumn({ title, tasks, color, onTaskCreated, boardId }: Task
 
   return (
     <div 
-      className={`${styling.bgColor} ${styling.borderColor} rounded-2xl border-2 w-[400px] flex flex-col min-h-0 shadow-lg hover:shadow-xl transition-all duration-300 animate-fade-in`}
+      className={`${styling.bgColor} rounded-2xl w-[400px] flex flex-col min-h-0 border-none shadow-none animate-fade-in`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

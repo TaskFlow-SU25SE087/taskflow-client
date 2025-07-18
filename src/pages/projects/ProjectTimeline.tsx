@@ -578,7 +578,7 @@ function SprintRow({
                         {task.status}
                       </span>
                     </div>
-                    {hoveredTaskId === task.id && <TaskTooltip task={task} />}
+                    {/* {hoveredTaskId === task.id && <TaskTooltip task={task} />} */}
                   </div>
                 ))
               ) : (

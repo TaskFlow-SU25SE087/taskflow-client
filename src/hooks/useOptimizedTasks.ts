@@ -29,7 +29,14 @@ export const useOptimizedTasks = () => {
     try {
       const fetchedTasks = await taskApi.getTasksFromProject(currentProject.id)
       const optimizedTasks: OptimizedTaskP[] = fetchedTasks
-        .filter((task: TaskP) => !task.sprintId) // chỉ lấy backlog
+        .filter((task: TaskP) =>
+          !task.sprintId ||
+          task.sprintId === '' ||
+          task.sprintId === null ||
+          task.sprintId === undefined ||
+          task.sprintId === '00000000-0000-0000-0000-000000000000' ||
+          (task.sprintName && task.sprintName.toLowerCase() === 'no sprint')
+        ) // chỉ lấy backlog
         .map((task: TaskP) => ({
           id: task.id,
           title: task.title,

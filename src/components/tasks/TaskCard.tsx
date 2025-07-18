@@ -190,6 +190,25 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
     )
   }
 
+  // Màu cho từng trạng thái task
+  const statusColorMap: Record<string, string> = {
+    'to do': 'bg-gray-200 text-gray-700',
+    'not started': 'bg-gray-200 text-gray-700',
+    'in progress': 'bg-blue-100 text-blue-700',
+    'done': 'bg-green-100 text-green-700',
+    'completed': 'bg-green-100 text-green-700',
+    'review': 'bg-yellow-100 text-yellow-700',
+    'blocked': 'bg-red-100 text-red-700',
+    'cancelled': 'bg-pink-100 text-pink-700',
+    'on hold': 'bg-amber-100 text-amber-700',
+    'unassigned': 'bg-slate-100 text-slate-500',
+    'urgent': 'bg-red-200 text-red-800',
+    'testing': 'bg-purple-100 text-purple-700',
+    'pending': 'bg-orange-100 text-orange-700',
+    'n/a': 'bg-gray-100 text-gray-500'
+  }
+  const getStatusColor = (status: string) => statusColorMap[status?.toLowerCase?.()] || 'bg-gray-100 text-gray-600';
+
   if (compact) {
     return (
       <div className='group flex items-center gap-3 border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 min-h-[44px] shadow-sm hover:shadow-md'>
@@ -228,6 +247,11 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
           <span>{priorityConfig.text}</span>
         </div>
         
+        {/* Status badge */}
+        {task.status && (
+          <span className={`px-2 py-0.5 rounded text-xs font-semibold ml-2 ${getStatusColor(task.status)}`}>{task.status}</span>
+        )}
+        
         {/* Move to Sprint button if present */}
         <span className='ml-auto'>{children}</span>
       </div>
@@ -248,10 +272,10 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
         />
 
         <Card className={`
-          w-full border-2 cursor-pointer transition-all duration-300 ml-2 
+          w-full border-none shadow-none cursor-pointer transition-all duration-300 ml-2 
           ${isHovered 
-            ? 'border-lavender-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1' 
-            : 'border-gray-200 shadow-sm hover:shadow-md'
+            ? 'hover:shadow-lg hover:shadow-xl transform hover:-translate-y-1' 
+            : ''
           }
           ${priorityConfig.bg} backdrop-blur-sm
           hover:animate-task-hover

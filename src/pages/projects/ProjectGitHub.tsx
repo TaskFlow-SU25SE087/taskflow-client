@@ -109,9 +109,9 @@ export default function ProjectGitHub() {
     setError(null);
     try {
       const response = await createProjectPart(projectId!, {
-        Name: newPart.name,
-        ProgrammingLanguage: newPart.programmingLanguage || 'None',
-        Framework: newPart.framework || 'None',
+        name: newPart.name,
+        programmingLanguage: newPart.programmingLanguage || 'None',
+        framework: newPart.framework || 'None',
       });
       let partId = response.data;
       if (typeof partId === 'object' && partId.id) {
@@ -119,9 +119,9 @@ export default function ProjectGitHub() {
       }
       const newPartWithId = {
         id: partId,
-        Name: newPart.name,
-        ProgrammingLanguage: newPart.programmingLanguage,
-        Framework: newPart.framework
+        name: newPart.name,
+        programmingLanguage: newPart.programmingLanguage,
+        framework: newPart.framework
       };
       setParts((prev) => [...prev, newPartWithId]);
       setShowCreatePart(false);
@@ -212,11 +212,11 @@ export default function ProjectGitHub() {
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
         <div className='flex-1 overflow-y-auto flex flex-col items-center justify-center p-6'>
           <div className='mb-8 w-full max-w-2xl'>
-            <h1 className='text-4xl font-bold text-gray-900 flex items-center gap-4 justify-center mb-2'>
-              <Github className='h-10 w-10 text-gray-700' />
+            <h1 className='text-4xl font-extrabold text-lavender-700 flex items-center gap-4 justify-center mb-2 drop-shadow'>
+              <Github className='h-10 w-10 text-lavender-500' />
               GitHub Integration
             </h1>
-            <p className='text-gray-600 text-center text-lg'>
+            <p className='text-blue-700 text-center text-lg font-medium'>
               Connect your GitHub account to integrate repositories with your project.
             </p>
           </div>
@@ -228,18 +228,18 @@ export default function ProjectGitHub() {
               {success}
             </div>
           )}
-          <Card className='w-full max-w-2xl mb-8 shadow-lg border-2 border-gray-100'>
+          <Card className='w-full max-w-2xl mb-8 shadow-2xl border-0 bg-white/95 rounded-2xl'>
             <CardHeader className='flex flex-col items-center pb-0'>
               {connectionStatus ? (
-                <span className='flex items-center gap-2 text-green-600 font-semibold text-xl mb-2'>
+                <span className='flex items-center gap-2 text-green-600 font-bold text-xl mb-2'>
                   <CheckCircle className='h-6 w-6' /> Connected to GitHub
                 </span>
               ) : (
-                <span className='flex items-center gap-2 text-gray-500 font-semibold text-xl mb-2'>
+                <span className='flex items-center gap-2 text-lavender-400 font-bold text-xl mb-2'>
                   <XCircle className='h-6 w-6' /> Not Connected
                 </span>
               )}
-              <p className='text-gray-500 mt-1 text-center text-base'>
+              <p className='text-lavender-700 mt-1 text-center text-base font-medium'>
                 {connectionStatus
                   ? 'You are connected to GitHub. Select a repository to integrate with your project.'
                   : 'Connect your GitHub account to start integrating repositories.'}
@@ -257,7 +257,7 @@ export default function ProjectGitHub() {
                   {oauthLoading ? 'Redirecting...' : 'Connect GitHub'}
                 </Button>
               ) : repos.length === 0 ? (
-                <div className='text-gray-500 text-center py-8 text-lg'>
+                <div className='text-lavender-400 text-center py-8 text-lg font-semibold'>
                   No repositories found in your GitHub account.
                 </div>
               ) : (
@@ -265,24 +265,24 @@ export default function ProjectGitHub() {
                   <div className='mb-6 space-y-4'>
                     <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
                       <div>
-                        <label className='block font-medium mb-2 text-base'>Select Repository</label>
+                        <label className='block font-semibold mb-2 text-lavender-700'>Select Repository</label>
                         <select
-                          className='w-full border rounded px-4 py-3 text-base shadow-sm focus:ring focus:ring-blue-200'
+                          className='w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl px-4 py-3 text-base text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300 shadow-none'
                           value={selectedRepo}
                           onChange={(e) => setSelectedRepo(e.target.value)}
                         >
                           <option value=''>-- Select a repository --</option>
                           {repos.map((repo) => (
-                            <option key={repo.fullName} value={repo.htmlUrl}>
+                            <option key={repo.fullName} value={repo.htmlUrl} className='text-blue-700'>
                               {repo.fullName}
                             </option>
                           ))}
                         </select>
                       </div>
                       <div>
-                        <label className='block font-medium mb-2 text-base'>Select Project Part</label>
+                        <label className='block font-semibold mb-2 text-lavender-700'>Select Project Part</label>
                         <select
-                          className='w-full border rounded px-4 py-3 text-base shadow-sm focus:ring focus:ring-blue-200'
+                          className='w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl px-4 py-3 text-base text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300 shadow-none'
                           value={selectedPart}
                           onChange={(e) => setSelectedPart(e.target.value)}
                         >
@@ -290,14 +290,14 @@ export default function ProjectGitHub() {
                           {parts
                             .filter((part) => !(part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl))
                             .map((part) => (
-                              <option key={part.id} value={part.id}>
+                              <option key={part.id} value={part.id} className='text-purple-700'>
                                 {part.name} ({part.programmingLanguage}, {part.framework})
                               </option>
                             ))}
                         </select>
                         <Button
                           variant='link'
-                          className='mt-2 p-0 text-blue-600 text-base'
+                          className='mt-2 p-0 text-blue-600 text-base font-semibold'
                           onClick={() => setShowCreatePart(true)}
                         >
                           + Create new part
@@ -311,7 +311,7 @@ export default function ProjectGitHub() {
                   <Button
                     onClick={handleConnectRepo}
                     disabled={!selectedRepo || !selectedPart || connecting}
-                    className='w-full py-3 text-lg font-semibold'
+                    className='w-full py-4 text-lg font-bold bg-gradient-to-r from-lavender-500 to-blue-400 hover:from-lavender-600 hover:to-blue-500 text-white shadow-lg rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed mt-4'
                     size='lg'
                   >
                     {connecting ? (
@@ -328,58 +328,85 @@ export default function ProjectGitHub() {
             </CardContent>
           </Card>
           {showCreatePart && (
-            <Card className='w-full max-w-xl mb-8 shadow-lg border-2 border-blue-100 animate-fade-in'>
+            <Card className='w-full max-w-xl mb-8 shadow-2xl border-0 bg-white/95 rounded-2xl animate-fade-in'>
               <CardHeader>
-                <CardTitle className='text-2xl font-bold text-blue-700'>Create Project Part</CardTitle>
+                <CardTitle className='text-2xl font-extrabold text-lavender-700 mb-2 drop-shadow'>Create Project Part</CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleCreatePart} className='space-y-5'>
+                <form onSubmit={handleCreatePart} className='space-y-6'>
                   <div>
-                    <label className='block font-medium mb-1 text-base'>Name</label>
+                    <label className='block font-semibold mb-1 text-lavender-700'>Name</label>
                     <Input
                       value={newPart.name}
                       onChange={(e) => setNewPart({ ...newPart, name: e.target.value })}
                       required
-                      className='py-2 px-3 text-base'
+                      placeholder='Enter part name...'
+                      className='py-3 px-4 text-base bg-lavender-50 border-2 border-lavender-200 rounded-xl focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300 text-lavender-700 font-medium'
                     />
                   </div>
                   <div>
-                    <label className='block font-medium mb-1 text-base'>Programming Language</label>
+                    <label className='block font-semibold mb-1 text-lavender-700'>Programming Language</label>
                     <select
                       value={newPart.programmingLanguage}
                       onChange={e => setNewPart({ ...newPart, programmingLanguage: e.target.value })}
                       required
-                      className='py-2 px-3 text-base w-full border rounded'
+                      className='py-3 px-4 text-base w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400'
                     >
-                      {["None", "Csharp", "Java", "JavaScript", "TypeScript", "Python", "PHP", "Go", "Ruby", "CPlusPlus", "Swift", "Kotlin"].map(lang => (
-                        <option key={lang} value={lang}>{lang}</option>
-                      ))}
+                      <option value='None'>🟣 None</option>
+                      <option value='Csharp'>⚙️ C#</option>
+                      <option value='Java'>☕ Java</option>
+                      <option value='JavaScript'>🟨 JavaScript</option>
+                      <option value='TypeScript'>🟦 TypeScript</option>
+                      <option value='Python'>🐍 Python</option>
+                      <option value='PHP'>🐘 PHP</option>
+                      <option value='Go'>💙 Go</option>
+                      <option value='Ruby'>💎 Ruby</option>
+                      <option value='CPlusPlus'>🔵 C++</option>
+                      <option value='Swift'>🦅 Swift</option>
+                      <option value='Kotlin'>🟪 Kotlin</option>
                     </select>
                   </div>
                   <div>
-                    <label className='block font-medium mb-1 text-base'>Framework</label>
+                    <label className='block font-semibold mb-1 text-lavender-700'>Framework</label>
                     <select
                       value={newPart.framework}
                       onChange={e => setNewPart({ ...newPart, framework: e.target.value })}
                       required
-                      className='py-2 px-3 text-base w-full border rounded'
+                      className='py-3 px-4 text-base w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400'
                     >
-                      {["None", "ASPNETCore", "DotNetCore", "SpringBoot", "ExpressJs", "NestJs", "React", "Angular", "VueJs", "NextJs", "NuxtJs", "Django", "Flask", "FastAPI", "Laravel", "RubyOnRails", "Ktor"].map(fw => (
-                        <option key={fw} value={fw}>{fw}</option>
-                      ))}
+                      <option value='None'>🟣 None</option>
+                      <option value='ASPNETCore'>🌐 ASP.NET Core</option>
+                      <option value='DotNetCore'>⚙️ .NET Core</option>
+                      <option value='SpringBoot'>🌱 Spring Boot</option>
+                      <option value='ExpressJs'>🚂 Express.js</option>
+                      <option value='NestJs'>🦉 NestJS</option>
+                      <option value='React'>⚛️ React</option>
+                      <option value='Angular'>🅰️ Angular</option>
+                      <option value='VueJs'>🟩 Vue.js</option>
+                      <option value='NextJs'>⏭️ Next.js</option>
+                      <option value='NuxtJs'>🟩 Nuxt.js</option>
+                      <option value='Django'>🌿 Django</option>
+                      <option value='Flask'>🍶 Flask</option>
+                      <option value='FastAPI'>⚡ FastAPI</option>
+                      <option value='Laravel'>🟥 Laravel</option>
+                      <option value='RubyOnRails'>🚄 Ruby on Rails</option>
+                      <option value='Ktor'>🦄 Ktor</option>
                     </select>
                   </div>
-                  <div className='flex gap-3 justify-end'>
-                    <Button type='submit' disabled={creatingPart} className='px-6 py-2 text-base font-semibold'>
-                      {creatingPart ? 'Creating...' : 'Create Part'}
-                    </Button>
-                    <Button
+                  <div className='flex gap-4 justify-end mt-6'>
+                    <button
                       type='button'
-                      variant='outline'
                       onClick={() => setShowCreatePart(false)}
-                      className='px-6 py-2 text-base'
+                      className='text-blue-600 hover:underline font-semibold text-base bg-transparent border-0 shadow-none px-0'
                     >
                       Cancel
+                    </button>
+                    <Button
+                      type='submit'
+                      disabled={creatingPart}
+                      className='px-8 py-3 text-lg font-bold bg-gradient-to-r from-lavender-500 to-blue-400 hover:from-lavender-600 hover:to-blue-500 text-white shadow-lg rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed'
+                    >
+                      {creatingPart ? 'Creating...' : 'Create Part'}
                     </Button>
                   </div>
                 </form>

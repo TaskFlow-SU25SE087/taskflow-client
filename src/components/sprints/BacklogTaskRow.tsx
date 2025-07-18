@@ -20,10 +20,19 @@ interface BacklogTaskRowProps {
 
 const statusColorMap: Record<string, string> = {
   'to do': 'bg-gray-200 text-gray-700',
+  'not started': 'bg-gray-200 text-gray-700',
   'in progress': 'bg-blue-100 text-blue-700',
-  done: 'bg-green-100 text-green-700',
-  review: 'bg-yellow-100 text-yellow-700',
-  blocked: 'bg-red-100 text-red-700'
+  'done': 'bg-green-100 text-green-700',
+  'completed': 'bg-green-100 text-green-700',
+  'review': 'bg-yellow-100 text-yellow-700',
+  'blocked': 'bg-red-100 text-red-700',
+  'cancelled': 'bg-pink-100 text-pink-700',
+  'on hold': 'bg-amber-100 text-amber-700',
+  'unassigned': 'bg-slate-100 text-slate-500',
+  'urgent': 'bg-red-200 text-red-800',
+  'testing': 'bg-purple-100 text-purple-700',
+  'pending': 'bg-orange-100 text-orange-700',
+  'n/a': 'bg-gray-100 text-gray-500'
 }
 
 const getBoardColorClass = (board: any) => {

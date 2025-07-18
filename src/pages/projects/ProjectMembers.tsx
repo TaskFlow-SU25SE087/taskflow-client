@@ -103,11 +103,15 @@ export default function ProjectMembers() {
     if (!projectId) return
     try {
       const res = await projectApi.removeProjectMember(projectId, userId)
-      console.log('Show toast after remove:', res)
-      showToast({ title: res.code === 200 ? 'Success' : 'Error', description: res.message || 'Member removed', variant: res.code === 200 ? 'default' : 'destructive' })
-      fetchMembers()
+      let msg = 'Member removed';
+      if (res && typeof res === 'object' && 'message' in res && typeof res.message === 'string') {
+        msg = res.message;
+      }
+      showToast({ title: res && res.code === 200 ? 'Success' : 'Error', description: msg, variant: res && res.code === 200 ? 'default' : 'destructive' })
+      fetchMembers() // Load lại ngay sau khi xóa
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to remove member')
+      const msg = err instanceof Error ? err.message : 'Failed to remove member';
+      alert(msg)
     }
   }
 
@@ -122,92 +126,116 @@ export default function ProjectMembers() {
     }
   }
 
+  // Sắp xếp leader lên đầu
+  const sortedMembers = [...members].sort((a, b) => {
+    if (a.role.toLowerCase() === 'leader') return -1;
+    if (b.role.toLowerCase() === 'leader') return 1;
+    return 0;
+  });
+
   return (
     <>
-      <div className='flex min-h-screen bg-gray-50'>
+      <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50">
         <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen((v) => !v)} />
-        <div className='flex-1 flex flex-col'>
+        <div className="flex-1 flex flex-col">
           <Navbar isSidebarOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen((v) => !v)} />
-          <main className='flex-1 max-w-2xl mx-auto p-6'>
-            <h1 className='text-2xl font-bold mb-4'>Project Members</h1>
-            <div className='flex gap-2 mb-6'>
-              <Input
-                placeholder='Invite by email...'
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-              />
-              <Button
-                onClick={() => {
-                  console.log('Invite button clicked', inviteEmail)
-                  handleInvite()
-                }}
-                disabled={inviteLoading || !inviteEmail}
-              >
-                {inviteLoading ? 'Inviting...' : 'Invite'}
-              </Button>
-              <Button variant='outline' color='red' onClick={handleLeave}>
-                Leave project
-              </Button>
-            </div>
-            {/* <Button
-              onClick={() => showToast({ title: 'Test', description: 'This is a test toast!' })}
-              variant="outline"
-              className="mb-4"
-            >
-              Test Toast
-            </Button> */}
-            {loading && <div>Loading...</div>}
-            {error && <div className='text-red-500'>{error}</div>}
-            <ul className='divide-y'>
-              {members.map((m) => {
-                console.log('[ProjectMembers] render member:', m)
-                return (
-                  <li
+          <main className="flex-1 max-w-3xl mx-auto p-4 sm:p-8">
+            <div className="bg-white/70 backdrop-blur-lg rounded-3xl shadow-xl p-6 sm:p-10">
+              <h1 className="text-3xl font-bold mb-6 text-gray-800 tracking-tight flex items-center gap-2">
+                <span>👥</span> Project Members
+              </h1>
+              <div className="flex flex-col sm:flex-row gap-3 mb-8">
+                <Input
+                  placeholder="Invite by email..."
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  className="flex-1 px-4 py-2 rounded-lg border-2 border-gray-200 focus:border-lavender-500 transition font-sans"
+                />
+                <Button
+                  onClick={handleInvite}
+                  disabled={inviteLoading || !inviteEmail}
+                  className="flex items-center gap-2 px-5 py-2 rounded-lg bg-violet-100 hover:bg-violet-200 text-violet-700 font-semibold shadow border border-violet-200 transition"
+                >
+                  {inviteLoading ? (
+                    <span className="animate-spin w-4 h-4 border-2 border-violet-400 border-t-transparent rounded-full"></span>
+                  ) : (
+                    <svg xmlns='http://www.w3.org/2000/svg' className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M18 9v3m0 0v3m0-3h3m-3 0h-3m-2 4a4 4 0 100-8 4 4 0 000 8zm6 4v-1a2 2 0 00-2-2H6a2 2 0 00-2 2v1' /></svg>
+                  )}
+                  Invite
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2 px-5 py-2 rounded-lg border-red-200 text-red-500 hover:bg-red-50 font-semibold transition"
+                  onClick={handleLeave}
+                >
+                  <svg xmlns='http://www.w3.org/2000/svg' className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H7a2 2 0 01-2-2v-1' /></svg>
+                  Leave
+                </Button>
+              </div>
+              {loading && (
+                <div className="flex justify-center items-center py-8">
+                  <span className="w-8 h-8 border-4 border-violet-400 border-t-transparent rounded-full animate-spin"></span>
+                </div>
+              )}
+              {error && <div className="text-red-500 mb-4">{error}</div>}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {sortedMembers.map((m) => (
+                  <div
                     key={m.id}
-                    className='flex items-center gap-4 py-3 cursor-pointer hover:bg-gray-100 rounded transition'
-                    onClick={() => {
-                      console.log('Clicked member:', m.userId)
-                      setSelectedUserId(m.userId)
-                    }}
+                    className="group flex items-center gap-4 p-5 bg-white rounded-2xl shadow-md hover:shadow-xl transition cursor-pointer border border-gray-100 hover:border-violet-200 relative min-h-[90px]"
+                    onClick={() => setSelectedUserId(m.userId)}
                   >
-                    <img src={m.avatar} alt={m.fullName} className='w-10 h-10 rounded-full object-cover' />
-                    <div className='flex-1'>
-                      <div className='font-semibold'>{m.fullName}</div>
-                      <div className='text-sm text-gray-500'>{m.email}</div>
-                      <div className='text-xs text-gray-400'>{m.role}</div>
+                    {m.avatar ? (
+                      <img src={m.avatar} alt={m.fullName} className="w-16 h-16 rounded-full object-cover border-2 border-violet-200 shadow-sm bg-white" />
+                    ) : (
+                      <div className="w-16 h-16 rounded-full flex items-center justify-center bg-gray-200 text-gray-500 text-2xl font-bold border-2 border-violet-100">
+                        {m.fullName?.[0]?.toUpperCase() || '?'}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-lg truncate font-sans">{m.fullName}</div>
+                      <div className="text-sm text-gray-500 truncate font-sans">{m.email}</div>
+                      <div className="mt-1">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium font-sans ${m.role.toLowerCase() === 'leader' ? 'bg-violet-100 text-violet-700' : m.role.toLowerCase() === 'member' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>{m.role}</span>
+                      </div>
                     </div>
                     {selfRole?.toLowerCase() === 'leader' && m.id !== selfId && (
                       <Button
-                        variant='destructive'
-                        size='sm'
+                        variant="destructive"
+                        size="icon"
+                        className="absolute right-2.5 top-2.5 opacity-0 group-hover:opacity-100 transition bg-red-100 hover:bg-red-200 text-red-600 border-none shadow-none w-5 h-5 flex items-center justify-center p-0 rounded-full"
                         onClick={(e) => {
                           e.stopPropagation()
                           setPendingRemove(m.id)
                         }}
+                        title="Remove member"
                       >
-                        Remove
+                        <svg xmlns='http://www.w3.org/2000/svg' className='w-3.5 h-3.5' fill='none' viewBox='0 0 24 24' stroke='currentColor'><path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M15 12h.01M12 12h.01M9 12h.01M21 12c0 4.418-4.03 8-9 8s-9-3.582-9-8 4.03-8 9-8 9 3.582 9 8z' /></svg>
                       </Button>
                     )}
-                  </li>
-                )
-              })}
-            </ul>
+                  </div>
+                ))}
+              </div>
+              {sortedMembers.length === 0 && !loading && (
+                <div className="text-center text-gray-400 py-10">No members yet.</div>
+              )}
+            </div>
             {selectedUserId && <UserProfileDialog userId={selectedUserId} onClose={() => setSelectedUserId(null)} />}
             {pendingRemove && (
               <AlertDialog open={!!pendingRemove} onOpenChange={open => !open && setPendingRemove(null)}>
-                <AlertDialogContent>
+                <AlertDialogContent className="rounded-2xl border border-violet-100 shadow-2xl">
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Confirm member removal</AlertDialogTitle>
-                    <AlertDialogDescription>Are you sure you want to remove this member from the project?</AlertDialogDescription>
+                    <AlertDialogTitle className="text-violet-700">Confirm member removal</AlertDialogTitle>
+                    <AlertDialogDescription className="text-gray-600">Are you sure you want to remove this member from the project?</AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setPendingRemove(null)}>Cancel</AlertDialogCancel>
+                    <AlertDialogCancel className="border border-violet-200 text-violet-700 hover:bg-violet-50 font-semibold rounded-lg px-4 py-2 transition">Cancel</AlertDialogCancel>
                     <AlertDialogAction
+                      className="bg-red-100 hover:bg-red-200 text-red-700 font-semibold rounded-lg px-4 py-2 transition border-none shadow-none"
                       onClick={async () => {
                         if (pendingRemove) {
                           await handleRemove(pendingRemove)
-                          // Để setPendingRemove(null) sau một chút, hoặc sau khi toast đã được gọi
-                          setTimeout(() => setPendingRemove(null), 100)
+                          setPendingRemove(null)
                         }
                       }}
                     >

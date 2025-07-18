@@ -5,7 +5,7 @@ import { useSprints } from '@/hooks/useSprints'
 import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
 import { format } from 'date-fns'
-import { CheckCircle, ChevronDown, ChevronRight, PlayCircle, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, PlayCircle, Plus } from 'lucide-react'
 import { useState } from 'react'
 import TaskCreateMenu from '../tasks/TaskCreateMenu'
 import { BacklogTaskRow } from './BacklogTaskRow'
@@ -99,13 +99,13 @@ export function SprintBoard({
   }
 
   return (
-    <div className='bg-white border border-gray-200 rounded-lg shadow-sm'>
-      <div className='p-4 flex items-center justify-between border-b border-gray-200'>
-        <div className='flex items-center gap-2'>
+    <div className="bg-white border border-indigo-100 rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl">
+      <div className="p-4 flex items-center justify-between border-b border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-blue-50 rounded-t-xl">
+        <div className="flex items-center gap-2">
           <Button
-            variant='ghost'
-            size='icon'
-            className='h-6 w-6'
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-indigo-500 hover:bg-indigo-100"
             onClick={() => {
               const next = !isExpanded
               setIsExpanded(next)
@@ -114,12 +114,12 @@ export function SprintBoard({
               }
             }}
           >
-            {isExpanded ? <ChevronDown className='h-4 w-4' /> : <ChevronRight className='h-4 w-4' />}
+            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </Button>
           <div>
-            <div className='flex items-center gap-2'>
-              <h3 className='font-semibold text-lg'>{sprint.name}</h3>
-              <span className='text-gray-500 text-sm'>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-lg text-indigo-700">{sprint.name}</h3>
+              <span className="text-gray-500 text-sm bg-white/70 rounded px-2 py-0.5 shadow-sm">
                 ({tasks.length} {tasks.length === 1 ? 'task' : 'tasks'})
               </span>
               <SprintEditMenu
@@ -137,12 +137,14 @@ export function SprintBoard({
                 }}
               />
             </div>
-            <div className='flex items-center gap-3 text-sm text-gray-500'>
-              {getSprintStatus()}
+            <div className="flex items-center gap-3 text-sm">
+              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700 border border-indigo-200">
+                {getSprintStatus()}
+              </span>
               {(sprint.startDate || sprint.endDate) && (
                 <>
                   <span>•</span>
-                  <span>
+                  <span className="text-gray-500">
                     {formatSprintDate(sprint.startDate)} - {formatSprintDate(sprint.endDate)}
                   </span>
                 </>
@@ -150,7 +152,7 @@ export function SprintBoard({
             </div>
           </div>
         </div>
-        <div className='flex items-center gap-2'>
+        <div className="flex items-center gap-2">
           <TaskCreateMenu
             isOpen={isCreateTaskOpen}
             onOpenChange={setIsCreateTaskOpen}
@@ -158,42 +160,43 @@ export function SprintBoard({
             onTaskCreated={onTaskCreated}
             sprintId={sprint.id}
             trigger={
-              <div className='flex items-center gap-2 cursor-pointer'>
-                <span className='font-medium'>Add Task</span>
-                <Button variant='ghost' size='icon' className='h-6 w-6 rounded-lg bg-violet-100 hover:bg-violet-200'>
-                  <Plus className='h-4 w-4 text-violet-600' />
+              <div className="flex items-center gap-2 cursor-pointer">
+                <span className="font-medium text-indigo-700">Add Task</span>
+                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg bg-indigo-100 hover:bg-indigo-200">
+                  <Plus className="h-4 w-4 text-indigo-600" />
                 </Button>
               </div>
             }
           />
           {!sprint.startDate && (
             <Button
-              variant='default'
-              size='sm'
-              className='gap-2 bg-lavender-500 hover:bg-lavender-700'
+              variant="default"
+              size="sm"
+              className="gap-2 bg-indigo-500 hover:bg-indigo-700 text-white"
               onClick={() => setIsStartDialogOpen(true)}
             >
-              <PlayCircle className='h-4 w-4' />
+              <PlayCircle className="h-4 w-4" />
               Start Sprint
             </Button>
           )}
-          {isActiveSprint() && (
+          {/* {isActiveSprint() && (
             <Button
-              variant='default'
-              size='sm'
-              className='gap-2 bg-lavender-500 hover:bg-lavender-700'
+              variant="default"
+              size="sm"
+              className="gap-2 bg-green-500 hover:bg-green-700 text-white"
               onClick={handleCompleteSprint}
+              disabled
             >
-              <CheckCircle className='h-4 w-4' />
+              <CheckCircle className="h-4 w-4" />
               Complete Sprint
             </Button>
-          )}
+          )} */}
         </div>
       </div>
       {isExpanded && (
-        <div className='overflow-x-auto'>
+        <div className="overflow-x-auto transition-all duration-200 bg-white rounded-b-xl">
           {loadingTasks && (
-            <div className='p-4 text-center text-gray-500'>Đang tải tasks...</div>
+            <div className="p-4 text-center text-gray-500">Đang tải tasks...</div>
           )}
           {!loadingTasks && hasLoadedTasks && (
             <>

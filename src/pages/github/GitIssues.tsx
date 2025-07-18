@@ -194,48 +194,51 @@ export default function GitIssues() {
   }
 
   return (
-    <div className='flex h-screen bg-gray-100'>
+    <div className='flex h-screen bg-gradient-to-br from-lavender-50 via-white to-blue-50'>
       <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
 
       <div className='flex-1 flex flex-col overflow-hidden'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
-        <div className='flex flex-col h-full p-6'>
-          <div className='flex-none w-full flex items-center justify-between pb-6'>
-            <div className='flex items-center gap-2'>
-              <h1 className='text-4xl font-bold'>Issues</h1>
+        <div className='flex flex-col h-full p-8'>
+          <div className='flex-none w-full flex items-center justify-between pb-8 border-b-2 border-lavender-200 mb-6 shadow-sm'>
+            <div className='flex items-center gap-3'>
+              <img src="/logo.png" alt="GitHub" className="w-10 h-10 rounded-full bg-lavender-100 p-1" />
+              <h1 className='text-4xl font-extrabold text-lavender-700 drop-shadow'>Issues</h1>
               <div className='flex items-center gap-2 ml-4'>
-                <span className='text-sm text-gray-500'>Repository:</span>
-                <span className='font-medium'>{currentProject.title}</span>
+                <span className='text-base text-blue-700 font-semibold'>Repository:</span>
+                <span className='font-bold text-purple-700'>{currentProject.title}</span>
               </div>
             </div>
-            <Button className='bg-lavender-600 hover:bg-lavender-700'>New Issue</Button>
+            <Button className='bg-gradient-to-r from-lavender-500 to-blue-400 hover:from-lavender-600 hover:to-blue-500 text-white font-bold shadow-lg rounded-xl px-6 py-2'>
+              + New Issue
+            </Button>
           </div>
 
-          <div className='pb-6 flex items-center justify-between'>
-            <div className='flex items-center gap-4'>
-              <Button variant='outline' className='bg-white hover:bg-gray-50'>
-                <Filter className='mr-2 h-4 w-4' />
+          <div className='pb-8 flex items-center justify-between'>
+            <div className='flex items-center gap-4 bg-white/80 rounded-2xl shadow-md px-6 py-3'>
+              <Button variant='outline' className='bg-lavender-50 hover:bg-lavender-100 text-lavender-700 border-0 font-semibold rounded-lg'>
+                <Filter className='mr-2 h-4 w-4 text-blue-400' />
                 Filter
-                <ChevronDown className='ml-2 h-4 w-4' />
+                <ChevronDown className='ml-2 h-4 w-4 text-blue-400' />
               </Button>
               <div className='relative'>
-                <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
+                <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-blue-400' />
                 <Input
                   placeholder='Search issues...'
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className='w-[280px] pl-10 bg-white'
+                  className='w-[280px] pl-10 bg-lavender-50 border-0 rounded-lg text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400'
                 />
               </div>
             </div>
-            <div className='flex gap-2'>
-              <Button variant='outline' className='bg-white hover:bg-gray-50'>
-                <Calendar className='mr-2 h-4 w-4' />
+            <div className='flex gap-2 bg-white/80 rounded-2xl shadow-md px-6 py-3'>
+              <Button variant='outline' className='bg-blue-50 hover:bg-blue-100 text-blue-700 border-0 font-semibold rounded-lg'>
+                <Calendar className='mr-2 h-4 w-4 text-purple-400' />
                 Time Range
               </Button>
               <Select defaultValue='newest'>
-                <SelectTrigger className='w-[180px] bg-white'>
+                <SelectTrigger className='w-[180px] bg-lavender-50 border-0 rounded-lg text-lavender-700 font-semibold'>
                   <SelectValue placeholder='Sort by' />
                 </SelectTrigger>
                 <SelectContent>
@@ -248,11 +251,16 @@ export default function GitIssues() {
             </div>
           </div>
 
-          <div className='space-y-4 overflow-y-auto'>
+          <div className='space-y-6 overflow-y-auto'>
             {filteredIssues.map((issue) => (
               <IssueCard key={issue.id} issue={issue} />
             ))}
-            {filteredIssues.length === 0 && <div className='text-center py-8 text-gray-500'>No issues found</div>}
+            {filteredIssues.length === 0 && (
+              <div className='text-center py-12 text-lavender-400 text-xl font-semibold flex flex-col items-center'>
+                <img src="/logo.png" alt="No issues" className="w-16 h-16 mb-4 opacity-60" />
+                No issues found
+              </div>
+            )}
           </div>
         </div>
       </div>

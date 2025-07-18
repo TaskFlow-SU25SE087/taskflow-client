@@ -1,16 +1,14 @@
+import { BarChart3, CheckCircle, Github } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useGitHubProjectPartIntegration } from '../../hooks/useGitHubProjectPartIntegration'
-import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
+import { Card, CardContent } from '../ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
 import { Loader } from '../ui/loader'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
-import { Separator } from '../ui/separator'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 
 interface GitHubProjectPartIntegrationProps {
   projectId: string
@@ -187,11 +185,11 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
 
   if (isProcessingCallback) {
     return (
-      <Card>
-        <CardContent className='flex items-center justify-center p-6'>
+      <Card className="shadow-xl rounded-2xl border-0 bg-gradient-to-br from-lavender-50 via-white to-blue-50">
+        <CardContent className='flex items-center justify-center p-8'>
           <div className='text-center'>
-            <Loader className='mx-auto mb-4' />
-            <p>Processing GitHub OAuth callback...</p>
+            <Loader className='mx-auto mb-4 text-lavender-500' />
+            <p className='text-lavender-700 font-semibold text-lg'>Processing GitHub OAuth callback...</p>
           </div>
         </CardContent>
       </Card>
@@ -199,244 +197,146 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
   }
 
   return (
-    <>
-      {console.log('RENDER RETURN mappedProjectParts:', mappedProjectParts)}
-      <div className='space-y-6'>
-        <Card>
-          <CardHeader>
-            <CardTitle>GitHub Integration</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue='status' className='w-full'>
-              <TabsList className='grid w-full grid-cols-3'>
-                <TabsTrigger value='status'>Connection Status</TabsTrigger>
-                <TabsTrigger value='oauth'>OAuth Setup</TabsTrigger>
-                <TabsTrigger value='connect'>Connect Repository</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value='status' className='space-y-4'>
-                <div className='flex items-center justify-between'>
-                  <div>
-                    <h3 className='text-lg font-medium'>GitHub Connection</h3>
-                    <p className='text-sm text-gray-600'>
-                      {connectionStatus?.isConnected
-                        ? `Connected as ${connectionStatus.username}`
-                        : 'Not connected to GitHub'}
-                    </p>
-                  </div>
-                  <Badge variant={connectionStatus?.isConnected ? 'default' : 'secondary'}>
-                    {connectionStatus?.isConnected ? 'Connected' : 'Disconnected'}
-                  </Badge>
-                </div>
-
-                {connectionStatus?.isConnected && (
-                  <div className='flex items-center gap-3 p-3 bg-green-50 rounded-lg'>
-                    <div className='w-8 h-8 bg-green-100 rounded-full flex items-center justify-center'>
-                      <span className='text-green-600 text-sm'>✓</span>
-                    </div>
-                    <div>
-                      <p className='font-medium text-green-900'>GitHub Connected</p>
-                      <p className='text-sm text-green-700'>You can now connect repositories to your project parts</p>
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value='oauth' className='space-y-4'>
-                {!connectionStatus?.isConnected ? (
-                  <div className='space-y-4'>
-                    <div>
-                      <h3 className='text-lg font-medium mb-2'>Connect to GitHub</h3>
-                      <p className='text-sm text-gray-600 mb-4'>
-                        Connect your GitHub account to enable repository integration
-                      </p>
-                    </div>
-
-                    <Button onClick={startGitHubOAuth} disabled={oauthLoading} className='w-full'>
-                      {oauthLoading ? (
-                        <>
-                          <Loader className='mr-2 h-4 w-4' />
-                          Connecting...
-                        </>
-                      ) : (
-                        'Connect with GitHub'
-                      )}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className='flex items-center gap-3 p-3 bg-green-50 rounded-lg'>
-                    <div className='w-8 h-8 bg-green-100 rounded-full flex items-center justify-center'>
-                      <span className='text-green-600 text-sm'>✓</span>
-                    </div>
-                    <div>
-                      <p className='font-medium text-green-900'>Already Connected</p>
-                      <p className='text-sm text-green-700'>Your GitHub account is connected and ready to use</p>
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-
-              <TabsContent value='connect' className='space-y-4'>
-                {!connectionStatus?.isConnected ? (
-                  <div className='text-center py-8'>
-                    <p className='text-gray-600 mb-4'>Please connect to GitHub first to access repositories</p>
-                    <Button onClick={startGitHubOAuth} disabled={oauthLoading}>
-                      {oauthLoading ? (
-                        <>
-                          <Loader className='mr-2 h-4 w-4' />
-                          Connecting...
-                        </>
-                      ) : (
-                        'Connect with GitHub'
-                      )}
-                    </Button>
-                  </div>
-                ) : (
-                  <div className='space-y-4'>
-                    <div className='flex items-center justify-between'>
-                      <h3 className='text-lg font-medium'>Connect Repository</h3>
-                      <Dialog open={showCreatePartDialog} onOpenChange={setShowCreatePartDialog}>
-                        <DialogTrigger asChild>
-                          <Button variant='outline' size='sm'>
-                            Create New Part
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Create New Project Part</DialogTitle>
-                          </DialogHeader>
-                          <div className='space-y-4'>
-                            <div>
-                              <Label htmlFor='partName'>Part Name</Label>
-                              <Input
-                                id='partName'
-                                value={newPartData.name}
-                                onChange={(e) => setNewPartData((prev) => ({ ...prev, name: e.target.value }))}
-                                placeholder='e.g., Frontend, Backend, Database'
-                              />
-                            </div>
-                            <div>
-                              <Label htmlFor='programmingLanguage'>Programming Language</Label>
-                              <Select
-                                value={newPartData.programmingLanguage}
-                                onValueChange={(value) =>
-                                  setNewPartData((prev) => ({ ...prev, programmingLanguage: value }))
-                                }
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder='Select language' />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value='TypeScript'>TypeScript</SelectItem>
-                                  <SelectItem value='JavaScript'>JavaScript</SelectItem>
-                                  <SelectItem value='C#'>C#</SelectItem>
-                                  <SelectItem value='Java'>Java</SelectItem>
-                                  <SelectItem value='Python'>Python</SelectItem>
-                                  <SelectItem value='Go'>Go</SelectItem>
-                                  <SelectItem value='Rust'>Rust</SelectItem>
-                                  <SelectItem value='PHP'>PHP</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div>
-                              <Label htmlFor='framework'>Framework</Label>
-                              <Select
-                                value={newPartData.framework}
-                                onValueChange={(value) => setNewPartData((prev) => ({ ...prev, framework: value }))}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder='Select framework' />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value='React'>React</SelectItem>
-                                  <SelectItem value='Vue'>Vue</SelectItem>
-                                  <SelectItem value='Angular'>Angular</SelectItem>
-                                  <SelectItem value='.NET'>.NET</SelectItem>
-                                  <SelectItem value='Spring'>Spring</SelectItem>
-                                  <SelectItem value='Django'>Django</SelectItem>
-                                  <SelectItem value='Express'>Express</SelectItem>
-                                  <SelectItem value='Laravel'>Laravel</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <Button onClick={handleCreatePart} disabled={creatingPart} className='w-full'>
-                              {creatingPart ? (
-                                <>
-                                  <Loader className='mr-2 h-4 w-4' />
-                                  Creating...
-                                </>
-                              ) : (
-                                'Create Part'
-                              )}
-                            </Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-
-                    <Separator />
-
-                    <div className='space-y-4'>
-                      <div>
-                        <Label htmlFor='projectPart'>Project Part</Label>
-                        <Select value={selectedPart} onValueChange={setSelectedPart}>
-                          <SelectTrigger>
-                            <SelectValue placeholder='Select a project part' />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {/* Thêm log trước khi render dropdown */}
-                            {console.log('[DEBUG] Render dropdown mappedProjectParts:', mappedProjectParts)}
-                            {mappedProjectParts.map((part, idx) => {
-                              // Thêm log trong map render dropdown
-                              console.log('[DEBUG] Render dropdown part', idx, part);
-                              return (
-                                <SelectItem key={part.id} value={part.id}>
-                                  {part.name} ({part.programmingLanguage} + {part.framework})
-                                </SelectItem>
-                              );
-                            })}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div>
-                        <Label htmlFor='repository'>GitHub Repository</Label>
-                        <Select value={selectedRepo} onValueChange={setSelectedRepo}>
-                          <SelectTrigger>
-                            <SelectValue placeholder='Select a repository' />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {repositories.map((repo) => (
-                              <SelectItem key={repo.id} value={repo.htmlUrl}>
-                                {repo.fullName}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <Button
-                        onClick={handleConnectRepository}
-                        disabled={!selectedPart || !selectedRepo || connectingRepo}
-                        className='w-full'
-                      >
-                        {connectingRepo ? (
-                          <>
-                            <Loader className='mr-2 h-4 w-4' />
-                            Connecting...
-                          </>
-                        ) : (
-                          'Connect Repository'
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+    <div className="flex flex-col items-center justify-center min-h-[60vh] bg-gradient-to-br from-lavender-50 via-white to-blue-50 py-8">
+      <div className="flex flex-col items-center mb-8">
+        <div className="relative mb-2">
+          <Github className="w-16 h-16 text-lavender-500 drop-shadow-lg" />
+          <img src="/logo.png" alt="TaskFlow" className="w-10 h-10 absolute -top-4 -right-6 opacity-80 animate-bounce" />
+        </div>
+        <h1 className="text-4xl font-extrabold text-lavender-700 mb-2 drop-shadow">GitHub Integration</h1>
+        <p className="text-lg text-blue-700 font-medium mb-2">Connect your GitHub account to integrate repositories with your project.</p>
       </div>
-    </>
+      <Card className="w-full max-w-2xl shadow-2xl rounded-2xl border-0 bg-white/95">
+        <CardContent className="p-10 flex flex-col items-center">
+          <div className="flex items-center gap-2 mb-6">
+            <CheckCircle className="w-7 h-7 text-green-500 animate-pulse" />
+            <span className="text-green-600 font-bold text-xl">Connected to GitHub</span>
+          </div>
+          <p className="text-lavender-700 mb-6 text-center font-medium">You are connected to GitHub. Select a repository to integrate with your project.</p>
+          <div className="flex flex-col md:flex-row gap-8 w-full mb-8">
+            <div className="flex-1">
+              <Label className="text-lavender-700 font-semibold mb-2 block">Select Repository</Label>
+              <Select value={selectedRepo} onValueChange={setSelectedRepo}>
+                <SelectTrigger className="w-full bg-lavender-50 border-0 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300">
+                  <SelectValue placeholder="-- Select a repository --" />
+                </SelectTrigger>
+                <SelectContent className="bg-white rounded-xl shadow-lg">
+                  {repositories.map((repo) => (
+                    <SelectItem key={repo.htmlUrl} value={repo.htmlUrl} className="hover:bg-blue-50 text-blue-700 font-semibold">
+                      <Github className="inline-block mr-2 text-lavender-400" />
+                      {repo.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1">
+              <Label className="text-lavender-700 font-semibold mb-2 block">Select Project Part</Label>
+              <Select value={selectedPart} onValueChange={setSelectedPart}>
+                <SelectTrigger className="w-full bg-lavender-50 border-0 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300">
+                  <SelectValue placeholder="-- Select a part --" />
+                </SelectTrigger>
+                <SelectContent className="bg-white rounded-xl shadow-lg">
+                  {mappedProjectParts.map((part) => (
+                    <SelectItem key={part.id} value={part.id} className="hover:bg-purple-50 text-purple-700 font-semibold">
+                      <BarChart3 className="inline-block mr-2 text-blue-400" />
+                      {part.name} ({part.programmingLanguage}, {part.framework})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <button
+                className="mt-2 text-blue-600 hover:underline text-sm font-semibold"
+                type="button"
+                onClick={() => setShowCreatePartDialog(true)}
+              >
+                + Create new part
+              </button>
+            </div>
+          </div>
+          <Button
+            className="w-full bg-gradient-to-r from-lavender-500 to-blue-400 hover:from-lavender-600 hover:to-blue-500 text-white font-bold shadow-lg rounded-2xl py-4 text-lg disabled:opacity-60 disabled:cursor-not-allowed tracking-wide"
+            onClick={handleConnectRepository}
+            disabled={!selectedRepo || !selectedPart || connectingRepo}
+          >
+            <Github className="inline-block mr-2 text-white" />
+            Connect Repository to Project Part
+          </Button>
+        </CardContent>
+      </Card>
+      <Dialog open={showCreatePartDialog} onOpenChange={setShowCreatePartDialog}>
+        <DialogContent className="max-w-md rounded-2xl border-0 shadow-2xl bg-white/95 p-8">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-extrabold text-lavender-700 mb-4 drop-shadow">Create Project Part</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-5">
+            <div>
+              <Label htmlFor='partName' className="text-lavender-700 font-semibold mb-1 block">Name</Label>
+              <Input
+                id='partName'
+                value={newPartData.name}
+                onChange={(e) => setNewPartData((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder='Enter part name...'
+                className="bg-lavender-50 border-2 border-lavender-200 rounded-xl focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300 text-lavender-700 font-medium"
+              />
+            </div>
+            <div>
+              <Label htmlFor='programmingLanguage' className="text-lavender-700 font-semibold mb-1 block">Programming Language</Label>
+              <select
+                id='programmingLanguage'
+                value={newPartData.programmingLanguage}
+                onChange={(e) => setNewPartData((prev) => ({ ...prev, programmingLanguage: e.target.value }))}
+                className="w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl py-2 px-3 text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400"
+              >
+                <option value=''>None</option>
+                <option value='TypeScript'>TypeScript</option>
+                <option value='JavaScript'>JavaScript</option>
+                <option value='C#'>C#</option>
+                <option value='Java'>Java</option>
+                <option value='Python'>Python</option>
+                <option value='Go'>Go</option>
+                <option value='Rust'>Rust</option>
+                <option value='PHP'>PHP</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor='framework' className="text-lavender-700 font-semibold mb-1 block">Framework</Label>
+              <select
+                id='framework'
+                value={newPartData.framework}
+                onChange={(e) => setNewPartData((prev) => ({ ...prev, framework: e.target.value }))}
+                className="w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl py-2 px-3 text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400"
+              >
+                <option value=''>None</option>
+                <option value='React'>React</option>
+                <option value='Vue'>Vue</option>
+                <option value='Angular'>Angular</option>
+                <option value='.NET'>.NET</option>
+                <option value='Spring'>Spring</option>
+                <option value='Django'>Django</option>
+                <option value='Express'>Express</option>
+                <option value='Laravel'>Laravel</option>
+              </select>
+            </div>
+            <div className="flex items-center justify-end gap-4 mt-6">
+              <button
+                type="button"
+                className="text-blue-600 hover:underline font-semibold text-base bg-transparent border-0 shadow-none px-0"
+                onClick={() => setShowCreatePartDialog(false)}
+              >
+                Cancel
+              </button>
+              <Button
+                onClick={handleCreatePart}
+                disabled={creatingPart || !newPartData.name || !newPartData.programmingLanguage || !newPartData.framework}
+                className="bg-gradient-to-r from-lavender-500 to-blue-400 hover:from-lavender-600 hover:to-blue-500 text-white font-bold shadow-lg rounded-2xl px-8 py-3 text-lg disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {creatingPart ? 'Creating...' : 'Create Part'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 }

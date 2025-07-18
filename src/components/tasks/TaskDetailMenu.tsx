@@ -16,23 +16,23 @@ import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
 import { formatDistanceToNow } from 'date-fns'
 import {
-    Calendar,
-    ChevronDown,
-    ChevronsDown,
-    ChevronsUp,
-    ChevronUp,
-    Eye,
-    Filter,
-    Link,
-    ListTodo,
-    Loader2,
-    MessageCircle,
-    Paperclip,
-    Pencil,
-    Plus,
-    Settings,
-    UserPlus,
-    X
+  Calendar,
+  ChevronDown,
+  ChevronsDown,
+  ChevronsUp,
+  ChevronUp,
+  Eye,
+  Filter,
+  Link,
+  ListTodo,
+  Loader2,
+  MessageCircle,
+  Paperclip,
+  Pencil,
+  Plus,
+  Settings,
+  UserPlus,
+  X
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -297,7 +297,11 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       const res = await taskApi.assignTask(currentProject!.id, task.id, implementerId)
       setAssignee(member)
       onTaskUpdated()
-      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || `Task assigned to ${member.fullName || member.email || member.userId || (member as any).id}`, variant: res?.code === 200 ? 'default' : 'destructive' })
+      if (typeof res === 'object' && res !== null && 'code' in res && 'message' in res) {
+        showToast({ title: res.code === 200 ? 'Success' : 'Error', description: res.message || `Task assigned to ${member.fullName || member.email || member.userId || (member as any).id}`, variant: res.code === 200 ? 'default' : 'destructive' })
+      } else {
+        showToast({ title: res === true ? 'Success' : 'Error', description: res === true ? `Task assigned to ${member.fullName || member.email || member.userId || (member as any).id}` : 'Failed to assign task', variant: res === true ? 'default' : 'destructive' })
+      }
     } catch (error: any) {
       showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to assign task.', variant: 'destructive' })
     } finally {
@@ -322,7 +326,11 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       const res = await taskApi.addTagToTask(currentProject.id, task.id, tagId)
       const tag = tags.find((t) => t.id === tagId)
       if (tag) setTaskTags([...taskTags, tag])
-      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Tag added to task!', variant: res?.code === 200 ? 'default' : 'destructive' })
+      if (typeof res === 'object' && res !== null && 'code' in res && 'message' in res) {
+        showToast({ title: res.code === 200 ? 'Success' : 'Error', description: res.message || 'Tag added to task!', variant: res.code === 200 ? 'default' : 'destructive' })
+      } else {
+        showToast({ title: res === true ? 'Success' : 'Error', description: res === true ? 'Tag added to task!' : 'Failed to add tag', variant: res === true ? 'default' : 'destructive' })
+      }
       setIsTagSelectOpen(false)
       setSelectedTagId('')
     } catch (error: any) {
@@ -341,7 +349,11 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setIsCommentLoading(true)
     try {
       const res = await taskApi.addTaskComment(currentProject.id, task.id, comment, commentFiles)
-      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Comment added!', variant: res?.code === 200 ? 'default' : 'destructive' })
+      if (typeof res === 'object' && res !== null && 'code' in res && 'message' in res) {
+        showToast({ title: res.code === 200 ? 'Success' : 'Error', description: res.message || 'Comment added!', variant: res.code === 200 ? 'default' : 'destructive' })
+      } else {
+        showToast({ title: res === true ? 'Success' : 'Error', description: res === true ? 'Comment added!' : 'Failed to add comment', variant: res === true ? 'default' : 'destructive' })
+      }
       setComment('')
       setCommentFiles([])
       // TODO: reload comments/activity if needed
@@ -361,7 +373,11 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         implementId: assignee.userId,
         reason: removeReason
       })
-      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Assignee removed from task!', variant: res?.code === 200 ? 'default' : 'destructive' })
+      if (typeof res === 'object' && res !== null && 'code' in res && 'message' in res) {
+        showToast({ title: res.code === 200 ? 'Success' : 'Error', description: res.message || 'Assignee removed from task!', variant: res.code === 200 ? 'default' : 'destructive' })
+      } else {
+        showToast({ title: res === true ? 'Success' : 'Error', description: res === true ? 'Assignee removed from task!' : 'Failed to remove assignee', variant: res === true ? 'default' : 'destructive' })
+      }
       setAssignee(null)
       setRemoveReason('')
       onTaskUpdated()
@@ -377,7 +393,11 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setLeaveLoading(true)
     try {
       const res = await taskApi.leaveTaskAssignment(currentProject.id, task.id, { reason: leaveReason })
-      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'You have left this task!', variant: res?.code === 200 ? 'default' : 'destructive' })
+      if (typeof res === 'object' && res !== null && 'code' in res && 'message' in res) {
+        showToast({ title: res.code === 200 ? 'Success' : 'Error', description: res.message || 'You have left this task!', variant: res.code === 200 ? 'default' : 'destructive' })
+      } else {
+        showToast({ title: res === true ? 'Success' : 'Error', description: res === true ? 'You have left this task!' : 'Failed to leave task', variant: res === true ? 'default' : 'destructive' })
+      }
       setAssignee(null)
       setLeaveReason('')
       onTaskUpdated()
@@ -403,7 +423,11 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         description: editDescription,
         priority: editPriority.toString()
       })
-      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Task updated!', variant: res?.code === 200 ? 'default' : 'destructive' })
+      if (typeof res === 'object' && res !== null && 'code' in res && 'message' in res) {
+        showToast({ title: res.code === 200 ? 'Success' : 'Error', description: res.message || 'Task updated!', variant: res.code === 200 ? 'default' : 'destructive' })
+      } else {
+        showToast({ title: res === true ? 'Success' : 'Error', description: res === true ? 'Task updated!' : 'Failed to update task', variant: res === true ? 'default' : 'destructive' })
+      }
       onTaskUpdated()
     } catch (error: any) {
       showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to update task', variant: 'destructive' })

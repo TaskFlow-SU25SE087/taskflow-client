@@ -57,7 +57,7 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
   return (
     <div className='sticky top-0 z-10 w-full bg-white border-b border-gray-300'>
       <div className='px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between'>
-        <div className='flex items-center gap-1 sm:gap-2'>
+        <div className='flex items-center gap-1 sm:gap-2 flex-1'>
           {!isSidebarOpen && (
             <Button
               variant='ghost'
@@ -132,17 +132,18 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
             </DropdownMenu>
           </div>
         </div>
-
-        <div className='flex items-center gap-2 sm:gap-4'>
-          {/* Search Bar - Hidden on mobile */}
-          <div className='hidden lg:block relative'>
+        {/* Search Bar ở giữa */}
+        <div className='flex-1 flex justify-center'>
+          <div className='relative w-[300px] xl:w-[400px]'>
             <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
             <Input
               placeholder='Search For Anything...'
-              className='w-[300px] xl:w-[400px] rounded-lg bg-gray-100 pl-10 focus-visible:ring-offset-0 focus-visible:ring-0'
+              className='w-full rounded-lg bg-gray-100 pl-10 focus-visible:ring-offset-0 focus-visible:ring-0'
             />
           </div>
+        </div>
 
+        <div className='flex items-center gap-2 sm:gap-4'>
           {/* Help Icon - Hidden on mobile */}
           <div className='hidden md:block text-gray-500 px-2 hover:bg-transparent cursor-pointer'>
             <HelpCircle className='h-5 w-5' />
@@ -165,10 +166,11 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
                 ) : (
                   <Avatar size='28px' variant='beam' name={user?.id || 'unknown'} className='sm:w-8 sm:h-8' />
                 )}
-                <span className='hidden sm:block ml-2 font-medium text-black text-sm'>
+                {/* Ẩn tên và mũi tên */}
+                {/* <span className='hidden sm:block ml-2 font-medium text-black text-sm'>
                   {user?.fullName || user?.email || 'No name'}
                 </span>
-                <ChevronDown className='hidden sm:block h-4 w-4 text-gray-500' />
+                <ChevronDown className='hidden sm:block h-4 w-4 text-gray-500' /> */}
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent className='w-56' align='end'>

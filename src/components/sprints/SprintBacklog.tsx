@@ -48,43 +48,43 @@ export function SprintBacklog({
   }
 
   return (
-    <div className='bg-white border border-gray-200 rounded-lg shadow-sm transition-colors'>
-      <div className='p-4 flex items-center justify-between border-b border-gray-200'>
-        <div className='flex items-center gap-2'>
+    <div className="bg-white border border-indigo-100 rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl">
+      <div className="p-4 flex items-center justify-between border-b border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-blue-50 rounded-t-xl">
+        <div className="flex items-center gap-2">
           <Button
-            variant='ghost'
-            size='icon'
-            className='h-6 w-6 hover:text-lavender-500'
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 hover:text-indigo-500 text-indigo-500"
             onClick={() => setIsExpanded(!isExpanded)}
           >
-            {isExpanded ? <ChevronDown className='h-4 w-4' /> : <ChevronRight className='h-4 w-4' />}
+            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </Button>
           <div>
-            <div className='flex items-center gap-2'>
-              <h3 className='font-semibold text-lg'>Backlog</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-semibold text-lg text-indigo-700">Backlog</h3>
               {sprint && (
-                <span className='ml-2 text-xs rounded px-2 py-1 bg-gray-100 text-gray-600'>
+                <span className="ml-2 text-xs rounded px-2 py-1 bg-indigo-100 text-indigo-700 border border-indigo-200">
                   {SprintStatusMap[sprint.status] || sprint.status}
                 </span>
               )}
-              <span className='text-gray-500 text-sm'>
+              <span className="text-gray-500 text-sm bg-white/70 rounded px-2 py-0.5 shadow-sm">
                 ({tasks.length} {tasks.length === 1 ? 'task' : 'tasks'})
               </span>
             </div>
-            <div className='text-sm text-gray-500'>Tasks not assigned to any sprint</div>
+            <div className="text-sm text-gray-500">Tasks not assigned to any sprint</div>
           </div>
         </div>
-        <div className='flex items-center gap-2'>
+        <div className="flex items-center gap-2">
           <TaskCreateMenu
             isOpen={isCreateTaskOpen}
             onOpenChange={setIsCreateTaskOpen}
             projectId={projectId}
             onTaskCreated={onTaskCreated}
             trigger={
-              <div className='flex items-center gap-2 cursor-pointer'>
-                <span className='font-medium'>Add Task</span>
-                <Button variant='ghost' size='icon' className='h-6 w-6 rounded-lg bg-violet-100 hover:bg-violet-200'>
-                  <Plus className='h-4 w-4 text-violet-600' />
+              <div className="flex items-center gap-2 cursor-pointer">
+                <span className="font-medium text-indigo-700">Add Task</span>
+                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg bg-indigo-100 hover:bg-indigo-200">
+                  <Plus className="h-4 w-4 text-indigo-600" />
                 </Button>
               </div>
             }
@@ -92,7 +92,7 @@ export function SprintBacklog({
         </div>
       </div>
       {isExpanded && (
-        <div className='overflow-x-auto'>
+        <div className="overflow-x-auto transition-all duration-200 bg-white rounded-b-xl">
           {selectedTaskIds.length > 0 && (
             <div className='mb-2 flex items-center gap-2 p-2 bg-blue-50 border-b border-blue-100'>
               <span className='text-xs text-blue-600 font-medium'>{selectedTaskIds.length} selected</span>
