@@ -6,33 +6,55 @@ import { ProjectMember } from '@/types/project'
 import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
 import { format } from 'date-fns'
-import { Calendar, ChevronDown, ChevronsDown, ChevronsUp, ChevronUp, FileText, MessageSquare } from 'lucide-react'
+import { Calendar, ChevronDown, ChevronsDown, ChevronsUp, ChevronUp, Clock, FileText, MessageSquare, User } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 import { Card } from '../ui/card'
 import { TaskDetailMenu } from './TaskDetailMenu'
 
-const getPriorityChevron = (priority: number) => {
+const getPriorityConfig = (priority: number) => {
   switch (priority) {
     case 1:
-      return <ChevronDown className='h-8 w-8 text-blue-500' />
+      return {
+        icon: <ChevronDown className='h-4 w-4' />,
+        text: 'Low',
+        color: 'text-priority-low',
+        bg: 'bg-cyan-50',
+        border: 'border-cyan-200'
+      }
     case 2:
-      return (
-        <div className='flex flex-col'>
-          <ChevronsDown className='h-8 w-8 text-orange-400' />
-        </div>
-      )
+      return {
+        icon: <ChevronsDown className='h-4 w-4' />,
+        text: 'Medium',
+        color: 'text-priority-medium',
+        bg: 'bg-amber-50',
+        border: 'border-amber-200'
+      }
     case 3:
-      return <ChevronUp className='h-8 w-8 text-red-500' />
+      return {
+        icon: <ChevronUp className='h-4 w-4' />,
+        text: 'High',
+        color: 'text-priority-high',
+        bg: 'bg-red-50',
+        border: 'border-red-200'
+      }
     case 4:
-      return (
-        <div className='flex flex-col'>
-          <ChevronsUp className='h-8 w-8 text-red-600' />
-        </div>
-      )
+      return {
+        icon: <ChevronsUp className='h-4 w-4' />,
+        text: 'Urgent',
+        color: 'text-priority-urgent',
+        bg: 'bg-red-100',
+        border: 'border-red-300'
+      }
     default:
-      return <ChevronDown className='h-8 w-8 text-gray-400' />
+      return {
+        icon: <ChevronDown className='h-4 w-4' />,
+        text: 'Low',
+        color: 'text-gray-400',
+        bg: 'bg-gray-50',
+        border: 'border-gray-200'
+      }
   }
 }
 
@@ -41,10 +63,12 @@ interface TaskCardProps {
   compact?: boolean
   children?: React.ReactNode
 }
+
 export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { children?: React.ReactNode }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [assignedMember, setAssignedMember] = useState<ProjectMember | null>(null)
   const [sprint, setSprint] = useState<Sprint | null>(null)
+  const [isHovered, setIsHovered] = useState(false)
   const { currentProject } = useCurrentProject()
   const navigate = useNavigate()
   const { notificationService } = useSignalR()
@@ -83,7 +107,6 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
     const handleTaskNotification = (notification: any) => {
       if (notification.taskId === task.id) {
         console.log('Task updated via SignalR:', notification.message)
-        // Refresh task data when notification is received
         fetchTaskDetailsAndMember()
       }
     }
@@ -103,7 +126,6 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
     return <div className='p-4 text-center text-gray-500'>Chưa chọn project</div>
   }
 
-  // Lấy số comment, số file, deadline, status, người tạo, ngày tạo, danh sách assignees
   const commentCount = Array.isArray(task.comments)
     ? task.comments.length
     : Array.isArray(task.commnets)
@@ -115,67 +137,53 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
   const createdBy = task.reporter?.fullName || task.reporter?.email || 'Unknown'
   const createdAt = task.created ? format(new Date(task.created), 'MMM d, yyyy') : 'N/A'
   const assignees = Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0 ? task.taskAssignees : []
-  const priorityText =
-    task.priority === 1
-      ? 'Low'
-      : task.priority === 2
-        ? 'Medium'
-        : task.priority === 3
-          ? 'High'
-          : task.priority === 4
-            ? 'Urgent'
-            : 'N/A'
-  const priorityColor =
-    task.priority === 1
-      ? 'text-blue-500'
-      : task.priority === 2
-        ? 'text-orange-400'
-        : task.priority === 3
-          ? 'text-red-500'
-          : task.priority === 4
-            ? 'text-red-600'
-            : 'text-gray-400'
+  
+  const priorityConfig = getPriorityConfig(task.priority)
 
-  // --- AvatarStack nội bộ cho TaskCard ---
+  // Enhanced avatar colors with gradients
   const avatarColors = [
-    { bg: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%)', text: '#FFFFFF' },
-    { bg: 'linear-gradient(135deg, #4ECDC4 0%, #45B7AF 100%)', text: '#FFFFFF' },
-    { bg: 'linear-gradient(135deg, #FFD93D 0%, #FFE566 100%)', text: '#000000' },
-    { bg: 'linear-gradient(135deg, #6C5CE7 0%, #8480E9 100%)', text: '#FFFFFF' },
-    { bg: 'linear-gradient(135deg, #A8E6CF 0%, #DCEDC1 100%)', text: '#000000' },
-    { bg: 'linear-gradient(135deg, #FF8B94 0%, #FFC2C7 100%)', text: '#000000' },
-    { bg: 'linear-gradient(135deg, #98ACFF 0%, #6C63FF 100%)', text: '#FFFFFF' },
-    { bg: 'linear-gradient(135deg, #FFA62B 0%, #FFB85C 100%)', text: '#000000' }
+    { bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', text: '#FFFFFF' },
+    { bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', text: '#FFFFFF' },
+    { bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', text: '#FFFFFF' },
+    { bg: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', text: '#000000' },
+    { bg: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', text: '#000000' },
+    { bg: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)', text: '#000000' },
+    { bg: 'linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)', text: '#000000' },
+    { bg: 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)', text: '#000000' }
   ]
+  
   const getAvatarColor = (index: number) => avatarColors[index % avatarColors.length]
 
   function AvatarStack({ assignees }: { assignees: any[] }) {
     if (!assignees || assignees.length === 0) {
       return (
-        <div className='flex items-center justify-center h-8 px-2 rounded bg-gray-100'>
-          <span className='text-xs text-gray-500'>No assignees</span>
+        <div className='flex items-center justify-center h-8 px-3 rounded-full bg-gray-100 border border-gray-200'>
+          <User className='w-3 h-3 text-gray-400' />
+          <span className='text-xs text-gray-500 ml-1'>Unassigned</span>
         </div>
       )
     }
     return (
       <div className='flex -space-x-2'>
-        {assignees.slice(0, 4).map((assignee, idx) => {
+        {assignees.slice(0, 3).map((assignee, idx) => {
           const { bg, text } = getAvatarColor(idx)
           return (
-            <Avatar key={assignee.projectMemberId || idx} className='h-7 w-7 border-2 border-white shadow'>
+            <Avatar key={assignee.projectMemberId || idx} className='h-8 w-8 border-2 border-white shadow-md ring-2 ring-white/50'>
               {assignee.avatar ? (
                 <AvatarImage src={assignee.avatar} alt={assignee.executor} />
               ) : (
-                <AvatarFallback style={{ background: bg, color: text }}>
+                <AvatarFallback style={{ background: bg, color: text }} className='text-xs font-medium'>
                   {assignee.executor?.[0]?.toUpperCase() || '?'}
                 </AvatarFallback>
               )}
             </Avatar>
           )
         })}
-        {assignees.length > 4 && (
-          <Avatar className='h-7 w-7 border-2 border-white shadow'>
-            <AvatarFallback style={{ background: '#F3F4F6', color: '#6B7280' }}>+{assignees.length - 4}</AvatarFallback>
+        {assignees.length > 3 && (
+          <Avatar className='h-8 w-8 border-2 border-white shadow-md ring-2 ring-white/50'>
+            <AvatarFallback className='bg-gradient-to-br from-gray-100 to-gray-200 text-gray-600 text-xs font-medium'>
+              +{assignees.length - 3}
+            </AvatarFallback>
           </Avatar>
         )}
       </div>
@@ -184,32 +192,42 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
 
   if (compact) {
     return (
-      <div className='flex items-center gap-2 border border-gray-200 rounded px-2 py-1 text-xs bg-white min-h-[36px]'>
+      <div className='group flex items-center gap-3 border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 min-h-[44px] shadow-sm hover:shadow-md'>
+        {/* Priority indicator */}
+        <div className={`w-1 h-8 rounded-full ${priorityConfig.color.replace('text-', 'bg-')}`} />
+        
         {/* Tags */}
         {task.tags && task.tags.length > 0 && (
           <div className='flex gap-1'>
-            {task.tags.map((tag: { id: string; name: string; color?: string }, index: number) => (
+            {task.tags.slice(0, 2).map((tag: { id: string; name: string; color?: string }, index: number) => (
               <span
                 key={tag.id || index}
-                style={{
-                  backgroundColor: tag.color || '#eee',
-                  color: '#fff',
-                  borderRadius: '8px',
-                  padding: '2px 8px',
-                  fontWeight: 500,
-                  fontSize: '0.95em',
-                  display: 'inline-block'
-                }}
+                className='inline-block px-2 py-1 text-xs font-medium rounded-md text-white shadow-sm'
+                style={{ backgroundColor: tag.color || '#8B5CF6' }}
               >
                 {tag.name}
               </span>
             ))}
+            {task.tags.length > 2 && (
+              <span className='inline-block px-2 py-1 text-xs font-medium rounded-md bg-gray-200 text-gray-600'>
+                +{task.tags.length - 2}
+              </span>
+            )}
           </div>
         )}
+        
         {/* Title */}
-        <span className='font-semibold truncate max-w-[120px]'>{task.title}</span>
+        <span className='font-semibold truncate max-w-[150px] text-gray-900'>{task.title}</span>
+        
         {/* Description */}
-        <span className='text-gray-500 truncate max-w-[120px]'>{task.description}</span>
+        <span className='text-gray-500 truncate max-w-[150px]'>{task.description}</span>
+        
+        {/* Priority */}
+        <div className={`flex items-center gap-1 ${priorityConfig.color} text-xs font-medium`}>
+          {priorityConfig.icon}
+          <span>{priorityConfig.text}</span>
+        </div>
+        
         {/* Move to Sprint button if present */}
         <span className='ml-auto'>{children}</span>
       </div>
@@ -218,72 +236,90 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
 
   return (
     <>
-      <div className='relative' onClick={() => setIsDetailOpen(true)}>
+      <div 
+        className='relative group'
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onClick={() => setIsDetailOpen(true)}
+      >
+        {/* Priority indicator bar */}
         <div
-          className={`absolute left-[0.115rem] ${compact ? 'top-10 h-8' : 'top-24 h-16'} -translate-y-1/2 w-1 bg-lavender-700 rounded-full`}
-          style={{ marginLeft: '-3px' }}
+          className={`absolute left-0 top-4 bottom-4 w-1 rounded-full ${priorityConfig.color.replace('text-', 'bg-')} shadow-sm transition-all duration-200`}
         />
 
-        <Card
-          className={`w-full border border-gray-300 cursor-pointer hover:border-gray-400 transition-colors ${compact ? 'p-2 rounded-md text-sm' : ''}`}
-        >
-          <div className={compact ? 'p-2' : 'p-4'}>
-            <div className={`flex gap-2 ${compact ? 'mb-1' : 'mb-3'}`}>
-              {task.tags && task.tags.length > 0 && (
-                <>
-                  {task.tags.map((tag: { id: string; name: string; color?: string }, index: number) => (
-                    <span
-                      key={tag.id || index}
-                      style={{
-                        backgroundColor: tag.color || '#eee',
-                        color: '#fff',
-                        borderRadius: '8px',
-                        padding: '2px 8px',
-                        fontWeight: 500,
-                        fontSize: '0.95em',
-                        display: 'inline-block'
-                      }}
-                    >
-                      {tag.name}
-                    </span>
-                  ))}
-                </>
-              )}
+        <Card className={`
+          w-full border-2 cursor-pointer transition-all duration-300 ml-2 
+          ${isHovered 
+            ? 'border-lavender-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1' 
+            : 'border-gray-200 shadow-sm hover:shadow-md'
+          }
+          ${priorityConfig.bg} backdrop-blur-sm
+          hover:animate-task-hover
+        `}>
+          <div className='p-4'>
+            {/* Tags */}
+            {task.tags && task.tags.length > 0 && (
+              <div className='flex gap-2 mb-3 flex-wrap'>
+                {task.tags.map((tag: { id: string; name: string; color?: string }, index: number) => (
+                  <span
+                    key={tag.id || index}
+                    className='inline-block px-3 py-1 text-xs font-medium rounded-full text-white shadow-sm hover:shadow-md transition-all duration-200'
+                    style={{ backgroundColor: tag.color || '#8B5CF6' }}
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Title and Priority */}
+            <div className='flex items-start justify-between mb-3'>
+              <h3 className='font-bold text-lg text-gray-900 leading-tight flex-1 mr-3'>
+                {task.title}
+              </h3>
+              <div className={`flex items-center gap-1 ${priorityConfig.color} ${priorityConfig.bg} px-2 py-1 rounded-full text-xs font-semibold border ${priorityConfig.border}`}>
+                {priorityConfig.icon}
+                <span>{priorityConfig.text}</span>
+              </div>
             </div>
 
-            <div className={`flex items-center gap-2 ${compact ? 'mb-1' : 'mb-2'}`}>
-              <h2 className={`font-bold ${compact ? 'text-base truncate max-w-[120px]' : 'text-xl'}`}>{task.title}</h2>
-              <span className={`ml-2 font-semibold ${priorityColor}`}>{priorityText}</span>
-              {getPriorityChevron(task.priority)}
-            </div>
-
-            <p className={`text-gray-500 ${compact ? 'mb-2 truncate max-w-[180px] text-xs' : 'mb-4'}`}>
+            {/* Description */}
+            <p className='text-gray-600 mb-4 line-clamp-2 text-sm leading-relaxed'>
               {task.description}
             </p>
 
-            <div className={`flex items-center ${compact ? 'gap-2 mb-1' : 'gap-6 mb-4'}`}>
-              <div className='flex items-center gap-1 text-gray-400'>
-                <MessageSquare className={compact ? 'w-4 h-4' : 'w-5 h-5'} />
-                <span>{commentCount}</span>
+            {/* Stats */}
+            <div className='flex items-center gap-4 mb-4'>
+              <div className='flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors'>
+                <MessageSquare className='w-4 h-4' />
+                <span className='text-sm font-medium'>{commentCount}</span>
               </div>
-              <div className='flex items-center gap-1 text-gray-400'>
-                <FileText className={compact ? 'w-4 h-4' : 'w-5 h-5'} />
-                <span>{fileCount}</span>
+              <div className='flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors'>
+                <FileText className='w-4 h-4' />
+                <span className='text-sm font-medium'>{fileCount}</span>
               </div>
-            </div>
-
-            <div className='flex justify-between items-center'>
-              <div className='flex flex-row items-center space-x-2'>
-                <AvatarStack assignees={assignees} />
-              </div>
-              <div className='flex flex-col items-end'>
-                <div className='flex items-center gap-1 text-gray-400'>
-                  <Calendar className={compact ? 'w-4 h-4' : 'w-5 h-5'} />
-                  <span className='text-sm font-semibold text-gray-700'>
-                    {task.deadline ? format(new Date(task.deadline), 'dd/MM/yyyy') : deadline}
+              {task.deadline && (
+                <div className='flex items-center gap-1 text-gray-500'>
+                  <Clock className='w-4 h-4' />
+                  <span className='text-sm font-medium'>
+                    {format(new Date(task.deadline), 'MMM d')}
                   </span>
                 </div>
-              </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className='flex justify-between items-center'>
+              <AvatarStack assignees={assignees} />
+              
+              {task.deadline && (
+                <div className='flex items-center gap-1 text-gray-500'>
+                  <Calendar className='w-4 h-4' />
+                  <span className='text-sm font-semibold'>
+                    {format(new Date(task.deadline), 'dd/MM/yyyy')}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </Card>

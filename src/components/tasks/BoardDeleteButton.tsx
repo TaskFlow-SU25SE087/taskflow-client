@@ -41,8 +41,8 @@ export function BoardDeleteButton({ projectId, boardId, onDeleted }: BoardDelete
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant='ghost' size='icon' className='text-red-500 hover:bg-red-100'>
-          <Trash2 className='w-5 h-5' />
+        <Button variant='ghost' size='icon' className='p-2 rounded-lg hover:bg-red-50 transition-all duration-200 text-red-500 hover:text-red-600 shadow-sm hover:shadow-md'>
+          <Trash2 className='w-4 h-4' />
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>

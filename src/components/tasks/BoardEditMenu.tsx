@@ -39,8 +39,8 @@ export function BoardEditMenu({ projectId, boardId, currentName, currentDescript
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant='ghost' size='icon' className='text-blue-500 hover:bg-blue-100 ml-1'>
-          <Pencil className='w-5 h-5' />
+        <Button variant='ghost' size='icon' className='p-2 rounded-lg hover:bg-black/5 transition-all duration-200 text-slate-600 hover:text-slate-800 shadow-sm hover:shadow-md'>
+          <Pencil className='w-4 h-4' />
         </Button>
       </DialogTrigger>
       <DialogContent>

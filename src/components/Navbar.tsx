@@ -1,12 +1,12 @@
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/useAuth'
@@ -14,16 +14,16 @@ import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjects } from '@/hooks/useProjects'
 import Avatar from 'boring-avatars'
 import {
-  ChevronDown,
-  FolderKanban,
-  HelpCircle,
-  Layout,
-  LogOut,
-  Plus,
-  Search,
-  Settings,
-  Shield,
-  User
+    ChevronDown,
+    FolderKanban,
+    HelpCircle,
+    Layout,
+    LogOut,
+    Plus,
+    Search,
+    Settings,
+    Shield,
+    User
 } from 'lucide-react'
 import { FiMenu } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'

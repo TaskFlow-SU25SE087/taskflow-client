@@ -26,10 +26,10 @@ import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import {
-  arrayMove,
-  horizontalListSortingStrategy,
-  SortableContext,
-  verticalListSortingStrategy
+    arrayMove,
+    horizontalListSortingStrategy,
+    SortableContext,
+    verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { ChevronDown, Filter, Link2, Pencil, Plus, Search } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -388,25 +388,54 @@ export default function ProjectBoard() {
 
   if (isLoading || isBoardLoading || !currentProject) {
     return (
-      <div className='flex h-screen bg-gray-100'>
+      <div className='flex h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50'>
         <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
         <div className='flex-1 flex flex-col overflow-hidden'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-          <Loader />
+          <div className='flex-1 flex items-center justify-center'>
+            <div className='text-center'>
+              <Loader />
+              <p className='mt-4 text-gray-600 animate-pulse'>Loading your project board...</p>
+            </div>
+          </div>
         </div>
       </div>
     )
   }
 
   if (boardError) {
-    return <div>Error loading boards: {boardError.message}</div>
+    return (
+      <div className='flex h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50'>
+        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
+        <div className='flex-1 flex flex-col overflow-hidden'>
+          <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+          <div className='flex-1 flex items-center justify-center'>
+            <div className='text-center p-8 bg-white/80 backdrop-blur-sm rounded-2xl shadow-lg border border-red-200'>
+              <div className='text-red-500 mb-4'>
+                <svg className='w-16 h-16 mx-auto' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z' />
+                </svg>
+              </div>
+              <h3 className='text-lg font-semibold text-gray-900 mb-2'>Error Loading Boards</h3>
+              <p className='text-gray-600 mb-4'>{boardError.message}</p>
+              <Button 
+                onClick={() => window.location.reload()} 
+                className='bg-lavender-600 hover:bg-lavender-700 text-white'
+              >
+                Try Again
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   // Log giá trị boards để debug
   console.log('Boards in ProjectBoard:', boards)
 
   return (
-    <div className='flex bg-gray-100 min-h-screen'>
+    <div className='flex bg-gradient-to-br from-slate-50 via-white to-lavender-50 min-h-screen'>
       <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
 
       <div className='flex-1 flex flex-col'>
@@ -415,11 +444,13 @@ export default function ProjectBoard() {
         {/* SignalR Project Group Manager */}
         {currentProject?.id && <ProjectGroupManager projectId={currentProject.id} />}
 
-        <div className='flex flex-col p-3 sm:p-6'>
+        <div className='flex flex-col p-3 sm:p-6 bg-white/50 backdrop-blur-sm'>
           <SprintSelector />
-          <div className='flex-none w-full flex flex-col sm:flex-row sm:items-center justify-between pb-4 gap-4'>
-            <div className='flex items-center gap-2 flex-wrap'>
-              <h1 className='text-2xl sm:text-4xl font-bold pr-2'>{currentProject.title}</h1>
+          <div className='flex-none w-full flex flex-col sm:flex-row sm:items-center justify-between pb-6 gap-4'>
+            <div className='flex items-center gap-3 flex-wrap'>
+              <h1 className='text-2xl sm:text-4xl font-bold pr-2 text-gray-800 tracking-tight'>
+                {currentProject.title}
+              </h1>
               <ProjectEditMenu
                 project={currentProject}
                 onProjectUpdated={refreshBoards}
@@ -427,19 +458,19 @@ export default function ProjectBoard() {
                   <Button
                     variant='ghost'
                     size='icon'
-                    className='h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-violet-100 hover:bg-violet-200'
+                    className='h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-lavender-100 hover:bg-lavender-200 shadow-sm hover:shadow-md transition-all duration-200'
                   >
-                    <Pencil className='h-3 w-3 sm:h-4 sm:w-4 text-violet-600' />
+                    <Pencil className='h-4 w-4 text-lavender-600' />
                   </Button>
                 }
               />
               <Button
                 variant='ghost'
                 size='icon'
-                className='h-7 w-7 sm:h-8 sm:w-8 rounded-xl bg-violet-100 hover:bg-violet-200'
+                className='h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-lavender-100 hover:bg-lavender-200 shadow-sm hover:shadow-md transition-all duration-200'
                 onClick={handleCopyProjectId}
               >
-                <Link2 className='h-3 w-3 sm:h-4 sm:w-4 text-violet-600' />
+                <Link2 className='h-4 w-4 text-lavender-600' />
               </Button>
             </div>
 
@@ -477,23 +508,23 @@ export default function ProjectBoard() {
             </div>
           </div>
 
-          <div className='pb-4 sm:pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
-            <div className='flex items-center gap-2 sm:gap-4 flex-wrap'>
-              <Button variant='outline' className='bg-white hover:bg-gray-50 focus:ring-0 text-sm'>
-                <Filter className='mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4' />
+          <div className='pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
+            <div className='flex items-center gap-3 flex-wrap'>
+              <Button variant='outline' className='bg-white/80 backdrop-blur-sm hover:bg-white border-gray-200 hover:border-gray-300 focus:ring-0 text-sm rounded-xl shadow-sm hover:shadow-md transition-all duration-200'>
+                <Filter className='mr-2 h-4 w-4' />
                 <span className='hidden sm:inline'>Filter</span>
-                <ChevronDown className='ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4' />
+                <ChevronDown className='ml-2 h-4 w-4' />
               </Button>
               <div className='relative'>
-                <Search className='absolute left-2 sm:left-3 top-1/2 h-3 w-3 sm:h-4 sm:w-4 -translate-y-1/2 transform text-gray-400' />
+                <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
                 <Input
-                  placeholder='Search tasks...'
+                  placeholder='Search tasks across boards...'
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className='w-[140px] sm:w-[180px] rounded-md bg-white pl-7 sm:pl-10 focus-visible:ring-offset-0 focus-visible:ring-0 border-gray-300 text-sm'
+                  className='w-[200px] sm:w-[280px] rounded-xl bg-white/80 backdrop-blur-sm pl-10 focus-visible:ring-offset-0 focus-visible:ring-2 focus-visible:ring-lavender-400 border-gray-200 hover:border-gray-300 text-sm shadow-sm hover:shadow-md transition-all duration-200'
                 />
               </div>
             </div>
-            <div className='flex gap-2'>
+            <div className='flex gap-3'>
               <TaskBoardCreateMenu
                 isOpen={isBoardDialogOpen}
                 onOpenChange={setIsBoardDialogOpen}
@@ -503,19 +534,19 @@ export default function ProjectBoard() {
             </div>
           </div>
 
-          <div className='flex flex-col overflow-x-auto'>
+          <div className='flex flex-col overflow-x-auto bg-white/30 backdrop-blur-sm rounded-2xl shadow-lg border border-white/50'>
             {/* DndContext chung cho cả board và task */}
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={filteredBoards.map((b) => b.id)} strategy={horizontalListSortingStrategy}>
                 <div
                   ref={boardContainerRef}
-                  className='w-full h-full overflow-x-auto overflow-y-hidden cursor-grab select-none min-h-0'
+                  className='w-full h-full overflow-x-auto overflow-y-hidden cursor-grab select-none min-h-0 p-4'
                   onMouseDown={handleMouseDown}
                   onMouseLeave={handleMouseLeave}
                   onMouseUp={handleMouseUp}
                   onMouseMove={handleMouseMove}
                 >
-                  <div className='inline-flex gap-6 p-1 h-full' style={{ minWidth: '900px' }}>
+                  <div className='inline-flex gap-6 h-full animate-fade-in' style={{ minWidth: '900px' }}>
                     {filteredBoards && filteredBoards.length > 0 ? (
                       filteredBoards.map((board) => (
                         <div key={board.id} className='...'>
@@ -540,9 +571,23 @@ export default function ProjectBoard() {
                           </SortableBoardColumn>
                         </div>
                       ))
-                    ) : (
-                      <div className='text-gray-400 text-lg p-8'>No boards found for this project.</div>
-                    )}
+                                          ) : (
+                        <div className='flex flex-col items-center justify-center h-96 w-full text-center'>
+                          <div className='text-gray-400 mb-4'>
+                            <svg className='w-24 h-24 mx-auto' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                              <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={1.5} d='M9 17H7A5 5 0 0 1 7 7h2m0 10a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-2z' />
+                            </svg>
+                          </div>
+                          <h3 className='text-xl font-semibold text-gray-700 mb-2'>No boards yet</h3>
+                          <p className='text-gray-500 mb-6 max-w-md'>Get started by creating your first board to organize your tasks</p>
+                          <TaskBoardCreateMenu
+                            isOpen={isBoardDialogOpen}
+                            onOpenChange={setIsBoardDialogOpen}
+                            projectId={currentProject.id}
+                            onBoardCreated={refreshBoards}
+                          />
+                        </div>
+                      )}
                   </div>
                 </div>
               </SortableContext>
