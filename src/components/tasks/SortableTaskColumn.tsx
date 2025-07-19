@@ -40,6 +40,7 @@ export function SortableTaskColumn(props: SortableTaskColumnProps) {
       ref={setNodeRef} 
       style={style} 
       className={`
+        w-full
         transition-all duration-300 ease-in-out
         ${isDragging ? 'animate-drag-preview scale-105 rotate-2 shadow-2xl' : ''}
         ${isOver ? 'animate-drop-zone' : ''}
@@ -83,6 +84,7 @@ export function SortableBoardColumn({ id, children }: SortableBoardColumnProps) 
       ref={setNodeRef} 
       style={style} 
       className={`
+        w-full
         transition-all duration-300 ease-in-out
         ${isDragging ? 'animate-drag-preview scale-105 rotate-1 shadow-2xl' : ''}
         ${isOver ? 'animate-drop-zone ring-2 ring-lavender-300 ring-opacity-50' : ''}

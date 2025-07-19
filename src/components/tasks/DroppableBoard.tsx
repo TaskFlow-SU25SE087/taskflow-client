@@ -13,8 +13,8 @@ export function DroppableBoard({ boardId, children, className = '' }: DroppableB
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-2xl h-full relative p-2 flex flex-col min-w-[340px] max-w-[400px] mx-2 ${className}`}
-      style={{ minHeight: 140, minWidth: 340, maxWidth: 400 }}
+      className={`rounded-2xl w-full relative p-2 flex flex-col ${className}`}
+      style={{ width: '320px', minWidth: '320px' }}
     >
       {children}
       {isOver && isEmpty && (

@@ -2,14 +2,14 @@ import gsap from 'gsap'
 import { LucideLayoutDashboard } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
-  FiAlertCircle,
-  FiBarChart2,
-  FiClock,
-  FiGitBranch,
-  FiGithub,
-  FiLayers,
-  FiSettings,
-  FiUsers
+    FiAlertCircle,
+    FiBarChart2,
+    FiClock,
+    FiGitBranch,
+    FiGithub,
+    FiLayers,
+    FiSettings,
+    FiUsers
 } from 'react-icons/fi'
 import { useLocation, useNavigate } from 'react-router-dom'
 import GitHubSidebarItem from './github/GitHubSidebarItem'

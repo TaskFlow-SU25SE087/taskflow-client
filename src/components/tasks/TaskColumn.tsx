@@ -92,16 +92,17 @@ export function TaskColumn({ title, tasks, color, onTaskCreated, boardId }: Task
   const styling = getBoardStyling(title)
 
   const EmptyState = () => (
-    <div className={`flex flex-col items-center justify-center h-64 py-12 ${styling.textColor} opacity-60`}>
-      <Inbox className='w-16 h-16 mb-4 stroke-1' />
-      <p className='text-lg font-medium'>No tasks yet</p>
+    <div className={`flex flex-col items-center justify-center py-8 ${styling.textColor} opacity-60`}>
+      <Inbox className='w-12 h-12 mb-3 stroke-1' />
+      <p className='text-base font-medium'>No tasks yet</p>
       <p className='text-sm opacity-75 mt-1'>Click + to add your first task</p>
     </div>
   )
 
   return (
     <div 
-      className={`${styling.bgColor} rounded-2xl w-[400px] flex flex-col min-h-0 border-none shadow-none animate-fade-in`}
+      className={`${styling.bgColor} rounded-2xl w-full flex flex-col border-none shadow-none animate-fade-in`}
+      style={{ width: '320px', minWidth: '320px', minHeight: '200px' }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -165,11 +166,11 @@ export function TaskColumn({ title, tasks, color, onTaskCreated, boardId }: Task
       </div>
 
       {/* Tasks container */}
-      <div className='flex-1 min-h-0 overflow-hidden'>
+      <div className='flex-1 min-h-0'>
         {tasks.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className='h-full overflow-y-auto px-4 py-2 scroll-smooth'>
+          <div className='overflow-y-auto px-4 py-2 scroll-smooth'>
             <div className='space-y-3 pb-4'>
               {tasks.map((task, index) => (
                 <div 

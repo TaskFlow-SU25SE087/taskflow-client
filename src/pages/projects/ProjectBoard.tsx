@@ -468,19 +468,22 @@ export default function ProjectBoard() {
   console.log('DEBUG searchQuery:', searchQuery);
   console.log('DEBUG filterStatus:', filterStatus);
 
-  return (
-    <div className='flex bg-gradient-to-br from-slate-50 via-white to-lavender-50 min-h-screen'>
-      <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
+ return (
+  <div className='flex bg-gradient-to-br from-slate-50 via-white to-lavender-50 h-screen overflow-hidden'> {/* Added overflow-hidden */}
+    <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
 
-      <div className='flex-1 flex flex-col'>
-        <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+    <div className='flex-1 flex flex-col overflow-hidden'> {/* Added overflow-hidden */}
+      <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
-        {/* SignalR Project Group Manager */}
-        {currentProject?.id && <ProjectGroupManager projectId={currentProject.id} />}
+      {/* SignalR Project Group Manager */}
+      {currentProject?.id && <ProjectGroupManager projectId={currentProject.id} />}
 
-        <div className='flex flex-col p-3 sm:p-6 bg-white/50 backdrop-blur-sm'>
+      <div className='flex flex-col flex-1 overflow-hidden'> {/* Added flex-1 and overflow-hidden */}
+        {/* Header content - có thể scroll */}
+        <div className='flex-shrink-0 p-3 sm:p-6 bg-white/50 backdrop-blur-sm overflow-y-auto max-h-[60vh]'> {/* Made this scrollable with max height */}
           <SprintSelector />
-          {/* Hiển thị deadline của sprint hiện tại */}
+          
+          {/* Sprint deadline display */}
           {(() => {
             const currentSprint = sprints.find((s) => s.id === selectedSprintId)
             if (currentSprint && currentSprint.startDate && currentSprint.endDate) {
@@ -496,11 +499,11 @@ export default function ProjectBoard() {
             }
             return null
           })()}
-          {/* Bảng thống kê kiểu timeline: Completed và Progress (task + thời gian) */}
+
+          {/* Stats cards */}
           <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-6'>
             {(() => {
               const stats = calculateBoardProgress(tasks)
-              // Tính progress thời gian sprint
               let timeProgress = 0
               const currentSprint = sprints.find((s) => s.id === selectedSprintId)
               if (currentSprint && currentSprint.startDate && currentSprint.endDate) {
@@ -582,6 +585,7 @@ export default function ProjectBoard() {
               </>
             })()}
           </div>
+
           <div className='flex-none w-full flex flex-col sm:flex-row sm:items-center justify-between pb-6 gap-4'>
             <div className='flex items-center gap-3 flex-wrap'>
               <h1 className='text-2xl sm:text-4xl font-bold pr-2 text-gray-800 tracking-tight'>
@@ -685,23 +689,24 @@ export default function ProjectBoard() {
               />
             </div>
           </div>
+        </div>
 
-          <div className='flex flex-col overflow-x-auto bg-white/30 backdrop-blur-sm'>
-            {/* Responsive: cuộn ngang trên mobile, min-width cho board list */}
-            <div className="w-full overflow-x-auto pb-2">
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={filteredBoards.map((b) => b.id)} strategy={horizontalListSortingStrategy}>
-                  <div className="inline-flex gap-6 h-full animate-fade-in min-w-[600px] sm:min-w-[900px]">
-                    {/* Drop zone đầu */}
-                    <div
-                      style={{ width: 40, minHeight: 200 }}
-                      className="bg-white rounded-lg"
-                      data-dropzone='start'
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={() => handleDragEnd({ active: { id: '__dropzone_start__' }, over: { id: '__dropzone_start__' } })}
-                    />
-                    {filteredBoards.map((board) => (
-                      <SortableBoardColumn id={board.id} key={board.id}>
+        {/* Board container - chỉ phần này scroll ngang */}
+        <div className="flex-1 overflow-hidden"> {/* Container chính cho boards */}
+          <div className="overflow-x-auto overflow-y-hidden p-3 sm:p-6 pt-0 board-container"> {/* Scroll container - removed h-full */}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={filteredBoards.map((b) => b.id)} strategy={horizontalListSortingStrategy}>
+                <div className="flex flex-row gap-4 sm:gap-6" style={{ minWidth: 'max-content' }}> {/* Board row - removed h-full */}
+                  {/* Drop zone đầu */}
+                  <div
+                    className="w-6 sm:w-10 bg-transparent flex-shrink-0"
+                    data-dropzone='start'
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => handleDragEnd({ active: { id: '__dropzone_start__' }, over: { id: '__dropzone_start__' } })}
+                  />
+                  {filteredBoards.map((board) => (
+                    <div key={board.id} className="flex-shrink-0" style={{ width: '320px', minWidth: '320px' }}> {/* Fixed width with min-width */}
+                      <SortableBoardColumn id={board.id}>
                         <DroppableBoard boardId={board.id}>
                           <SortableContext
                             items={board.tasks.map((t) => t.id)}
@@ -720,29 +725,29 @@ export default function ProjectBoard() {
                           </SortableContext>
                         </DroppableBoard>
                       </SortableBoardColumn>
-                    ))}
-                    {/* Drop zone cuối */}
-                    <div
-                      style={{ width: 40, minHeight: 200 }}
-                      className="bg-white rounded-lg"
-                      data-dropzone='end'
-                      onDragOver={(e) => e.preventDefault()}
-                      onDrop={() => handleDragEnd({ active: { id: '__dropzone_end__' }, over: { id: '__dropzone_end__' } })}
-                    />
-                  </div>
-                </SortableContext>
-              </DndContext>
-            </div>
+                    </div>
+                  ))}
+                  {/* Drop zone cuối */}
+                  <div
+                    className="w-6 sm:w-10 bg-transparent flex-shrink-0"
+                    data-dropzone='end'
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => handleDragEnd({ active: { id: '__dropzone_end__' }, over: { id: '__dropzone_end__' } })}
+                  />
+                </div>
+              </SortableContext>
+            </DndContext>
           </div>
         </div>
       </div>
-
-      <ProjectInviteDialog
-        isOpen={isInviteOpen}
-        onClose={() => setIsInviteOpen(false)}
-        projectId={currentProject.id}
-        onMemberAdded={handleMemberAdded}
-      />
     </div>
-  )
+
+    <ProjectInviteDialog
+      isOpen={isInviteOpen}
+      onClose={() => setIsInviteOpen(false)}
+      projectId={currentProject.id}
+      onMemberAdded={handleMemberAdded}
+    />
+  </div>
+)
 }

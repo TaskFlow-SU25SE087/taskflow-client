@@ -25,7 +25,7 @@ import {
     Shield,
     User
 } from 'lucide-react'
-import { FiMenu } from 'react-icons/fi'
+import { FiMenu, FiX } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
 import ConnectionStatus from './ConnectionStatus'
 import NotificationCenter from './NotificationCenter'
@@ -58,16 +58,18 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
     <div className='sticky top-0 z-10 w-full bg-white border-b border-gray-300'>
       <div className='px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between'>
         <div className='flex items-center gap-1 sm:gap-2 flex-1'>
-          {!isSidebarOpen && (
-            <Button
-              variant='ghost'
-              size='icon'
-              className='text-gray-500 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 h-8 w-8 sm:h-10 sm:w-10'
-              onClick={toggleSidebar}
-            >
+          <Button
+            variant='ghost'
+            size='icon'
+            className='text-gray-500 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 h-8 w-8 sm:h-10 sm:w-10'
+            onClick={toggleSidebar}
+          >
+            {isSidebarOpen ? (
+              <FiX className='h-4 w-4 sm:h-5 sm:w-5' />
+            ) : (
               <FiMenu className='h-4 w-4 sm:h-5 sm:w-5' />
-            </Button>
-          )}
+            )}
+          </Button>
 
           {/* Projects Dropdown */}
           <DropdownMenu>

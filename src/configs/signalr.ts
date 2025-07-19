@@ -156,3 +156,4 @@ export class SignalRService {
     return this.connection?.state === 'Connected'
   }
 }
+
