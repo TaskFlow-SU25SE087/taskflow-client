@@ -10,13 +10,13 @@ export const projectMemberApi = {
     return response.data.data
   },
 
-  leaveProject: (projectId: string) => axiosClient.post(`/projects/${projectId}/members/leave`),
+  leaveProject: (projectId: string) => axiosClient.post(`/project/${projectId}/members/leave`),
 
   removeMember: (projectId: string, userId: string) =>
-    axiosClient.delete(`/projects/${projectId}/members/remove/${userId}`),
+    axiosClient.delete(`/project/${projectId}/members/remove/${userId}`),
 
   verifyJoin: (projectId: string, token: string) =>
-    axiosClient.get(`/projects/${projectId}/members/verify-join`, { params: { token } }),
+    axiosClient.get(`/project/${projectId}/members/verify-join`, { params: { token } }),
 
   getMembersByProjectId: async (projectId: string): Promise<ProjectMember[]> => {
     const response = await axiosClient.get(`/project/${projectId}/members/list`)
