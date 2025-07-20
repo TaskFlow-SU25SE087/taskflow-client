@@ -1,12 +1,12 @@
 import { adminApi } from '@/api/admin'
 import AdminLayout from '@/components/admin/AdminLayout'
 import AdminPagination from '@/components/admin/AdminPagination'
-import AdminUserCard from '@/components/admin/AdminUserCard'
 import FileUpload from '@/components/admin/FileUpload'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { useAdmin } from '@/hooks/useAdmin'
+import { useAdminTerm } from '@/hooks/useAdminTerm'
 import { Loader2, Users } from 'lucide-react'
 import { useState } from 'react'
 import * as XLSX from 'xlsx'
@@ -20,6 +20,9 @@ export default function AdminUsersPage() {
   const [showFileUpload, setShowFileUpload] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [pageSize, setPageSize] = useState(10)
+
+  // Lấy danh sách semester (term) từ API
+  const { terms, loading: loadingTerms } = useAdminTerm(1, 0)
 
   const handlePageChange = (page: number) => {
     fetchUsers(page, pageSize)
@@ -50,7 +53,10 @@ export default function AdminUsersPage() {
           selectedStatus === 'all' ||
           (selectedStatus === 'active' && user.isActive) ||
           (selectedStatus === 'inactive' && !user.isActive)
-        const matchesSemester = selectedSemester === 'all' || user.term === selectedSemester
+        // So sánh semester theo định dạng `${term.season} ${term.year}`
+        const userSemester = user.term ? user.term : ''
+        const matchesSemester =
+          selectedSemester === 'all' || userSemester === selectedSemester
         return matchesSearch && matchesRole && matchesStatus && matchesSemester
       })
       if (filteredAllUsers.length === 0) {
@@ -103,12 +109,17 @@ export default function AdminUsersPage() {
       selectedStatus === 'all' ||
       (selectedStatus === 'active' && user.isActive) ||
       (selectedStatus === 'inactive' && !user.isActive)
-    const matchesSemester = selectedSemester === 'all' || user.term === selectedSemester
+    // So sánh semester theo định dạng `${termSeason} ${termYear}` hoặc pastTerms
+    const userSemester = user.termSeason && user.termYear
+      ? `${user.termSeason} ${user.termYear}`
+      : user.pastTerms || ''
+    const matchesSemester =
+      selectedSemester === 'all' || userSemester === selectedSemester
     return matchesSearch && matchesRole && matchesStatus && matchesSemester
   })
 
   const roles = Array.from(new Set(users.map((user) => user.role)))
-  const semesters = Array.from(new Set(users.map((user) => user.term).filter(Boolean)))
+  const semesters = terms.map((term: any) => `${term.season} ${term.year}`)
 
   if (loading) {
     return (
@@ -187,10 +198,11 @@ export default function AdminUsersPage() {
             value={selectedSemester}
             onChange={(e) => setSelectedSemester(e.target.value)}
             className='border rounded px-2 py-1 text-sm'
+            disabled={loadingTerms}
           >
             <option value='all'>All Semesters</option>
             {semesters.map((term) => (
-              <option key={term} value={term as string}>
+              <option key={term} value={term}>
                 {term}
               </option>
             ))}
@@ -235,10 +247,60 @@ export default function AdminUsersPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
-          {filteredUsers.map((user) => (
-            <AdminUserCard key={user.id} user={user} onBan={handleBanUser} onUnban={handleUnbanUser} />
-          ))}
+        <div className='overflow-x-auto'>
+          <table className='min-w-full divide-y divide-gray-200 bg-white'>
+            <thead className='bg-gray-50'>
+              <tr>
+                <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Avatar</th>
+                <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Full Name</th>
+                <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Email</th>
+                <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Phone</th>
+                <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Student ID</th>
+                <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Term</th>
+                <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Status</th>
+                <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Role</th>
+                <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Action</th>
+              </tr>
+            </thead>
+            <tbody className='divide-y divide-gray-200'>
+              {filteredUsers.map((user) => {
+                const userSemester = user.termSeason && user.termYear
+                  ? `${user.termSeason} ${user.termYear}`
+                  : user.pastTerms || 'Not provided'
+                return (
+                  <tr key={user.id}>
+                    <td className='px-4 py-2'>
+                      <img src={user.avatar} alt={user.fullName} className='h-10 w-10 rounded-full object-cover' />
+                    </td>
+                    <td className='px-4 py-2 font-semibold'>{user.fullName}</td>
+                    <td className='px-4 py-2'>{user.email}</td>
+                    <td className='px-4 py-2'>{user.phoneNumber || 'Not provided'}</td>
+                    <td className='px-4 py-2'>{user.studentId || 'Not provided'}</td>
+                    <td className='px-4 py-2'>{userSemester}</td>
+                    <td className='px-4 py-2'>
+                      {user.isActive ? (
+                        <span className='inline-block px-2 py-1 rounded text-green-600 bg-green-100 text-xs font-semibold'>Active</span>
+                      ) : (
+                        <span className='inline-block px-2 py-1 rounded text-red-600 bg-red-100 text-xs font-semibold'>Inactive</span>
+                      )}
+                    </td>
+                    <td className='px-4 py-2'>{user.role}</td>
+                    <td className='px-4 py-2'>
+                      {user.isActive ? (
+                        <Button size='sm' variant='destructive' onClick={() => handleBanUser(user.id)}>
+                          Ban
+                        </Button>
+                      ) : (
+                        <Button size='sm' variant='default' onClick={() => handleUnbanUser(user.id)}>
+                          Unban
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </div>
       )}
       {pagination.totalPages > 1 && !error && (

@@ -95,7 +95,13 @@ export default function AdminUserCard({ user, onEdit, onDelete, onToggleStatus, 
         {/* Term */}
         <div className='flex items-center space-x-2 text-sm'>
           <span className='font-semibold'>Term:</span>
-          <span>{user.term || 'Not provided'}</span>
+          <span>{
+            user.termSeason && user.termYear
+              ? `${user.termSeason} ${user.termYear}`
+              : user.pastTerms
+                ? user.pastTerms
+                : 'Not provided'
+          }</span>
         </div>
 
         {/* Status and Role Badges */}

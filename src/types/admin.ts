@@ -9,6 +9,10 @@ export interface AdminUser {
   term: string | null
   isActive: boolean
   isPermanentlyBanned: boolean
+  // Thêm các trường mới cho semester
+  termSeason?: string
+  termYear?: number
+  pastTerms?: string
 }
 
 export interface AdminUsersResponse {
