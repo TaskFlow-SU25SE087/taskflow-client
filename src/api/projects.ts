@@ -135,7 +135,9 @@ export const projectApi = {
   },
 
   addMemberToProject: async (projectId: string, email: string): Promise<boolean> => {
-    const response = await axiosClient.post(`/project/${projectId}/members/add`, { email })
+    const response = await axiosClient.post(`/project/${projectId}/members/add`, { email }, {
+      headers: { 'Content-Type': 'application/json-patch+json' }
+    })
     return response.data.data
   },
 

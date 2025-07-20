@@ -5,7 +5,9 @@ const ENDPOINT = '/api/projectmember'
 
 export const projectMemberApi = {
   addMember: async (projectId: string, email: string) => {
-    const response = await axiosClient.post(`/project/${projectId}/members/add`, { email })
+    const response = await axiosClient.post(`/project/${projectId}/members/add`, { email }, {
+      headers: { 'Content-Type': 'application/json-patch+json' }
+    })
     // Trả về { email, token } từ response.data.data
     return response.data.data
   },

@@ -2,7 +2,6 @@
 import { projectMemberApi } from '@/api/projectMembers'
 import { projectApi } from '@/api/projects'
 import { useToastContext } from '@/components/ui/ToastContext'
-import axiosClient from '@/configs/axiosClient'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -22,10 +21,7 @@ export function useProjectCreate() {
   const handleAddMember = async (email: string) => {
     if (!email.trim()) return
     try {
-      await axiosClient.post(`/api/projectmember/projectId=${projectId}/add`, {
-        email,
-        role: 'member'
-      })
+      await projectApi.addMemberToProject(projectId, email)
       setAddedEmails((prev) => [...prev, email])
       setMemberEmail('')
       showToast({ title: 'Member added', description: 'Team member has been added successfully.' })
@@ -54,8 +50,13 @@ export function useProjectCreate() {
       } catch (error: any) {
         if (error.response?.data?.code === 3004) {
           showToast({ title: 'Project limit reached', description: 'You have reached the maximum number of projects allowed. Please delete old projects or contact the administrator for support.', variant: 'destructive' })
-        } else if (error.response?.data?.errors?.description) {
-          showToast({ title: 'Validation error', description: error.response.data.errors.description[0], variant: 'destructive' })
+        } else if (error.response?.data?.errors) {
+          // Hiển thị tất cả lỗi validation từ API
+          const errors = error.response.data.errors
+          const errorMessages = Object.entries(errors)
+            .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
+            .join('\n')
+          showToast({ title: 'Validation error', description: errorMessages, variant: 'destructive' })
         } else {
           showToast({ title: 'Project creation failed', description: 'Unable to create the project. Please try again.', variant: 'destructive' })
         }
