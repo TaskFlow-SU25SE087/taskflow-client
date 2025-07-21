@@ -13,6 +13,8 @@ import { SortableBoardColumn, SortableTaskColumn } from '@/components/tasks/Sort
 import TaskBoardCreateMenu from '@/components/tasks/TaskBoardCreateMenu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Loader } from '@/components/ui/loader'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -32,7 +34,7 @@ import {
   SortableContext,
   verticalListSortingStrategy
 } from '@dnd-kit/sortable'
-import { CheckCircle, ChevronDown, Clock, Filter, Link2, Pencil, Plus, Search, TrendingUp } from 'lucide-react'
+import { CheckCircle, ChevronDown, Clock, Filter, Link2, Pencil, Plus, Search, Settings, TrendingUp } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -168,6 +170,9 @@ export default function ProjectBoard() {
   const [sprintTasks, setSprintTasks] = useState<TaskP[]>([])
   const [selectedSprintId, setSelectedSprintId] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [isLockDialogOpen, setIsLockDialogOpen] = useState(false)
+  const [lockedColumns, setLockedColumns] = useState<string[]>([])
+  const [lockAll, setLockAll] = useState(false)
 
   const { showToast } = useToastContext()
   const { leaveProject, loading: memberLoading, error: memberError } = useProjectMembers()
@@ -287,15 +292,18 @@ export default function ProjectBoard() {
   // Hàm xử lý kéo thả chung cho cả board và task
   const handleDragEnd = async (event: any) => {
     const { active, over } = event
-    console.log('DnD handleDragEnd', { active, over, overId: over?.id })
-    if (!active || !over || active.id === over.id) {
-      console.log('[DnD] Không có active, over hoặc kéo thả cùng vị trí', { active, over })
-      return
-    }
-
-    // Nếu kéo board (id của board nằm trong boards)
+    // Prevent drag if locked
     const isBoardDrag = boards.some((b) => b.id === active.id)
     if (isBoardDrag) {
+      // If the column is locked, prevent drag
+      if (lockedColumns.includes(active.id) || (over && lockedColumns.includes(over.id))) {
+        showToast({
+          title: 'Column Locked',
+          description: 'This column is locked and cannot be moved.',
+          variant: 'destructive',
+        })
+        return
+      }
       if (!currentProject?.id) {
         console.log('[DnD] Không có currentProject khi kéo board')
         return
@@ -414,6 +422,38 @@ export default function ProjectBoard() {
       </div>
     )
   }
+
+  // Thêm hàm xử lý chọn cột
+  const handleToggleColumnLock = (boardId: string) => {
+    setLockedColumns((prev) =>
+      prev.includes(boardId) ? prev.filter((id) => id !== boardId) : [...prev, boardId]
+    )
+  }
+  const handleLockAll = (checked: boolean) => {
+    setLockAll(checked)
+    if (checked) {
+      setLockedColumns(boards.map((b) => b.id))
+    } else {
+      setLockedColumns([])
+    }
+  }
+
+  // Khôi phục trạng thái lock từ localStorage khi load trang
+  useEffect(() => {
+    const data = localStorage.getItem('board_locked_columns');
+    if (data) {
+      try {
+        const { lockedColumns, lockAll } = JSON.parse(data);
+        setLockedColumns(lockedColumns || []);
+        setLockAll(lockAll || false);
+      } catch {}
+    }
+  }, []);
+
+  // Lưu trạng thái lock vào localStorage khi thay đổi
+  useEffect(() => {
+    localStorage.setItem('board_locked_columns', JSON.stringify({ lockedColumns, lockAll }));
+  }, [lockedColumns, lockAll]);
 
   if (isLoading || isBoardLoading || !currentProject) {
     return (
@@ -612,6 +652,16 @@ export default function ProjectBoard() {
               >
                 <Link2 className='h-4 w-4 text-lavender-600' />
               </Button>
+              {/* Nút bánh răng settings */}
+              <Button
+                variant='ghost'
+                size='icon'
+                className='h-8 w-8 sm:h-9 sm:w-9 rounded-xl bg-gray-100 hover:bg-gray-200 shadow-sm hover:shadow-md transition-all duration-200'
+                onClick={() => setIsLockDialogOpen(true)}
+                title='Board Column Lock Settings'
+              >
+                <Settings className='h-4 w-4 text-gray-600' />
+              </Button>
             </div>
 
             <div className='flex items-center gap-2 sm:gap-4 flex-wrap'>
@@ -748,6 +798,38 @@ export default function ProjectBoard() {
       projectId={currentProject.id}
       onMemberAdded={handleMemberAdded}
     />
+    {/* Dialog chọn cột để khóa */}
+    <Dialog open={isLockDialogOpen} onOpenChange={setIsLockDialogOpen}>
+      <DialogContent className='max-w-md'>
+        <DialogHeader>
+          <DialogTitle>Board Column Lock</DialogTitle>
+          <DialogDescription>
+            Select columns to lock, or lock all columns to prevent moving them.
+          </DialogDescription>
+        </DialogHeader>
+        <div className='flex flex-col gap-2 mt-4'>
+          <label className='flex items-center gap-2 font-medium'>
+            <Checkbox checked={lockAll} onCheckedChange={handleLockAll} />
+            Lock all columns
+          </label>
+          <div className='max-h-48 overflow-y-auto pl-4'>
+            {boards.map((b) => (
+              <label key={b.id} className='flex items-center gap-2'>
+                <Checkbox
+                  checked={lockedColumns.includes(b.id)}
+                  onCheckedChange={() => handleToggleColumnLock(b.id)}
+                  disabled={lockAll}
+                />
+                {b.name}
+              </label>
+            ))}
+          </div>
+        </div>
+        <div className='flex justify-end gap-2 mt-6'>
+          <Button variant='outline' onClick={() => setIsLockDialogOpen(false)}>Close</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   </div>
 )
 }
