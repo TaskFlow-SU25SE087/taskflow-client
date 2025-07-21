@@ -11,8 +11,6 @@ interface AdminProtectedRouteProps {
 export default function AdminProtectedRoute({ children }: AdminProtectedRouteProps) {
   const { isAuthenticated, user, authLoading } = useAuth()
 
-  console.log('[AdminProtectedRoute] user:', user)
-  console.log('[AdminProtectedRoute] authLoading:', authLoading)
 
   if (authLoading) {
     return <div>Loading...</div>

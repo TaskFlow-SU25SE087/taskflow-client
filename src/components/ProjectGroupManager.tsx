@@ -14,7 +14,6 @@ const ProjectGroupManager: React.FC<ProjectGroupManagerProps> = ({ projectId }) 
       const joinGroup = async () => {
         try {
           await signalRService.joinProjectGroup(projectId)
-          console.log(`✅ Joined project group: ${projectId}`)
         } catch (error) {
           console.error(`❌ Failed to join project group ${projectId}:`, error)
         }
@@ -27,7 +26,6 @@ const ProjectGroupManager: React.FC<ProjectGroupManagerProps> = ({ projectId }) 
         const leaveGroup = async () => {
           try {
             await signalRService.leaveProjectGroup(projectId)
-            console.log(`✅ Left project group: ${projectId}`)
           } catch (error) {
             console.error(`❌ Failed to leave project group ${projectId}:`, error)
           }

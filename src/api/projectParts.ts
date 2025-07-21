@@ -5,7 +5,6 @@ export async function createProjectPart(
   projectId: string,
   payload: { name: string; programmingLanguage: string; framework: string }
 ) {
-  console.log('Create Project Part payload:', payload, 'projectId:', projectId);
   // Đảm bảo truyền đúng key viết thường cho backend
   const res = await axiosClient.post(`/projects/${projectId}/parts`, payload, {
     headers: { 'Content-Type': 'application/json-patch+json' }

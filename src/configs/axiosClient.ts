@@ -12,23 +12,15 @@ const axiosClient = axios.create({
 // Request
 axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    console.log('🌐 [axiosClient] Request interceptor called')
-    console.log('📤 [axiosClient] Request URL:', config.url)
-    console.log('📤 [axiosClient] Request method:', config.method?.toUpperCase())
-    console.log('📤 [axiosClient] Request headers:', config.headers)
-    console.log('📤 [axiosClient] Request data:', config.data)
 
     // Get access token from session storage
     const accessToken = sessionStorage.getItem('accessToken')
 
     if (accessToken) {
-      console.log('🔑 [axiosClient] Adding Authorization header with token')
       config.headers.Authorization = `Bearer ${accessToken}`
     } else {
-      console.log('⚠️ [axiosClient] No access token found in session storage')
     }
 
-    console.log('📤 [axiosClient] Final request config:', {
       url: config.url,
       method: config.method,
       headers: config.headers,
@@ -46,11 +38,6 @@ axiosClient.interceptors.request.use(
 // Response
 axiosClient.interceptors.response.use(
   (response: AxiosResponse) => {
-    console.log('✅ [axiosClient] Response interceptor called')
-    console.log('📥 [axiosClient] Response URL:', response.config.url)
-    console.log('📥 [axiosClient] Response status:', response.status)
-    console.log('📥 [axiosClient] Response headers:', response.headers)
-    console.log('📥 [axiosClient] Response data:', response.data)
     return response
   },
   (error: AxiosError) => {

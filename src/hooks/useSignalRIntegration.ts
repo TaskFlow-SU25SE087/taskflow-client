@@ -14,7 +14,6 @@ export const useSignalRIntegration = () => {
 
       try {
         await signalRService.joinProjectGroup(projectId)
-        console.log(`✅ Joined project group: ${projectId}`)
       } catch (error) {
         console.error(`❌ Failed to join project group ${projectId}:`, error)
       }
@@ -31,7 +30,6 @@ export const useSignalRIntegration = () => {
 
       try {
         await signalRService.leaveProjectGroup(projectId)
-        console.log(`✅ Left project group: ${projectId}`)
       } catch (error) {
         console.error(`❌ Failed to leave project group ${projectId}:`, error)
       }

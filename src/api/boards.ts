@@ -4,9 +4,7 @@ import { Board } from '@/types/board'
 export const boardApi = {
   getAllBoardsByProjectId: async (projectId: string): Promise<Board[]> => {
     const response = await axiosClient.get(`/project/${projectId}`)
-    console.log('[boardApi] Full project response:', response.data)
     if (response.data && response.data.data && response.data.data.boards) {
-      console.log('[boardApi] boards:', response.data.data.boards)
     } else {
       console.warn('[boardApi] boards not found in response:', response.data)
     }

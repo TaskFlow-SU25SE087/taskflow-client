@@ -18,7 +18,6 @@ export const useTasks = () => {
       try {
         const fetchedTasks = await taskApi.getTasksFromProject(currentProject.id)
         setTasks(fetchedTasks)
-        console.log(fetchedTasks)
         setTaskError(null)
       } catch (error) {
         setTaskError(error as Error)

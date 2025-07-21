@@ -142,7 +142,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             member.role === 'ProjectLeader' ||
             member.role === 'projectLeader'
         )
-        console.log('Debug members and leader:', {
           members: members.map((m) => ({
             userId: m.userId,
             id: (m as any).id,
@@ -157,8 +156,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         const currentUserMember = members.find(
           (member) => member.userId === user?.id || (member as any).id === user?.id
         )
-        console.log('Current user member:', currentUserMember)
-        console.log('Current user role in members:', currentUserMember?.role)
         if (leader) {
           setProjectLeader(leader)
         }
@@ -167,13 +164,11 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         const taskDetails = tasks?.find((t) => t.id === task.id)
         const sprintId = taskDetails?.sprintId
         if (taskDetails?.taskAssignees) {
-          console.log('Task assignees:', taskDetails.taskAssignees)
           // Lấy assignee đầu tiên từ taskDetails.taskAssignees
           const assigneeFromTask =
             Array.isArray(taskDetails.taskAssignees) && taskDetails.taskAssignees.length > 0
               ? taskDetails.taskAssignees[0]
               : null
-          console.log('Found assignee:', assigneeFromTask)
           if (assigneeFromTask) {
             setAssignee({
               userId: assigneeFromTask.projectMemberId,
@@ -182,8 +177,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               role: assigneeFromTask.role
             })
           } else {
-            console.log('Assignee not found in members list')
-            console.log(
               'Available members:',
               members.map((m) => ({
                 userId: m.userId,
@@ -205,8 +198,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     fetchAssigneeAndMembers()
   }, [currentProject, navigate, task.id, showToast])
 
-  console.log('projectMembers:', projectMembers)
-  console.log('current user:', user)
 
   // State để lưu role của user trong project hiện tại
   const [myProjectRole, setMyProjectRole] = useState<string | undefined>(undefined)
@@ -215,19 +206,13 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     const fetchMyRole = async () => {
       try {
         const res = await projectApi.getProjects() // gọi GET /project
-        console.log('[TaskDetailMenu] Project API response:', res)
         if (res?.data && currentProject) {
           const myProject = res.data.find((p: any) => p.id === currentProject.id)
-          console.log('[TaskDetailMenu] My project:', myProject)
-          console.log('[TaskDetailMenu] My role:', myProject?.role)
-          console.log('[TaskDetailMenu] Current project ID:', currentProject.id)
-          console.log(
             '[TaskDetailMenu] All projects:',
             res.data.map((p: any) => ({ id: p.id, role: p.role }))
           )
           setMyProjectRole(myProject?.role)
         } else {
-          console.log('[TaskDetailMenu] No data or currentProject:', {
             hasData: !!res?.data,
             currentProject: !!currentProject
           })
@@ -256,7 +241,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     effectiveRole === '0'
   const canAssignTask = isUserLeader || isUserOwnerOrAdmin
 
-  console.log('[TaskDetailMenu] Role check:', {
     myProjectRole,
     effectiveRole,
     isUserLeader,
@@ -267,17 +251,12 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   })
 
   const handleAssignMember = async (memberId: string) => {
-    console.log('Assign memberId:', memberId)
-    console.log('Available projectMembers:', projectMembers)
 
     // Tìm member bằng userId hoặc id (để xử lý cả hai trường hợp)
     const member = projectMembers.find((m) => m.userId === memberId || (m as any).id === memberId)
-    console.log('Assign member object:', member)
-    console.log('Member keys:', member ? Object.keys(member) : 'No member found')
 
     if (!member) {
       console.error('Member not found for ID:', memberId)
-      console.log(
         'Available member IDs:',
         projectMembers.map((m) => ({
           userId: m.userId,
@@ -290,7 +269,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
     // Sử dụng member.userId hoặc member.id cho implementerId
     const implementerId = member.userId || (member as any).id
-    console.log('Assign implementerId:', implementerId)
 
     setIsAssigning(true)
     try {
@@ -513,11 +491,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const myProjectMemberId = myProjectMember?.id
 
   // Debug chi tiết mapping
-  console.log('projectMembers:', projectMembers)
-  console.log('current user:', user)
-  console.log('myProjectMember:', myProjectMember)
-  console.log('myProjectMemberId:', myProjectMemberId)
-  console.log('taskAssignees:', task.taskAssignees)
 
   // Hỗ trợ nhiều assignee
   const assigneeProjectMemberIds = task.taskAssignees?.map((a) => a.projectMemberId) || []
@@ -527,16 +500,12 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     task.taskAssignees.some((a) => a.projectMemberId === myProjectMemberId)
 
   // Debug chi tiết
-  console.log('myProjectMember:', myProjectMember)
-  console.log('myProjectMemberId:', myProjectMemberId)
-  console.log('assigneeProjectMemberIds:', assigneeProjectMemberIds)
 
   const isTaskAccepted = !!task.assignmentAccepted
 
   // Kiểm tra role từ currentProject và projectLeader
 
   // Debug info
-  console.log('Debug assignment logic:', {
     user: user?.id,
     myProjectRole,
     effectiveRole,
@@ -566,13 +535,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
   // Đảm bảo khai báo biến trước khi log
   // Log điều kiện hiển thị nút Leave
-  console.log('[TaskDetailMenu] isUserAssignee:', isUserAssignee)
-  console.log('[TaskDetailMenu] myProjectMember:', myProjectMember)
-  console.log('[TaskDetailMenu] myProjectMemberId:', myProjectMemberId)
-  console.log('[TaskDetailMenu] assigneeProjectMemberIds:', assigneeProjectMemberIds)
 
   const handleLeaveTask = async () => {
-    console.log('[TaskDetailMenu] User clicked Leave:', {
       user,
       myProjectMember,
       myProjectMemberId,
@@ -581,7 +545,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     })
     try {
       await taskApi.leaveTaskAssignment(task.id, myProjectMemberId)
-      console.log('[TaskDetailMenu] Leave task success:', { taskId: task.id, myProjectMemberId })
       // ... existing code ...
     } catch (error) {
       console.error('[TaskDetailMenu] Leave task failed:', error)
@@ -825,7 +788,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                 task.taskAssignees.map((a, idx) => {
                   const isCurrentUser = String(myProjectMemberId) === String(a.projectMemberId)
                   const isLeader = isUserLeader
-                  console.log(
                     'DEBUG: myProjectMemberId =',
                     myProjectMemberId,
                     '| assignee.projectMemberId =',

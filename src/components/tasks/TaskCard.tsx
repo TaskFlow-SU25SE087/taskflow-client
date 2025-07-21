@@ -106,7 +106,6 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
   useEffect(() => {
     const handleTaskNotification = (notification: any) => {
       if (notification.taskId === task.id) {
-        console.log('Task updated via SignalR:', notification.message)
         fetchTaskDetailsAndMember()
       }
     }

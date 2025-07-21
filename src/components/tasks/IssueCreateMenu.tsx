@@ -54,7 +54,6 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
     type: IssueType.Bug
   })
 
-  console.log('🎨 [IssueCreateMenu] Component rendered with:', {
     projectId,
     taskId,
     open,
@@ -63,7 +62,6 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
   })
 
   const handleInputChange = (field: keyof CreateIssueRequest, value: string | number) => {
-    console.log('✏️ [IssueCreateMenu] Input changed:', { field, value })
     setFormData((prev) => ({
       ...prev,
       [field]: value
@@ -72,22 +70,17 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files || [])
-    console.log('📁 [IssueCreateMenu] Files selected:', selectedFiles)
     setFiles(selectedFiles)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('🚀 [IssueCreateMenu] Form submitted!')
-    console.log('📋 [IssueCreateMenu] Form data:', formData)
-    console.log('📁 [IssueCreateMenu] Files:', files)
 
     const issueData: CreateIssueRequest = {
       ...formData,
       files: files.length > 0 ? files : undefined
     }
 
-    console.log('📤 [IssueCreateMenu] Calling createIssue with:', {
       projectId,
       taskId,
       issueData
@@ -117,7 +110,6 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
   }
 
   const resetForm = () => {
-    console.log('🔄 [IssueCreateMenu] Resetting form')
     setFormData({
       title: '',
       description: '',
@@ -130,7 +122,6 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
   }
 
   const handleDialogChange = (newOpen: boolean) => {
-    console.log('🚪 [IssueCreateMenu] Dialog open state changing to:', newOpen)
     setOpen(newOpen)
   }
 
@@ -141,7 +132,6 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
           variant='outline'
           size='sm'
           className='gap-2'
-          onClick={() => console.log('🔘 [IssueCreateMenu] Report Issue button clicked')}
         >
           <AlertCircle className='h-4 w-4' />
           Report Issue
@@ -254,7 +244,6 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
             <Button
               type='submit'
               disabled={isLoading}
-              onClick={() => console.log('🔘 [IssueCreateMenu] Create Issue button clicked')}
             >
               {isLoading ? 'Creating...' : 'Create Issue'}
             </Button>

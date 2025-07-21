@@ -59,11 +59,9 @@ export default function TaskCreateMenuForBoard({
     const fetchSprints = async () => {
       try {
         const fetchedSprints = await sprintApi.getAllSprintByProjectId(projectId)
-        console.log('Fetched sprints:', fetchedSprints)
         const runningSprints = fetchedSprints.filter(
           (sprint) => sprint.startDate && sprint.startDate !== null && sprint.endDate && sprint.endDate !== null
         )
-        console.log('Running sprints:', runningSprints)
         setSprints(runningSprints)
         if (runningSprints.length > 0) {
           setSelectedSprintId(runningSprints[0].id)

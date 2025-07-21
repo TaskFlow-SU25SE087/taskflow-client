@@ -49,10 +49,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Ưu tiên lấy accessToken từ localStorage nếu có rememberMe
     const rememberMe = localStorage.getItem('rememberMe') === 'true'
     const storedAccessToken = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken')
-    console.log('[AuthProvider] useEffect mount:')
-    console.log('  storedUser:', storedUser)
-    console.log('  storedOtpStatus:', storedOtpStatus)
-    console.log('  storedAccessToken:', storedAccessToken)
     if (storedAccessToken) {
       axiosClient.defaults.headers.common['Authorization'] = `Bearer ${storedAccessToken}`
       // Decode accessToken để lấy lại user info
@@ -105,7 +101,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               .then((currentUser) => {
                 setUser({ ...parsedUser, ...currentUser })
                 sessionStorage.setItem('auth_user', JSON.stringify({ ...parsedUser, ...currentUser }))
-                console.log('Auto-fetched user info from /user/{userId}:', currentUser)
               })
               .catch((error) => {
                 console.warn('Could not auto-fetch user info from /user/{userId}:', error)
@@ -121,15 +116,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []) // Empty dependency array to run only once on mount
 
   useEffect(() => {
-    console.log('[AuthProvider] user:', user)
-    console.log('[AuthProvider] authLoading:', authLoading)
   }, [user, authLoading])
 
   const login = async (username: string, password: string) => {
     try {
-      console.log('Starting login process...')
       const response = await authApi.login(username, password)
-      console.log('Login response:', response)
       const { accessToken, refreshToken } = response
 
       // Store tokens
@@ -172,7 +163,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsOtpVerified(true)
       }
 
-      console.log('Login successful, redirecting...')
       setTimeout(() => {
         // Check if user is admin and redirect accordingly
         if (
@@ -196,10 +186,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = async (email: string, fullName: string, password: string, confirmPassword: string) => {
     try {
-      console.log('Starting registration process...')
       setError(null)
       const response = await authApi.register(email, fullName, password, confirmPassword)
-      console.log('Registration response:', response)
       const { accessToken, refreshToken } = response
 
       // Store tokens
@@ -213,7 +201,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser({ email: email, fullName: '', id: '', role: '', phoneNumber: '', username: '' }) // Simplified User object for initial state, removed avatar as it's not in User interface
       setIsOtpVerified(false)
 
-      console.log('Registration successful, redirecting to OTP page...')
       setTimeout(() => {
         navigate('/verify-otp', { replace: true })
       }, 200) // Add a small delay for toast to appear
@@ -275,18 +262,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const addUsername = async (username: string, avatar: File | null, phoneNumber: string) => {
     try {
-      console.log('Starting addUsername process...')
-      console.log('Current authorization header:', axiosClient.defaults.headers.common['Authorization'])
-      console.log('Access token from session storage:', sessionStorage.getItem('accessToken'))
 
       setError(null)
       const updatedUser = await authApi.addUsername(username, avatar, phoneNumber)
-      console.log('Add username response:', updatedUser)
       setUser(updatedUser)
       sessionStorage.setItem('auth_user', JSON.stringify(updatedUser))
       setIsOtpVerified(true)
       sessionStorage.setItem('otp_verified', 'true')
-      console.log('Add username successful, redirecting...')
       setTimeout(() => {
         // Check if user is admin and redirect accordingly
         if (
@@ -326,9 +308,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const getCurrentUser = async () => {
     try {
       const currentUser = await authApi.getCurrentUser()
-      console.log('🔍 API getCurrentUser response:', currentUser)
-      console.log('🔍 API response role:', currentUser?.role)
-      console.log('🔍 API response role type:', typeof currentUser?.role)
       setUser(currentUser)
       sessionStorage.setItem('auth_user', JSON.stringify(currentUser))
       sessionStorage.setItem('otp_verified', 'true')

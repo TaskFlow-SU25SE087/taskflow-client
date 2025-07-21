@@ -72,13 +72,11 @@ export const taskApi = {
 
   // Assign a task to a user
   assignTask: async (projectId: string, taskId: string, implementerId: string): Promise<boolean> => {
-    console.log('Assign action:', { projectId, taskId, implementerId })
     const formData = new FormData()
     formData.append('implementerId', implementerId)
     const response = await axiosClient.post(`/projects/${projectId}/tasks/${taskId}/assignments/assign`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
-    console.log('Assign response:', response)
     return response.data.data === true
   },
 

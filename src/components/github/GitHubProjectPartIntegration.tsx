@@ -16,9 +16,6 @@ interface GitHubProjectPartIntegrationProps {
 }
 
 export default function GitHubProjectPartIntegration({ projectId, partId }: GitHubProjectPartIntegrationProps) {
-  console.log('!!! FILE LOADED: src/components/github/GitHubProjectPartIntegration.tsx');
-  console.log('RENDER GitHubProjectPartIntegration');
-  console.log('PROPS projectId:', projectId, 'partId:', partId);
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -42,7 +39,6 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
   } = useGitHubProjectPartIntegration()
 
   // Thêm log kiểm tra dữ liệu parts lấy từ hook
-  console.log('[DEBUG] projectParts from hook:', projectParts);
   // Local states
   const [selectedPart, setSelectedPart] = useState<string>('')
   const [selectedRepo, setSelectedRepo] = useState<string>('')
@@ -162,9 +158,7 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
 
   // Log khi fetch xong projectParts
   useEffect(() => {
-    console.log('EFFECT projectParts:', projectParts);
     projectParts.forEach((p, i) => {
-      console.log(`EFFECT Part ${i}:`, p);
     });
   }, [projectParts]);
 
@@ -181,7 +175,6 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
     };
   });
   // Thêm log kiểm tra mappedProjectParts
-  console.log('[DEBUG] mappedProjectParts:', mappedProjectParts);
 
   if (isProcessingCallback) {
     return (

@@ -24,7 +24,6 @@ export function ProjectEditMenu({ project, onProjectUpdated, trigger }: ProjectE
     setIsSubmitting(true)
 
     try {
-      console.log('Updating project title:', {
         id: project.id,
         title: title,
         originalTitle: project.title
@@ -32,7 +31,6 @@ export function ProjectEditMenu({ project, onProjectUpdated, trigger }: ProjectE
 
       const response = await projectApi.updateProject(project.id, title, description)
 
-      console.log('Update response:', response)
 
       showToast({ title: response?.code === 200 ? 'Success' : 'Error', description: response?.message || 'Project name updated successfully', variant: response?.code === 200 ? 'default' : 'destructive' })
       onProjectUpdated()

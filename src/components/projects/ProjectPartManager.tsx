@@ -25,7 +25,6 @@ export default function ProjectPartManager({ projectId }: { projectId: string })
 
   // Tạo Project Part
   const handleCreatePart = async () => {
-    console.log('Create Part Clicked:', { name, programmingLanguage, framework });
     if (!name.trim()) {
       showToast({ title: 'Error', description: 'Please fill in all fields (Name is required)', variant: 'destructive' });
       return;
@@ -47,7 +46,6 @@ export default function ProjectPartManager({ projectId }: { projectId: string })
     }
   }
 
-  console.log('ProjectPartManager render', { name, programmingLanguage, framework });
 
   // Kết nối repo
   const handleConnectRepo = async () => {

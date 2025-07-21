@@ -35,7 +35,6 @@ export function useProjectCreate() {
       setIsLoading(true)
       try {
         await projectApi.createProject(boardName.trim(), description.trim()).then(async (response) => {
-          console.log('WHEN CREATED: ', response.data.id)
           setProjectId(response.data.id)
           setIsProjectCreated(true)
           setStep(1)

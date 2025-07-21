@@ -40,9 +40,7 @@ export class SignalRService {
       // Register event handlers
       this.registerEventHandlers()
 
-      console.log('[SignalR] Đang kết nối tới:', SIGNALR_CONFIG.HUB_URL)
       await this.connection.start()
-      console.log('✅ SignalR Connected!')
       this.reconnectAttempts = 0
     } catch (error) {
       SignalRErrorHandler.handleConnectionError(error, this)
@@ -54,7 +52,6 @@ export class SignalRService {
 
   async disconnect() {
     if (this.connection) {
-      console.log('[SignalR] Ngắt kết nối SignalR')
       await this.connection.stop()
       this.connection = null
     }
@@ -73,20 +70,16 @@ export class SignalRService {
 
     // Connection state handlers
     this.connection.onclose((error?: any) => {
-      console.log('🔌 SignalR disconnected', error)
     })
 
     this.connection.onreconnected((connectionId?: any) => {
-      console.log('🔄 SignalR reconnected', connectionId)
     })
 
     this.connection.onreconnecting((error?: any) => {
-      console.log('🔄 SignalR reconnecting...', error)
     })
 
     // Lắng nghe sự kiện ReceiveNotification
     this.connection.on('ReceiveNotification', (data: any) => {
-      console.log('[SignalR] Nhận thông báo real-time:', data)
       // TODO: Xử lý hiển thị notification ở đây nếu cần
     })
   }
@@ -96,7 +89,6 @@ export class SignalRService {
       throw new Error('SignalR connection not established')
     }
     try {
-      console.log(`[SignalR] Gọi method: ${methodName}`, ...args)
       return await this.connection.invoke(methodName, ...args)
     } catch (error) {
       SignalRErrorHandler.handleMethodError(error, methodName)
