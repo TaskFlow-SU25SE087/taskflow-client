@@ -76,6 +76,7 @@ export default function SignUpPage() {
 
   const handleGmailSignUp = () => {
     // No gmail yet
+    console.log('Gmail signup attempted')
   }
 
   const displayError = formError || error

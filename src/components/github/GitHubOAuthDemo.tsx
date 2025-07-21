@@ -55,6 +55,7 @@ export default function GitHubOAuthDemo() {
                 projectId={demoProjectId}
                 partId={demoPartId}
                 onConnectionSuccess={() => {
+                  console.log('Demo: Repository connected successfully!')
                 }}
               />
             </CardContent>

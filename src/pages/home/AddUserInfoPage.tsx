@@ -18,6 +18,7 @@ export default function AddUserInfoPage() {
     e.preventDefault()
     setIsSubmitting(true)
 
+    console.log('Submitting user info:', { username, avatar, phoneNumber })
 
     try {
       await addUsername(username, avatar, phoneNumber)

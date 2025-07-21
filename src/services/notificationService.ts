@@ -25,6 +25,7 @@ export class NotificationService {
     this.signalRService.on('ReceiveNotification', (notification: NotificationData) => {
       // // Lọc notification theo userId
       // if (!notification.userId || notification.userId === this.currentUserId) {
+      //   console.log('📨 New notification received:', notification)
       //   // Add to notifications list
       //   this.notifications.unshift(notification)
       //   // Show toast notification
@@ -35,8 +36,10 @@ export class NotificationService {
       //   this.notifyListeners(notification)
       // } else {
       //   // Bỏ qua notification không dành cho user này
+      //   console.log('🔕 Notification filtered (not for this user):', notification)
       // }
       // Hiển thị mọi notification cho tất cả user
+      console.log('📨 New notification received (no filter):', notification)
       this.notifications.unshift(notification)
       this.showToastNotification(notification)
       this.updateNotificationBadge()

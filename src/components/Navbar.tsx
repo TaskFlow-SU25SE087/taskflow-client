@@ -42,6 +42,7 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
   const { logout } = useAuth()
   const { user } = useAuth()
 
+  console.log('user in Navbar:', user)
 
   const handleProjectSelect = (projectId: string) => {
     setCurrentProjectId(projectId)

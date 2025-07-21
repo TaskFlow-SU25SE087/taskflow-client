@@ -15,7 +15,10 @@ export const useCurrentProject = () => {
   useEffect(() => {
     const fetchProject = async (projectId: string) => {
       try {
+        console.log('[useCurrentProject] Calling API with projectId:', projectId)
         const response = await projectApi.getProjectById(projectId)
+        console.log('[useCurrentProject] API response:', response)
+        console.log('[useCurrentProject] response.data:', response.data)
 
         if (!response.data) {
           console.error('[useCurrentProject] No data in response')
@@ -54,6 +57,7 @@ export const useCurrentProject = () => {
         Cookies.set(CURRENT_PROJECT_COOKIE, savedProjectId, { path: '/' })
       }
     }
+    console.log('[useCurrentProject] savedProjectId:', savedProjectId)
     if (savedProjectId) {
       setCurrentProject(null) // reset trước khi fetch
       fetchProject(savedProjectId)
@@ -65,6 +69,7 @@ export const useCurrentProject = () => {
   const setCurrentProjectId = (projectId: string) => {
     Cookies.set(CURRENT_PROJECT_COOKIE, projectId, { path: '/' })
     localStorage.setItem(CURRENT_PROJECT_LOCAL, projectId)
+    console.log('[useCurrentProject] setCurrentProjectId:', projectId)
   }
 
   const refreshCurrentProject = async () => {
@@ -72,6 +77,7 @@ export const useCurrentProject = () => {
     if (!projectId) {
       projectId = localStorage.getItem(CURRENT_PROJECT_LOCAL) || undefined
     }
+    console.log('[useCurrentProject] refreshCurrentProject, projectId:', projectId)
     if (projectId) {
       // fetchProject logic inline
       try {
@@ -99,6 +105,7 @@ export const useCurrentProject = () => {
   }
 
   useEffect(() => {
+    console.log('[useCurrentProject] currentProject:', currentProject)
   }, [currentProject])
 
   return {

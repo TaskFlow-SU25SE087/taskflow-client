@@ -27,23 +27,28 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     const initializeSignalR = async () => {
       try {
+        console.log('[SignalR] Bắt đầu kết nối...')
         // Connect to real SignalR hub
         await signalRService.connect()
+        console.log('[SignalR] Kết nối thành công!')
 
         // Set up connection state listeners
         signalRService.on('close', () => {
           setIsConnected(false)
           setConnectionState('Disconnected')
+          console.log('🔌 SignalR disconnected')
         })
 
         signalRService.on('reconnected', () => {
           setIsConnected(true)
           setConnectionState('Connected')
+          console.log('🔄 SignalR reconnected')
         })
 
         signalRService.on('reconnecting', () => {
           setIsConnected(false)
           setConnectionState('Reconnecting')
+          console.log('🔄 SignalR reconnecting...')
         })
 
         // Initialize notification service

@@ -6,6 +6,7 @@ interface Props {
 }
 
 export default function UserProfileDialog({ userId, onClose }: Props) {
+  console.log('UserProfileDialog opened with userId:', userId)
   const { profile, loading } = useUserProfile(userId)
 
   if (!userId) return null

@@ -32,6 +32,7 @@ export default function ProjectTagManager({ isOpen, onClose }: { isOpen: boolean
       return
     }
     const res = await createTag(newTag)
+    console.log('Create tag response:', res)
     if (res) {
       showToast({ title: 'Success', description: 'Tag created successfully' })
       setNewTag({ name: '', description: '', color: '#7B61FF' })
@@ -53,6 +54,7 @@ export default function ProjectTagManager({ isOpen, onClose }: { isOpen: boolean
       return
     }
     const res = await updateTag(tagId, editingTag)
+    console.log('Edit tag response:', res)
     if (res) {
       showToast({ title: 'Success', description: 'Tag updated successfully' })
       setEditingTagId(null)
@@ -73,6 +75,7 @@ export default function ProjectTagManager({ isOpen, onClose }: { isOpen: boolean
 
   const confirmDelete = async (tagId: string) => {
     const res = await deleteTag(tagId)
+    console.log('Delete tag response:', res)
     if (res) {
       showToast({ title: 'Success', description: 'Tag deleted successfully' })
     } else {

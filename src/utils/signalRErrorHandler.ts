@@ -53,6 +53,7 @@ export class SignalRErrorHandler {
   }
 
   static handleReconnectionAttempt(attemptNumber: number, maxAttempts: number) {
+    console.log(`🔄 SignalR Reconnection attempt ${attemptNumber}/${maxAttempts}`)
 
     const { showToast } = useToastContext()
     if (attemptNumber === maxAttempts) {

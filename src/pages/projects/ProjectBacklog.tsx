@@ -139,6 +139,7 @@ export default function ProjectBacklog() {
         description: 'Task moved to sprint successfully'
       })
     } catch (error) {
+      console.log(error)
       showToast({
         title: 'Error',
         description: 'Failed to move task to sprint. Please try again.',
@@ -181,6 +182,7 @@ export default function ProjectBacklog() {
       task.sprintId === '00000000-0000-0000-0000-000000000000' ||
       (task.sprintName && task.sprintName.toLowerCase() === 'no sprint')
   )
+  console.log('DEBUG backlogTasks:', backlogTasks);
 
   // Filter sprints
   const filteredSprints = sprints.filter((sprint) => {

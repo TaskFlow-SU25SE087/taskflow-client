@@ -5,6 +5,8 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
   const { user, authLoading } = useAuth()
   const location = useLocation()
 
+  console.log('[ProtectedRoute] user:', user)
+  console.log('[ProtectedRoute] authLoading:', authLoading)
 
   if (authLoading) {
     return <div>Loading...</div>

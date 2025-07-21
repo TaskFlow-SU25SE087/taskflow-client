@@ -100,6 +100,7 @@ export default function ProjectGitHub() {
 
   const handleCreatePart = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Create Part Clicked:', newPart);
     if (!newPart.name.trim()) {
       showToast({ title: 'Error', description: 'Please fill in all fields (Name is required)', variant: 'destructive' });
       return;

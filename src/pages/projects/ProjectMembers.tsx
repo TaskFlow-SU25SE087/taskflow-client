@@ -33,6 +33,7 @@ export default function ProjectMembers() {
   const { currentProject } = useCurrentProject()
   const params = useParams()
   const projectId = currentProject?.id || params.projectId
+  console.log('[ProjectMembers] projectId:', projectId)
   const navigate = useNavigate()
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(false)
@@ -53,13 +54,17 @@ export default function ProjectMembers() {
     setError(null)
     try {
       const data: Member[] = await projectApi.getProjectMembers(projectId)
+      console.log('[ProjectMembers] fetchMembers response:', data)
       setMembers(data)
 
+      console.log('[ProjectMembers] user from context:', user)
+      console.log('[ProjectMembers] members:', data)
       if (user && user.email) {
         const self = data.find((m) => m.email === user.email)
         if (self) {
           setSelfId(self.id)
           setSelfRole(self.role)
+          console.log('[ProjectMembers] selfId:', self.id, 'selfRole:', self.role)
         }
       }
     } catch (err) {
@@ -75,12 +80,16 @@ export default function ProjectMembers() {
   }, [projectId])
 
   const handleInvite = async () => {
+    console.log('handleInvite called', { projectId, inviteEmail })
     if (!projectId || !inviteEmail) {
+      console.log('handleInvite return early', { projectId, inviteEmail })
       return
     }
     setInviteLoading(true)
     try {
+      console.log('Calling API addMemberToProject')
       const res = await projectApi.addMemberToProject(projectId, inviteEmail)
+      console.log('Show toast:', res);
       showToast({ title: 'Success', description: res?.message || 'Member invited!', variant: 'default' })
     } catch (err) {
       alert(err instanceof Error ? err.message : 'Failed to invite member')

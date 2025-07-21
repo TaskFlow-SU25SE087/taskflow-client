@@ -8,18 +8,23 @@ export const useIssues = () => {
   const { showToast } = useToastContext()
 
   const createIssue = async (projectId: string, taskId: string, issueData: CreateIssueRequest): Promise<boolean> => {
+    console.log('🎯 [useIssues] createIssue called with:', {
       projectId,
       taskId,
       issueData
     })
 
     setIsLoading(true)
+    console.log('⏳ [useIssues] Setting loading to true')
 
     try {
+      console.log('📞 [useIssues] Calling issueApi.createIssue...')
       const success = await issueApi.createIssue(projectId, taskId, issueData)
 
+      console.log('📊 [useIssues] API call result:', success)
 
       if (success) {
+        console.log('✅ [useIssues] Issue created successfully, showing success toast')
         showToast({
           title: 'Success',
           description: 'Issue created successfully',
@@ -27,6 +32,7 @@ export const useIssues = () => {
         })
         return true
       } else {
+        console.log('❌ [useIssues] API returned false, showing error toast')
         showToast({
           title: 'Error',
           description: 'Failed to create issue',
@@ -43,13 +49,16 @@ export const useIssues = () => {
       })
       return false
     } finally {
+      console.log('🏁 [useIssues] Setting loading to false')
       setIsLoading(false)
     }
   }
 
   const getTaskIssues = async (projectId: string, taskId: string) => {
+    console.log('🔍 [useIssues] getTaskIssues called with:', { projectId, taskId })
     try {
       const result = await issueApi.getTaskIssues(projectId, taskId)
+      console.log('✅ [useIssues] getTaskIssues result:', result)
       return result
     } catch (error) {
       console.error('❌ [useIssues] getTaskIssues error:', error)
@@ -63,8 +72,10 @@ export const useIssues = () => {
   }
 
   const getProjectIssues = async (projectId: string) => {
+    console.log('🔍 [useIssues] getProjectIssues called with:', { projectId })
     try {
       const result = await issueApi.getProjectIssues(projectId)
+      console.log('✅ [useIssues] getProjectIssues result:', result)
       return result
     } catch (error) {
       console.error('❌ [useIssues] getProjectIssues error:', error)

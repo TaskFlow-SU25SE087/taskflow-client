@@ -38,6 +38,7 @@ export function TaskList({ tasks, className = '', onMoveToSprint, onTaskUpdate, 
 
       try {
         const members = await projectMemberApi.getMembersByProjectId(currentProject.id)
+        console.log('[ProjectMembers] fetchMembers response:', members)
         setProjectMembers(members)
       } catch (error) {
         console.error('Failed to fetch project members:', error)

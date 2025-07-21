@@ -219,6 +219,7 @@ export default function ProjectBoard() {
         const members = await projectMemberApi.getMembersByProjectId(currentProject.id)
         setProjectMembers(members || [])
       } catch (error) {
+        console.log(error)
         setProjectMembers([])
       }
     }
@@ -261,6 +262,7 @@ export default function ProjectBoard() {
       const members = await projectMemberApi.getMembersByProjectId(currentProject.id)
       setProjectMembers(members || [])
     } catch (error) {
+      console.log(error)
       showToast({
         title: 'Error',
         description: 'Failed to refresh member list',
@@ -303,6 +305,7 @@ export default function ProjectBoard() {
         return
       }
       if (!currentProject?.id) {
+        console.log('[DnD] Không có currentProject khi kéo board')
         return
       }
       let oldIndex = boards.findIndex((b) => b.id === active.id);
@@ -315,6 +318,7 @@ export default function ProjectBoard() {
         newIndex = boards.findIndex((b) => b.id === over.id);
       }
       if (oldIndex === -1 || newIndex === -1) {
+        console.log('[DnD] Không tìm thấy oldIndex hoặc newIndex khi kéo board', {
           oldIndex,
           newIndex,
           activeId: active.id,
@@ -327,6 +331,7 @@ export default function ProjectBoard() {
       const orderPayload = newBoards.map((b, idx) => ({ id: b.id, order: idx }))
       await boardApi.updateBoardOrder(currentProject.id, orderPayload)
       refreshBoards()
+      console.log('[DnD] Đã cập nhật thứ tự board', { orderPayload })
       return
     }
 
@@ -334,6 +339,7 @@ export default function ProjectBoard() {
     const allTaskIds = filteredBoards.flatMap((b) => b.tasks.map((t) => t.id))
     if (allTaskIds.includes(active.id)) {
       if (!currentProject?.id) {
+        console.log('[DnD] Không có currentProject khi kéo task')
         return
       }
       const taskId = active.id
@@ -342,15 +348,21 @@ export default function ProjectBoard() {
       if (allTaskIds.includes(over.id)) {
         const foundBoard = filteredBoards.find((b) => b.tasks.some((t) => t.id === over.id))
         if (foundBoard) newBoardId = foundBoard.id
+        console.log('[DnD] over là task, tìm thấy board chứa task', { foundBoard, newBoardId })
       }
       const taskObj = filteredBoards.flatMap((b) => b.tasks).find((t) => t.id === taskId)
       if (taskObj && taskObj.boardId === newBoardId) {
+        console.log('[DnD] Task đã ở board này, không cần gọi API')
         return
       }
+      console.log('[DnD] moveTaskToBoard', { projectId: currentProject.id, taskId, newBoardId })
       try {
         const boardObj = filteredBoards.find((b) => b.id === newBoardId)
+        console.log('[DnD] DEBUG taskObj:', taskObj)
+        console.log('[DnD] DEBUG boardObj:', boardObj)
         await taskApi.moveTaskToBoard(currentProject.id, taskId, newBoardId)
         await fetchCurrentSprintAndTasks(currentProject?.id, setSelectedSprintId, setSprintTasks)
+        console.log('[DnD] Đã chuyển task sang board mới thành công', { taskId, newBoardId })
       } catch (err) {
         // Log chi tiết lỗi trả về từ backend
         const error = err as any
@@ -362,10 +374,12 @@ export default function ProjectBoard() {
       }
       return
     }
+    console.log('[DnD] Không phải kéo board hoặc task hợp lệ', { active, over })
   }
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
+  console.log('All tasks:', tasks)
 
   // Lọc sprint đang active (IN_PROGRESS/status=1)
   const activeSprints = sprints.filter((s) => s.status === 1)
@@ -377,6 +391,8 @@ export default function ProjectBoard() {
   // Lọc task thuộc sprint active này (ưu tiên sprintId, fallback sang sprintName nếu chưa có sprintId)
 
   // DEBUG: Log toàn bộ boards và tasks
+  console.log('DEBUG_BOARDS:', boards)
+  console.log(
     'DEBUG_TASKS:',
     boards.flatMap((b) => b.tasks)
   )
@@ -485,6 +501,12 @@ export default function ProjectBoard() {
   }
 
   // Log giá trị boards để debug
+  console.log('Boards in ProjectBoard:', boards)
+  console.log('DEBUG boards:', boards);
+  console.log('DEBUG filteredBoards:', filteredBoards);
+  console.log('DEBUG sprintTasks:', sprintTasks);
+  console.log('DEBUG searchQuery:', searchQuery);
+  console.log('DEBUG filterStatus:', filterStatus);
 
  return (
   <div className='flex bg-gradient-to-br from-slate-50 via-white to-lavender-50 h-screen overflow-hidden'> {/* Added overflow-hidden */}

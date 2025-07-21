@@ -1,10 +1,9 @@
 import js from '@eslint/js'
-import eslintPluginPrettier from 'eslint-plugin-prettier'
+import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
-import globals from 'globals'
 import tseslint from 'typescript-eslint'
-const noConsoleRemove = require('eslint-plugin-no-console-remove');
+import eslintPluginPrettier from 'eslint-plugin-prettier'
 
 export default tseslint.config(
   { ignores: ['dist'] },
@@ -18,8 +17,7 @@ export default tseslint.config(
     plugins: {
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
-      prettier: eslintPluginPrettier,
-      'no-console-remove': noConsoleRemove
+      prettier: eslintPluginPrettier
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
@@ -37,8 +35,7 @@ export default tseslint.config(
           printWidth: 120,
           jsxSingleQuote: true
         }
-      ],
-      'no-console-remove/no-console': 'error'
+      ]
     }
   }
 )
