@@ -1,11 +1,11 @@
 import { useToastContext } from '@/components/ui/ToastContext'
 import { useCallback, useState } from 'react'
 import {
-  connectRepositoryToPart,
-  createProjectPart,
-  getGitHubLoginUrl,
-  getGitHubRepositories,
-  handleGitHubOAuthCallback
+    connectRepositoryToPart,
+    createProjectPart,
+    getGitHubLoginUrl,
+    getGitHubRepositories,
+    handleGitHubOAuthCallback
 } from '../api/github'
 
 export interface GitHubConnectionStatus {
@@ -100,14 +100,16 @@ export function useGitHubProjectPartIntegration() {
     setReposLoading(true)
     try {
       const response = await getGitHubRepositories()
-      if (response.code === 0) {
+      if (response.code === 0 || response.code === 200) {
         setRepositories(response.data)
         return response.data
       } else {
-        throw new Error(response.message || 'Failed to fetch repositories')
+        // Nếu message là "Success" nhưng code lỗi, sửa lại message
+        const errorMsg = response.message === "Success" ? "Lấy repository thất bại" : (response.message || "Lấy repository thất bại")
+        throw new Error(errorMsg)
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch GitHub repositories'
+      const errorMessage = error instanceof Error ? error.message : 'Lấy repository thất bại'
       showToast({ title: 'Error', description: errorMessage, variant: 'destructive' })
       throw error
     } finally {
@@ -121,9 +123,14 @@ export function useGitHubProjectPartIntegration() {
       setOauthLoading(true)
       try {
         const response = await handleGitHubOAuthCallback(code)
-        if (response.code === 0) {
+        if (response.code === 0 || response.code === 200) {
           // OAuth successful, now fetch repositories
-          await fetchRepositories()
+          try {
+            await fetchRepositories()
+          } catch (repoError) {
+            console.error('Lỗi khi fetchRepositories:', repoError)
+            throw new Error('Lấy repository thất bại: ' + (repoError instanceof Error ? repoError.message : 'Unknown'))
+          }
           return response.data
         } else {
           throw new Error(response.message || 'OAuth callback failed')
