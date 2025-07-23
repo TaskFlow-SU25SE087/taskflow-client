@@ -2,7 +2,7 @@ import { SignalRErrorHandler } from '@/utils/signalRErrorHandler'
 import * as signalR from '@microsoft/signalr'
 
 export const SIGNALR_CONFIG = {
-  HUB_URL: 'http://localhost:5041/taskhub',
+  HUB_URL: 'http://localhost:5041/taskHub',
   RECONNECT_INTERVAL: 5000,
   MAX_RECONNECT_ATTEMPTS: 5
 }
