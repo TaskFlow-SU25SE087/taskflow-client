@@ -98,7 +98,7 @@ const NotificationCenter: React.FC = () => {
                 <p>No notifications</p>
               </div>
             ) : (
-              <div className='divide-y divide-gray-100'>
+              <div className='divide-y divide-gray-100 max-h-96 overflow-y-auto'>
                 {notifications.map((notification) => (
                   <div
                     key={notification.id}

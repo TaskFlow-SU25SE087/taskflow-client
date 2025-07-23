@@ -88,10 +88,29 @@ export const useIssues = () => {
     }
   }
 
+  const getFilteredProjectIssues = async (projectId: string, filters: { status?: string; type?: string; priority?: string }) => {
+    setIsLoading(true)
+    try {
+      const result = await issueApi.getFilteredProjectIssues(projectId, filters)
+      return result
+    } catch (error) {
+      console.error('❌ [useIssues] getFilteredProjectIssues error:', error)
+      showToast({
+        title: 'Error',
+        description: 'Failed to fetch filtered project issues',
+        variant: 'destructive'
+      })
+      return []
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return {
     createIssue,
     getTaskIssues,
     getProjectIssues,
+    getFilteredProjectIssues,
     isLoading
   }
 }

@@ -21,23 +21,30 @@ export class NotificationService {
     this.showToast = showToast;
   }
 
-  initialize() {
+  async fetchAllNotifications() {
+    try {
+      const rememberMe = localStorage.getItem('rememberMe') === 'true';
+      const token = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken');
+      console.log('[DEBUG] Notification token:', token);
+      const response = await fetch('/api/Notification', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (!response.ok) throw new Error('Failed to fetch notifications');
+      const data = await response.json();
+      this.notifications = Array.isArray(data) ? data : [];
+      this.updateNotificationBadge();
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  }
+
+  async initialize() {
+    await this.fetchAllNotifications();
     this.signalRService.on('ReceiveNotification', (notification: NotificationData) => {
-      // // Lọc notification theo userId
-      // if (!notification.userId || notification.userId === this.currentUserId) {
-      //   console.log('📨 New notification received:', notification)
-      //   // Add to notifications list
-      //   this.notifications.unshift(notification)
-      //   // Show toast notification
-      //   this.showToastNotification(notification)
-      //   // Update badge count
-      //   this.updateNotificationBadge()
-      //   // Notify listeners
-      //   this.notifyListeners(notification)
-      // } else {
-      //   // Bỏ qua notification không dành cho user này
-      //   console.log('🔕 Notification filtered (not for this user):', notification)
-      // }
       // Hiển thị mọi notification cho tất cả user
       console.log('📨 New notification received (no filter):', notification)
       this.notifications.unshift(notification)
@@ -102,24 +109,9 @@ export class NotificationService {
   }
 
   async markAllAsRead() {
-    try {
-      const rememberMe = localStorage.getItem('rememberMe') === 'true'
-      const token = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken')
-
-      await fetch('/api/notifications/mark-all-read', {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      // Update local state
-      this.notifications.forEach((n) => (n.isRead = true))
-      this.updateNotificationBadge()
-    } catch (error) {
-      console.error('Error marking all notifications as read:', error)
-    }
+    // Không gọi API nữa, chỉ cập nhật local
+    this.notifications.forEach((n) => (n.isRead = true));
+    this.updateNotificationBadge();
   }
 
   getNotifications() {

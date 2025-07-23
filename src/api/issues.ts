@@ -97,5 +97,22 @@ export const issueApi = {
       console.error('❌ [issueApi] getProjectIssues error:', error)
       throw error
     }
+  },
+
+  // Get filtered issues for a project
+  getFilteredProjectIssues: async (projectId: string, filters: { status?: string; type?: string; priority?: string }) => {
+    console.log('🔍 [issueApi] getFilteredProjectIssues called with:', { projectId, ...filters })
+    try {
+      const params: any = {}
+      if (filters.status) params.status = filters.status
+      if (filters.type) params.type = filters.type
+      if (filters.priority) params.priority = filters.priority
+      const response = await axiosClient.get(`/projects/${projectId}/issues/filter`, { params })
+      console.log('✅ [issueApi] getFilteredProjectIssues response:', response.data)
+      return response.data.data
+    } catch (error) {
+      console.error('❌ [issueApi] getFilteredProjectIssues error:', error)
+      throw error
+    }
   }
 }

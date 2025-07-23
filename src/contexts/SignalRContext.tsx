@@ -52,7 +52,10 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({ child
         })
 
         // Initialize notification service
-        notificationService.initialize()
+        await notificationService.initialize();
+        const noti = notificationService.getNotifications();
+        console.log('[DEBUG] Notifications after fetch:', noti);
+        setNotifications(noti);
 
         // Listen for notification count updates
         const handleCountUpdate = (event: CustomEvent) => {

@@ -18,6 +18,7 @@ import LegacyProjectMemberVerify from '@/pages/projects/LegacyProjectMemberVerif
 import ProjectBoard from '@/pages/projects/ProjectBoard'
 import ProjectCreate from '@/pages/projects/ProjectCreate'
 import ProjectGitHub from '@/pages/projects/ProjectGitHub'
+import { ProjectIssues } from '@/pages/projects/ProjectIssues'
 import ProjectList from '@/pages/projects/ProjectList'
 import ProjectMembers from '@/pages/projects/ProjectMembers'
 import ProjectMemberVerify from '@/pages/projects/ProjectMemberVerify'
@@ -286,7 +287,7 @@ function App() {
                 path='/projects/:projectId/issues'
                 element={
                   <ProtectedRoute>
-                    <GitIssues />
+                    <ProjectIssues />
                   </ProtectedRoute>
                 }
               />

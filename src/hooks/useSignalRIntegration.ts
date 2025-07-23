@@ -5,39 +5,39 @@ import { useCallback } from 'react'
 export const useSignalRIntegration = () => {
   const { signalRService, notificationService, isConnected, connectionState } = useSignalR()
 
-  const joinProjectGroup = useCallback(
-    async (projectId: string) => {
-      if (!isConnected) {
-        console.warn('SignalR not connected, cannot join project group')
-        return
-      }
+  // const joinProjectGroup = useCallback(
+  //   async (projectId: string) => {
+  //     if (!isConnected) {
+  //       console.warn('SignalR not connected, cannot join project group')
+  //       return
+  //     }
 
-      try {
-        await signalRService.joinProjectGroup(projectId)
-        console.log(`✅ Joined project group: ${projectId}`)
-      } catch (error) {
-        console.error(`❌ Failed to join project group ${projectId}:`, error)
-      }
-    },
-    [signalRService, isConnected]
-  )
+  //     try {
+  //       await signalRService.joinProjectGroup(projectId)
+  //       console.log(`✅ Joined project group: ${projectId}`)
+  //     } catch (error) {
+  //       console.error(`❌ Failed to join project group ${projectId}:`, error)
+  //     }
+  //   },
+  //   [signalRService, isConnected]
+  // )
 
-  const leaveProjectGroup = useCallback(
-    async (projectId: string) => {
-      if (!isConnected) {
-        console.warn('SignalR not connected, cannot leave project group')
-        return
-      }
+  // const leaveProjectGroup = useCallback(
+  //   async (projectId: string) => {
+  //     if (!isConnected) {
+  //       console.warn('SignalR not connected, cannot leave project group')
+  //       return
+  //     }
 
-      try {
-        await signalRService.leaveProjectGroup(projectId)
-        console.log(`✅ Left project group: ${projectId}`)
-      } catch (error) {
-        console.error(`❌ Failed to leave project group ${projectId}:`, error)
-      }
-    },
-    [signalRService, isConnected]
-  )
+  //     try {
+  //       await signalRService.leaveProjectGroup(projectId)
+  //       console.log(`✅ Left project group: ${projectId}`)
+  //     } catch (error) {
+  //       console.error(`❌ Failed to leave project group ${projectId}:`, error)
+  //     }
+  //   },
+  //   [signalRService, isConnected]
+  // )
 
   const listenForTaskUpdates = useCallback(
     (taskId: string, callback: (notification: NotificationData) => void) => {
@@ -98,8 +98,8 @@ export const useSignalRIntegration = () => {
     connectionState,
 
     // Project group management
-    joinProjectGroup,
-    leaveProjectGroup,
+    // joinProjectGroup,
+    // leaveProjectGroup,
 
     // Notification listening
     listenForTaskUpdates,
