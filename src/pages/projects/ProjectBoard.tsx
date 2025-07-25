@@ -29,10 +29,10 @@ import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import {
-  arrayMove,
-  horizontalListSortingStrategy,
-  SortableContext,
-  verticalListSortingStrategy
+    arrayMove,
+    horizontalListSortingStrategy,
+    SortableContext,
+    verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { CheckCircle, ChevronDown, Clock, Filter, Link2, Pencil, Plus, Search, Settings, TrendingUp } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -60,7 +60,7 @@ const getBoardColor = (status: string): string => {
   return boardColors[status] || '#5030E5' // fallback to default color
 }
 
-function MemberAvatar({ name, background, textColor, className = '' }: MemberAvatarProps) {
+function MemberAvatar({ name, background, textColor, className = '', avatar }: MemberAvatarProps & { avatar?: string }) {
   const safeName = name || ''
   const initials = safeName
     .split(' ')
@@ -71,12 +71,16 @@ function MemberAvatar({ name, background, textColor, className = '' }: MemberAva
   return (
     <div className={`relative transition-transform hover:scale-110 hover:z-10 ${className}`}>
       <Avatar className='h-10 w-10'>
-        <AvatarFallback
-          className='text-sm font-semibold tracking-wider absolute inset-0 flex items-center justify-center'
-          style={{ background, color: textColor }}
-        >
-          {initials}
-        </AvatarFallback>
+        {avatar ? (
+          <img src={avatar} alt={name} className='h-10 w-10 rounded-full object-cover' />
+        ) : (
+          <AvatarFallback
+            className='text-sm font-semibold tracking-wider absolute inset-0 flex items-center justify-center'
+            style={{ background, color: textColor }}
+          >
+            {initials}
+          </AvatarFallback>
+        )}
       </Avatar>
     </div>
   )
@@ -113,7 +117,7 @@ function MemberAvatarGroup({ members }: MemberAvatarGroupProps) {
       {members.slice(0, 4).map((member, index) => {
         const { bg, text } = getAvatarColor(index)
         const name = member.fullName || member.email || member.userId
-        return <MemberAvatar key={member.userId || index} name={name} background={bg} textColor={text} />
+        return <MemberAvatar key={member.userId || index} name={name} background={bg} textColor={text} avatar={member.avatar} />
       })}
       {members.length > 4 && <MemberAvatar name={`+${members.length - 4}`} background='#FFFFFF' textColor='#DFDFDF' />}
     </div>

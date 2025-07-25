@@ -26,5 +26,15 @@ export const projectMemberApi = {
   },
 
   deleteMemberFromProject: async (userId: string, projectId: string) =>
-    axiosClient.delete(`${ENDPOINT}/uid=${userId}/from/projectId=${projectId}/DeleteMemberFromProject`)
+    axiosClient.delete(`${ENDPOINT}/uid=${userId}/from/projectId=${projectId}/DeleteMemberFromProject`),
+
+  /**
+   * Add a system user to the project (for automation/system actions)
+   * @param projectId Project UUID
+   * @returns { code: number, message: string, data: boolean }
+   */
+  addSystemUserToProject: async (projectId: string): Promise<{ code: number; message: string; data: boolean }> => {
+    const response = await axiosClient.post(`/project/${projectId}/members/add-system-user`)
+    return response.data
+  }
 }

@@ -47,6 +47,7 @@ export default function ProjectMembers() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [pendingRemove, setPendingRemove] = useState<string | null>(null)
   const { showToast } = useToastContext()
+  const [addSystemUserLoading, setAddSystemUserLoading] = useState(false)
 
   const fetchMembers = async () => {
     if (!projectId) return
@@ -89,11 +90,11 @@ export default function ProjectMembers() {
     try {
       console.log('Calling API addMemberToProject')
       const res = await projectApi.addMemberToProject(projectId, inviteEmail)
-      console.log('Show toast:', res);
-      showToast({ title: 'Success', description: res?.message || 'Member invited!', variant: 'default' })
+      showToast({ title: 'Success', description: 'Member invited!', variant: 'default' })
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to invite member')
-      showToast({ title: 'Error', description: err.response?.data?.message || err.message || 'Failed to invite member!', variant: 'destructive' })
+      const msg = err instanceof Error ? err.message : 'Failed to invite member'
+      alert(msg)
+      showToast({ title: 'Error', description: msg, variant: 'destructive' })
     } finally {
       setInviteLoading(false)
     }
@@ -122,7 +123,24 @@ export default function ProjectMembers() {
       await projectApi.leaveProject(projectId)
       navigate('/projects')
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to leave project')
+      const msg = err instanceof Error ? err.message : 'Failed to leave project';
+      alert(msg)
+    }
+  }
+
+  const handleAddSystemUser = async () => {
+    if (!projectId) return
+    setAddSystemUserLoading(true)
+    try {
+      // Dynamically import to avoid circular import
+      const { projectMemberApi } = await import('@/api/projectMembers')
+      const res = await projectMemberApi.addSystemUserToProject(projectId)
+      showToast({ title: res.code === 0 ? 'Success' : 'Error', description: res.message || (res.code === 0 ? 'System user added!' : 'Failed to add system user'), variant: res.code === 0 ? 'default' : 'destructive' })
+      if (res.code === 0) fetchMembers()
+    } catch (err) {
+      showToast({ title: 'Error', description: err.response?.data?.message || err.message || 'Failed to add system user', variant: 'destructive' })
+    } finally {
+      setAddSystemUserLoading(false)
     }
   }
 

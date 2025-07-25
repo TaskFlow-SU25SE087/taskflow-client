@@ -27,7 +27,6 @@ import {
 } from 'lucide-react'
 import { FiMenu, FiX } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
-import ConnectionStatus from './ConnectionStatus'
 import NotificationCenter from './NotificationCenter'
 
 interface NavbarProps {
@@ -155,9 +154,9 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
           <NotificationCenter />
 
           {/* Connection Status - Hidden on mobile */}
-          <div className='hidden sm:block'>
+          {/* <div className='hidden sm:block'>
             <ConnectionStatus />
-          </div>
+          </div> */}
 
           {/* Profile Dropdown */}
           <DropdownMenu>
