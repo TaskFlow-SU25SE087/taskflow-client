@@ -328,8 +328,8 @@ function App() {
                 }
               />
               <Route path='/projects/:projectId/members/verify-join' element={<ProjectMemberVerify />} />
-              <Route path='/project/:projectId/member/verify-join' element={<ProjectMemberVerify />} />
-              <Route path='/project/member/verify-join' element={<LegacyProjectMemberVerify />} />
+              <Route path='/project/:projectId/members/verify-join' element={<ProjectMemberVerify />} />
+              <Route path='/project/memberss/verify-join' element={<LegacyProjectMemberVerify />} />
               <Route
                 path='/admin/terms'
                 element={

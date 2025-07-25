@@ -158,8 +158,8 @@ export const projectApi = {
 
   // Legacy: verify join by token only, return projectId
   verifyJoinProjectLegacy: async (token: string): Promise<{ projectId: string } | null> => {
-    // Giả sử backend có endpoint /project/member/verify-join?token=...
-    const response = await axiosClient.get(`/project/member/verify-join`, { params: { token } })
+    // Giả sử backend có endpoint /project/members/verify-join?token=...
+    const response = await axiosClient.get(`/project/members/verify-join`, { params: { token } })
     // Backend nên trả về { code, message, data: { projectId } }
     if (response.data && response.data.data && response.data.data.projectId) {
       return { projectId: response.data.data.projectId }
