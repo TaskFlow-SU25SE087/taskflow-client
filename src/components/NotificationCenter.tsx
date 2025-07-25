@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useSignalR } from '@/contexts/SignalRContext'
 import { cn } from '@/lib/utils'
-import { Bell, Check, X } from 'lucide-react'
+import { Bell, Check, Trash, X } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 
 const NotificationCenter: React.FC = () => {
@@ -36,6 +36,11 @@ const NotificationCenter: React.FC = () => {
     setUnreadCount(0)
   }
 
+  const handleDeleteReadNotifications = async () => {
+    await notificationService.deleteReadNotifications();
+    setUnreadCount(notificationService.getUnreadCount());
+  };
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString)
     const now = new Date()
@@ -57,7 +62,7 @@ const NotificationCenter: React.FC = () => {
             variant='destructive'
             className='absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center'
           >
-            {unreadCount > 99 ? '99+' : unreadCount}
+            {unreadCount}
           </Badge>
         )}
       </Button>
@@ -84,6 +89,16 @@ const NotificationCenter: React.FC = () => {
                   Mark all read
                 </Button>
               )}
+              {/* Nút Delete read chuyển thành icon */}
+              <Button
+                variant='ghost'
+                size='icon'
+                onClick={handleDeleteReadNotifications}
+                className='text-red-600 hover:text-red-700'
+                title='Delete read'
+              >
+                <Trash className='h-4 w-4' />
+              </Button>
               <Button variant='ghost' size='icon' onClick={() => setIsOpen(false)} className='h-6 w-6'>
                 <X className='h-4 w-4' />
               </Button>

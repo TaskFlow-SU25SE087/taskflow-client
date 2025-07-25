@@ -89,8 +89,8 @@ export class NotificationService {
       const rememberMe = localStorage.getItem('rememberMe') === 'true'
       const token = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken')
 
-      await fetch(`/api/notifications/${notificationId}/mark-read`, {
-        method: 'PUT',
+      await fetch(`/api/Notification/mark-read/${notificationId}`, {
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -105,6 +105,27 @@ export class NotificationService {
       }
     } catch (error) {
       console.error('Error marking notification as read:', error)
+    }
+  }
+
+  async deleteReadNotifications() {
+    try {
+      const rememberMe = localStorage.getItem('rememberMe') === 'true'
+      const token = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken')
+
+      await fetch('/api/Notification/delete-read', {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      // Remove read notifications from local state
+      this.notifications = this.notifications.filter((n) => !n.isRead)
+      this.updateNotificationBadge()
+    } catch (error) {
+      console.error('Error deleting read notifications:', error)
     }
   }
 
