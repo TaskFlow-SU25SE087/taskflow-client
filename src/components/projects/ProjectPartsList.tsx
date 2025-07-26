@@ -1,11 +1,14 @@
+import { projectApi } from '@/api/projects'
 import { useProjectParts } from '@/hooks/useProjectParts'
-import { CheckCircle, ExternalLink, Github, Plus, Settings, XCircle } from 'lucide-react'
+import { ProjectMember } from '@/types/project'
+import { CheckCircle, ExternalLink, Github, Plus, Settings, Users, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import GitHubProjectPartIntegration from '../github/GitHubProjectPartIntegration'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
+import { GitMemberLocalDialog } from './GitMemberLocalDialog'
 
 interface ProjectPart {
   id: string
@@ -25,6 +28,9 @@ export default function ProjectPartsList({ projectId }: ProjectPartsListProps) {
   const [loading, setLoading] = useState(true)
   const [showGitHubIntegration, setShowGitHubIntegration] = useState(false)
   const [selectedPartId, setSelectedPartId] = useState<string | null>(null)
+  const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([])
+  const [showGitMemberDialog, setShowGitMemberDialog] = useState(false)
+  const [selectedPartForGitMembers, setSelectedPartForGitMembers] = useState<string | null>(null)
   const { fetchParts } = useProjectParts()
 
   const fetchPartsFromApi = async () => {
@@ -40,13 +46,28 @@ export default function ProjectPartsList({ projectId }: ProjectPartsListProps) {
     }
   }
 
+  const fetchProjectMembers = async () => {
+    try {
+      const members = await projectApi.getProjectMembers(projectId)
+      setProjectMembers(members)
+    } catch (error) {
+      console.error('Error fetching project members:', error)
+    }
+  }
+
   useEffect(() => {
     fetchPartsFromApi()
+    fetchProjectMembers()
   }, [projectId])
 
   const handleGitHubIntegrationSuccess = () => {
     fetchPartsFromApi() // Refresh the list after successful integration
     setShowGitHubIntegration(false)
+  }
+
+  const handleGitMemberDialogOpen = (partId: string) => {
+    setSelectedPartForGitMembers(partId)
+    setShowGitMemberDialog(true)
   }
 
   const getProgrammingLanguageColor = (language: string) => {
@@ -185,6 +206,15 @@ export default function ProjectPartsList({ projectId }: ProjectPartsListProps) {
                     <Github className='h-3 w-3 mr-1' />
                     {part.isConnected ? 'Manage' : 'Connect'}
                   </Button>
+                  
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={() => handleGitMemberDialogOpen(part.id)}
+                  >
+                    <Users className='h-3 w-3 mr-1' />
+                    Git Members
+                  </Button>
                 </div>
 
                 <Button variant='ghost' size='sm'>
@@ -208,6 +238,17 @@ export default function ProjectPartsList({ projectId }: ProjectPartsListProps) {
             </Button>
           </CardContent>
         </Card>
+      )}
+
+      {/* Git Member Local Dialog */}
+      {selectedPartForGitMembers && (
+        <GitMemberLocalDialog
+          projectId={projectId}
+          projectPartId={selectedPartForGitMembers}
+          projectMembers={projectMembers}
+          isOpen={showGitMemberDialog}
+          onOpenChange={setShowGitMemberDialog}
+        />
       )}
     </div>
   )

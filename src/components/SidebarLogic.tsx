@@ -2,14 +2,14 @@ import gsap from 'gsap'
 import { LucideLayoutDashboard } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
-    FiAlertCircle,
-    FiBarChart2,
-    FiClock,
-    FiGitBranch,
-    FiGithub,
-    FiLayers,
-    FiSettings,
-    FiUsers
+  FiAlertCircle,
+  FiBarChart2,
+  FiClock,
+  FiGitBranch,
+  FiGithub,
+  FiLayers,
+  FiSettings,
+  FiUsers
 } from 'react-icons/fi'
 import { useLocation, useNavigate } from 'react-router-dom'
 import GitHubSidebarItem from './github/GitHubSidebarItem'
@@ -57,13 +57,6 @@ export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: stri
       path: projectId ? `/projects/${projectId}/members` : '/members'
     },
   
-    // {
-    //   id: 'parts',
-    //   icon: <FiPackage className='h-5 w-5' />,
-    //   label: 'Parts',
-    //   section: 1,
-    //   path: projectId ? `/projects/${projectId}/parts` : '/parts'
-    // },
     {
       id: 'reports',
       icon: <FiBarChart2 className='h-5 w-5' />,

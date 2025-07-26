@@ -12,16 +12,22 @@ import ActivateAccountPage from '@/pages/home/ActivateAccountPage'
 import ForgotPasswordPage from '@/pages/home/ForgotPasswordPage'
 import HomePage from '@/pages/home/HomePage'
 import LoginPage from '@/pages/home/LoginPage'
+import ResetPasswordPage from '@/pages/home/ResetPasswordPage'
 import SignUpPage from '@/pages/home/SignupPage'
+import UserProfilePage from '@/pages/home/UserProfilePage'
+import VerifyEmailPage from '@/pages/home/VerifyEmailPage'
 import AllProjectParts from '@/pages/projects/AllProjectParts'
 import LegacyProjectMemberVerify from '@/pages/projects/LegacyProjectMemberVerify'
 import ProjectBoard from '@/pages/projects/ProjectBoard'
 import ProjectCreate from '@/pages/projects/ProjectCreate'
 import ProjectGitHub from '@/pages/projects/ProjectGitHub'
+import ProjectGitMembers from '@/pages/projects/ProjectGitMembers'
 import { ProjectIssues } from '@/pages/projects/ProjectIssues'
 import ProjectList from '@/pages/projects/ProjectList'
 import ProjectMembers from '@/pages/projects/ProjectMembers'
 import ProjectMemberVerify from '@/pages/projects/ProjectMemberVerify'
+import ProjectReports from '@/pages/projects/ProjectReports'
+import ProjectTimeline from '@/pages/projects/ProjectTimeline'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import GitCommits from './pages/github/GitCommits'
@@ -31,12 +37,8 @@ import AboutPage from './pages/home/AboutPage'
 import AddUserInfoPage from './pages/home/AddUserInfoPage'
 import ContactPage from './pages/home/ContactPage'
 import OtpPage from './pages/home/OtpPage'
-import ResetPasswordPage from './pages/home/ResetPasswordPage'
-import UserProfilePage from './pages/home/UserProfilePage'
-import VerifyEmailPage from './pages/home/VerifyEmailPage'
+import NotFoundPage from './pages/NotFoundPage'
 import ProjectBacklog from './pages/projects/ProjectBacklog'
-import ProjectReports from './pages/projects/ProjectReports'
-import ProjectTimeline from './pages/projects/ProjectTimeline'
 
 const AuthRedirect = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuth()
@@ -276,6 +278,14 @@ function App() {
                 }
               />
               <Route
+                path='/projects/:projectId/git-members'
+                element={
+                  <ProtectedRoute>
+                    <ProjectGitMembers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
                 path='/projects/:projectId/commits'
                 element={
                   <ProtectedRoute>
@@ -355,6 +365,10 @@ function App() {
                     <CodeQualityCommits />
                   </ProtectedRoute>
                 }
+              />
+              <Route
+                path="*"
+                element={<NotFoundPage />}
               />
             </Routes>
           </SignalRProvider>

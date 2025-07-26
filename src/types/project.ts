@@ -23,6 +23,7 @@ export interface Project {
 }
 
 export interface ProjectMember {
+  id?: string
   role: string
   userId: string
   projectId?: string
@@ -32,6 +33,16 @@ export interface ProjectMember {
   fullName?: string
   avatar?: string
   email?: string
+}
+
+export interface GitMemberLocal {
+  id: string
+  projectMemberId: string
+  projectPartId: string
+  nameLocal: string
+  emailLocal: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface ProjectListItem {

@@ -143,110 +143,125 @@ export const ProjectIssues: React.FC = () => {
     const TypeIcon = typeInfo.icon
     const issueAny = issue as any
     return (
-      <div className='rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden'>
+      <div
+        className={`rounded-2xl border border-gray-200 bg-white shadow-lg overflow-hidden transition-transform duration-200 hover:scale-[1.015] hover:shadow-2xl group ${isOpen ? 'ring-2 ring-lavender-400' : ''}`}
+        style={{ transition: 'box-shadow 0.2s, transform 0.2s' }}
+      >
         {/* File name */}
         <div className='flex items-center gap-2 px-6 pt-6'>
           <span className='text-base font-semibold text-indigo-700'>{issueAny.fileName || 'Unknown file'}</span>
           <Separator className='flex-1 mx-2' />
-          <Button variant='ghost' size='icon' onClick={onToggle}>
+          <Button variant='ghost' size='icon' onClick={onToggle} className='transition-transform duration-200 group-hover:rotate-180'>
             {isOpen ? <ChevronUp className='w-5 h-5' /> : <ChevronDown className='w-5 h-5' />}
           </Button>
         </div>
         {/* Title */}
         <div className='px-6 pt-2 pb-1'>
-          <h2 className='text-xl font-bold text-gray-900'>{issue.title || issueAny.titleTask}</h2>
+          <h2 className='text-xl font-bold text-gray-900 flex items-center gap-2'>
+            <TypeIcon className={`inline w-6 h-6 ${typeInfo.color} p-1 rounded-full`} />
+            {issue.title || issueAny.titleTask}
+          </h2>
           <p className='text-gray-600 mt-1'>{issueAny.shortDescription || issue.description}</p>
         </div>
         {/* Người tạo, tag, thời gian, ... */}
-        <div className='flex items-center gap-3 px-6 pb-2 text-sm text-gray-500'>
+        <div className='flex flex-wrap items-center gap-3 px-6 pb-2 text-sm text-gray-500'>
           {issueAny.avatarCreate && (
-            <img src={issueAny.avatarCreate} alt='avatar' className='w-7 h-7 rounded-full border' />
+            <img src={issueAny.avatarCreate} alt='avatar' className='w-8 h-8 rounded-full border-2 border-lavender-400 shadow hover:scale-110 transition-transform' title={issueAny.nameCreate} />
           )}
           <span className='font-medium text-gray-800'>{issueAny.nameCreate}</span>
           {issueAny.roleCreate && <span className='text-xs text-gray-500'>({issueAny.roleCreate})</span>}
           <span>• {issueAny.createdAt ? new Date(issueAny.createdAt).toLocaleDateString() : ''}</span>
           {issueAny.reportedBy && <span className='bg-gray-100 rounded px-2 py-0.5 ml-2'>Reported by {issueAny.reportedBy}</span>}
           {issueAny.timeToFix && <span className='bg-gray-100 rounded px-2 py-0.5'>Time to fix: {issueAny.timeToFix}</span>}
-          <Badge className={priorityInfo.color}>{priorityInfo.label || issueAny.priorityTask}</Badge>
-          <Badge className={typeInfo.color}>{typeInfo.label || issueAny.type}</Badge>
-          <Badge className={statusInfo.color}>{statusInfo.label || issueAny.status}</Badge>
+          <Badge className={`${priorityInfo.color} font-bold shadow-sm border border-white`}>{priorityInfo.label || issueAny.priorityTask}</Badge>
+          <Badge className={`${typeInfo.color} font-bold shadow-sm border border-white flex items-center gap-1`}><TypeIcon className='w-4 h-4' />{typeInfo.label || issueAny.type}</Badge>
+          <Badge className={`${statusInfo.color} font-bold shadow-sm border border-white`}>{statusInfo.label || issueAny.status}</Badge>
         </div>
         {/* Collapse content */}
-        {isOpen && (
-          <div className='px-6 pb-6'>
-            {/* Code block */}
-            {issueAny.code && (
-              <div className='my-4 rounded-lg overflow-x-auto bg-gray-100 border border-gray-200'>
-                <pre className='p-4 text-sm'><code>{issueAny.code}</code></pre>
-              </div>
-            )}
-            {/* Explanation */}
-            {issue.explanation && (
-              <div className='mb-2'>
-                <h4 className='font-semibold text-gray-900 mb-1'>Explanation</h4>
-                <p className='text-gray-700'>{issue.explanation}</p>
-              </div>
-            )}
-            {/* Example */}
-            {issue.example && (
-              <div className='mb-2'>
-                <h4 className='font-semibold text-gray-900 mb-1'>Example</h4>
-                <p className='text-gray-700'>{issue.example}</p>
-              </div>
-            )}
-            {/* File đính kèm */}
-            {issueAny.issueAttachmentUrls && issueAny.issueAttachmentUrls.length > 0 && (
-              <div className='mb-2'>
-                <h4 className='font-semibold text-gray-900 mb-1'>Attachments</h4>
-                <ul className='list-disc list-inside'>
-                  {issueAny.issueAttachmentUrls.map((url: string, idx: number) => (
-                    <li key={idx}>
-                      <a href={url} target='_blank' rel='noopener noreferrer' className='text-blue-600 underline'>
-                        {url}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {/* Danh sách assignees */}
-            {issueAny.taskAssignees && issueAny.taskAssignees.length > 0 && (
-              <div className='mb-2'>
-                <h4 className='font-semibold text-gray-900 mb-1'>Assignees</h4>
-                <div className='flex flex-wrap gap-2'>
-                  {issueAny.taskAssignees.map((assignee: any) => (
-                    <span key={assignee.projectMemberId} className='flex items-center gap-1 bg-gray-100 rounded px-2 py-1'>
-                      {assignee.avatar && (
-                        <img src={assignee.avatar} alt='assignee' className='w-6 h-6 rounded-full border' />
-                      )}
-                      <span className='text-xs'>{assignee.executor}</span>
-                      {assignee.role && <span className='text-xs text-gray-400'>({assignee.role})</span>}
-                    </span>
-                  ))}
+        <div
+          className={`transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[1000px] opacity-100 py-4' : 'max-h-0 opacity-0 py-0'} overflow-hidden px-6`}
+        >
+          {isOpen && (
+            <>
+              {/* Code block */}
+              {issueAny.code && (
+                <div className='my-4 rounded-lg overflow-x-auto bg-gradient-to-br from-gray-50 to-gray-200 border border-gray-200 relative'>
+                  <button
+                    className='absolute top-2 right-2 text-xs bg-lavender-200 hover:bg-lavender-300 rounded px-2 py-1 shadow'
+                    onClick={() => navigator.clipboard.writeText(issueAny.code)}
+                    title='Copy code'
+                  >Copy</button>
+                  <pre className='p-4 text-sm font-mono text-gray-800 whitespace-pre-wrap'><code>{issueAny.code}</code></pre>
                 </div>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+              {/* Explanation */}
+              {issue.explanation && (
+                <div className='mb-2'>
+                  <h4 className='font-semibold text-gray-900 mb-1'>Explanation</h4>
+                  <p className='text-gray-700'>{issue.explanation}</p>
+                </div>
+              )}
+              {/* Example */}
+              {issue.example && (
+                <div className='mb-2'>
+                  <h4 className='font-semibold text-gray-900 mb-1'>Example</h4>
+                  <p className='text-gray-700'>{issue.example}</p>
+                </div>
+              )}
+              {/* File đính kèm */}
+              {issueAny.issueAttachmentUrls && issueAny.issueAttachmentUrls.length > 0 && (
+                <div className='mb-2'>
+                  <h4 className='font-semibold text-gray-900 mb-1'>Attachments</h4>
+                  <ul className='list-disc list-inside'>
+                    {issueAny.issueAttachmentUrls.map((url: string, idx: number) => (
+                      <li key={idx}>
+                        <a href={url} target='_blank' rel='noopener noreferrer' className='text-blue-600 underline'>
+                          {url}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {/* Danh sách assignees */}
+              {issueAny.taskAssignees && issueAny.taskAssignees.length > 0 && (
+                <div className='mb-2'>
+                  <h4 className='font-semibold text-gray-900 mb-1'>Assignees</h4>
+                  <div className='flex flex-wrap gap-2'>
+                    {issueAny.taskAssignees.map((assignee: any) => (
+                      <span key={assignee.projectMemberId} className='flex items-center gap-1 bg-gray-100 rounded px-2 py-1 shadow-sm'>
+                        {assignee.avatar && (
+                          <img src={assignee.avatar} alt='assignee' className='w-6 h-6 rounded-full border-2 border-lavender-400' title={assignee.executor} />
+                        )}
+                        <span className='text-xs'>{assignee.executor}</span>
+                        {assignee.role && <span className='text-xs text-gray-400'>({assignee.role})</span>}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     )
   }
 
   return (
-    <div className='flex h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50'>
+    <div className='flex h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50 min-h-screen'>
       <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
       <div className='flex-1 flex flex-col overflow-hidden'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
         <div className='flex flex-col flex-1 overflow-y-auto bg-white/90'>
           {/* Header */}
-          <div className='flex flex-col gap-4 px-8 pt-8 pb-4 border-b border-gray-200 bg-white/80 sticky top-0 z-10'>
-            <div className='flex items-center justify-between'>
-              <h1 className='text-4xl font-extrabold text-gray-900 mb-2'>Code Issues</h1>
+          <div className='flex flex-col gap-4 px-4 md:px-8 pt-8 pb-4 border-b border-gray-200 bg-white/80 sticky top-0 z-10 shadow-sm'>
+            <div className='flex flex-col md:flex-row items-start md:items-center justify-between gap-2'>
+              <h1 className='text-3xl md:text-4xl font-extrabold text-gray-900 mb-2'>Code Issues</h1>
               <Button
-                className='bg-lavender-600 hover:bg-lavender-700 text-white font-semibold rounded-lg px-5 py-2 text-base shadow'
+                className='bg-lavender-600 hover:bg-lavender-700 text-white font-semibold rounded-lg px-5 py-2 text-base shadow flex items-center gap-2'
                 onClick={() => setShowCreateMenu(true)}
               >
-                + New Issue
+                <Plus className='w-5 h-5' /> New Issue
               </Button>
             </div>
             <div className='flex flex-wrap gap-3 items-center'>
@@ -268,7 +283,9 @@ export const ProjectIssues: React.FC = () => {
                 <SelectContent>
                   <SelectItem value='all'>All Types</SelectItem>
                   {typeOptions.map((t) => (
-                    <SelectItem key={t.value} value={t.value.toString()}>{t.label}</SelectItem>
+                    <SelectItem key={t.value} value={t.value.toString()} className='flex items-center gap-2'>
+                      <t.icon className={`inline w-4 h-4 mr-1 ${t.color}`} />{t.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -294,7 +311,7 @@ export const ProjectIssues: React.FC = () => {
                 </SelectContent>
               </Select>
               <Input
-                className='w-64 h-10 rounded-md border border-gray-300 px-3 text-base'
+                className='w-64 h-10 rounded-md border border-gray-300 px-3 text-base shadow-sm focus:border-lavender-400 focus:ring-lavender-200'
                 placeholder='Search For Issue'
                 value={search}
                 onChange={e => setSearch(e.target.value)}

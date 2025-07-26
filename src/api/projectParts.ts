@@ -30,3 +30,42 @@ export async function getProjectParts(projectId: string) {
   const res = await axiosClient.get(`/projects/${projectId}/parts`)
   return res.data
 }
+
+// Git Member Local APIs
+export async function addGitMemberLocal(
+  projectId: string,
+  projectPartId: string,
+  projectMemberId: string,
+  payload: { nameLocal: string; emailLocal: string }
+) {
+  const res = await axiosClient.post(
+    `/projects/${projectId}/parts/${projectPartId}/gitmember/${projectMemberId}`,
+    payload,
+    {
+      headers: { 'Content-Type': 'application/json-patch+json' }
+    }
+  )
+  return res.data
+}
+
+export async function updateGitMemberLocal(
+  projectId: string,
+  projectPartId: string,
+  gitMemberId: string,
+  payload: { nameLocal: string; emailLocal: string }
+) {
+  const res = await axiosClient.patch(
+    `/projects/${projectId}/parts/${projectPartId}/gitmember/${gitMemberId}/local`,
+    payload,
+    {
+      headers: { 'Content-Type': 'application/json-patch+json' }
+    }
+  )
+  return res.data
+}
+
+// Note: GET endpoint không có trong specification, có thể cần thêm
+export async function getGitMembersLocal(projectId: string, projectPartId: string) {
+  const res = await axiosClient.get(`/projects/${projectId}/parts/${projectPartId}/gitmember`)
+  return res.data
+}
