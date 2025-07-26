@@ -44,6 +44,9 @@ export default function ProjectGitHub() {
   const [oauthLoading, setOauthLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  
+  
+  
 
   // For creating a new part
   const [showCreatePart, setShowCreatePart] = useState(false)
@@ -54,7 +57,6 @@ export default function ProjectGitHub() {
   const [selectedRepo, setSelectedRepo] = useState<string>('')
   const [selectedPart, setSelectedPart] = useState<string>('')
   const [connecting, setConnecting] = useState(false)
-  const [lastConnectedPartId, setLastConnectedPartId] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true)
@@ -150,8 +152,6 @@ export default function ProjectGitHub() {
       setSuccess('Repository connected to Project Part successfully!')
       setSelectedRepo('')
       setSelectedPart('')
-      setLastConnectedPartId(selectedPart)
-      await fetchData();
     } catch (err: any) {
       console.error('Error connecting repository:', err)
       const errorMessage = err.response?.data?.message || 

@@ -76,6 +76,13 @@ export interface GitHubCommit {
   added: string[]
   removed: string[]
   modified: string[]
+  date: string
+  hash: string
+  branch: string
+  changes: {
+    additions: number
+    deletions: number
+  }
 }
 
 export interface GitHubCommitAuthor {
@@ -194,20 +201,6 @@ export interface GitHubUser {
   html_url: string
 }
 
-export interface GitHubRepository {
-  id: number
-  name: string
-  full_name: string
-  private: boolean
-  html_url: string
-  description: string
-  default_branch: string
-  owner: {
-    login: string
-    avatar_url: string
-  }
-}
-
 export interface GitHubOAuthRepositoryResponse {
   code: number
   message: string
@@ -223,4 +216,11 @@ export interface GitHubOAuthConnectRequest {
   repositoryId: number
   repositoryName: string
   repositoryFullName: string
+}
+
+export interface RepositoryConnection {
+  projectId: string
+  partId: string
+  repoUrl: string
+  accessToken: string
 }

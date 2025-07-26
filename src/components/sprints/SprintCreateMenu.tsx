@@ -23,45 +23,24 @@ export function SprintCreateMenu({ onCreateSprint }: SprintCreateMenuProps) {
   const [description, setDescription] = useState('')
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
-  const [status, setStatus] = useState('0') // NotStarted mặc định
   const { showToast } = useToastContext()
 
-  const toISOString = (date: string) => {
-    if (!date) return ''
-    // Chuyển từ dd/mm/yy sang ISO string
-    const [day, month, year] = date.split('/')
-    if (!day || !month || !year) return ''
-    // Giả sử yy là 2 số cuối, cần chuyển thành 20yy
-    const fullYear = year.length === 2 ? '20' + year : year
-    const iso = new Date(`${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T00:00:00`).toISOString()
-    return iso
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim()) {
-      showToast({ title: 'Error', description: 'Vui lòng nhập tên Sprint.', variant: 'destructive' })
-      return
-    }
+  const handleCreateSprint = async () => {
     try {
-      const res = await onCreateSprint({
-        name,
-        description,
-        startDate: startDate ? startDate.toISOString() : '',
-        endDate: endDate ? endDate.toISOString() : ''
-      })
-      if (res && res.message) {
-        showToast({ title: 'Success', description: res.message })
+      const res = await onCreateSprint({ name, description, startDate: startDate ? startDate.toISOString() : '', endDate: endDate ? endDate.toISOString() : '' })
+      if (res && typeof res === 'object' && 'message' in res && typeof (res as { message: string }).message === 'string') {
+        showToast({ title: 'Success', description: (res as { message: string }).message })
+      } else {
+        showToast({ title: 'Success', description: 'Sprint created successfully' })
       }
-      if (res !== false) {
-        setIsOpen(false)
-        setName('')
-        setDescription('')
-        setStartDate(null)
-        setEndDate(null)
-      }
+      setIsOpen(false)
+      setName('')
+      setDescription('')
+      setStartDate(null)
+      setEndDate(null)
     } catch (error) {
-      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to create sprint.', variant: 'destructive' })
+      const err = error as any
+      showToast({ title: 'Error', description: err?.response?.data?.message || err?.message || 'Failed to create sprint.', variant: 'destructive' })
     }
   }
 
@@ -77,7 +56,7 @@ export function SprintCreateMenu({ onCreateSprint }: SprintCreateMenuProps) {
             Set up a new sprint for your project. Add a name and date range.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className='space-y-6'>
+        <form onSubmit={(e) => { e.preventDefault(); handleCreateSprint(); }} className='space-y-6'>
           <div className='space-y-1'>
             <Label htmlFor='name' className='text-sm font-semibold text-gray-700'>
               Sprint Name

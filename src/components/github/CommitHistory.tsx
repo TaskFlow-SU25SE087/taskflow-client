@@ -1,7 +1,6 @@
 import { format } from 'date-fns'
 import { AlertCircle, CheckCircle, Clock, GitCommit, Loader2, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useToast } from '../../hooks/useToast'
 import { useWebhooks } from '../../hooks/useWebhooks'
 import { CommitRecord, CommitStatus } from '../../types/webhook'
 import { Avatar, AvatarFallback } from '../ui/avatar'
@@ -110,7 +109,6 @@ function CommitCard({ commit }: CommitCardProps) {
 export default function CommitHistory({ projectId, partId }: CommitHistoryProps) {
   const { commits, commitsLoading, error, fetchCommits, getCommitsByStatus, getLatestCommit } = useWebhooks()
 
-  const { toast } = useToast()
   const [filterStatus, setFilterStatus] = useState<CommitStatus | 'all'>('all')
   const [autoRefresh, setAutoRefresh] = useState(true)
 
@@ -132,14 +130,9 @@ export default function CommitHistory({ projectId, partId }: CommitHistoryProps)
 
   const handleRefresh = () => {
     fetchCommits(projectId, partId)
-    toast({
-      title: 'Refreshing',
-      description: 'Fetching latest commits...',
-      variant: 'default'
-    })
   }
 
-  const filteredCommits = filterStatus === 'all' ? commits : getCommitsByStatus(filterStatus)
+  const filteredCommits = filterStatus === 'all' ? commits : getCommitsByStatus(filterStatus as CommitStatus)
 
   const latestCommit = getLatestCommit()
 

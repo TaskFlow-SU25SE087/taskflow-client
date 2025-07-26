@@ -23,8 +23,6 @@ export default function ActivateAccountPage() {
   const [searchParams] = useSearchParams()
   const location = useLocation()
   const { verifyJoin, loading } = useProjectMembers()
-  const [success, setSuccess] = useState(false)
-
   // Get token from URL params if available
   const tokenFromUrl = searchParams.get('token')
   const emailFromUrl = searchParams.get('email')
@@ -43,12 +41,11 @@ export default function ActivateAccountPage() {
     const token = params.get('token')
     const projectId = params.get('projectId')
     if (token && projectId) {
-      verifyJoin(projectId, token)
+      verifyJoin(projectId)
         .then(() => {
-          setSuccess(true)
           setTimeout(() => navigate(`/projects/${projectId}`), 2000)
         })
-        .catch(() => setSuccess(false))
+        .catch(() => {}) // Catch block to prevent unhandled promise rejection
     }
   }, [location, navigate, verifyJoin])
 
@@ -56,7 +53,7 @@ export default function ActivateAccountPage() {
     e.preventDefault()
     clearError()
 
-    const success = await activateAccount({
+    const activationSuccess = await activateAccount({
       email,
       username,
       newPassword,
@@ -64,7 +61,7 @@ export default function ActivateAccountPage() {
       tokenResetPassword
     })
 
-    if (success) {
+    if (activationSuccess) {
       // Form will be reset and user will be redirected by the hook
       setEmail('')
       setUsername('')

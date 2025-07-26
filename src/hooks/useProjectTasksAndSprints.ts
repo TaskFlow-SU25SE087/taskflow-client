@@ -5,9 +5,9 @@ import { useSprints } from './useSprints'
 import { useTasks } from './useTasks'
 
 export function useProjectTasksAndSprints() {
-  const { currentProject } = useCurrentProject()
+  useCurrentProject()
   const { tasks, refreshTasks, isTaskLoading } = useTasks()
-  const { sprints, isLoading: isSprintsLoading, refreshSprints } = useSprints(currentProject?.id)
+  const { sprints, isLoading: isSprintsLoading, refreshSprints } = useSprints()
   const [sprintTaskMap, setSprintTaskMap] = useState<Record<string, TaskP[]>>({})
   const [backlogTasks, setBacklogTasks] = useState<TaskP[]>([])
 

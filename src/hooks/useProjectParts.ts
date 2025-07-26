@@ -20,8 +20,8 @@ export function useProjectParts() {
       showToast({ title: data?.code === 200 ? 'Success' : 'Error', description: data?.message || 'Project part created successfully', variant: data?.code === 200 ? 'default' : 'destructive' })
       return data
     } catch (err) {
-      setError(err)
-      showToast({ title: 'Error', description: err.response?.data?.message || err.message || 'Failed to create project part', variant: 'destructive' })
+      const error = err as any
+      showToast({ title: 'Error', description: error?.response?.data?.message || error?.message || 'Failed to create project part', variant: 'destructive' })
       throw err
     } finally {
       setLoading(false)
@@ -37,8 +37,8 @@ export function useProjectParts() {
       showToast({ title: data?.code === 200 ? 'Success' : 'Error', description: data?.message || 'Repository connected successfully', variant: data?.code === 200 ? 'default' : 'destructive' })
       return data
     } catch (err) {
-      setError(err)
-      showToast({ title: 'Error', description: err.response?.data?.message || err.message || 'Failed to connect repository', variant: 'destructive' })
+      const error = err as any
+      showToast({ title: 'Error', description: error?.response?.data?.message || error?.message || 'Failed to connect repository', variant: 'destructive' })
       throw err
     } finally {
       setLoading(false)

@@ -2,9 +2,8 @@ import { projectMemberApi } from '@/api/projectMembers'
 import { taskApi } from '@/api/tasks'
 import { useSignalR } from '@/contexts/SignalRContext'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
-import { ProjectMember } from '@/types/project'
-import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
+import { ProjectMember } from '@/types/project'
 import { format } from 'date-fns'
 import { Calendar, ChevronDown, ChevronsDown, ChevronsUp, ChevronUp, Clock, FileText, MessageSquare, User } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
@@ -66,9 +65,8 @@ interface TaskCardProps {
 
 export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { children?: React.ReactNode }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
-  const [assignedMember, setAssignedMember] = useState<ProjectMember | null>(null)
-  const [sprint, setSprint] = useState<Sprint | null>(null)
   const [isHovered, setIsHovered] = useState(false)
+  const [assignedMember, setAssignedMember] = useState<ProjectMember | null>(null)
   const { currentProject } = useCurrentProject()
   const navigate = useNavigate()
   const { notificationService } = useSignalR()
@@ -81,10 +79,12 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
       const currentTask = tasks.find((taskFromArray) => taskFromArray.id === task.id)
       if (currentTask) {
         if (currentTask.assigneeId) {
-          const members = await projectMemberApi.getMembersByProjectId(currentTask.projectId)
+          const members = await projectMemberApi.getMembersByProjectId(currentTask.projectId || '')
           const member = members.find((m) => m.userId === currentTask.assigneeId)
           if (member) {
             setAssignedMember(member)
+          } else {
+            setAssignedMember(null)
           }
         } else {
           setAssignedMember(null)
@@ -131,14 +131,10 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
     : Array.isArray(task.commnets)
       ? task.commnets.length
       : 0
-  const fileCount = Array.isArray(task.attachmentUrlsList) ? task.attachmentUrlsList.length : 0
-  const deadline = sprint?.endDate ? format(new Date(sprint.endDate), 'MMM d, yyyy') : 'N/A'
-  const status = task.status || 'N/A'
-  const createdBy = task.reporter?.fullName || task.reporter?.email || 'Unknown'
-  const createdAt = task.created ? format(new Date(task.created), 'MMM d, yyyy') : 'N/A'
+  const fileCount = task.attachmentUrl ? 1 : 0
   const assignees = Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0 ? task.taskAssignees : []
   
-  const priorityConfig = getPriorityConfig(task.priority)
+  const priorityConfig = getPriorityConfig(Number(task.priority))
 
   // Enhanced avatar colors with gradients
   const avatarColors = [

@@ -44,12 +44,6 @@ const calculateSprintProgress = (tasks: TaskP[]) => {
 function StatisticsOverview({ sprintsWithTasks }: { sprintsWithTasks: SprintWithTasks[] }) {
   const allTasks = sprintsWithTasks.flatMap(sprint => sprint.tasks)
   const stats = calculateSprintProgress(allTasks)
-  const totalSprints = sprintsWithTasks.length
-  const completedSprints = sprintsWithTasks.filter(sprint => {
-    const sprintStats = calculateSprintProgress(sprint.tasks)
-    return sprintStats.completionPercentage === 100
-  }).length
-  
   const averageProgress = sprintsWithTasks.length > 0 
     ? Math.round(sprintsWithTasks.reduce((sum, sprint) => {
         const sprintStats = calculateSprintProgress(sprint.tasks)
@@ -246,32 +240,6 @@ function getStatusIcon(status: string) {
   }
 }
 
-function TaskTooltip({ task }: { task: TaskP }) {
-  return (
-    <div className='absolute z-50 left-1/2 top-full mt-2 -translate-x-1/2 bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-xl shadow-2xl p-4 min-w-[280px] pointer-events-none border border-gray-700 backdrop-blur-sm animate-fade-in'>
-      <div className='font-bold text-lg mb-2 text-white'>{task.title}</div>
-      <div className='text-sm mb-2 text-gray-200 line-clamp-2'>
-        {task.description || 'No description available'}
-      </div>
-      <div className='flex items-center gap-2 text-xs mb-2 text-gray-300'>
-        <Users className='h-3 w-3' />
-        <span>
-          {Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0
-            ? task.taskAssignees[0].executor
-            : 'Unassigned'}
-        </span>
-      </div>
-      <div className='flex items-center gap-2 text-xs text-gray-300'>
-        <Calendar className='h-3 w-3' />
-        <span>
-          {task.sprint?.startDate ? format(new Date(task.sprint.startDate), 'MMM dd') : 'N/A'} - {' '}
-          {task.sprint?.endDate ? format(new Date(task.sprint.endDate), 'MMM dd') : 'N/A'}
-        </span>
-      </div>
-    </div>
-  )
-}
-
 function CurrentTimeIndicator({ currentDate }: { currentDate: Date }) {
   const now = new Date()
   const monthStart = startOfMonth(currentDate)
@@ -367,7 +335,7 @@ function AvatarStack({ assignees }: { assignees: any[] }) {
   )
 }
 
-function SprintProgressBar({ tasks, sprintColor }: { tasks: TaskP[], sprintColor: any }) {
+function SprintProgressBar({ tasks }: { tasks: TaskP[] }) {
   const progress = calculateSprintProgress(tasks)
   
   return (
@@ -405,7 +373,6 @@ function SprintRow({
   const monthEnd = endOfMonth(currentDate)
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
   const totalDays = days.length
-  const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null)
   const [isHovered, setIsHovered] = useState(false)
   
   const progress = calculateSprintProgress(sprint.tasks)
@@ -484,7 +451,7 @@ function SprintRow({
             <span>Progress</span>
             <span className='font-semibold'>{progress.completionPercentage}%</span>
           </div>
-          <SprintProgressBar tasks={sprint.tasks} sprintColor={sprintColor} />
+          <SprintProgressBar tasks={sprint.tasks} />
         </div>
         
         {/* Task Statistics */}
@@ -548,8 +515,8 @@ function SprintRow({
                     )}
                     style={{ animationDelay: `${taskIndex * 0.05}s` }}
                     onClick={() => onTaskClick && onTaskClick(task)}
-                    onMouseEnter={() => setHoveredTaskId(task.id)}
-                    onMouseLeave={() => setHoveredTaskId(null)}
+                    onMouseEnter={() => {/* Not used */}}
+                    onMouseLeave={() => {/* Not used */}}
                   >
                     <div className='font-semibold text-gray-900 truncate group-hover/task:text-lavender-700 transition-colors'>
                       {task.title}
@@ -602,7 +569,7 @@ export default function ProjectTimeline() {
   const { currentProject, isLoading: projectLoading } = useCurrentProject()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [sprintsWithTasks, setSprintsWithTasks] = useState<SprintWithTasks[]>([])
-  const { sprints, isLoading: sprintsLoading } = useSprints(currentProject?.id)
+  const { sprints, isLoading: sprintsLoading } = useSprints()
   const [selectedTask, setSelectedTask] = useState<TaskP | null>(null)
   const timelineScrollRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)

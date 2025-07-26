@@ -35,10 +35,10 @@ export const useCurrentProject = () => {
         })
       } catch (error) {
         console.error('Failed to fetch project:', error)
-        if (error && error.response) {
-          console.error('[useCurrentProject] error.response:', error.response)
-          console.error('[useCurrentProject] error.response.data:', error.response.data)
-          console.error('[useCurrentProject] error.response.status:', error.response.status)
+        const err = error as any; if (err && err.response) {
+          console.error('[useCurrentProject] error.response:', err.response)
+          console.error('[useCurrentProject] error.response.data:', err.response.data)
+          console.error('[useCurrentProject] error.response.status:', err.response.status)
         }
         // If project fetch fails, clear both cookie and localStorage
         Cookies.remove(CURRENT_PROJECT_COOKIE)
@@ -92,8 +92,8 @@ export const useCurrentProject = () => {
         })
       } catch (error) {
         console.error('Failed to fetch project:', error)
-        if (error && error.response) {
-          console.error('[useCurrentProject] error.response:', error.response)
+        const err = error as any; if (err && err.response) {
+          console.error('[useCurrentProject] error.response:', err.response)
         }
         Cookies.remove(CURRENT_PROJECT_COOKIE)
         localStorage.removeItem(CURRENT_PROJECT_LOCAL)

@@ -18,28 +18,50 @@ interface BacklogTaskRowProps {
   onTaskUpdate?: () => void
 }
 
-const statusColorMap: Record<string, string> = {
+type TaskStatus =
+  | 'to do'
+  | 'not started'
+  | 'in progress'
+  | 'done'
+  | 'completed'
+  | 'review'
+  | 'blocked'
+  | 'cancelled'
+  | 'on hold'
+  | 'unassigned'
+  | 'urgent'
+  | 'testing'
+  | 'pending'
+  | 'n/a'
+
+const statusColorMap: Record<TaskStatus, string> = {
   'to do': 'bg-gray-200 text-gray-700',
   'not started': 'bg-gray-200 text-gray-700',
   'in progress': 'bg-blue-100 text-blue-700',
-  'done': 'bg-green-100 text-green-700',
-  'completed': 'bg-green-100 text-green-700',
-  'review': 'bg-yellow-100 text-yellow-700',
-  'blocked': 'bg-red-100 text-red-700',
-  'cancelled': 'bg-pink-100 text-pink-700',
+  done: 'bg-green-100 text-green-700',
+  completed: 'bg-green-100 text-green-700',
+  review: 'bg-yellow-100 text-yellow-700',
+  blocked: 'bg-red-100 text-red-700',
+  cancelled: 'bg-pink-100 text-pink-700',
   'on hold': 'bg-amber-100 text-amber-700',
-  'unassigned': 'bg-slate-100 text-slate-500',
-  'urgent': 'bg-red-200 text-red-800',
-  'testing': 'bg-purple-100 text-purple-700',
-  'pending': 'bg-orange-100 text-orange-700',
+  unassigned: 'bg-slate-100 text-slate-500',
+  urgent: 'bg-red-200 text-red-800',
+  testing: 'bg-purple-100 text-purple-700',
+  pending: 'bg-orange-100 text-orange-700',
   'n/a': 'bg-gray-100 text-gray-500'
 }
 
-const getBoardColorClass = (board: any) => {
+interface Board {
+  color?: string
+  name?: string
+}
+
+const getBoardColorClass = (board?: Board) => {
   if (board?.color) {
     return `bg-[${board.color}] text-white`
   }
-  return statusColorMap[board?.name?.toLowerCase?.()] || 'bg-gray-100 text-gray-600'
+  const boardName = board?.name?.toLowerCase() || ''
+  return statusColorMap[boardName as TaskStatus] || 'bg-gray-100 text-gray-600'
 }
 
 // Helper function to get deadline color based on urgency
@@ -83,7 +105,13 @@ const avatarColors = [
 ]
 const getAvatarColor = (index: number) => avatarColors[index % avatarColors.length]
 
-function AvatarStack({ assignees }: { assignees: any[] }) {
+interface Assignee {
+  projectMemberId?: string
+  avatar?: string
+  executor?: string
+}
+
+function AvatarStack({ assignees }: { assignees: Assignee[] }) {
   if (!assignees || assignees.length === 0) {
     return (
       <div className='flex items-center justify-center min-w-[70px] h-7'>
@@ -132,12 +160,6 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
   const { boards, refreshBoards } = useBoards()
   const { currentProject } = useCurrentProject()
   const { showToast } = useToastContext()
-
-  // Map assignee từ taskAssignees (lấy người đầu tiên nếu có)
-  const assignee =
-    Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0
-      ? { fullName: task.taskAssignees[0].executor, avatar: task.taskAssignees[0].avatar }
-      : null
 
   // Comment count
   const commentCount = Array.isArray(task.commnets) ? task.commnets.length : 0
@@ -245,7 +267,7 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
                           showToast({ title: 'Success', description: `Status changed to ${board.name}` })
                           await refreshBoards()
                           window.location.reload()
-                        } catch (err) {
+                        } catch {
                           showToast({ title: 'Error', description: 'Failed to change status', variant: 'destructive' })
                         } finally {
                           setStatusLoading(false)
@@ -260,7 +282,7 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
             ) : (
               task.status && (
                 <span
-                  className={`px-2 py-0.5 rounded text-xs font-medium ${statusColorMap[task.status.toLowerCase()] || 'bg-gray-100 text-gray-600'}`}
+                  className={`px-2 py-0.5 rounded text-xs font-medium ${statusColorMap[task.status.toLowerCase() as TaskStatus] || 'bg-gray-100 text-gray-600'}`}
                 >
                   {task.status}
                 </span>
@@ -340,18 +362,26 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
                   if (!window.confirm('Are you sure you want to delete this task?')) return
                   try {
                     const res = await taskApi.deleteTask(currentProject.id, task.id)
-                    if (res && typeof res === 'object' && 'code' in (res as any)) {
-                      const r: any = res;
-                      showToast({ title: r.code === 200 ? 'Success' : 'Error', description: r.message || 'Task deleted!', variant: r.code === 200 ? 'default' : 'destructive' })
-                    } else if (res === true) {
+                    if (res && typeof res === 'object' && 'code' in res && 'message' in res) {
+                      const r = res as { code: number; message: string }
+                      showToast({
+                        title: r.code === 200 ? 'Success' : 'Error',
+                        description: r.message || 'Task deleted!',
+                        variant: r.code === 200 ? 'default' : 'destructive'
+                      })
+                    } else if (res && typeof res === 'object' && 'data' in res && res.data === true) {
                       showToast({ title: 'Success', description: 'Task deleted!' })
                     } else {
                       showToast({ title: 'Error', description: 'Failed to delete task', variant: 'destructive' })
                     }
                     if (typeof refreshBoards === 'function') await refreshBoards()
                     if (typeof onTaskUpdate === 'function') onTaskUpdate()
-                  } catch (err: any) {
-                    showToast({ title: 'Error', description: err.response?.data?.message || err.message || 'Failed to delete task', variant: 'destructive' })
+                  } catch (error) {
+                    showToast({
+                      title: 'Error',
+                      description: error instanceof Error ? error.message : 'Failed to delete task',
+                      variant: 'destructive'
+                    })
                   }
                 }}
               >

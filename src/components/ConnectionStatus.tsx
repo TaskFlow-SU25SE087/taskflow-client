@@ -4,7 +4,7 @@ import { Loader2, Wifi, WifiOff } from 'lucide-react'
 import React from 'react'
 
 const ConnectionStatus: React.FC = () => {
-  const { isConnected, connectionState } = useSignalR()
+  const { connectionState } = useSignalR()
 
   const getStatusInfo = () => {
     switch (connectionState) {

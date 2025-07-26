@@ -94,22 +94,26 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
     })
 
     try {
-      const res = await createIssue(projectId, taskId, issueData)
-      if (res?.code === 200) {
-        showToast({ title: 'Success', description: res?.message || 'Issue created successfully' })
-        setOpen(false)
-        setFormData({
-          title: '',
-          description: '',
-          priority: IssuePriority.Medium,
-          explanation: '',
-          example: '',
-          type: IssueType.Bug
-        })
-        setFiles([])
-        onIssueCreated?.()
+      const res = await createIssue(projectId, taskId, issueData) as any
+      if (res && typeof res === 'object' && 'code' in res) {
+        if (res.code === 200) {
+          showToast({ title: 'Success', description: res.message || 'Issue created successfully' })
+          setOpen(false)
+          setFormData({
+            title: '',
+            description: '',
+            priority: IssuePriority.Medium,
+            explanation: '',
+            example: '',
+            type: IssueType.Bug
+          })
+          setFiles([])
+          onIssueCreated?.()
+        } else {
+          showToast({ title: 'Error', description: res.message || 'Failed to create issue', variant: 'destructive' })
+        }
       } else {
-        showToast({ title: 'Error', description: res?.message || 'Failed to create issue', variant: 'destructive' })
+        showToast({ title: 'Error', description: 'Failed to create issue', variant: 'destructive' })
       }
     } catch (error: any) {
       showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to create issue', variant: 'destructive' })

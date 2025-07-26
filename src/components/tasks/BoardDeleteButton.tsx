@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
+import { APIError } from '@/types/api'
 
 interface BoardDeleteButtonProps {
   projectId: string
@@ -29,10 +30,15 @@ export function BoardDeleteButton({ projectId, boardId, onDeleted }: BoardDelete
     setLoading(true)
     try {
       const res = await boardApi.deleteBoard(projectId, boardId)
-      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Board deleted successfully', variant: res?.code === 200 ? 'default' : 'destructive' })
+      if (res) {
+        showToast({ title: 'Success', description: 'Board deleted successfully', variant: 'default' })
+      } else {
+        showToast({ title: 'Error', description: 'Failed to delete board', variant: 'destructive' })
+      }
       onDeleted()
     } catch (error) {
-      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to delete board.', variant: 'destructive' })
+      const err = error as APIError
+      showToast({ title: 'Error', description: err?.response?.data?.message || err?.message || 'Failed to delete board.', variant: 'destructive' })
     } finally {
       setLoading(false)
     }

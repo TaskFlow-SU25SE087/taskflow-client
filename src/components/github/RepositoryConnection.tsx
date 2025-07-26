@@ -66,7 +66,7 @@ export default function RepositoryConnection({ projectId, partId }: RepositoryCo
             <div className='flex items-center justify-between'>
               <div>
                 <p className='font-medium'>Connected Repository</p>
-                <p className='text-sm text-gray-600'>{connectionStatus.repoUrl}</p>
+                <p className='text-sm text-gray-600'>{connectionStatus.webhookUrl || ''}</p>
               </div>
               <Badge variant='default'>Connected</Badge>
             </div>

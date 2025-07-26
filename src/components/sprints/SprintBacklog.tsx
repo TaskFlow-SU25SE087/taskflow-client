@@ -26,7 +26,6 @@ interface SprintBacklogProps {
 
 export function SprintBacklog({
   tasks,
-  onMoveTask,
   projectId,
   onTaskCreated,
   onTaskUpdate,
@@ -109,7 +108,7 @@ export function SprintBacklog({
                       if (typeof res === 'object' && res !== null && 'code' in (res as any)) {
                         const r: any = res;
                         showToast({ title: r.code === 200 ? 'Success' : 'Error', description: r.message || 'Tasks moved to sprint successfully!', variant: r.code === 200 ? 'default' : 'destructive' })
-                      } else if (res === true) {
+                      } else if (res && typeof res === 'object' && 'data' in res && res.data === true) {
                         showToast({ title: 'Success', description: 'Tasks moved to sprint successfully!' })
                       } else {
                         showToast({ title: 'Error', description: 'Failed to move tasks', variant: 'destructive' })
@@ -141,7 +140,7 @@ export function SprintBacklog({
                     if (lastRes && typeof lastRes === 'object' && 'code' in (lastRes as any)) {
                       const r: any = lastRes;
                       showToast({ title: r.code === 200 ? 'Success' : 'Error', description: r.message || 'Deleted selected tasks!', variant: r.code === 200 ? 'default' : 'destructive' })
-                    } else if (lastRes === true) {
+                    } else if (lastRes && typeof lastRes === 'object' && 'data' in lastRes && lastRes.data === true) {
                       showToast({ title: 'Success', description: 'Deleted selected tasks!' })
                     } else {
                       showToast({ title: 'Error', description: 'Failed to delete tasks', variant: 'destructive' })

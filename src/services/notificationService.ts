@@ -4,20 +4,10 @@ export class NotificationService {
   private signalRService: SignalRService
   private notifications: NotificationData[] = []
   private listeners: ((notification: NotificationData) => void)[] = []
-  private currentUserId: string | null = null;
   private showToast: ((toast: { title?: React.ReactNode; description?: React.ReactNode; variant?: 'default' | 'destructive' }) => void) | null = null;
 
-  constructor(signalRService: SignalRService, currentUserId: string | null, showToast: ((toast: { title?: React.ReactNode; description?: React.ReactNode; variant?: 'default' | 'destructive' }) => void) | null) {
+  constructor(signalRService: SignalRService, showToast: ((toast: { title?: React.ReactNode; description?: React.ReactNode; variant?: 'default' | 'destructive' }) => void) | null) {
     this.signalRService = signalRService
-    this.currentUserId = currentUserId;
-    this.showToast = showToast;
-  }
-
-  setCurrentUserId(userId: string | null) {
-    this.currentUserId = userId;
-  }
-
-  setShowToast(showToast: ((toast: { title?: React.ReactNode; description?: React.ReactNode; variant?: 'default' | 'destructive' }) => void) | null) {
     this.showToast = showToast;
   }
 

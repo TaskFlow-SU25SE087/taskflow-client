@@ -14,6 +14,9 @@ export default defineConfig({
   css: {
     devSourcemap: true
   },
+  esbuild: {
+    drop: ['console', 'debugger'],
+  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')

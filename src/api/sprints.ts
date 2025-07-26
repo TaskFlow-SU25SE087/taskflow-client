@@ -1,4 +1,5 @@
 import axiosClient from '@/configs/axiosClient'
+import { APIResponse } from '@/types/api'
 import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
 
@@ -40,9 +41,9 @@ export const sprintApi = {
   },
 
   // Gán nhiều task vào sprint
-  assignTasksToSprint: async (projectId: string, sprintId: string, taskIds: string[]): Promise<boolean> => {
+  assignTasksToSprint: async (projectId: string, sprintId: string, taskIds: string[]): Promise<APIResponse<boolean>> => {
     const response = await axiosClient.post(`/projects/${projectId}/sprints/${sprintId}/tasks/assign`, taskIds)
-    return response.data.data
+    return response.data
   },
 
   // Alias fetchSprints cho getAllSprintsByProjectId

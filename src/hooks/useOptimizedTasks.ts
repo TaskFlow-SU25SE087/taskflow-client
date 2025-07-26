@@ -11,16 +11,27 @@ interface OptimizedTaskP {
   updated: string
   assignee: any | null
   tags: any[]
-  commnets?: any[]
-  attachmentUrlsList?: string[]
+  commnets?: { // Note: This is intentionally misspelled to match TaskP interface
+    commenter: string
+    content: string
+    avatar: string
+    attachmentUrls: string[]
+    lastUpdate: string
+  }[]
+  attachmentUrl?: string
+  completionAttachmentUrls?: string[]
   boardId: string | null
   projectId: string
+  sprint?: any | null // Added to check sprint status
+  sprintId?: string | null
+  sprintName?: string
 }
 
 export const useOptimizedTasks = () => {
   const [tasks, setTasks] = useState<OptimizedTaskP[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
+  const [hasMore, setHasMore] = useState(false)
   const { currentProject, isLoading: isProjectLoading } = useCurrentProject()
 
   const fetchTasks = useCallback(async () => {
@@ -35,7 +46,7 @@ export const useOptimizedTasks = () => {
           task.sprintId === null ||
           task.sprintId === undefined ||
           task.sprintId === '00000000-0000-0000-0000-000000000000' ||
-          (task.sprintName && task.sprintName.toLowerCase() === 'no sprint')
+          !task.sprint
         ) // chỉ lấy backlog
         .map((task: TaskP) => ({
           id: task.id,
@@ -46,9 +57,13 @@ export const useOptimizedTasks = () => {
           assignee: task.assignee,
           tags: task.tags || [],
           commnets: task.commnets,
-          attachmentUrlsList: task.attachmentUrlsList,
+          attachmentUrl: task.attachmentUrl,
+          completionAttachmentUrls: task.completionAttachmentUrls,
           boardId: typeof task.boardId === 'undefined' ? null : task.boardId,
-          projectId: typeof task.projectId === 'undefined' ? '' : task.projectId
+          projectId: typeof task.projectId === 'undefined' ? '' : task.projectId,
+          sprintId: task.sprintId,
+          sprintName: task.sprint?.name,
+          sprint: task.sprint
         }))
       setTasks(optimizedTasks)
       setError(null)
@@ -60,6 +75,13 @@ export const useOptimizedTasks = () => {
     }
   }, [currentProject, isProjectLoading])
 
+  // For now just return all tasks at once since the API doesn't support pagination
+  const loadMore = useCallback(async () => {
+    if (!currentProject || isLoading) return
+    await fetchTasks()
+    setHasMore(false) // No more tasks to load
+  }, [currentProject, isLoading, fetchTasks])
+
   useEffect(() => {
     fetchTasks()
   }, [fetchTasks])
@@ -68,6 +90,8 @@ export const useOptimizedTasks = () => {
     tasks,
     isLoading,
     error,
-    refreshTasks: fetchTasks
+    refreshTasks: fetchTasks,
+    loadMore,
+    hasMore
   }
 }

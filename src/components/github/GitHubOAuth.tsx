@@ -1,6 +1,7 @@
 import { Github, Loader } from 'lucide-react'
 import { useState } from 'react'
 import { useWebhooks } from '../../hooks/useWebhooks'
+import { GitHubRepository } from '../../types/webhook'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
@@ -15,7 +16,7 @@ export default function GitHubOAuth({ projectId, partId, onConnectionSuccess }: 
   const [selectedRepo, setSelectedRepo] = useState<string>('')
   const [isConnecting, setIsConnecting] = useState(false)
 
-  const { repositories, oauthLoading, startGitHubOAuth, handleOAuthCallback, connectOAuthRepository } = useWebhooks()
+  const { repositories, oauthLoading, startGitHubOAuth, connectOAuthRepository } = useWebhooks()
 
   // Note: Removed fetchConnectionStatus because /projects/{projectId}/parts/{partId}/repo-status endpoint doesn't exist
   // Connection status will be managed through the OAuth flow
@@ -37,7 +38,9 @@ export default function GitHubOAuth({ projectId, partId, onConnectionSuccess }: 
       await connectOAuthRepository({
         projectId,
         partId,
-        repoUrl: selectedRepo
+        repositoryId: parseInt(selectedRepo.split('/')[0]),
+        repositoryName: selectedRepo.split('/')[1],
+        repositoryFullName: selectedRepo
       })
 
       if (onConnectionSuccess) {
@@ -92,9 +95,9 @@ export default function GitHubOAuth({ projectId, partId, onConnectionSuccess }: 
                   <SelectValue placeholder='Choose a repository' />
                 </SelectTrigger>
                 <SelectContent>
-                  {repositories.map((repo) => (
-                    <SelectItem key={repo.id} value={repo.htmlUrl}>
-                      {repo.fullName}
+                  {repositories.repositories.map((repo: GitHubRepository) => (
+                    <SelectItem key={repo.id} value={repo.html_url}>
+                      {repo.full_name}
                     </SelectItem>
                   ))}
                 </SelectContent>

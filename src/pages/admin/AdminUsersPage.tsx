@@ -12,14 +12,14 @@ import { useState } from 'react'
 import * as XLSX from 'xlsx'
 
 export default function AdminUsersPage() {
-  const { users, loading, error, pagination, fetchUsers, importUsers, fetchAllUsers, refetch } = useAdmin()
+  const { users, loading, error, pagination, fetchUsers, importUsers, fetchAllUsers } = useAdmin()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRole, setSelectedRole] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [selectedSemester, setSelectedSemester] = useState<string>('all')
   const [showFileUpload, setShowFileUpload] = useState(false)
   const [exporting, setExporting] = useState(false)
-  const [pageSize, setPageSize] = useState(10)
+  const pageSize = 10
 
   // Lấy danh sách semester (term) từ API
   const { terms, loading: loadingTerms } = useAdminTerm(1, 0)

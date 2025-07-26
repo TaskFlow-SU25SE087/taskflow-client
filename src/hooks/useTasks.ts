@@ -1,5 +1,6 @@
 import { taskApi } from '@/api/tasks'
 import { useToastContext } from '@/components/ui/ToastContext'
+import { APIError } from '@/types/api'
 import { TaskP } from '@/types/task'
 import { useEffect, useState } from 'react'
 import { useCurrentProject } from './useCurrentProject'
@@ -33,14 +34,30 @@ export const useTasks = () => {
 
   const addTask = async (projectId: string, newTask: { type: string; title: string }) => {
     try {
-      const res = await taskApi.createTask(projectId, newTask.title)
-      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Task created successfully', variant: res?.code === 200 ? 'default' : 'destructive' })
+      const formData = new FormData()
+      formData.append('title', newTask.title)
+      formData.append('type', newTask.type)
+      
+      const success = await taskApi.createTask(projectId, formData)
+      showToast({
+        title: success ? 'Success' : 'Error',
+        description: success ? 'Task created successfully' : 'Failed to create task',
+        variant: success ? 'default' : 'destructive'
+      })
+      
       // Refresh tasks after adding a new one
-      const updatedTasks = await taskApi.getTasksFromProject(projectId)
-      setTasks(updatedTasks)
+      if (success) {
+        const updatedTasks = await taskApi.getTasksFromProject(projectId)
+        setTasks(updatedTasks)
+      }
     } catch (error) {
-      setTaskError(error as Error)
-      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to add task', variant: 'destructive' })
+      const apiError = error as APIError
+      setTaskError(new Error(apiError.response?.data?.message || apiError.message))
+      showToast({
+        title: 'Error',
+        description: apiError.response?.data?.message || 'Failed to add task',
+        variant: 'destructive'
+      })
       throw error
     }
   }

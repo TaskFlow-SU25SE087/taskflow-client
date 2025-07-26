@@ -52,7 +52,7 @@ export function useGitHubProjectPartIntegration() {
   // Note: getGitHubConnectionStatus endpoint doesn't exist on backend
   // For now, we'll use a simple mock connection status
   const checkConnectionStatus = useCallback(
-    async (projectId: string, partId: string) => {
+    async () => {
       setLoading(true)
       try {
         // Mock connection status since API doesn't exist
@@ -207,7 +207,7 @@ export function useGitHubProjectPartIntegration() {
 
   // Disconnect repository (placeholder - implement if backend supports it)
   const disconnectRepository = useCallback(
-    async (projectId: string, partId: string) => {
+    async () => {
       showToast({ title: 'Info', description: 'Disconnect functionality not yet implemented' })
     },
     [showToast]

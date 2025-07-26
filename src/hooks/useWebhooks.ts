@@ -1,37 +1,36 @@
 import { useCallback, useState } from 'react'
 import {
-  connectGitHubRepository,
-  connectRepositoryToPart,
-  disconnectRepositoryFromPart,
-  getProjectPartCommits,
-  getProjectPartQuality,
-  handleGitHubOAuthCallback,
-  initiateGitHubOAuth
+    connectGitHubRepository,
+    connectRepositoryToPart,
+    disconnectRepositoryFromPart,
+    getProjectPartCommits,
+    getProjectPartQuality,
+    handleGitHubOAuthCallback,
+    initiateGitHubOAuth
 } from '../api/webhooks'
 import {
-  CodeQualityResponse,
-  CommitsResponse,
-  GitHubOAuthCallback,
-  GitHubOAuthConnectRequest,
-  GitHubOAuthRepositoryResponse,
-  RepositoryConnectionResponse
+    CodeQualityResponse,
+    CommitsResponse,
+    GitHubOAuthCallback,
+    GitHubOAuthConnectRequest,
+    GitHubOAuthRepositoryResponse,
+    RepositoryConnectionResponse
 } from '../types/webhook'
-import { useToast } from './useToast'
 
-export type CommitStatus = 'success' | 'failed' | 'pending'
+import { CommitStatus } from '../types/webhook'
 
 export function useWebhooks() {
-  const { toast } = useToast()
-
   // State
   const [commits, setCommits] = useState<CommitsResponse['data']>([])
   const [qualityResults, setQualityResults] = useState<CodeQualityResponse['data']>([])
   const [connectionStatus, setConnectionStatus] = useState<RepositoryConnectionResponse['data'] | null>(null)
+  const [repositories, setRepositories] = useState<GitHubOAuthRepositoryResponse['data'] | null>(null)
 
   // Loading states
   const [commitsLoading, setCommitsLoading] = useState(false)
   const [qualityLoading, setQualityLoading] = useState(false)
   const [connectionLoading, setConnectionLoading] = useState(false)
+  const [oauthLoading, setOauthLoading] = useState(false)
 
   // Error state
   const [error, setError] = useState<string | null>(null)
@@ -52,17 +51,17 @@ export function useWebhooks() {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to fetch commits'
         setError(errorMessage)
-        toast({
-          title: 'Error',
-          description: errorMessage,
-          variant: 'destructive'
-        })
+        // toast({
+        //   title: 'Error',
+        //   description: errorMessage,
+        //   variant: 'destructive'
+        // })
         throw err
       } finally {
         setCommitsLoading(false)
       }
     },
-    [toast]
+    []
   )
 
   // Fetch quality results for a project part
@@ -81,17 +80,17 @@ export function useWebhooks() {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to fetch quality results'
         setError(errorMessage)
-        toast({
-          title: 'Error',
-          description: errorMessage,
-          variant: 'destructive'
-        })
+        // toast({
+        //   title: 'Error',
+        //   description: errorMessage,
+        //   variant: 'destructive'
+        // })
         throw err
       } finally {
         setQualityLoading(false)
       }
     },
-    [toast]
+    []
   )
 
   // Connect repository to project part
@@ -101,16 +100,18 @@ export function useWebhooks() {
       setError(null)
       try {
         const response = await connectRepositoryToPart(projectId, partId, {
+          projectId,
+          partId,
           repoUrl,
           accessToken
         })
         if (response.code === 0) {
           setConnectionStatus(response.data)
-          toast({
-            title: 'Success',
-            description: 'Repository connected successfully!',
-            variant: 'default'
-          })
+          // toast({
+          //   title: 'Success',
+          //   description: 'Repository connected successfully!',
+          //   variant: 'default'
+          // })
           return response.data
         } else {
           throw new Error(response.message)
@@ -118,17 +119,17 @@ export function useWebhooks() {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to connect repository'
         setError(errorMessage)
-        toast({
-          title: 'Error',
-          description: errorMessage,
-          variant: 'destructive'
-        })
+        // toast({
+        //   title: 'Error',
+        //   description: errorMessage,
+        //   variant: 'destructive'
+        // })
         throw err
       } finally {
         setConnectionLoading(false)
       }
     },
-    [toast]
+    []
   )
 
   // Disconnect repository from project part
@@ -140,11 +141,11 @@ export function useWebhooks() {
         const response = await disconnectRepositoryFromPart(projectId, partId)
         if (response.code === 0) {
           setConnectionStatus(response.data)
-          toast({
-            title: 'Success',
-            description: 'Repository disconnected successfully!',
-            variant: 'default'
-          })
+          // toast({
+          //   title: 'Success',
+          //   description: 'Repository disconnected successfully!',
+          //   variant: 'default'
+          // })
           return response.data
         } else {
           throw new Error(response.message)
@@ -152,22 +153,20 @@ export function useWebhooks() {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to disconnect repository'
         setError(errorMessage)
-        toast({
-          title: 'Error',
-          description: errorMessage,
-          variant: 'destructive'
-        })
+        // toast({
+        //   title: 'Error',
+        //   description: errorMessage,
+        //   variant: 'destructive'
+        // })
         throw err
       } finally {
         setConnectionLoading(false)
       }
     },
-    [toast]
+    []
   )
 
-  // GitHub OAuth Functions
-  const [oauthLoading, setOauthLoading] = useState(false)
-  const [repositories, setRepositories] = useState<GitHubOAuthRepositoryResponse['data'] | null>(null)
+  
 
   const startGitHubOAuth = useCallback(
     async (projectId: string, partId: string, returnUrl: string) => {
@@ -185,17 +184,17 @@ export function useWebhooks() {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to start GitHub OAuth'
         setError(errorMessage)
-        toast({
-          title: 'Error',
-          description: errorMessage,
-          variant: 'destructive'
-        })
+        // toast({
+        //   title: 'Error',
+        //   description: errorMessage,
+        //   variant: 'destructive'
+        // })
         throw err
       } finally {
         setOauthLoading(false)
       }
     },
-    [toast]
+    []
   )
 
   const handleOAuthCallback = useCallback(
@@ -213,17 +212,17 @@ export function useWebhooks() {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to handle OAuth callback'
         setError(errorMessage)
-        toast({
-          title: 'Error',
-          description: errorMessage,
-          variant: 'destructive'
-        })
+        // toast({
+        //   title: 'Error',
+        //   description: errorMessage,
+        //   variant: 'destructive'
+        // })
         throw err
       } finally {
         setOauthLoading(false)
       }
     },
-    [toast]
+    []
   )
 
   const connectOAuthRepository = useCallback(
@@ -235,11 +234,11 @@ export function useWebhooks() {
         if (response.code === 0) {
           setConnectionStatus(response.data)
           setRepositories(null) // Clear repositories after connection
-          toast({
-            title: 'Success',
-            description: 'Repository connected successfully via OAuth!',
-            variant: 'default'
-          })
+          // toast({
+          //   title: 'Success',
+          //   description: 'Repository connected successfully via OAuth!',
+          //   variant: 'default'
+          // })
           return response.data
         } else {
           throw new Error(response.message)
@@ -247,17 +246,17 @@ export function useWebhooks() {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Failed to connect repository'
         setError(errorMessage)
-        toast({
-          title: 'Error',
-          description: errorMessage,
-          variant: 'destructive'
-        })
+        // toast({
+        //   title: 'Error',
+        //   description: errorMessage,
+        //   variant: 'destructive'
+        // })
         throw err
       } finally {
         setConnectionLoading(false)
       }
     },
-    [toast]
+    []
   )
 
   // Note: fetchConnectionStatus function removed because /projects/{projectId}/parts/{partId}/repo-status endpoint doesn't exist
@@ -281,6 +280,10 @@ export function useWebhooks() {
     if (qualityResults.length === 0) return null
     return qualityResults.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
   }, [qualityResults])
+
+  
+
+  
 
   return {
     // State

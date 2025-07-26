@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { Pencil } from 'lucide-react'
 import { useState } from 'react'
+import { APIError } from '@/types/api'
 
 interface BoardEditMenuProps {
   projectId: string
@@ -26,11 +27,16 @@ export function BoardEditMenu({ projectId, boardId, currentName, currentDescript
     setLoading(true)
     try {
       const res = await boardApi.editBoard(projectId, boardId, name, description)
-      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Board updated successfully', variant: res?.code === 200 ? 'default' : 'destructive' })
+      if (res) {
+        showToast({ title: 'Success', description: 'Board updated successfully', variant: 'default' })
+      } else {
+        showToast({ title: 'Error', description: 'Failed to update board', variant: 'destructive' })
+      }
       onEdited()
       setIsOpen(false)
     } catch (error) {
-      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to update board.', variant: 'destructive' })
+      const err = error as APIError
+      showToast({ title: 'Error', description: err?.response?.data?.message || err?.message || 'Failed to update board.', variant: 'destructive' })
     } finally {
       setLoading(false)
     }

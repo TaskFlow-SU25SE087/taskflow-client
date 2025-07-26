@@ -49,7 +49,7 @@ export default function TaskCreateMenu({
   useEffect(() => {
     const fetchMembers = async () => {
       try {
-        const data = await projectMemberApi.getMembersByProjectId(projectId)
+        await projectMemberApi.getMembersByProjectId(projectId)
         // setMembers(data) // XÓA: setMembers(data)
       } catch (error) {
         // setMembers([]) // XÓA: setMembers([])
@@ -88,7 +88,7 @@ export default function TaskCreateMenu({
       if (sprintId) formData.append('SprintId', sprintId)
       selectedTagIds.forEach((tagId) => formData.append('TagIds', tagId))
       const res = await taskApi.createTask(projectId, formData)
-      if (res === true) {
+      if (res.code === 200) {
         showToast({ title: 'Success', description: 'Task created successfully', variant: 'default' })
       } else {
         showToast({ title: 'Error', description: 'Failed to create task', variant: 'destructive' })
@@ -113,7 +113,8 @@ export default function TaskCreateMenu({
       setPriority('Medium')
       setDeadline(null)
     } catch (error) {
-      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to create task.', variant: 'destructive' })
+      const err = error as any
+      showToast({ title: 'Error', description: err?.response?.data?.message || err?.message || 'Failed to create task.', variant: 'destructive' })
     } finally {
       setIsSubmitting(false)
     }

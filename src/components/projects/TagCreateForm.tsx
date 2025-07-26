@@ -8,20 +8,19 @@ export default function TagCreateForm() {
   const { createTag, isLoading, error } = useTags()
   const { showToast } = useToastContext()
   const [tag, setTag] = useState({ name: '', description: '', color: '#000000' })
-  const [success, setSuccess] = useState('')
 
   const handleCreate = async () => {
     if (!tag.name) return
     try {
       const res = await createTag(tag)
-      if (res?.code === 200) {
-        showToast({ title: 'Success', description: res?.message || 'Tag created successfully' })
-        setTag({ name: '', description: '', color: '#000000' })
+      if (res && typeof res === 'object' && 'code' in res && 'message' in res) {
+        showToast({ title: res.code === 200 ? 'Success' : 'Error', description: String(res.message) || 'Tag created successfully' })
       } else {
-        showToast({ title: 'Error', description: res?.message || 'Failed to create tag', variant: 'destructive' })
+        showToast({ title: 'Success', description: 'Tag created successfully' })
       }
-    } catch (error: any) {
-      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to create tag', variant: 'destructive' })
+    } catch (error) {
+      const err = error as any
+      showToast({ title: 'Error', description: err?.response?.data?.message || err?.message || 'Failed to create tag', variant: 'destructive' })
     }
   }
 
@@ -30,7 +29,6 @@ export default function TagCreateForm() {
       <h2 className='font-bold mb-2'>Create Tag</h2>
       {isLoading && <div>Loading...</div>}
       {error && <div className='text-red-500'>{error.message}</div>}
-      {success && <div className='text-green-600 mb-2'>{success}</div>}
       <div className='flex flex-col gap-2 mb-2'>
         <Input placeholder='Tag name' value={tag.name} onChange={(e) => setTag({ ...tag, name: e.target.value })} />
         <Input

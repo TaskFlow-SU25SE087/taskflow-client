@@ -84,7 +84,7 @@ const getBoardStyling = (boardName: string) => {
   }
 }
 
-export function TaskColumn({ title, tasks, color, onTaskCreated, boardId }: TaskColumnProps) {
+export function TaskColumn({ title, tasks, onTaskCreated, boardId }: TaskColumnProps) {
   const [isAddingTask, setIsAddingTask] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const { currentProject } = useCurrentProject()

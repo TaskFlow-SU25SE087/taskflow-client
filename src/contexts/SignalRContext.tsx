@@ -16,10 +16,7 @@ const SignalRContext = createContext<SignalRContextType | null>(null)
 export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { showToast } = useToastContext();
   const [signalRService] = useState(() => new SignalRService())
-  // Lấy userId hiện tại từ sessionStorage
-  const storedUser = sessionStorage.getItem('auth_user')
-  const currentUserId = storedUser ? JSON.parse(storedUser).id : null
-  const [notificationService] = useState(() => new NotificationService(signalRService, currentUserId, showToast))
+  const [notificationService] = useState(() => new NotificationService(signalRService, showToast))
   const [isConnected, setIsConnected] = useState(false)
   const [notifications, setNotifications] = useState<NotificationData[]>([])
   const [connectionState, setConnectionState] = useState('Disconnected')
@@ -58,7 +55,7 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setNotifications(noti);
 
         // Listen for notification count updates
-        const handleCountUpdate = (event: CustomEvent) => {
+        const handleCountUpdate = () => {
           // Update notifications list if needed
           setNotifications(notificationService.getNotifications())
         }

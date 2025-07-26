@@ -60,11 +60,6 @@ export default function ProjectPartsList({ projectId }: ProjectPartsListProps) {
     fetchProjectMembers()
   }, [projectId])
 
-  const handleGitHubIntegrationSuccess = () => {
-    fetchPartsFromApi() // Refresh the list after successful integration
-    setShowGitHubIntegration(false)
-  }
-
   const handleGitMemberDialogOpen = (partId: string) => {
     setSelectedPartForGitMembers(partId)
     setShowGitMemberDialog(true)

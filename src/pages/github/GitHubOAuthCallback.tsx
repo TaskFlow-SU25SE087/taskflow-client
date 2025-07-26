@@ -12,7 +12,6 @@ export default function GitHubOAuthCallback() {
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search)
     const code = urlParams.get('code')
-    const state = urlParams.get('state')
     const errorParam = urlParams.get('error')
     const errorDescription = urlParams.get('error_description')
 

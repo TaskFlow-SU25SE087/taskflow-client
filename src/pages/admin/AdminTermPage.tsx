@@ -30,9 +30,6 @@ export default function AdminTermPage() {
   const [detail, setDetail] = useState<any>(null)
   const [detailLoading, setDetailLoading] = useState(false)
 
-  // Reload terms when needed
-  const reloadTerms = () => setReloadFlag((f) => f + 1)
-
   // Create term
   const handleCreateTerm = async (e: React.FormEvent) => {
     e.preventDefault()

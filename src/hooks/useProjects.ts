@@ -1,31 +1,33 @@
 import { projectApi } from '@/api/projects'
 import { ProjectListItem } from '@/types/project'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useAuth } from './useAuth'
-
-type FilterStatus = 'all' | 'active' | 'completed' | 'archived' // Placeholder
 
 export function useProjects() {
   const [projects, setProjects] = useState<ProjectListItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterStatus, setFilterStatus] = useState<FilterStatus>('all')
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'name'>('newest')
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'archived'>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalItems, setTotalItems] = useState(0)
   const { user } = useAuth()
 
-  // Đưa fetchProjects ra ngoài để có thể gọi lại
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async (): Promise<void> => {
     try {
       if (!user?.id) {
         throw new Error('User not authenticated')
       }
       const response = await projectApi.getProjects()
-      const mapped = response.data.map((project: any) => ({
-        ...project,
-        ownerId: project.ownerId ?? ''
+      const mapped = response.data.map((project: Partial<ProjectListItem>) => ({
+        id: project.id || '',
+        title: project.title || '',
+        description: project.description || '',
+        ownerId: project.ownerId || '',
+        lastUpdate: project.lastUpdate || '',
+        role: project.role || '',
+        createdAt: project.lastUpdate || '' // Use lastUpdate as createdAt if not available
       }))
       setProjects(mapped)
       setTotalItems(mapped.length)
@@ -35,11 +37,11 @@ export function useProjects() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [user?.id])
 
   useEffect(() => {
-    fetchProjects()
-  }, [user])
+    void fetchProjects()
+  }, [fetchProjects])
 
   const filteredAndSortedProjects = useMemo(() => {
     let result = [...projects]
@@ -50,18 +52,13 @@ export function useProjects() {
       result = result.filter((project) => project.title.toLowerCase().includes(query))
     }
 
-    // Apply status filter
-    if (filterStatus !== 'all') {
-      result = result.filter((project) => project.status === filterStatus)
-    }
-
-    // Apply sorting
+      // Apply sorting
     result.sort((a, b) => {
       switch (sortBy) {
         case 'newest':
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          return new Date(b.lastUpdate || '').getTime() - new Date(a.lastUpdate || '').getTime()
         case 'oldest':
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          return new Date(a.lastUpdate || '').getTime() - new Date(b.lastUpdate || '').getTime()
         case 'name':
           return a.title.localeCompare(b.title)
         default:
@@ -70,7 +67,7 @@ export function useProjects() {
     })
 
     return result
-  }, [projects, searchQuery, filterStatus, sortBy])
+  }, [projects, searchQuery, sortBy])
 
   // Paginate the results
   const paginatedProjects = useMemo(() => {
@@ -98,10 +95,10 @@ export function useProjects() {
     isLoading,
     searchQuery,
     setSearchQuery,
-    filterStatus,
-    setFilterStatus,
     sortBy,
     setSortBy,
+    filterStatus,
+    setFilterStatus,
     currentPage,
     totalPages,
     totalItems,

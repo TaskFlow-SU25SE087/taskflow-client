@@ -36,5 +36,10 @@ export const projectMemberApi = {
   addSystemUserToProject: async (projectId: string): Promise<{ code: number; message: string; data: boolean }> => {
     const response = await axiosClient.post(`/project/${projectId}/members/add-system-user`)
     return response.data
+  },
+
+  joinProject: async (projectId: string) => {
+    const response = await axiosClient.post(`/project/${projectId}/members/join`)
+    return response.data
   }
 }

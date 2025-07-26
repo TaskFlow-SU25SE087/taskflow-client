@@ -1,6 +1,5 @@
 import { BarChart3, CheckCircle, ExternalLink, GitCommit, Github, Settings, XCircle } from 'lucide-react'
 import { useState } from 'react'
-import { useToast } from '../../hooks/useToast'
 import { useWebhooks } from '../../hooks/useWebhooks'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
@@ -17,7 +16,6 @@ interface GitHubIntegrationProps {
 
 export default function GitHubIntegration({ projectId, partId }: GitHubIntegrationProps) {
   const { connectionStatus, getLatestCommit, getLatestQualityResult } = useWebhooks()
-  const { toast } = useToast()
   const [activeTab, setActiveTab] = useState('overview')
 
   const isConnected = connectionStatus?.isConnected

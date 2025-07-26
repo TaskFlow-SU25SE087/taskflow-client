@@ -45,7 +45,6 @@ export const ProjectIssues: React.FC = () => {
   const { currentProject } = useCurrentProject()
   const { getProjectIssues, getFilteredProjectIssues, isLoading } = useIssues()
   const [issues, setIssues] = useState<Issue[]>([])
-  const [selectedTaskId, setSelectedTaskId] = useState<string>('')
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all')
   const [filterPriority, setFilterPriority] = useState<string>('all')
@@ -136,7 +135,7 @@ export const ProjectIssues: React.FC = () => {
   }
 
   // Thêm component con cho từng issue
-  function IssueCard({ issue, idx, isOpen, onToggle }: { issue: any, idx: number, isOpen: boolean, onToggle: () => void }) {
+  function IssueCard({ issue, isOpen, onToggle }: { issue: any, isOpen: boolean, onToggle: () => void }) {
     const priorityInfo = getPriorityInfo(issue.priority)
     const typeInfo = getTypeInfo(issue.type)
     const statusInfo = getStatusInfo(issue.status)
@@ -321,7 +320,7 @@ export const ProjectIssues: React.FC = () => {
           {showCreateMenu && currentProject && (
             <IssueCreateMenu
               projectId={currentProject.id}
-              taskId={selectedTaskId || 'demo-task-id'}
+              taskId={'demo-task-id'}
               onIssueCreated={() => {
                 setShowCreateMenu(false)
                 loadIssues()
@@ -346,7 +345,7 @@ export const ProjectIssues: React.FC = () => {
                     {currentProject && (
                       <IssueCreateMenu
                         projectId={currentProject.id}
-                        taskId={selectedTaskId || 'demo-task-id'}
+                        taskId={'demo-task-id'}
                         onIssueCreated={handleIssueCreated}
                       />
                     )}
@@ -368,7 +367,6 @@ export const ProjectIssues: React.FC = () => {
                     <IssueCard
                       key={id}
                       issue={issue}
-                      idx={idx}
                       isOpen={isOpen}
                       onToggle={() => toggleOpen(id)}
                     />

@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { Loader2, SquarePlus } from 'lucide-react'
 import { useState } from 'react'
+import { APIError } from '@/types/api'
 
 interface TaskBoardCreateMenuProps {
   isOpen: boolean
@@ -39,13 +40,18 @@ export default function TaskBoardCreateMenu({
     setIsSubmitting(true)
     try {
       const res = await boardApi.createBoard(projectId, status.trim(), description.trim())
-      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Board created successfully', variant: res?.code === 200 ? 'default' : 'destructive' })
+      if (res) {
+        showToast({ title: 'Success', description: 'Board created successfully', variant: 'default' })
+      } else {
+        showToast({ title: 'Error', description: 'Failed to create board', variant: 'destructive' })
+      }
       onBoardCreated()
       onOpenChange(false)
       setStatus('')
       setDescription('')
     } catch (error) {
-      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to create board.', variant: 'destructive' })
+      const err = error as APIError
+      showToast({ title: 'Error', description: err?.response?.data?.message || err?.message || 'Failed to create board.', variant: 'destructive' })
     } finally {
       setIsSubmitting(false)
     }

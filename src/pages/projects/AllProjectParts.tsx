@@ -70,7 +70,7 @@ export default function AllProjectParts() {
     // Lấy project members thật từ API
     try {
       const membersRes = await projectApi.getProjectMembers(part.projectId);
-      setProjectMembers(Array.isArray(membersRes) ? membersRes : membersRes?.data || []);
+      setProjectMembers(Array.isArray(membersRes) ? membersRes : (membersRes && typeof membersRes === 'object' && 'data' in membersRes ? (membersRes as any).data : []));
     } catch (err) {
       console.error('Failed to fetch project members:', err);
       setProjectMembers([]);

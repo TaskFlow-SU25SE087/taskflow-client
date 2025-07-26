@@ -52,6 +52,7 @@ export interface ProjectListItem {
   ownerId: string
   lastUpdate: string
   role: string
+  createdAt: string
 }
 
 export interface ProjectDetail {

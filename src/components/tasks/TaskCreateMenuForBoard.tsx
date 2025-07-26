@@ -111,7 +111,7 @@ export default function TaskCreateMenuForBoard({
       formData.append('SprintId', selectedSprintId)
       selectedTagIds.forEach((tagId) => formData.append('TagIds', tagId))
       const res = await taskApi.createTask(projectId, formData)
-      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Task created successfully', variant: res?.code === 200 ? 'default' : 'destructive' })
+      showToast({ title: res.code === 200 ? 'Success' : 'Error', description: res.message || 'Task created successfully', variant: res.code === 200 ? 'default' : 'destructive' })
       await refreshTasks()
       onTaskCreated()
       onOpenChange(false)
@@ -120,7 +120,8 @@ export default function TaskCreateMenuForBoard({
       setFile(null)
       setSelectedTagIds([])
     } catch (error) {
-      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to create task.', variant: 'destructive' })
+      const err = error as any
+      showToast({ title: 'Error', description: err?.response?.data?.message || err?.message || 'Failed to create task.', variant: 'destructive' })
     } finally {
       setIsSubmitting(false)
     }

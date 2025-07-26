@@ -1,4 +1,5 @@
 import axiosClient from '@/configs/axiosClient'
+import { APIResponse } from '@/types/api'
 import { TaskP } from '@/types/task'
 
 export const taskApi = {
@@ -15,11 +16,11 @@ export const taskApi = {
   },
 
   // Create a new task for a project
-  createTask: async (projectId: string, formData: FormData): Promise<boolean> => {
+  createTask: async (projectId: string, formData: FormData): Promise<APIResponse<boolean>> => {
     const response = await axiosClient.post(`/projects/${projectId}/tasks`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
-    return response.data.data === true
+    return response.data
   },
 
   // Update a task
@@ -33,9 +34,9 @@ export const taskApi = {
   },
 
   // Delete a task
-  deleteTask: async (projectId: string, taskId: string): Promise<boolean> => {
+  deleteTask: async (projectId: string, taskId: string): Promise<APIResponse<boolean>> => {
     const response = await axiosClient.delete(`/projects/${projectId}/tasks/${taskId}`)
-    return response.data.data === true
+    return response.data
   },
 
   // Get all tasks of a sprint
@@ -71,7 +72,7 @@ export const taskApi = {
   },
 
   // Assign a task to a user
-  assignTask: async (projectId: string, taskId: string, implementerId: string): Promise<boolean> => {
+  assignTask: async (projectId: string, taskId: string, implementerId: string): Promise<APIResponse<boolean>> => {
     console.log('Assign action:', { projectId, taskId, implementerId })
     const formData = new FormData()
     formData.append('implementerId', implementerId)
@@ -79,7 +80,7 @@ export const taskApi = {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
     console.log('Assign response:', response)
-    return response.data.data === true
+    return response.data
   },
 
   // Remove an assignment from a task
@@ -87,11 +88,11 @@ export const taskApi = {
     projectId: string,
     taskId: string,
     body: { implementId: string; reason: string }
-  ): Promise<boolean> => {
+  ): Promise<APIResponse<boolean>> => {
     const response = await axiosClient.delete(`/projects/${projectId}/tasks/${taskId}/assignments/remove`, {
       data: body
     })
-    return response.data.data === true
+    return response.data
   },
 
   // Leave an assignment from a task
@@ -138,9 +139,9 @@ export const taskApi = {
   },
 
   // Chuyển task sang board
-  moveTaskToBoard: async (projectId: string, taskId: string, boardId: string): Promise<boolean> => {
+  moveTaskToBoard: async (projectId: string, taskId: string, boardId: string): Promise<APIResponse<boolean>> => {
     const response = await axiosClient.post(`/projects/${projectId}/tasks/${taskId}/status/board/${boardId}`)
-    return response.data.data === true
+    return response.data
   },
 
   // Complete a task with file upload (custom endpoint)

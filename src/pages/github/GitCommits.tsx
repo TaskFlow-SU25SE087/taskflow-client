@@ -1,7 +1,6 @@
 import { getProjectPartCommitDetail, getProjectPartCommitsV2 } from '@/api/webhooks';
 import { Navbar } from '@/components/Navbar';
 import { Sidebar } from '@/components/Sidebar';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -9,80 +8,26 @@ import { Loader } from '@/components/ui/loader';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCurrentProject } from '@/hooks/useCurrentProject';
 import { useProjectParts } from '@/hooks/useProjectParts';
-import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { ArrowRight, Calendar, ChevronDown, Filter, GitCommit, Search } from 'lucide-react';
+import { Calendar, ChevronDown, Filter, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
-
-
-interface CommitCardProps {
-  commit: (typeof MOCK_COMMITS)[0]
-}
-
-function CommitCard({ commit }: CommitCardProps) {
-  const initials = commit.author.name
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-
-  return (
-    <div className='bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:border-lavender-200 transition-colors'>
-      <div className='flex items-start gap-4'>
-        <Avatar className='h-10 w-10'>
-          <AvatarFallback className='bg-lavender-100 text-lavender-700'>{initials}</AvatarFallback>
-        </Avatar>
-        <div className='flex-1 min-w-0'>
-          <div className='flex items-center gap-2 mb-1'>
-            <span className='font-medium text-gray-900'>{commit.author.name}</span>
-            <span className='text-gray-500'>committed</span>
-            <span className='text-sm text-gray-500'>{format(commit.date, 'MMM d, yyyy')}</span>
-          </div>
-          <p className='text-gray-900 font-medium mb-2'>{commit.message}</p>
-          <div className='flex items-center gap-4 text-sm'>
-            <div className='flex items-center gap-1.5 text-gray-500'>
-              <GitCommit className='h-4 w-4' />
-              <span className='font-mono'>{commit.hash}</span>
-            </div>
-            <div className='flex items-center gap-2'>
-              <span
-                className={cn(
-                  'px-2 py-0.5 rounded-full text-xs font-medium',
-                  commit.branch === 'main' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                )}
-              >
-                {commit.branch}
-              </span>
-            </div>
-            <div className='flex items-center gap-2 text-gray-500'>
-              <span className='text-green-600'>+{commit.changes.additions}</span>
-              <span className='text-red-600'>-{commit.changes.deletions}</span>
-            </div>
-          </div>
-        </div>
-        <Button variant='ghost' size='icon' className='h-8 w-8 rounded-lg hover:bg-gray-100'>
-          <ArrowRight className='h-4 w-4 text-gray-500' />
-        </Button>
-      </div>
-    </div>
-  )
-}
+import { CommitDetail, CommitListItem, ProjectPart } from '@/types/commits';
 
 export default function GitCommits() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const { currentProject, isLoading } = useCurrentProject();
   const { fetchParts } = useProjectParts();
-  const [parts, setParts] = useState<any[]>([]);
+  const [parts, setParts] = useState<ProjectPart[]>([]);
   const [selectedPartId, setSelectedPartId] = useState<string>('');
-  const [commits, setCommits] = useState<any[]>([]);
+  const [commits, setCommits] = useState<CommitListItem[]>([]);
   const [loadingCommits, setLoadingCommits] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showDetail, setShowDetail] = useState(false);
-  const [commitDetail, setCommitDetail] = useState<any>(null);
+  const [commitDetail, setCommitDetail] = useState<CommitDetail[] | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
-  const [selectedCommit, setSelectedCommit] = useState<any>(null);
+  // selectedCommit state removed - commit data is passed directly to detail handler
 
   useEffect(() => {
     if (currentProject?.id) {
@@ -93,7 +38,7 @@ export default function GitCommits() {
         }
       });
     }
-  }, [currentProject?.id]);
+  }, [currentProject?.id, fetchParts]);
 
   useEffect(() => {
     if (currentProject?.id && selectedPartId) {
@@ -115,9 +60,9 @@ export default function GitCommits() {
     commit.commitMessage?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleShowDetail = async (commit: any) => {
+  const handleShowDetail = async (commit: CommitListItem) => {
     if (!currentProject) return;
-    setSelectedCommit(commit);
+    // No need to set selectedCommit since we're not using it
     setShowDetail(true);
     setLoadingDetail(true);
     try {
@@ -263,7 +208,7 @@ export default function GitCommits() {
                   </tr>
                 </thead>
                 <tbody>
-                  {commitDetail.map((item: any, idx: number) => (
+                  {commitDetail.map((item: CommitDetail, idx: number) => (
                     <tr key={idx}>
                       <td>{item.rule}</td>
                       <td>{item.severity}</td>

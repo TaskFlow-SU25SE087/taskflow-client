@@ -23,22 +23,15 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
   const navigate = useNavigate()
 
   const {
-    connectionStatus,
     repositories,
     projectParts,
-    loading,
-    oauthLoading,
-    reposLoading,
     connectingRepo,
     creatingPart,
     checkConnectionStatus,
-    startGitHubOAuth,
     handleOAuthCallback,
-    fetchRepositories,
     createNewProjectPart,
     connectRepoToPart,
-    setProjectPartsData,
-    disconnectRepository
+    setProjectPartsData
   } = useGitHubProjectPartIntegration()
 
   // Thêm log kiểm tra dữ liệu parts lấy từ hook
@@ -93,7 +86,7 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
   // Check connection status on mount if partId is provided
   useEffect(() => {
     if (partId) {
-      checkConnectionStatusRef.current(projectId, partId)
+      checkConnectionStatusRef.current()
     }
   }, [projectId, partId])
 

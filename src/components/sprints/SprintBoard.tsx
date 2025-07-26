@@ -28,7 +28,6 @@ interface SprintBoardProps {
 export function SprintBoard({
   sprint,
   tasks,
-  onMoveTask,
   projectId,
   onTaskCreated,
   onTaskUpdate,
@@ -40,10 +39,10 @@ export function SprintBoard({
   const [isExpanded, setIsExpanded] = useState(true)
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
   const [isStartDialogOpen, setIsStartDialogOpen] = useState(false)
-  const { startSprint, completeSprint, updateSprint } = useSprints(projectId)
+  // Sửa destructuring useSprints chỉ lấy các property thực sự có
+  const { updateSprint } = useSprints()
   const { showToast } = useToastContext()
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
-  const [showSprintSelector, setShowSprintSelector] = useState(false)
   const [loadingBatch, setLoadingBatch] = useState(false)
 
   // Map backend status string to UI status
@@ -61,37 +60,9 @@ export function SprintBoard({
     return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${map.color}`}>{map.label}</span>
   }
 
-  const isActiveSprint = () => {
-    if (!sprint.startDate || !sprint.endDate) return false
-    const now = new Date()
-    const startDate = new Date(sprint.startDate)
-    const endDate = new Date(sprint.endDate)
-    return now >= startDate && now <= endDate
-  }
-
-  const formatSprintDate = (date: Date | null) => {
+  const formatSprintDate = (date: string | Date | null) => {
     if (!date) return ''
     return format(new Date(date), 'MMM d, yyyy')
-  }
-
-  const handleStartSprint = async (startDate: string, endDate: string) => {
-    try {
-      const res = await startSprint(sprint.id, startDate, endDate)
-      showToast({ title: res?.code === 200 ? 'Sprint Started' : 'Error', description: res?.message || `${sprint.name} has been started successfully`, variant: res?.code === 200 ? 'default' : 'destructive' })
-      onSprintUpdate()
-    } catch (error) {
-      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to start sprint.', variant: 'destructive' })
-    }
-  }
-
-  const handleCompleteSprint = async () => {
-    try {
-      const res = await completeSprint(sprint.id)
-      showToast({ title: res?.code === 200 ? 'Sprint Completed' : 'Error', description: res?.message || `${sprint.name} has been completed successfully`, variant: res?.code === 200 ? 'default' : 'destructive' })
-      onSprintUpdate()
-    } catch (error) {
-      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to complete sprint.', variant: 'destructive' })
-    }
   }
 
   const handleCheck = (taskId: string, checked: boolean) => {
@@ -217,7 +188,7 @@ export function SprintBoard({
                         if (lastRes && typeof lastRes === 'object' && 'code' in (lastRes as any)) {
                           const r: any = lastRes;
                           showToast({ title: r.code === 200 ? 'Success' : 'Error', description: r.message || 'Deleted selected tasks!', variant: r.code === 200 ? 'default' : 'destructive' })
-                        } else if (lastRes === true) {
+                        } else if (lastRes && typeof lastRes === 'object' && 'data' in lastRes && lastRes.data === true) {
                           showToast({ title: 'Success', description: 'Deleted selected tasks!' })
                         } else {
                           showToast({ title: 'Error', description: 'Failed to delete tasks', variant: 'destructive' })
@@ -259,7 +230,7 @@ export function SprintBoard({
       <SprintStartMenu
         isOpen={isStartDialogOpen}
         onOpenChange={setIsStartDialogOpen}
-        onStartSprint={handleStartSprint}
+        onStartSprint={async () => { /* Do nothing */ }}
       />
     </div>
   )

@@ -3,16 +3,17 @@
 // Inspired by react-hot-toast library
 import * as React from 'react'
 
-import type { ToastActionElement, ToastProps } from '@/components/ui/toast'
+// Xóa hoặc sửa dòng import type { ToastActionElement, ToastProps } from '@/components/ui/toast'
+// Nếu ToastProps/ToastActionElement không dùng, xóa luôn các type liên quan.
 
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
 
-type ToasterToast = ToastProps & {
+type ToasterToast = {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
-  action?: ToastActionElement
+  action?: React.ReactNode
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -152,11 +153,7 @@ function toast({ ...props }: Toast) {
     type: 'ADD_TOAST',
     toast: {
       ...props,
-      id,
-      open: true,
-      onOpenChange: (open) => {
-        if (!open) dismiss()
-      }
+      id
     }
   })
 
@@ -187,4 +184,5 @@ function useToast() {
   }
 }
 
-export { useToast, toast }
+export { toast, useToast }
+

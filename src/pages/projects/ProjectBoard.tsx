@@ -35,7 +35,7 @@ import {
     verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { CheckCircle, ChevronDown, Clock, Filter, Link2, Pencil, Plus, Search, Settings, TrendingUp } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 interface MemberAvatarProps {
@@ -166,14 +166,13 @@ export default function ProjectBoard() {
   const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const { currentProject, isLoading } = useCurrentProject()
-  const [filteredTasks, setFilteredTasks] = useState<TaskP[]>([])
   const [isInviteOpen, setIsInviteOpen] = useState(false)
   const [isBoardDialogOpen, setIsBoardDialogOpen] = useState(false)
-  const { sprints, isLoading: isSprintsLoading, refreshSprints, getSprintTasks } = useSprints()
-  const { tasks, isTaskLoading, refreshTasks } = useTasks()
+  const { sprints } = useSprints()
+  const { tasks } = useTasks()
   const [sprintTasks, setSprintTasks] = useState<TaskP[]>([])
   const [selectedSprintId, setSelectedSprintId] = useState<string | null>(null)
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all')
   const [isLockDialogOpen, setIsLockDialogOpen] = useState(false)
   const [lockedColumns, setLockedColumns] = useState<string[]>([])
   const [lockAll, setLockAll] = useState(false)
@@ -182,34 +181,7 @@ export default function ProjectBoard() {
   const { leaveProject, loading: memberLoading, error: memberError } = useProjectMembers()
   const { user } = useAuth()
 
-  const boardContainerRef = useRef<HTMLDivElement>(null)
-  const isDragging = useRef(false)
-  const startX = useRef(0)
-  const scrollLeft = useRef(0)
-
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    isDragging.current = true
-    startX.current = e.pageX - (boardContainerRef.current?.offsetLeft || 0)
-    scrollLeft.current = boardContainerRef.current?.scrollLeft || 0
-  }
-
-  const handleMouseLeave = () => {
-    isDragging.current = false
-  }
-
-  const handleMouseUp = () => {
-    isDragging.current = false
-  }
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!isDragging.current) return
-    e.preventDefault()
-    const x = e.pageX - (boardContainerRef.current?.offsetLeft || 0)
-    const walk = x - startX.current
-    if (boardContainerRef.current) {
-      boardContainerRef.current.scrollLeft = scrollLeft.current - walk
-    }
-  }
+  // Refs and mouse handlers removed since they're not being used
 
   // Lấy sprint hiện tại (in progress) khi vào trang
   useEffect(() => {
@@ -233,17 +205,6 @@ export default function ProjectBoard() {
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen)
   }
-
-  useEffect(() => {
-    if (searchQuery && boards) {
-      const filtered = boards.flatMap((board) =>
-        board.tasks.filter((task) => task.description.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
-      setFilteredTasks(filtered)
-    } else {
-      setFilteredTasks(boards?.flatMap((board) => board.tasks) || [])
-    }
-  }, [searchQuery, boards])
 
   useEffect(() => {
     if (!isLoading && !currentProject) {
@@ -386,11 +347,7 @@ export default function ProjectBoard() {
   console.log('All tasks:', tasks)
 
   // Lọc sprint đang active (IN_PROGRESS/status=1)
-  const activeSprints = sprints.filter((s) => s.status === 1)
-  // Chọn sprint active có startDate mới nhất
-  const latestActiveSprint = activeSprints.length
-    ? activeSprints.reduce((latest, curr) => (new Date(curr.startDate) > new Date(latest.startDate) ? curr : latest))
-    : null
+  sprints.filter((s) => s.status === 1)
 
   // Lọc task thuộc sprint active này (ưu tiên sprintId, fallback sang sprintName nếu chưa có sprintId)
 

@@ -1,19 +1,18 @@
 import { format } from 'date-fns'
 import {
-  AlertTriangle,
-  BarChart3,
-  Bug,
-  CheckCircle,
-  Code,
-  Minus,
-  RefreshCw,
-  Shield,
-  TrendingDown,
-  TrendingUp,
-  XCircle
+    AlertTriangle,
+    BarChart3,
+    Bug,
+    CheckCircle,
+    Code,
+    Minus,
+    RefreshCw,
+    Shield,
+    TrendingDown,
+    TrendingUp,
+    XCircle
 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
-import { useToast } from '../../hooks/useToast'
 import { useWebhooks } from '../../hooks/useWebhooks'
 import { CodeQualityResult } from '../../types/webhook'
 import { Badge } from '../ui/badge'
@@ -106,7 +105,7 @@ function QualityTrendChart({ qualityResults }: QualityTrendChartProps) {
       </CardHeader>
       <CardContent>
         <div className='space-y-4'>
-          {sortedResults.map((result, index) => (
+          {sortedResults.map((result) => (
             <div key={result.id} className='flex items-center justify-between'>
               <div className='flex items-center gap-3'>
                 <span className='text-sm text-gray-500 w-16'>{format(new Date(result.createdAt), 'MMM dd')}</span>
@@ -135,7 +134,6 @@ function QualityTrendChart({ qualityResults }: QualityTrendChartProps) {
 export default function CodeQualityDashboard({ projectId, partId }: CodeQualityDashboardProps) {
   const { qualityResults, qualityLoading, error, fetchQualityResults, getLatestQualityResult } = useWebhooks()
 
-  const { toast } = useToast()
   const [autoRefresh, setAutoRefresh] = useState(true)
 
   // Auto-refresh every 60 seconds
@@ -156,11 +154,6 @@ export default function CodeQualityDashboard({ projectId, partId }: CodeQualityD
 
   const handleRefresh = () => {
     fetchQualityResults(projectId, partId)
-    toast({
-      title: 'Refreshing',
-      description: 'Fetching latest quality data...',
-      variant: 'default'
-    })
   }
 
   const latestQuality = getLatestQualityResult()

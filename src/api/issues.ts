@@ -3,7 +3,7 @@ import { CreateIssueRequest, IssueResponse, IssueStatus } from '@/types/issue'
 
 export const issueApi = {
   // Create an issue for a specific task
-  createIssue: async (projectId: string, taskId: string, issueData: CreateIssueRequest): Promise<boolean> => {
+  createIssue: async (projectId: string, taskId: string, issueData: CreateIssueRequest): Promise<IssueResponse> => {
     console.log('🚀 [issueApi] createIssue called with:', {
       projectId,
       taskId,
@@ -53,23 +53,13 @@ export const issueApi = {
       console.log('✅ [issueApi] Response received:', response)
       console.log('📊 [issueApi] Response data:', response.data)
 
-      const success = response.status === 200
-      console.log('🎯 [issueApi] Success:', success)
-      return success
+      return response.data
     } catch (error) {
-      console.error('❌ [issueApi] Error creating issue:', error)
-
-      if (error.response) {
-        console.error('📡 [issueApi] Error response:', error.response)
-        console.error('📊 [issueApi] Error response data:', error.response.data)
-        console.error('🔢 [issueApi] Error status:', error.response.status)
-      } else if (error.request) {
-        console.error('🌐 [issueApi] No response received:', error.request)
-      } else {
-        console.error('⚙️ [issueApi] Request setup error:', error.message)
+      const err = error as any
+      if (err.response && err.response.data && typeof err.response.data.code === 'number') {
+        return err.response.data as IssueResponse
       }
-
-      throw error
+      return { code: 500, message: 'Unknown error', data: false }
     }
   },
 
