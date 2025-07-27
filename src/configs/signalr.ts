@@ -22,11 +22,11 @@ export class SignalRService {
   private connection: signalR.HubConnection | null = null
   private reconnectAttempts = 0
   private isConnecting = false
-  private isEnabled = ENV_CONFIG.ENABLE_SIGNALR
+  private signalREnabled = ENV_CONFIG.ENABLE_SIGNALR
 
   async connect() {
     // Disable SignalR if not enabled or in production without proper server
-    if (!this.isEnabled) {
+    if (!this.signalREnabled) {
       console.log('[SignalR] SignalR is disabled')
       return
     }
@@ -34,7 +34,7 @@ export class SignalRService {
     // Check if we're in production and don't have a proper SignalR server
     if (ENV_CONFIG.IS_PRODUCTION && SIGNALR_CONFIG.HUB_URL.includes('localhost')) {
       console.warn('[SignalR] Production environment detected but SignalR server is localhost. Disabling SignalR.')
-      this.isEnabled = false
+      this.signalREnabled = false
       return
     }
 
@@ -81,7 +81,7 @@ export class SignalRService {
   }
 
   private handleReconnect() {
-    if (!this.isEnabled) return
+    if (!this.signalREnabled) return
     
     if (this.reconnectAttempts < SIGNALR_CONFIG.MAX_RECONNECT_ATTEMPTS) {
       this.reconnectAttempts++
@@ -89,7 +89,7 @@ export class SignalRService {
       setTimeout(() => this.connect(), SIGNALR_CONFIG.RECONNECT_INTERVAL)
     } else {
       console.warn('[SignalR] Max reconnection attempts reached. Disabling SignalR.')
-      this.isEnabled = false
+      this.signalREnabled = false
     }
   }
 
@@ -117,7 +117,7 @@ export class SignalRService {
   }
 
   async invokeMethod(methodName: string, ...args: any[]) {
-    if (!this.connection || !this.isEnabled) {
+    if (!this.connection || !this.signalREnabled) {
       throw new Error('SignalR connection not established or disabled')
     }
     try {
@@ -131,7 +131,7 @@ export class SignalRService {
   }
 
   async joinProjectGroup(projectId: string) {
-    if (!this.isConnected() || !this.isEnabled) {
+    if (!this.isConnected() || !this.signalREnabled) {
       console.warn('SignalR chưa kết nối hoặc bị disable, không thể join group')
       return
     }
@@ -144,7 +144,7 @@ export class SignalRService {
   }
 
   async leaveProjectGroup(projectId: string) {
-    if (!this.isConnected() || !this.isEnabled) {
+    if (!this.isConnected() || !this.signalREnabled) {
       console.warn('SignalR chưa kết nối hoặc bị disable, không thể leave group')
       return
     }
@@ -157,7 +157,7 @@ export class SignalRService {
   }
 
   on(eventName: string, callback: (...args: any[]) => void) {
-    if (!this.connection || !this.isEnabled) {
+    if (!this.connection || !this.signalREnabled) {
       console.warn('SignalR connection not established or disabled, cannot register event listener')
       return
     }
@@ -182,7 +182,7 @@ export class SignalRService {
   }
 
   isEnabled() {
-    return this.isEnabled
+    return this.signalREnabled
   }
 }
 
