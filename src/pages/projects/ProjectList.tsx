@@ -1,22 +1,35 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Search, Share2 } from 'lucide-react'
+import { Navbar } from '@/components/Navbar'
+import ProjectCard from '@/components/projects/ProjectCard'
+import { ProjectCardSkeleton } from '@/components/projects/ProjectCardSkeleton'
+import { ProjectListFilter } from '@/components/projects/ProjectListFilter'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import ProjectCard from '@/components/projects/ProjectCard'
-import { useNavigate } from 'react-router-dom'
-import { ProjectCardSkeleton } from '@/components/projects/ProjectCardSkeleton'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjects } from '@/hooks/useProjects'
-import { ProjectListFilter } from '@/components/projects/ProjectListFilter'
-import { useCallback } from 'react'
 import debounce from 'debounce'
+import { ChevronLeft, ChevronRight, Search, Share2 } from 'lucide-react'
+import { useCallback } from 'react'
 import { FiPlus } from 'react-icons/fi'
-import { Navbar } from '@/components/Navbar'
+import { useNavigate } from 'react-router-dom'
 
 export default function ProjectList() {
-  const { projects, isLoading, setSearchQuery, filterStatus, setFilterStatus, sortBy, setSortBy } = useProjects()
+  const {
+    projects,
+    isLoading,
+    setSearchQuery,
+    filterStatus,
+    setFilterStatus,
+    sortBy,
+    setSortBy,
+    currentPage,
+    totalPages,
+    totalItems,
+    goToPage,
+    fetchProjects
+  } = useProjects()
   const navigate = useNavigate()
   const { setCurrentProjectId } = useCurrentProject()
 
@@ -37,6 +50,50 @@ export default function ProjectList() {
     debouncedSearch(value)
   }
 
+  const renderPagination = () => {
+    if (totalPages <= 1) return null
+
+    const pages = []
+    const maxVisiblePages = 5
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2))
+    const endPage = Math.min(totalPages, startPage + maxVisiblePages - 1)
+
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1)
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(
+        <Button
+          key={i}
+          variant={i === currentPage ? 'default' : 'outline'}
+          size='sm'
+          onClick={() => goToPage(i)}
+          className={i === currentPage ? 'bg-lavender-700 hover:bg-lavender-800' : ''}
+        >
+          {i}
+        </Button>
+      )
+    }
+
+    return (
+      <div className='flex items-center justify-center gap-2 mt-6'>
+        <Button variant='outline' size='sm' onClick={() => goToPage(currentPage - 1)} disabled={currentPage === 1}>
+          <ChevronLeft className='h-4 w-4' />
+        </Button>
+        {pages}
+        <Button
+          variant='outline'
+          size='sm'
+          onClick={() => goToPage(currentPage + 1)}
+          disabled={currentPage === totalPages}
+        >
+          <ChevronRight className='h-4 w-4' />
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div className='flex h-screen bg-gray-100'>
       <div className='flex-1 overflow-hidden'>
@@ -46,6 +103,7 @@ export default function ProjectList() {
           <div className='flex items-center justify-between'>
             <div className='flex items-center gap-4'>
               <h1 className='text-4xl font-bold'>Projects</h1>
+              {totalItems > 0 && <span className='text-sm text-gray-500'>({totalItems} projects)</span>}
             </div>
             <div className='flex items-center gap-3'>
               <Button
@@ -98,12 +156,20 @@ export default function ProjectList() {
               [...Array(6)].map((_, index) => <ProjectCardSkeleton key={index} />)
             ) : projects.length > 0 ? (
               projects.map((project) => (
-                <ProjectCard key={project.id} project={project} onSelect={handleSelectProject} />
+                <ProjectCard
+                  key={project.id}
+                  project={project}
+                  onSelect={handleSelectProject}
+                  onProjectUpdated={() => {
+                    if (typeof fetchProjects === 'function') fetchProjects()
+                  }}
+                />
               ))
             ) : (
               <div className='col-span-full text-center text-gray-500'>No projects found matching your criteria</div>
             )}
           </div>
+          {renderPagination()}
         </ScrollArea>
       </div>
     </div>

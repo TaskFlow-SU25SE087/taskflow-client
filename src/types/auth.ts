@@ -1,24 +1,25 @@
 import { ProjectMember } from './project'
 
 export interface AuthResponse {
-  id: string
-  token: string
-  name: string
-  email: string
-  role: string
+  accessToken: string
+  refreshToken: string
 }
 
 export interface User {
   id: string
-  name: string
+  fullName: string
   email: string
-  password: string
-  role: string
-  status: string
+  password?: string
+  role?: string | number
+  status?: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  feedbacks: any[] // Not clear yet
-  projectMembers: ProjectMember[]
+  feedbacks?: any[]
+  projectMembers?: ProjectMember[]
+  phoneNumber?: string
+  username: string
+  avatar?: string
 }
+
 export interface ApiError {
   message: string
   status?: number

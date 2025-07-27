@@ -1,13 +1,16 @@
-import { TaskP } from '@/types/task'
-import { useState, useEffect } from 'react'
-import { useCurrentProject } from './useCurrentProject'
 import { taskApi } from '@/api/tasks'
+import { useToastContext } from '@/components/ui/ToastContext'
+import { APIError } from '@/types/api'
+import { TaskP } from '@/types/task'
+import { useEffect, useState } from 'react'
+import { useCurrentProject } from './useCurrentProject'
 
 export const useTasks = () => {
   const [tasks, setTasks] = useState<TaskP[]>([])
   const [isTaskLoading, setIsTaskLoading] = useState(true)
   const [taskError, setTaskError] = useState<Error | null>(null)
   const { currentProject, isLoading: isProjectLoading } = useCurrentProject()
+  const { showToast } = useToastContext()
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -31,13 +34,30 @@ export const useTasks = () => {
 
   const addTask = async (projectId: string, newTask: { type: string; title: string }) => {
     try {
-      await taskApi.createTask(projectId, newTask.title)
+      const formData = new FormData()
+      formData.append('title', newTask.title)
+      formData.append('type', newTask.type)
+      
+      const success = await taskApi.createTask(projectId, formData)
+      showToast({
+        title: success ? 'Success' : 'Error',
+        description: success ? 'Task created successfully' : 'Failed to create task',
+        variant: success ? 'default' : 'destructive'
+      })
+      
       // Refresh tasks after adding a new one
-      const updatedTasks = await taskApi.getTasksFromProject(projectId)
-      setTasks(updatedTasks)
+      if (success) {
+        const updatedTasks = await taskApi.getTasksFromProject(projectId)
+        setTasks(updatedTasks)
+      }
     } catch (error) {
-      setTaskError(error as Error)
-      console.error('Failed to add task:', error)
+      const apiError = error as APIError
+      setTaskError(new Error(apiError.response?.data?.message || apiError.message))
+      showToast({
+        title: 'Error',
+        description: apiError.response?.data?.message || 'Failed to add task',
+        variant: 'destructive'
+      })
       throw error
     }
   }

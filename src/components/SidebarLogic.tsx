@@ -1,10 +1,20 @@
-import { useEffect, useState, useRef } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
 import gsap from 'gsap'
-import { FiClock, FiLayers, FiBarChart2, FiGitBranch, FiAlertCircle, FiSettings } from 'react-icons/fi'
 import { LucideLayoutDashboard } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import {
+  FiAlertCircle,
+  FiBarChart2,
+  FiClock,
+  FiGitBranch,
+  FiGithub,
+  FiLayers,
+  FiSettings,
+  FiUsers
+} from 'react-icons/fi'
+import { useLocation, useNavigate } from 'react-router-dom'
+import GitHubSidebarItem from './github/GitHubSidebarItem'
 
-export const SidebarLogic = () => {
+export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: string, connectionStatus?: boolean | null }) => {
   const [activeTab, setActiveTab] = useState('board')
   const [hoveredTab, setHoveredTab] = useState<string | null>(null)
   const highlightRef = useRef<HTMLDivElement>(null)
@@ -18,18 +28,78 @@ export const SidebarLogic = () => {
   }, [activeTab])
 
   const navItems = [
-    { id: 'timeline', icon: <FiClock className='h-5 w-5' />, label: 'Timeline', section: 1, path: '/timeline' },
+    {
+      id: 'timeline',
+      icon: <FiClock className='h-5 w-5' />,
+      label: 'Timeline',
+      section: 1,
+      path: projectId ? `/projects/${projectId}/timeline` : '/timeline'
+    },
     {
       id: 'board',
       icon: <LucideLayoutDashboard className='h-5 w-5' />,
       label: 'Board',
       section: 1,
-      path: '/board'
+      path: projectId ? `/projects/${projectId}/board` : '/board'
     },
-    { id: 'backlog', icon: <FiLayers className='h-5 w-5' />, label: 'Backlog', section: 1, path: '/backlog' },
-    { id: 'reports', icon: <FiBarChart2 className='h-5 w-5' />, label: 'Reports', section: 1, path: '/reports' },
-    { id: 'commits', icon: <FiGitBranch className='h-5 w-5' />, label: 'Commits', section: 2, path: '/commits' },
-    { id: 'issues', icon: <FiAlertCircle className='h-5 w-5' />, label: 'Issues', section: 2, path: '/issues' },
+    {
+      id: 'backlog',
+      icon: <FiLayers className='h-5 w-5' />,
+      label: 'Backlog',
+      section: 1,
+      path: projectId ? `/projects/${projectId}/backlog` : '/backlog'
+    },
+    {
+      id: 'members',
+      icon: <FiUsers className='h-5 w-5' />,
+      label: 'Members',
+      section: 1,
+      path: projectId ? `/projects/${projectId}/members` : '/members'
+    },
+  
+    {
+      id: 'reports',
+      icon: <FiBarChart2 className='h-5 w-5' />,
+      label: 'Reports',
+      section: 1,
+      path: projectId ? `/projects/${projectId}/reports` : '/reports'
+    },
+    // Section 2: GitHub, Commits, Issues
+    {
+      id: 'github',
+      icon: <FiGithub className='h-5 w-5' />,
+      label: 'GitHub',
+      section: 2,
+      path: projectId ? `/projects/${projectId}/github` : '/github'
+    },
+    {
+      id: 'commits',
+      icon: <FiGitBranch className='h-5 w-5' />,
+      label: 'Commits',
+      section: 2,
+      path: projectId ? `/projects/${projectId}/commits` : '/commits'
+    },
+    {
+      id: 'issues',
+      icon: <FiAlertCircle className='h-5 w-5' />,
+      label: 'Issues',
+      section: 2,
+      path: projectId ? `/projects/${projectId}/issues` : '/issues'
+    },
+    {
+      id: 'allparts',
+      icon: <FiLayers className='h-5 w-5' />,
+      label: 'All Parts',
+      section: 2,
+      path: '/all-parts'
+    },
+    {
+      id: 'codequality',
+      icon: <FiBarChart2 className='h-5 w-5' />,
+      label: 'Code Quality',
+      section: 2,
+      path: '/code-quality-commits'
+    },
     { id: 'settings', icon: <FiSettings className='h-5 w-5' />, label: 'Settings', section: 3, path: '/settings' }
   ]
 
@@ -129,18 +199,35 @@ export const SidebarLogic = () => {
 
     return (
       <div className='relative' onMouseMove={handleMouseMove}>
-        {sectionItems.map((item) => (
-          <div
-            key={item.id}
-            data-tab-id={item.id}
-            className={`relative flex items-center gap-3 px-2 py-3 cursor-pointer rounded-md transition-colors duration-200
-              ${getTabStyles(item.id).text}`}
-            onClick={() => handleClick(item.id)}
-          >
-            <div className={`transition-colors duration-200 ${getTabStyles(item.id).icon}`}>{item.icon}</div>
-            <span className='font-medium'>{item.label}</span>
-          </div>
-        ))}
+        {sectionItems.map((item) => {
+          // Special handling for GitHub item
+          if (item.id === 'github' && projectId) {
+            return (
+              <div
+                key={item.id}
+                data-tab-id={item.id}
+                className={`relative flex items-center gap-3 px-2 py-3 cursor-pointer rounded-md transition-colors duration-200 ${getTabStyles(item.id).text}`}
+                onClick={() => handleClick(item.id)}
+              >
+                <GitHubSidebarItem connectionStatus={connectionStatus} />
+              </div>
+            )
+          }
+
+          // Regular items
+          return (
+            <div
+              key={item.id}
+              data-tab-id={item.id}
+              className={`relative flex items-center gap-3 px-2 py-3 cursor-pointer rounded-md transition-colors duration-200
+                ${getTabStyles(item.id).text}`}
+              onClick={() => handleClick(item.id)}
+            >
+              <div className={`transition-colors duration-200 ${getTabStyles(item.id).icon}`}>{item.icon}</div>
+              <span className='font-medium'>{item.label}</span>
+            </div>
+          )
+        })}
       </div>
     )
   }

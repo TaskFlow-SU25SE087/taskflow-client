@@ -1,122 +1,126 @@
-import { useState, useCallback, useEffect } from 'react'
-import { Sprint } from '@/types/sprint'
 import { sprintApi } from '@/api/sprints'
-import { TaskP } from '@/types/task'
+import { Sprint } from '@/types/sprint'
+import { useCallback, useEffect, useState } from 'react'
+import { useCurrentProject } from './useCurrentProject'
 
-interface UseSprintsHook {
-  sprints: Sprint[]
-  isLoading: boolean
-  error: Error | null
-  fetchSprints: (projectId?: string) => Promise<void>
-  createSprint: (projectId: string, name: string) => Promise<Sprint>
-  getSprint: (sprintId: string) => Promise<Sprint>
-  getSprintTasks: (sprintId: string) => Promise<TaskP[]>
-  addTaskToSprint: (sprintId: string, taskId: string) => Promise<void>
-  startSprint: (sprintId: string, startDate: string, endDate: string) => Promise<void>
-  completeSprint: (sprintId: string) => Promise<void>
-}
-
-export const useSprints = (initialProjectId?: string): UseSprintsHook => {
+export const useSprints = () => {
   const [sprints, setSprints] = useState<Sprint[]>([])
-  const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
+  const { currentProject } = useCurrentProject()
 
-  const fetchSprints = useCallback(async (projectId?: string) => {
+  const fetchSprints = async () => {
+    if (!currentProject || !currentProject.id) return
     setIsLoading(true)
-    setError(null)
     try {
-      const fetchedSprints = projectId
-        ? await sprintApi.getAllSprintByProjectId(projectId)
-        : await sprintApi.getAllSprints()
-      setSprints(fetchedSprints)
+      const data = await sprintApi.getAllSprintsByProjectId(currentProject.id)
+      setSprints(data)
+      setError(null)
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to fetch sprints'))
+      setError(err as Error)
+      setSprints([])
     } finally {
       setIsLoading(false)
     }
-  }, [])
-
-  const createSprint = useCallback(async (projectId: string, name: string) => {
-    try {
-      const newSprint = await sprintApi.createSprint(projectId, name)
-      setSprints((prevSprints) => [...prevSprints, newSprint])
-      return newSprint
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to create sprint'))
-      throw err
-    }
-  }, [])
-
-  const getSprint = useCallback(async (sprintId: string) => {
-    try {
-      return await sprintApi.getSprintById(sprintId)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to get sprint'))
-      throw err
-    }
-  }, [])
-
-  const getSprintTasks = useCallback(async (sprintId: string) => {
-    try {
-      const sprint = await sprintApi.getSprintById(sprintId)
-      return sprint.taskPs
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to get sprint tasks'))
-      throw err
-    }
-  }, [])
-
-  const addTaskToSprint = useCallback(async (sprintId: string, taskId: string) => {
-    try {
-      await sprintApi.addTaskToSprint(sprintId, taskId)
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to add task to sprint'))
-      throw err
-    }
-  }, [])
-
-  const startSprint = useCallback(
-    async (sprintId: string, startDate: string, endDate: string) => {
-      try {
-        await sprintApi.startSprint(sprintId, startDate, endDate)
-        await fetchSprints(initialProjectId)
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to start sprint'))
-        throw err
-      }
-    },
-    [fetchSprints, initialProjectId]
-  )
-
-  const completeSprint = useCallback(
-    async (sprintId: string) => {
-      try {
-        await sprintApi.endSprint(sprintId)
-        await fetchSprints(initialProjectId)
-      } catch (err) {
-        setError(err instanceof Error ? err : new Error('Failed to complete sprint'))
-        throw err
-      }
-    },
-    [fetchSprints, initialProjectId]
-  )
+  }
 
   useEffect(() => {
-    if (initialProjectId) {
-      fetchSprints(initialProjectId)
+    fetchSprints()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentProject])
+
+  const refreshSprints = fetchSprints
+
+  const createSprint = async (sprint: {
+    name: string
+    description: string
+    startDate: string
+    endDate: string
+    status: string | number
+  }) => {
+    if (!currentProject || !currentProject.id) return { ok: false, message: 'No project selected' }
+    setIsLoading(true)
+    try {
+      const ok = await sprintApi.createSprint(currentProject.id, {
+        name: sprint.name,
+        description: sprint.description,
+        startDate: sprint.startDate,
+        endDate: sprint.endDate,
+        status: String(sprint.status)
+      })
+      if (ok) await fetchSprints()
+      return { ok: true }
+    } catch (err: any) {
+      setError(err as Error)
+      const message = err?.response?.data?.message || 'Failed to create sprint. Please try again.'
+      return { ok: false, message }
+    } finally {
+      setIsLoading(false)
     }
-  }, [initialProjectId, fetchSprints])
+  }
+
+  const updateSprint = async (
+    sprintId: string,
+    sprint: { name: string; description: string; startDate: string; endDate: string; status: string }
+  ) => {
+    if (!currentProject || !currentProject.id) return false
+    setIsLoading(true)
+    try {
+      const ok = await sprintApi.updateSprint(currentProject.id, sprintId, sprint)
+      if (ok) await fetchSprints()
+      return ok
+    } catch (err) {
+      setError(err as Error)
+      return false
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Lấy tasks của 1 sprint (cần cả projectId và sprintId)
+  const getSprintTasks = useCallback(
+    async (sprintId: string, projectId?: string) => {
+      const pid = projectId || currentProject?.id
+      if (!pid) return []
+      // Đảm bảo truyền đúng thứ tự projectId, sprintId cho API
+      return sprintApi.getSprintTasks(pid, sprintId)
+    },
+    [currentProject?.id]
+  )
+
+  // Gán 1 task vào sprint
+  const addTaskToSprint = async (sprintId: string, taskId: string) => {
+    if (!currentProject || !currentProject.id) return false
+    // API nhận mảng taskIds
+    return sprintApi.assignTasksToSprint(currentProject.id, sprintId, [taskId])
+  }
+
+  // Alias fetchSprints cho bên ngoài sử dụng (có thể truyền projectId nếu cần)
+  const fetchSprintsPublic = async (projectId?: string) => {
+    const pid = projectId || currentProject?.id
+    if (!pid) return
+    setIsLoading(true)
+    try {
+      const data = await sprintApi.getAllSprintsByProjectId(pid)
+      setSprints(data)
+      setError(null)
+    } catch (err) {
+      setError(err as Error)
+      setSprints([])
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return {
     sprints,
     isLoading,
     error,
-    fetchSprints,
+    refreshSprints,
     createSprint,
-    getSprint,
+    updateSprint,
     getSprintTasks,
     addTaskToSprint,
-    startSprint,
-    completeSprint
+    fetchSprints: fetchSprintsPublic
   }
 }

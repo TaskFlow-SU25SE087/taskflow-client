@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { boardApi } from '@/api/boards'
+import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Button } from '@/components/ui/button'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { Loader2, SquarePlus } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
-import { boardApi } from '@/api/boards'
+import { useState } from 'react'
+import { APIError } from '@/types/api'
 
 interface TaskBoardCreateMenuProps {
   isOpen: boolean
@@ -22,38 +23,35 @@ export default function TaskBoardCreateMenu({
   onBoardCreated,
   trigger
 }: TaskBoardCreateMenuProps) {
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [status, setStatus] = useState('')
+  const [description, setDescription] = useState('')
 
   const handleSubmit = async () => {
     if (!status.trim()) {
-      toast({
+      showToast({
         title: 'Validation Error',
         description: 'Please enter a board name',
         variant: 'destructive'
       })
       return
     }
-
     setIsSubmitting(true)
     try {
-      await boardApi.createBoard(projectId, status.trim())
-
-      toast({
-        title: 'Success',
-        description: 'Board created successfully'
-      })
+      const res = await boardApi.createBoard(projectId, status.trim(), description.trim())
+      if (res) {
+        showToast({ title: 'Success', description: 'Board created successfully', variant: 'default' })
+      } else {
+        showToast({ title: 'Error', description: 'Failed to create board', variant: 'destructive' })
+      }
       onBoardCreated()
       onOpenChange(false)
       setStatus('')
+      setDescription('')
     } catch (error) {
-      console.error(error)
-      toast({
-        title: 'Error',
-        description: 'Failed to create board. Please try again.',
-        variant: 'destructive'
-      })
+      const err = error as APIError
+      showToast({ title: 'Error', description: err?.response?.data?.message || err?.message || 'Failed to create board.', variant: 'destructive' })
     } finally {
       setIsSubmitting(false)
     }
@@ -89,6 +87,18 @@ export default function TaskBoardCreateMenu({
                   handleSubmit()
                 }
               }}
+            />
+          </div>
+          <div className='space-y-2'>
+            <Label htmlFor='description' className='text-sm font-medium'>
+              Description
+            </Label>
+            <Input
+              id='description'
+              placeholder='Enter board description (optional)'
+              className='h-11'
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
             />
           </div>
 

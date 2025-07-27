@@ -1,21 +1,33 @@
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Bell, ChevronDown, HelpCircle, Search, LogOut, Settings, User, FolderKanban, Plus, Layout } from 'lucide-react'
-import { FiMenu } from 'react-icons/fi'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuGroup,
-  DropdownMenuLabel
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { useCurrentProject } from '@/hooks/useCurrentProject'
-import { useNavigate } from 'react-router-dom'
-import { useProjects } from '@/hooks/useProjects'
+import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/useAuth'
+import { useCurrentProject } from '@/hooks/useCurrentProject'
+import { useProjects } from '@/hooks/useProjects'
 import Avatar from 'boring-avatars'
+import {
+    ChevronDown,
+    FolderKanban,
+    HelpCircle,
+    Layout,
+    LogOut,
+    Plus,
+    Search,
+    Settings,
+    Shield,
+    User
+} from 'lucide-react'
+import { FiMenu, FiX } from 'react-icons/fi'
+import { useNavigate } from 'react-router-dom'
+import NotificationCenter from './NotificationCenter'
 
 interface NavbarProps {
   isSidebarOpen: boolean
@@ -29,6 +41,8 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
   const { logout } = useAuth()
   const { user } = useAuth()
 
+  console.log('user in Navbar:', user)
+
   const handleProjectSelect = (projectId: string) => {
     setCurrentProjectId(projectId)
     navigate('/board')
@@ -41,32 +55,35 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
 
   return (
     <div className='sticky top-0 z-10 w-full bg-white border-b border-gray-300'>
-      <div className='px-4 py-3 flex items-center justify-between'>
-        <div className='flex items-center gap-2'>
-          {!isSidebarOpen && (
-            <Button
-              variant='ghost'
-              size='icon'
-              className='text-gray-500 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0'
-              onClick={toggleSidebar}
-            >
-              <FiMenu className='h-5 w-5' />
-            </Button>
-          )}
+      <div className='px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between'>
+        <div className='flex items-center gap-1 sm:gap-2 flex-1'>
+          <Button
+            variant='ghost'
+            size='icon'
+            className='text-gray-500 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 h-8 w-8 sm:h-10 sm:w-10'
+            onClick={toggleSidebar}
+          >
+            {isSidebarOpen ? (
+              <FiX className='h-4 w-4 sm:h-5 sm:w-5' />
+            ) : (
+              <FiMenu className='h-4 w-4 sm:h-5 sm:w-5' />
+            )}
+          </Button>
 
           {/* Projects Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant='ghost'
-                className='gap-2 font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'
+                className='gap-1 sm:gap-2 font-medium focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none text-sm sm:text-base h-8 sm:h-10 px-2 sm:px-4'
               >
-                Projects
-                <ChevronDown className='h-4 w-4 text-gray-500' />
+                <span className='hidden sm:inline'>Projects</span>
+                <span className='sm:hidden'>Proj</span>
+                <ChevronDown className='h-3 w-3 sm:h-4 sm:w-4 text-gray-500' />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className='w-64'>
-              <DropdownMenuLabel className='text-lg'>Your Projects</DropdownMenuLabel>
+            <DropdownMenuContent className='w-56 sm:w-64'>
+              <DropdownMenuLabel className='text-base sm:text-lg'>Your Projects</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
                 {projects.map((project) => (
@@ -98,52 +115,70 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Teams Dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant='ghost'
-                className='gap-2 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'
-              >
-                Teams
-                <ChevronDown className='h-4 w-4' />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className='w-56'>
-              <DropdownMenuItem className='cursor-not-allowed opacity-50'>Coming soon...</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Teams Dropdown - Hidden on mobile */}
+          <div className='hidden md:block'>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant='ghost'
+                  className='gap-2 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'
+                >
+                  Teams
+                  <ChevronDown className='h-4 w-4' />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className='w-56'>
+                <DropdownMenuItem className='cursor-not-allowed opacity-50'>Coming soon...</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
-
-        <div className='flex items-center gap-4'>
-          <div className='relative'>
+        {/* Search Bar ở giữa */}
+        <div className='flex-1 flex justify-center'>
+          <div className='relative w-[300px] xl:w-[400px]'>
             <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
             <Input
               placeholder='Search For Anything...'
-              className='w-[400px] rounded-lg bg-gray-100 pl-10 focus-visible:ring-offset-0 focus-visible:ring-0'
+              className='w-full rounded-lg bg-gray-100 pl-10 focus-visible:ring-offset-0 focus-visible:ring-0'
             />
           </div>
-          <div className='text-gray-500 px-2 hover:bg-transparent cursor-pointer'>
+        </div>
+
+        <div className='flex items-center gap-2 sm:gap-4'>
+          {/* Help Icon - Hidden on mobile */}
+          <div className='hidden md:block text-gray-500 px-2 hover:bg-transparent cursor-pointer'>
             <HelpCircle className='h-5 w-5' />
           </div>
-          <div className='text-gray-500 px-2 hover:bg-transparent cursor-pointer'>
-            <Bell className='h-5 w-5' />
-          </div>
+
+          {/* Notification Center */}
+          <NotificationCenter />
+
+          {/* Connection Status - Hidden on mobile */}
+          {/* <div className='hidden sm:block'>
+            <ConnectionStatus />
+          </div> */}
 
           {/* Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <div className='cursor-pointer relative h-8 w-fit flex items-center gap-2 px-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'>
-                <Avatar size='32px' variant='beam' name={user?.id} />
-                <div className='text-sm text-left'>
-                  <div className='font-medium'>{user?.name}</div>
-                  <div className='text-xs text-gray-500'>{user?.email}</div>
-                </div>
-                <ChevronDown className='h-4 w-4 text-gray-500' />
+              <div className='cursor-pointer relative h-8 w-fit flex items-center gap-1 sm:gap-2 px-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'>
+                {user?.avatar ? (
+                  <img src={user.avatar} alt='avatar' className='w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover' />
+                ) : (
+                  <Avatar size='28px' variant='beam' name={user?.id || 'unknown'} className='sm:w-8 sm:h-8' />
+                )}
+                {/* Ẩn tên và mũi tên */}
+                {/* <span className='hidden sm:block ml-2 font-medium text-black text-sm'>
+                  {user?.fullName || user?.email || 'No name'}
+                </span>
+                <ChevronDown className='hidden sm:block h-4 w-4 text-gray-500' /> */}
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent className='w-56' align='end'>
-              <DropdownMenuItem className='gap-2 text-gray-600 hover:text-gray-900'>
+              <DropdownMenuItem
+                onClick={() => navigate('/profile')}
+                className='gap-2 text-gray-600 hover:text-gray-900'
+              >
                 <User className='h-4 w-4' />
                 Profile
               </DropdownMenuItem>
@@ -151,6 +186,25 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
                 <Settings className='h-4 w-4' />
                 Settings
               </DropdownMenuItem>
+              {(user?.role === 'Admin' || user?.role === 'admin' || user?.role === 0 || user?.role === '0') && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => navigate('/admin/dashboard')}
+                    className='gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                  >
+                    <Layout className='h-4 w-4' />
+                    Admin Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => navigate('/admin/users')}
+                    className='gap-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                  >
+                    <Shield className='h-4 w-4' />
+                    Admin Panel
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogout}

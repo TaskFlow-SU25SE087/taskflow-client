@@ -1,10 +1,10 @@
-import { useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Project } from '@/types/project'
 import { projectApi } from '@/api/projects'
-import { useToast } from '@/hooks/use-toast'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { useToastContext } from '@/components/ui/ToastContext'
+import { Project } from '@/types/project'
+import { useState } from 'react'
 
 interface ProjectEditMenuProps {
   project: Project
@@ -14,57 +14,99 @@ interface ProjectEditMenuProps {
 
 export function ProjectEditMenu({ project, onProjectUpdated, trigger }: ProjectEditMenuProps) {
   const [title, setTitle] = useState(project.title)
+  const [description, setDescription] = useState(project.description || '')
   const [isOpen, setIsOpen] = useState(false)
-  const { toast } = useToast()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { showToast } = useToastContext()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSubmitting(true)
+
     try {
-      await projectApi.editProject(project.id, title)
-      toast({
-        title: 'Success',
-        description: 'Project name updated successfully'
+      console.log('Updating project title:', {
+        id: project.id,
+        title: title,
+        originalTitle: project.title
       })
+
+      const response = await projectApi.updateProject(project.id, title, description)
+
+      console.log('Update response:', response)
+
+      showToast({ title: response?.code === 200 ? 'Success' : 'Error', description: response?.message || 'Project name updated successfully', variant: response?.code === 200 ? 'default' : 'destructive' })
       onProjectUpdated()
       setIsOpen(false)
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to update project name',
-        variant: 'destructive'
-      })
+    } catch (error: any) {
+      console.error('Update project error:', error)
+      console.error('Error response:', error.response?.data)
+
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to update project'
+      showToast({ title: 'Error', description: `Update failed: ${errorMessage}`, variant: 'destructive' })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open)
+    if (open) {
+      // Reset form khi mở dialog
+      setTitle(project.title)
+      setDescription(project.description || '')
     }
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className='sm:max-w-[425px]'>
-        <DialogHeader>
-          <DialogTitle>Edit Project Name</DialogTitle>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className='space-y-4'>
-          <div className='space-y-2'>
-            <label htmlFor='title' className='text-sm font-medium'>
-              Project Name
-            </label>
-            <Input
-              id='title'
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder='Project name'
-              required
-            />
-          </div>
-          <div className='flex justify-end space-x-2'>
-            <Button type='button' variant='outline' onClick={() => setIsOpen(false)}>
-              Cancel
-            </Button>
-            <Button type='submit'>Save Changes</Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+        <DialogContent className='sm:max-w-[425px]' aria-describedby='edit-project-desc'>
+          <span id='edit-project-desc' className='sr-only'>
+            Edit the project name. The description will not be changed.
+          </span>
+          <DialogHeader>
+            <DialogTitle>Edit Project Name</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className='space-y-4'>
+            <div className='space-y-2'>
+              <label htmlFor='title' className='text-sm font-medium'>
+                Project Name *
+              </label>
+              <Input
+                id='title'
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder='Project name'
+                required
+                disabled={isSubmitting}
+              />
+            </div>
+            <div className='space-y-2'>
+              <label htmlFor='description' className='text-sm font-medium'>
+                Project Description
+              </label>
+              <textarea
+                id='description'
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder='Project description'
+                disabled={isSubmitting}
+                className='w-full border rounded p-2'
+              />
+            </div>
+
+            <div className='flex justify-end space-x-2'>
+              <Button type='button' variant='outline' onClick={() => setIsOpen(false)} disabled={isSubmitting}>
+                Cancel
+              </Button>
+              <Button type='submit' disabled={isSubmitting || !title.trim()}>
+                {isSubmitting ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

@@ -1,71 +1,190 @@
-import { useState } from 'react'
-import { Filter, CalendarDays, Search, ChevronDown } from 'lucide-react'
+import { Navbar } from '@/components/Navbar'
+import { Sidebar } from '@/components/Sidebar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Loader } from '@/components/ui/loader'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
-import { Sidebar } from '@/components/Sidebar'
-import { Navbar } from '@/components/Navbar'
-import { Card, CardContent } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Loader } from '@/components/ui/loader'
+import { cn } from '@/lib/utils'
+import { format } from 'date-fns'
+import { AlertCircle, ArrowRight, Calendar, ChevronDown, Filter, Search, Tag } from 'lucide-react'
+import { useState } from 'react'
 
+// Temporary mock data until API is ready
 const MOCK_ISSUES = [
   {
     id: '1',
-    title: 'Unnecessary block.',
-    file: 'gatsby-node.js',
-    reporter: 'PMD',
-    timeToFix: '5 minutes',
-    createdAt: '2 months ago',
+    number: 123,
+    title: 'Fix authentication bug in login flow',
+    description:
+      'Users are experiencing issues with the login authentication process. The session is not being properly maintained after successful login.',
+    state: 'open',
     author: {
-      name: 'Jane Doe',
-      avatar: '/avatars/jane.jpg'
+      name: 'Sarah Chen',
+      email: 'sarah@example.com'
     },
-    code: `const path = require('path')
-const { createFilePath } = require('gatsby-source-filesystem')
-
-exports.createPages = async ({ graphql, actions, reporter }) => {
-    const { createPage } = actions`,
-    explanation:
-      'An unnecessary Block is present. Such Blocks are often used in other languages to introduce a new variable scope. Blocks do not behave like this in ECMAScript, and using them can be misleading. Considering removing this unnecessary Block.',
-    example: 'if (foo) {\n    // Ok\n}'
+    assignee: {
+      name: 'Mike Johnson',
+      email: 'mike@example.com'
+    },
+    createdAt: new Date('2024-01-15T10:30:00'),
+    updatedAt: new Date('2024-01-16T14:20:00'),
+    labels: ['bug', 'authentication', 'high-priority'],
+    comments: 5,
+    milestone: 'Sprint 2'
   },
   {
     id: '2',
-    title: 'Avoid using var keyword',
-    file: 'utils.js',
-    reporter: 'ESLint',
-    timeToFix: '2 minutes',
-    createdAt: '3 days ago',
+    number: 124,
+    title: 'Add dark mode support to dashboard',
+    description:
+      'Implement a dark mode theme option for the dashboard to improve user experience in low-light environments.',
+    state: 'closed',
     author: {
-      name: 'John Smith',
-      avatar: '/avatars/john.jpg'
+      name: 'Alex Rodriguez',
+      email: 'alex@example.com'
     },
-    code: 'var count = 0;',
-    explanation: 'Use const or let instead of var to declare variables.',
-    example: 'const count = 0;'
+    assignee: {
+      name: 'Sarah Chen',
+      email: 'sarah@example.com'
+    },
+    createdAt: new Date('2024-01-14T15:45:00'),
+    updatedAt: new Date('2024-01-17T09:15:00'),
+    labels: ['enhancement', 'ui/ux', 'feature'],
+    comments: 12,
+    milestone: 'Sprint 1'
+  },
+  {
+    id: '3',
+    number: 125,
+    title: 'Performance optimization for large datasets',
+    description:
+      'The application is experiencing slow loading times when handling large datasets. Need to implement pagination and lazy loading.',
+    state: 'open',
+    author: {
+      name: 'Mike Johnson',
+      email: 'mike@example.com'
+    },
+    assignee: null,
+    createdAt: new Date('2024-01-13T11:20:00'),
+    updatedAt: new Date('2024-01-16T16:30:00'),
+    labels: ['performance', 'optimization'],
+    comments: 3,
+    milestone: 'Sprint 3'
   }
 ]
 
-export default function CodeIssues() {
+interface IssueCardProps {
+  issue: (typeof MOCK_ISSUES)[0]
+}
+
+function IssueCard({ issue }: IssueCardProps) {
+  const authorInitials = issue.author.name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+
+  const assigneeInitials = issue.assignee?.name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+
+  const getStateColor = (state: string) => {
+    return state === 'open' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'
+  }
+
+  return (
+    <div className='bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:border-lavender-200 transition-colors'>
+      <div className='flex items-start gap-4'>
+        <div className='flex flex-col items-center gap-2'>
+          <Avatar className='h-10 w-10'>
+            <AvatarFallback className='bg-lavender-100 text-lavender-700'>{authorInitials}</AvatarFallback>
+          </Avatar>
+          {issue.assignee && (
+            <Avatar className='h-8 w-8'>
+              <AvatarFallback className='bg-blue-100 text-blue-700 text-xs'>{assigneeInitials}</AvatarFallback>
+            </Avatar>
+          )}
+        </div>
+
+        <div className='flex-1 min-w-0'>
+          <div className='flex items-center gap-2 mb-2'>
+            <Badge className={cn('text-xs', getStateColor(issue.state))}>
+              {issue.state === 'open' ? 'Open' : 'Closed'}
+            </Badge>
+            <span className='text-gray-500 text-sm'>#{issue.number}</span>
+            <span className='text-gray-500'>•</span>
+            <span className='text-sm text-gray-500'>{format(issue.updatedAt, 'MMM d, yyyy')}</span>
+          </div>
+
+          <h3 className='text-gray-900 font-medium mb-2 hover:text-lavender-700 cursor-pointer'>{issue.title}</h3>
+
+          <p className='text-gray-600 text-sm mb-3 line-clamp-2'>{issue.description}</p>
+
+          <div className='flex items-center gap-4 text-sm'>
+            <div className='flex items-center gap-2'>
+              <span className='text-gray-500'>by</span>
+              <span className='font-medium text-gray-900'>{issue.author.name}</span>
+            </div>
+
+            {issue.assignee && (
+              <>
+                <span className='text-gray-500'>•</span>
+                <div className='flex items-center gap-2'>
+                  <span className='text-gray-500'>assigned to</span>
+                  <span className='font-medium text-gray-900'>{issue.assignee.name}</span>
+                </div>
+              </>
+            )}
+
+            <span className='text-gray-500'>•</span>
+            <div className='flex items-center gap-1 text-gray-500'>
+              <AlertCircle className='h-4 w-4' />
+              <span>{issue.comments}</span>
+            </div>
+          </div>
+
+          <div className='flex items-center gap-2 mt-3'>
+            {issue.labels.map((label) => (
+              <Badge key={label} variant='secondary' className='text-xs'>
+                {label}
+              </Badge>
+            ))}
+            {issue.milestone && (
+              <Badge variant='outline' className='text-xs'>
+                <Tag className='mr-1 h-3 w-3' />
+                {issue.milestone}
+              </Badge>
+            )}
+          </div>
+        </div>
+
+        <Button variant='ghost' size='icon' className='h-8 w-8 rounded-lg hover:bg-gray-100'>
+          <ArrowRight className='h-4 w-4 text-gray-500' />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+export default function GitIssues() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const { currentProject, isLoading } = useCurrentProject()
-  const [expandedIssues, setExpandedIssues] = useState<string[]>([])
+  const [filteredIssues] = useState(MOCK_ISSUES)
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen)
   }
 
-  const toggleIssue = (issueId: string) => {
-    setExpandedIssues((prev) => (prev.includes(issueId) ? prev.filter((id) => id !== issueId) : [...prev, issueId]))
-  }
-
   if (isLoading || !currentProject) {
     return (
       <div className='flex h-screen bg-gray-100'>
-        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
+        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
         <div className='flex-1 flex flex-col overflow-hidden'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
           <Loader />
@@ -75,104 +194,73 @@ export default function CodeIssues() {
   }
 
   return (
-    <div className='flex h-screen bg-[#fafafa]'>
-      <Sidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
+    <div className='flex h-screen bg-gradient-to-br from-lavender-50 via-white to-blue-50'>
+      <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
 
       <div className='flex-1 flex flex-col overflow-hidden'>
-        <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+        <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
-        <div className='flex flex-col h-full p-8 overflow-y-auto'>
-          <h1 className='text-3xl font-bold text-[#0F172A] mb-6'>Code Issues</h1>
-
-          <div className='flex gap-4 mb-8'>
-            <Button variant='outline' className='bg-white border-gray-200 hover:bg-gray-50'>
-              <Filter className='h-4 w-4 mr-2' />
-              Filter
+        <div className='flex flex-col h-full p-8'>
+          <div className='flex-none w-full flex items-center justify-between pb-8 border-b-2 border-lavender-200 mb-6 shadow-sm'>
+            <div className='flex items-center gap-3'>
+              <img src="/logo.png" alt="GitHub" className="w-10 h-10 rounded-full bg-lavender-100 p-1" />
+              <h1 className='text-4xl font-extrabold text-lavender-700 drop-shadow'>Issues</h1>
+              <div className='flex items-center gap-2 ml-4'>
+                <span className='text-base text-blue-700 font-semibold'>Repository:</span>
+                <span className='font-bold text-purple-700'>{currentProject.title}</span>
+              </div>
+            </div>
+            <Button className='bg-gradient-to-r from-lavender-500 to-blue-400 hover:from-lavender-600 hover:to-blue-500 text-white font-bold shadow-lg rounded-xl px-6 py-2'>
+              + New Issue
             </Button>
+          </div>
 
-            <Select defaultValue='today'>
-              <SelectTrigger className='w-[140px] bg-white border-gray-200'>
-                <CalendarDays className='h-4 w-4 mr-2' />
-                <SelectValue placeholder='Today' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='today'>Today</SelectItem>
-                <SelectItem value='week'>This Week</SelectItem>
-                <SelectItem value='month'>This Month</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className='relative flex-1 max-w-md'>
-              <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
-              <Input
-                placeholder='Search For Issue'
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className='pl-10 bg-white border-gray-200'
-              />
+          <div className='pb-8 flex items-center justify-between'>
+            <div className='flex items-center gap-4 bg-white/80 rounded-2xl shadow-md px-6 py-3'>
+              <Button variant='outline' className='bg-lavender-50 hover:bg-lavender-100 text-lavender-700 border-0 font-semibold rounded-lg'>
+                <Filter className='mr-2 h-4 w-4 text-blue-400' />
+                Filter
+                <ChevronDown className='ml-2 h-4 w-4 text-blue-400' />
+              </Button>
+              <div className='relative'>
+                <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-blue-400' />
+                <Input
+                  placeholder='Search issues...'
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className='w-[280px] pl-10 bg-lavender-50 border-0 rounded-lg text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400'
+                />
+              </div>
+            </div>
+            <div className='flex gap-2 bg-white/80 rounded-2xl shadow-md px-6 py-3'>
+              <Button variant='outline' className='bg-blue-50 hover:bg-blue-100 text-blue-700 border-0 font-semibold rounded-lg'>
+                <Calendar className='mr-2 h-4 w-4 text-purple-400' />
+                Time Range
+              </Button>
+              <Select defaultValue='newest'>
+                <SelectTrigger className='w-[180px] bg-lavender-50 border-0 rounded-lg text-lavender-700 font-semibold'>
+                  <SelectValue placeholder='Sort by' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='newest'>Newest first</SelectItem>
+                  <SelectItem value='oldest'>Oldest first</SelectItem>
+                  <SelectItem value='author'>Author name</SelectItem>
+                  <SelectItem value='assignee'>Assignee</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
-          <div className='space-y-8'>
-            {Array.from(new Set(MOCK_ISSUES.map((issue) => issue.file))).map((file) => (
-              <div key={file} className='space-y-4'>
-                <h2 className='text-lg font-semibold text-[#0F172A]'>{file}</h2>
-
-                {MOCK_ISSUES.filter((issue) => issue.file === file).map((issue) => (
-                  <Card key={issue.id} className='border border-gray-200 hover:border-gray-300 transition-colors'>
-                    <CardContent className='p-6'>
-                      <div
-                        className='flex items-center justify-between cursor-pointer'
-                        onClick={() => toggleIssue(issue.id)}
-                      >
-                        <div className='flex-1'>
-                          <h3 className='text-lg font-semibold text-[#0F172A] mb-4'>{issue.title}</h3>
-
-                          <div className='flex items-center gap-6 text-sm'>
-                            <div className='flex items-center gap-2'>
-                              <Avatar className='h-6 w-6'>
-                                <AvatarImage src={issue.author.avatar} />
-                                <AvatarFallback>{issue.author.name[0]}</AvatarFallback>
-                              </Avatar>
-                              <span className='text-gray-600'>{issue.author.name}</span>
-                            </div>
-                            <span className='text-gray-400'>{issue.createdAt}</span>
-                            <div className='text-gray-600'>
-                              <span>Reported by {issue.reporter}</span>
-                              <span className='mx-2'>•</span>
-                              <span>Time to fix: {issue.timeToFix}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <ChevronDown
-                          className={`h-5 w-5 text-gray-400 transition-transform ${
-                            expandedIssues.includes(issue.id) ? 'transform rotate-180' : ''
-                          }`}
-                        />
-                      </div>
-
-                      {expandedIssues.includes(issue.id) && (
-                        <div className='mt-6 pt-6 border-t'>
-                          <pre className='bg-gray-50 p-4 rounded-lg overflow-x-auto mb-6'>
-                            <code className='text-sm font-mono'>{issue.code}</code>
-                          </pre>
-
-                          <div className='text-gray-700'>
-                            <h4 className='font-semibold mb-2'>Explanation</h4>
-                            <p className='mb-4 text-sm leading-relaxed'>{issue.explanation}</p>
-
-                            <h4 className='font-semibold mb-2'>Example(s):</h4>
-                            <pre className='bg-gray-50 p-4 rounded-lg overflow-x-auto'>
-                              <code className='text-sm font-mono'>{issue.example}</code>
-                            </pre>
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+          <div className='space-y-6 overflow-y-auto'>
+            {filteredIssues.map((issue) => (
+              <IssueCard key={issue.id} issue={issue} />
             ))}
+            {filteredIssues.length === 0 && (
+              <div className='text-center py-12 text-lavender-400 text-xl font-semibold flex flex-col items-center'>
+                <img src="/logo.png" alt="No issues" className="w-16 h-16 mb-4 opacity-60" />
+                No issues found
+              </div>
+            )}
           </div>
         </div>
       </div>

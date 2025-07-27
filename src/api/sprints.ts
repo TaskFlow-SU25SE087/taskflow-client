@@ -1,46 +1,65 @@
 import axiosClient from '@/configs/axiosClient'
+import { APIResponse } from '@/types/api'
 import { Sprint } from '@/types/sprint'
-
-const ENDPOINT = '/api/Sprint'
+import { TaskP } from '@/types/task'
 
 export const sprintApi = {
-  getAllSprints: async (): Promise<Sprint[]> => {
-    const response = await axiosClient.get<Sprint[]>(ENDPOINT)
-    return response.data
+  // Lấy tất cả sprint của 1 project
+  getAllSprintsByProjectId: async (projectId: string): Promise<Sprint[]> => {
+    const response = await axiosClient.get(`/projects/${projectId}/sprints`)
+    return response.data.data
   },
 
+  // Tương thích với tên cũ (fix lỗi không tìm thấy hàm)
   getAllSprintByProjectId: async (projectId: string): Promise<Sprint[]> => {
-    const response = await axiosClient.get<Sprint[]>(`${ENDPOINT}/${projectId}/getAllSprintByProjectId`)
+    return sprintApi.getAllSprintsByProjectId(projectId)
+  },
+
+  // Tạo sprint mới
+  createSprint: async (
+    projectId: string,
+    sprint: { name: string; description: string; startDate: string; endDate: string; status: string }
+  ): Promise<boolean> => {
+    const response = await axiosClient.post(`/projects/${projectId}/sprints`, sprint)
+    return response.data.data
+  },
+
+  // Cập nhật sprint
+  updateSprint: async (
+    projectId: string,
+    sprintId: string,
+    sprint: { name: string; description: string; startDate: string; endDate: string; status: string }
+  ): Promise<boolean> => {
+    const response = await axiosClient.put(`/projects/${projectId}/sprints/${sprintId}`, sprint)
+    return response.data.data
+  },
+
+  // Lấy tasks của 1 sprint (cần cả projectId và sprintId)
+  getSprintTasks: async (projectId: string, sprintId: string): Promise<TaskP[]> => {
+    const response = await axiosClient.get(`/projects/${projectId}/sprints/${sprintId}/tasks`)
+    return response.data.data
+  },
+
+  // Gán nhiều task vào sprint
+  assignTasksToSprint: async (projectId: string, sprintId: string, taskIds: string[]): Promise<APIResponse<boolean>> => {
+    const response = await axiosClient.post(`/projects/${projectId}/sprints/${sprintId}/tasks/assign`, taskIds)
     return response.data
   },
 
-  getSprintById: async (sprintId: string): Promise<Sprint> => {
-    const response = await axiosClient.get<Sprint>(`${ENDPOINT}/${sprintId}`)
-    return response.data
+  // Alias fetchSprints cho getAllSprintsByProjectId
+  fetchSprints: async (projectId: string): Promise<Sprint[]> => {
+    return sprintApi.getAllSprintsByProjectId(projectId)
   },
 
-  createSprint: async (projectId: string, name: string): Promise<Sprint> => {
-    const response = await axiosClient.post<Sprint>(`${ENDPOINT}/${projectId}`, { name })
-    return response.data
+  // Lấy sprint theo ID
+  getSprintById: async (projectId: string, sprintId: string): Promise<Sprint> => {
+    const response = await axiosClient.get(`/projects/${projectId}/sprints/${sprintId}`)
+    return response.data.data
   },
 
-  addTaskToSprint: async (sprintId: string, taskId: string): Promise<void> => {
-    await axiosClient.put(`${ENDPOINT}/sprintId=${sprintId}/taskId=${taskId}/AddTaskToSprint`)
-  },
-
-  removeTaskFromSprint: async (taskId: string): Promise<void> => {
-    await axiosClient.put(`${ENDPOINT}/RemoveTask/taskId=${taskId}`)
-  },
-
-  deleteSprintById: async (sprintId: string): Promise<void> => {
-    await axiosClient.delete(`${ENDPOINT}/${sprintId}/DeleteById`)
-  },
-
-  startSprint: async (sprintId: string, startDate: string, endDate: string): Promise<void> => {
-    await axiosClient.put(`${ENDPOINT}/StartSprint/${sprintId}/${startDate}/${endDate}`)
-  },
-
-  endSprint: async (sprintId: string): Promise<void> => {
-    await axiosClient.put(`${ENDPOINT}/EndSprint/${sprintId}`)
+  // Lấy sprint hiện tại (active sprint)(inprogess) của project
+  getCurrentSprint: async (projectId: string): Promise<Sprint> => {
+    const response = await axiosClient.get(`/projects/${projectId}/sprints/current`)
+    return response.data.data
   }
 }

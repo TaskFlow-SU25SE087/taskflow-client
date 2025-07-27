@@ -1,52 +1,81 @@
-import axios, { AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios'
+import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+import { ENV_CONFIG } from './env'
 
 const axiosClient = axios.create({
-  baseURL: 'http://localhost:5149',
-  timeout: 10000,
+  baseURL: ENV_CONFIG.API_BASE_URL,
+  timeout: ENV_CONFIG.API_TIMEOUT,
   headers: {
     'Content-Type': 'application/json'
   },
-  withCredentials: true
+  withCredentials: false
 })
 
 // Request
 axiosClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const authUserString = sessionStorage.getItem('auth_user')
+    console.log('🌐 [axiosClient] Request interceptor called')
+    console.log('📤 [axiosClient] Request URL:', config.url)
+    console.log('📤 [axiosClient] Request method:', config.method?.toUpperCase())
+    console.log('📤 [axiosClient] Request headers:', config.headers)
+    console.log('📤 [axiosClient] Request data:', config.data)
 
-    if (authUserString) {
-      try {
-        const authUser = JSON.parse(authUserString)
-        if (authUser.token) {
-          config.headers.Authorization = `Bearer ${authUser.token}`
-        }
-      } catch (error) {
-        console.error('Error parsing auth_user from session storage:', error)
-      }
+    // Get access token from session storage
+    const accessToken = sessionStorage.getItem('accessToken')
+
+    if (accessToken) {
+      console.log('🔑 [axiosClient] Adding Authorization header with token')
+      config.headers.Authorization = `Bearer ${accessToken}`
+    } else {
+      console.log('⚠️ [axiosClient] No access token found in session storage')
     }
+
+    console.log('📤 [axiosClient] Final request config:', {
+      url: config.url,
+      method: config.method,
+      headers: config.headers,
+      data: config.data
+    })
+
     return config
   },
   (error: AxiosError) => {
+    console.error('❌ [axiosClient] Request interceptor error:', error)
     return Promise.reject(error)
   }
 )
 
 // Response
 axiosClient.interceptors.response.use(
-  (response: AxiosResponse) => response,
+  (response: AxiosResponse) => {
+    console.log('✅ [axiosClient] Response interceptor called')
+    console.log('📥 [axiosClient] Response URL:', response.config.url)
+    console.log('📥 [axiosClient] Response status:', response.status)
+    console.log('📥 [axiosClient] Response headers:', response.headers)
+    console.log('📥 [axiosClient] Response data:', response.data)
+    return response
+  },
   (error: AxiosError) => {
+    console.error('❌ [axiosClient] Response interceptor error:', error)
+
     if (error.response) {
-      const { status } = error.response
+      const { status, data } = error.response
+      console.error('📡 [axiosClient] Error response status:', status)
+      console.error('📡 [axiosClient] Error response data:', data)
+
       if (status === 401) {
+        console.error('🔒 [axiosClient] Unauthorized - removing token')
         localStorage.removeItem('token')
       } else if (status === 403) {
-        console.error('You do not have permission to perform this action.')
+        console.error('🚫 [axiosClient] Forbidden - You do not have permission to perform this action.')
       } else if (status === 500) {
-        console.error('Internal server error. Please try again later.')
+        console.error('💥 [axiosClient] Internal server error. Please try again later.')
       }
+    } else if (error.request) {
+      console.error('🌐 [axiosClient] Network error - No response received:', error.request)
     } else {
-      console.error('Network error. Please check your connection.')
+      console.error('⚙️ [axiosClient] Request setup error:', error.message)
     }
+
     return Promise.reject(error)
   }
 )
