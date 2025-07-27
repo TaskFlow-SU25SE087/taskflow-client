@@ -46,8 +46,8 @@ const getProductionUrls = () => {
   }
   
   return {
-    apiUrl: 'http://localhost:5041',
-    signalRUrl: 'http://localhost:5041/taskHub',
+    apiUrl: 'http://localhost:7029',
+    signalRUrl: 'http://localhost:7029/taskHub',
     githubRedirect: 'http://localhost:3000/github/callback'
   }
 }

@@ -51,7 +51,7 @@ export class SignalRService {
             return rememberMe ? localStorage.getItem('accessToken') || '' : sessionStorage.getItem('accessToken') || ''
           },
           skipNegotiation: false,
-          transport: signalR.HttpTransportType.WebSockets
+          transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.ServerSentEvents | signalR.HttpTransportType.LongPolling
         })
         .withAutomaticReconnect([0, 2000, 10000, 30000])
         .configureLogging(signalR.LogLevel.Warning) // Change from Debug to Warning for production
