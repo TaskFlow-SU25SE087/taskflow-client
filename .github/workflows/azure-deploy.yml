@@ -1,0 +1,52 @@
+name: Deploy to Azure App Service
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run linting
+      run: npm run lint
+      
+    - name: Build application
+      run: npm run build
+      env:
+        VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+        VITE_SIGNALR_HUB_URL: ${{ secrets.VITE_SIGNALR_HUB_URL }}
+        VITE_GITHUB_CLIENT_ID: ${{ secrets.VITE_GITHUB_CLIENT_ID }}
+        VITE_GITHUB_REDIRECT_URI: ${{ secrets.VITE_GITHUB_REDIRECT_URI }}
+        VITE_ENABLE_DEBUG_LOGS: ${{ secrets.VITE_ENABLE_DEBUG_LOGS }}
+        VITE_ENABLE_SIGNALR: ${{ secrets.VITE_ENABLE_SIGNALR }}
+        
+    - name: Deploy to Azure App Service
+      uses: azure/webapps-deploy@v3
+      with:
+        app-name: 'taskflow-client'
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        package: ./dist
+        
+    - name: Azure logout
+      run: |
+        az logout
+      if: always() 
