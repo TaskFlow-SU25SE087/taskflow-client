@@ -128,3 +128,18 @@ Desktop.ini
 
 # Vercel
 .vercel
+
+# Build artifacts
+dist/
+dist-ssr/
+build/
+out/
+
+# Cache files
+.cache/
+.parcel-cache/
+.eslintcache
+
+# Temporary files
+*.tmp
+*.temp
