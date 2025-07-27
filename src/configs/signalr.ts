@@ -1,10 +1,11 @@
 import { SignalRErrorHandler } from '@/utils/signalRErrorHandler'
 import * as signalR from '@microsoft/signalr'
+import { ENV_CONFIG } from './env'
 
 export const SIGNALR_CONFIG = {
-  HUB_URL: 'http://localhost:5041/taskHub',
-  RECONNECT_INTERVAL: 5000,
-  MAX_RECONNECT_ATTEMPTS: 5
+  HUB_URL: ENV_CONFIG.SIGNALR_HUB_URL,
+  RECONNECT_INTERVAL: ENV_CONFIG.SIGNALR_RECONNECT_INTERVAL,
+  MAX_RECONNECT_ATTEMPTS: ENV_CONFIG.SIGNALR_MAX_RECONNECT_ATTEMPTS
 }
 
 export interface NotificationData {

@@ -1,8 +1,9 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+import { ENV_CONFIG } from './env'
 
 const axiosClient = axios.create({
-  baseURL: 'http://localhost:5041',
-  timeout: 10000,
+  baseURL: ENV_CONFIG.API_BASE_URL,
+  timeout: ENV_CONFIG.API_TIMEOUT,
   headers: {
     'Content-Type': 'application/json'
   },
