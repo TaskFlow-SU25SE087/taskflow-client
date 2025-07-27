@@ -7,19 +7,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToastContext } from '@/components/ui/ToastContext'
+
 import { useAuth } from '@/hooks/useAuth'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
+import { useSignalRIntegration } from '@/hooks/useSignalRIntegration'
 import { useTags } from '@/hooks/useTags'
 import { cn } from '@/lib/utils'
 import { ProjectMember, Tag } from '@/types/project'
 import { TaskP } from '@/types/task'
-interface ProjectListItem {
-  id: string
-  title: string
-  description: string
-  lastUpdate: string
-  role: string
-}
 import { formatDistanceToNow } from 'date-fns'
 import {
   Calendar,
@@ -32,6 +27,7 @@ import {
   Link,
   ListTodo,
   Loader2,
+  LogOut,
   MessageCircle,
   Paperclip,
   Pencil,
@@ -44,6 +40,13 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { projectApi } from '../../api/projects'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dialog'
+interface ProjectListItem {
+  id: string
+  title: string
+  description: string
+  lastUpdate: string
+  role: string
+}
 
 interface TaskDetailMenuProps {
   task: TaskP
@@ -61,6 +64,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const { user } = useAuth()
   const navigate = useNavigate()
   const { tags } = useTags()
+  const { listenForTaskUpdates } = useSignalRIntegration()
+
   const [isTagSelectOpen, setIsTagSelectOpen] = useState(false)
   const [isPrioritySelectOpen, setIsPrioritySelectOpen] = useState(false)
   const [taskTags, setTaskTags] = useState<Tag[]>(task.tags || [])
@@ -89,10 +94,13 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   }
 
   // State for each assignee
-  const [removeReasonMap, setRemoveReasonMap] = useState<{ [id: string]: string }>({})
   const [removeLoadingMap, setRemoveLoadingMap] = useState<{ [id: string]: boolean }>({})
-  const [leaveReasonMap, setLeaveReasonMap] = useState<{ [id: string]: string }>({})
   const [leaveLoadingMap, setLeaveLoadingMap] = useState<{ [id: string]: boolean }>({})
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
+  const [selectedAssignee, setSelectedAssignee] = useState<string | null>(null)
+  const [localTaskData, setLocalTaskData] = useState<TaskP>(task)
 
   const getPriorityChevron = (priority: number) => {
     switch (priority) {
@@ -117,88 +125,187 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     }
   }
 
-  useEffect(() => {
-    if (!currentProject) {
+  // Tạo function riêng để có thể gọi từ nhiều nơi
+  const fetchAssigneeAndMembers = async () => {
+    if (!currentProject || isRefreshing) {
       return
     }
-    const fetchAssigneeAndMembers = async () => {
-      try {
-        const members = await projectMemberApi.getMembersByProjectId(currentProject.id)
-        if (!members) {
-          throw new Error('Failed to fetch project members')
-        }
-
-        setProjectMembers(members)
-
-        // Kiểm tra nhiều trường hợp role Leader
-        const leader = members.find(
-          (member) =>
-            member.role === 'Leader' ||
-            member.role === 'leader' ||
-            member.role === 'ProjectLeader' ||
-            member.role === 'projectLeader'
-        )
-        console.log('Debug members and leader:', {
-          members: members.map((m) => ({
-            userId: m.userId,
-            id: (m as ProjectMember).id || m.userId,
-            role: m.role,
-            fullName: m.fullName
-          })),
-          leader,
-          currentUser: user?.id
-        })
-
-        // Kiểm tra role của user hiện tại trong members list
-        const currentUserMember = members.find(
-          (member) => member.userId === user?.id || (member as ProjectMember).id === user?.id
-        )
-        console.log('Current user member:', currentUserMember)
-        console.log('Current user role in members:', currentUserMember?.role)
-        if (leader) {
-          setProjectLeader(leader)
-        }
-
-        const tasks = await taskApi.getTasksFromProject(currentProject.id)
-        const taskDetails = tasks?.find((t) => t.id === task.id)
-        if (taskDetails?.taskAssignees) {
-          console.log('Task assignees:', taskDetails.taskAssignees)
-          // Lấy assignee đầu tiên từ taskDetails.taskAssignees
-          const assigneeFromTask =
-            Array.isArray(taskDetails.taskAssignees) && taskDetails.taskAssignees.length > 0
-              ? taskDetails.taskAssignees[0]
-              : null
-          console.log('Found assignee:', assigneeFromTask)
-          if (assigneeFromTask) {
-            setAssignee({
-              userId: assigneeFromTask.projectMemberId,
-              fullName: assigneeFromTask.executor,
-              avatar: assigneeFromTask.avatar,
-              role: assigneeFromTask.role
-            })
-          } else {
-            console.log('Assignee not found in members list')
-            console.log(
-              'Available members:',
-              members.map((m) => ({
-                userId: m.userId,
-                id: m.id || m.userId,
-                fullName: m.fullName
-              }))
-            )
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error)
-        showToast({
-          title: 'Error',
-          description: 'Failed to load task details. Please try again.',
-          variant: 'destructive'
-        })
+    setIsRefreshing(true)
+    try {
+      const members = await projectMemberApi.getMembersByProjectId(currentProject.id)
+      if (!members) {
+        throw new Error('Failed to fetch project members')
       }
+
+      setProjectMembers(members)
+
+      // Kiểm tra nhiều trường hợp role Leader
+      const leader = members.find(
+        (member) =>
+          member.role === 'Leader' ||
+          member.role === 'leader' ||
+          member.role === 'ProjectLeader' ||
+          member.role === 'projectLeader'
+      )
+      console.log('Debug members and leader:', {
+        members: members.map((m) => ({
+          userId: m.userId,
+          id: (m as ProjectMember).id || m.userId,
+          role: m.role,
+          fullName: m.fullName
+        })),
+        leader,
+        currentUser: user?.id
+      })
+
+      // Kiểm tra role của user hiện tại trong members list
+      const currentUserMember = members.find(
+        (member) => member.userId === user?.id || (member as ProjectMember).id === user?.id
+      )
+      console.log('Current user member:', currentUserMember)
+      console.log('Current user role in members:', currentUserMember?.role)
+      if (leader) {
+        setProjectLeader(leader)
+      }
+
+      const tasks = await taskApi.getTasksFromProject(currentProject.id)
+      const taskDetails = tasks?.find((t) => t.id === task.id)
+      if (taskDetails?.taskAssignees) {
+        console.log('Task assignees:', taskDetails.taskAssignees)
+        // Lấy assignee đầu tiên từ taskDetails.taskAssignees
+        const assigneeFromTask =
+          Array.isArray(taskDetails.taskAssignees) && taskDetails.taskAssignees.length > 0
+            ? taskDetails.taskAssignees[0]
+            : null
+        console.log('Found assignee:', assigneeFromTask)
+        if (assigneeFromTask) {
+          setAssignee({
+            userId: assigneeFromTask.projectMemberId,
+            fullName: assigneeFromTask.executor,
+            avatar: assigneeFromTask.avatar,
+            role: assigneeFromTask.role
+          })
+        } else {
+          console.log('Assignee not found in members list')
+          console.log(
+            'Available members:',
+            members.map((m) => ({
+              userId: m.userId,
+              id: m.id || m.userId,
+              fullName: m.fullName
+            }))
+          )
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error)
+      showToast({
+        title: 'Error',
+        description: 'Failed to load task details. Please try again.',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsRefreshing(false)
     }
+  }
+
+  // useEffect để fetch data ban đầu
+  useEffect(() => {
     fetchAssigneeAndMembers()
   }, [currentProject, navigate, task.id, showToast, user?.id])
+
+  // Thêm useEffect để refresh khi dialog mở
+  useEffect(() => {
+    if (isOpen && currentProject) {
+      // Force refresh data khi dialog mở để đảm bảo data mới nhất
+      console.log('🔄 Dialog opened, force refreshing data...')
+      const refreshOnOpen = async () => {
+        try {
+          // Refresh task data từ server
+          const updatedTasks = await taskApi.getTasksFromProject(currentProject.id)
+          const updatedTask = updatedTasks?.find((t) => t.id === task.id)
+          
+          if (updatedTask) {
+            // Cập nhật task assignees từ server data
+            if (updatedTask.taskAssignees) {
+              const assigneeFromTask =
+                Array.isArray(updatedTask.taskAssignees) && updatedTask.taskAssignees.length > 0
+                  ? updatedTask.taskAssignees[0]
+                  : null
+                  
+              if (assigneeFromTask) {
+                const newAssignee = {
+                  userId: assigneeFromTask.projectMemberId,
+                  fullName: assigneeFromTask.executor,
+                  avatar: assigneeFromTask.avatar,
+                  role: assigneeFromTask.role
+                }
+                console.log('✅ Setting assignee from server on dialog open:', newAssignee)
+                setAssignee(newAssignee)
+              } else {
+                console.log('❌ No assignee found in server data on dialog open')
+                setAssignee(null)
+              }
+            }
+            
+            // Refresh comments từ server
+            setComments(updatedTask.commnets || [])
+          }
+          
+          // Refresh members list từ server
+          const updatedMembers = await projectMemberApi.getMembersByProjectId(currentProject.id)
+          setProjectMembers(updatedMembers)
+          
+          console.log('✅ Dialog data refreshed on open')
+        } catch (error) {
+          console.error('❌ Error refreshing dialog data on open:', error)
+        }
+      }
+      
+      refreshOnOpen()
+    }
+  }, [isOpen, currentProject?.id, task.id])
+
+  // SignalR: Listen for task updates
+  useEffect(() => {
+    if (!isOpen || !task.id) return
+
+    const cleanup = listenForTaskUpdates(task.id, (notification) => {
+      console.log('Task updated via SignalR:', notification)
+      // Refresh task data when we receive a notification
+      const refreshData = async () => {
+        try {
+          const members = await projectMemberApi.getMembersByProjectId(currentProject?.id || '')
+          setProjectMembers(members)
+          
+          const tasks = await taskApi.getTasksFromProject(currentProject?.id || '')
+          const taskDetails = tasks?.find((t) => t.id === task.id)
+          if (taskDetails?.taskAssignees) {
+            const assigneeFromTask =
+              Array.isArray(taskDetails.taskAssignees) && taskDetails.taskAssignees.length > 0
+                ? taskDetails.taskAssignees[0]
+                : null
+            if (assigneeFromTask) {
+              setAssignee({
+                userId: assigneeFromTask.projectMemberId,
+                fullName: assigneeFromTask.executor,
+                avatar: assigneeFromTask.avatar,
+                role: assigneeFromTask.role
+              })
+            } else {
+              setAssignee(null)
+            }
+          }
+          onTaskUpdated()
+        } catch (error) {
+          console.error('Error refreshing task data:', error)
+        }
+      }
+      refreshData()
+    })
+
+    return cleanup
+  }, [isOpen, task.id, listenForTaskUpdates, onTaskUpdated, currentProject?.id])
 
   console.log('projectMembers:', projectMembers)
   console.log('current user:', user)
@@ -261,19 +368,20 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     currentUserMember
   })
 
+  // Cải thiện hàm handleAssignMember để refresh ngay lập tức
   const handleAssignMember = async (memberId: string) => {
-    console.log('Assign memberId:', memberId)
-    console.log('Available projectMembers:', projectMembers)
+    console.log('🎯 Assign memberId:', memberId)
+    console.log('📋 Available projectMembers:', projectMembers)
 
     // Tìm member bằng userId hoặc id (để xử lý cả hai trường hợp)
     const member = projectMembers.find((m) => m.userId === memberId || (m.id || m.userId) === memberId)
-    console.log('Assign member object:', member)
-    console.log('Member keys:', member ? Object.keys(member) : 'No member found')
+    console.log('👤 Assign member object:', member)
+    console.log('🔑 Member keys:', member ? Object.keys(member) : 'No member found')
 
     if (!member) {
-      console.error('Member not found for ID:', memberId)
+      console.error('❌ Member not found for ID:', memberId)
       console.log(
-        'Available member IDs:',
+        '📝 Available member IDs:',
         projectMembers.map((m) => ({
           userId: m.userId,
           id: m.id || m.userId,
@@ -285,18 +393,94 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
     // Sử dụng member.userId hoặc member.id cho implementerId
     const implementerId = member.userId || member.id || ''
-    console.log('Assign implementerId:', implementerId)
+    console.log('🆔 Assign implementerId:', implementerId)
 
     try {
+      // 1. Thực hiện assign task API trước
+      console.log('🚀 Calling assignTask API...')
       await taskApi.assignTask(currentProject!.id, task.id, implementerId)
-      setAssignee(member)
+      console.log('✅ API call successful')
+      
+      // 2. Force reload toàn bộ dialog data từ server
+      console.log('🔄 Force reloading all dialog data...')
+      
+      // Refresh task data từ server
+      const updatedTasks = await taskApi.getTasksFromProject(currentProject!.id)
+      const updatedTask = updatedTasks?.find((t) => t.id === task.id)
+      console.log('📋 Updated task data:', updatedTask)
+      
+      if (updatedTask) {
+        // Cập nhật local task data từ server
+        setLocalTaskData(updatedTask)
+        
+        // Cập nhật task assignees từ server data
+        if (updatedTask.taskAssignees) {
+          const assigneeFromTask =
+            Array.isArray(updatedTask.taskAssignees) && updatedTask.taskAssignees.length > 0
+              ? updatedTask.taskAssignees[0]
+              : null
+              
+          if (assigneeFromTask) {
+            const newAssignee = {
+              userId: assigneeFromTask.projectMemberId,
+              fullName: assigneeFromTask.executor,
+              avatar: assigneeFromTask.avatar,
+              role: assigneeFromTask.role
+            }
+            console.log('✅ Setting new assignee from server:', newAssignee)
+            setAssignee(newAssignee)
+          } else {
+            console.log('❌ No assignee found in server data')
+            setAssignee(null)
+          }
+        }
+        
+        // Refresh comments từ server
+        setComments(updatedTask.commnets || [])
+      }
+      
+      // Refresh members list từ server
+      const updatedMembers = await projectMemberApi.getMembersByProjectId(currentProject!.id)
+      setProjectMembers(updatedMembers)
+      
+      // 3. Refresh parent component ngay lập tức
       onTaskUpdated()
+      
+      // 4. Force refresh parent component sau 500ms
+      setTimeout(() => {
+        console.log('🔄 Force refreshing parent component...')
+        onTaskUpdated()
+      }, 500)
+      
+      // 5. Trigger một reload bổ sung sau 1s để đảm bảo
+      setTimeout(async () => {
+        console.log('🔄 Additional reload after 1s...')
+        const finalTasks = await taskApi.getTasksFromProject(currentProject!.id)
+        const finalTask = finalTasks?.find((t) => t.id === task.id)
+        if (finalTask?.taskAssignees) {
+          const finalAssignee = Array.isArray(finalTask.taskAssignees) && finalTask.taskAssignees.length > 0
+            ? finalTask.taskAssignees[0]
+            : null
+          if (finalAssignee) {
+            setAssignee({
+              userId: finalAssignee.projectMemberId,
+              fullName: finalAssignee.executor,
+              avatar: finalAssignee.avatar,
+              role: finalAssignee.role
+            })
+          }
+        }
+        onTaskUpdated()
+      }, 1000)
+      
       showToast({
         title: 'Success',
         description: `Task assigned to ${member.fullName || member.email || member.userId || member.id}`,
         variant: 'default'
       })
+      
     } catch (error) {
+      console.error('❌ Error in assign task:', error)
       const message = error instanceof Error ? error.message : 'Failed to assign task.'
       showToast({ title: 'Error', description: message, variant: 'destructive' })
     }
@@ -359,6 +543,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setEditTitle(task.title)
     setEditDescription(task.description)
     setEditPriority(typeof task.priority === 'number' ? task.priority : parseInt(task.priority as string) || 1)
+    setLocalTaskData(task)
   }, [task])
 
   const handleUpdateTask = async () => {
@@ -447,8 +632,16 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         description: res ? 'Task marked as complete!' : 'Failed to complete task',
         variant: res ? 'default' : 'destructive'
       })
+      
+      // Refresh data immediately using the optimized function
+      console.log('🔄 Refreshing data after complete task...')
+      await fetchAssigneeAndMembers()
       onTaskUpdated()
-      onClose()
+      
+      // Close modal after a short delay to ensure data is refreshed
+      setTimeout(() => {
+        onClose()
+      }, 300)
     } catch (error: unknown) {
       showToast({
         title: 'Error',
@@ -527,6 +720,181 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   console.log('[TaskDetailMenu] myProjectMember:', myProjectMember)
   console.log('[TaskDetailMenu] myProjectMemberId:', myProjectMemberId)
   console.log('[TaskDetailMenu] assigneeProjectMemberIds:', assigneeProjectMemberIds)
+
+  const handleLeaveTask = async (projectMemberId: string) => {
+    setLeaveLoadingMap((prev) => ({ ...prev, [projectMemberId]: true }))
+    try {
+      await taskApi.leaveTaskAssignment(currentProject!.id, task.id, { 
+        reason: 'User voluntarily left the task' 
+      })
+      showToast({ title: 'Success', description: 'You have left this task!' })
+      setAssignee(null)
+      
+      // Refresh data immediately using the optimized function
+      await fetchAssigneeAndMembers()
+      onTaskUpdated()
+      
+      // Force reload dialog data
+      await reloadDialogData()
+      
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to leave task'
+      showToast({
+        title: 'Error',
+        description: message,
+        variant: 'destructive'
+      })
+    } finally {
+      setLeaveLoadingMap((prev) => ({ ...prev, [projectMemberId]: false }))
+      setShowLeaveConfirm(false)
+      setSelectedAssignee(null)
+    }
+  }
+
+  // Function chung để reload dialog data
+  const reloadDialogData = async () => {
+    try {
+      // Refresh task data từ server
+      const updatedTasks = await taskApi.getTasksFromProject(currentProject!.id)
+      const updatedTask = updatedTasks?.find((t) => t.id === task.id)
+      
+      if (updatedTask) {
+        // Refresh assignee data
+        if (updatedTask.taskAssignees) {
+          const assigneeFromTask =
+            Array.isArray(updatedTask.taskAssignees) && updatedTask.taskAssignees.length > 0
+              ? updatedTask.taskAssignees[0]
+              : null
+              
+          if (assigneeFromTask) {
+            const newAssignee = {
+              userId: assigneeFromTask.projectMemberId,
+              fullName: assigneeFromTask.executor,
+              avatar: assigneeFromTask.avatar,
+              role: assigneeFromTask.role
+            }
+            setAssignee(newAssignee)
+          } else {
+            setAssignee(null)
+          }
+        }
+        
+        // Refresh comments
+        setComments(updatedTask.commnets || [])
+      }
+      
+      // Refresh members list
+      const updatedMembers = await projectMemberApi.getMembersByProjectId(currentProject!.id)
+      setProjectMembers(updatedMembers)
+      
+      console.log('✅ Dialog data reloaded successfully')
+    } catch (error) {
+      console.error('❌ Error reloading dialog data:', error)
+    }
+  }
+
+  const handleRemoveAssignee = async (projectMemberId: string) => {
+    setRemoveLoadingMap((prev) => ({ ...prev, [projectMemberId]: true }))
+    try {
+      await taskApi.removeTaskAssignment(currentProject!.id, task.id, {
+        implementId: projectMemberId,
+        reason: 'Assignee removed by project leader'
+      })
+      showToast({ title: 'Success', description: 'Assignee removed from task!' })
+      
+      // Force refresh task data từ server ngay lập tức
+      console.log('🔄 Force refreshing task data after remove...')
+      const updatedTasks = await taskApi.getTasksFromProject(currentProject!.id)
+      const updatedTask = updatedTasks?.find((t) => t.id === task.id)
+      
+      if (updatedTask) {
+        console.log('📋 Updated task data after remove:', updatedTask)
+        console.log('📋 Task assignees after remove:', updatedTask.taskAssignees)
+        
+        // Cập nhật local task data từ server
+        setLocalTaskData(updatedTask)
+        
+        // Cập nhật assignee state từ server data
+        if (updatedTask.taskAssignees) {
+          const assigneeFromTask =
+            Array.isArray(updatedTask.taskAssignees) && updatedTask.taskAssignees.length > 0
+              ? updatedTask.taskAssignees[0]
+              : null
+              
+          if (assigneeFromTask) {
+            const newAssignee = {
+              userId: assigneeFromTask.projectMemberId,
+              fullName: assigneeFromTask.executor,
+              avatar: assigneeFromTask.avatar,
+              role: assigneeFromTask.role
+            }
+            console.log('✅ Setting new assignee after remove:', newAssignee)
+            setAssignee(newAssignee)
+          } else {
+            console.log('❌ No assignee found after remove')
+            setAssignee(null)
+          }
+        } else {
+          console.log('❌ No taskAssignees found after remove')
+          setAssignee(null)
+        }
+        
+        // Refresh comments từ server
+        setComments(updatedTask.commnets || [])
+      }
+      
+      // Refresh members list từ server
+      const updatedMembers = await projectMemberApi.getMembersByProjectId(currentProject!.id)
+      setProjectMembers(updatedMembers)
+      
+      // Refresh parent component ngay lập tức
+      onTaskUpdated()
+      
+      // Force refresh parent component sau 500ms
+      setTimeout(() => {
+        console.log('🔄 Force refreshing parent component after remove...')
+        onTaskUpdated()
+      }, 500)
+      
+      // Trigger một reload bổ sung sau 1s để đảm bảo
+      setTimeout(async () => {
+        console.log('🔄 Additional reload after 1s for remove...')
+        const finalTasks = await taskApi.getTasksFromProject(currentProject!.id)
+        const finalTask = finalTasks?.find((t) => t.id === task.id)
+        console.log('📋 Final task data after remove:', finalTask)
+        if (finalTask?.taskAssignees) {
+          const finalAssignee = Array.isArray(finalTask.taskAssignees) && finalTask.taskAssignees.length > 0
+            ? finalTask.taskAssignees[0]
+            : null
+          if (finalAssignee) {
+            setAssignee({
+              userId: finalAssignee.projectMemberId,
+              fullName: finalAssignee.executor,
+              avatar: finalAssignee.avatar,
+              role: finalAssignee.role
+            })
+          } else {
+            setAssignee(null)
+          }
+        } else {
+          setAssignee(null)
+        }
+        onTaskUpdated()
+      }, 1000)
+      
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to remove assignee'
+      showToast({
+        title: 'Error',
+        description: message,
+        variant: 'destructive'
+      })
+    } finally {
+      setRemoveLoadingMap((prev) => ({ ...prev, [projectMemberId]: false }))
+      setShowRemoveConfirm(false)
+      setSelectedAssignee(null)
+    }
+  }
 
   if (!currentProject) {
     return <div className='p-4 text-center text-gray-500'>Chưa chọn project</div>
@@ -754,15 +1122,20 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           )}
         </div>
 
-        {/* Assignee and Tags Grid */}
+        {/* Assignee and Tags - Layout 2 cột */}
         <div className='grid grid-cols-2 gap-6 mb-6'>
-          {/* Assignee Section */}
+          {/* Assignee Section - Cột trái */}
           <div>
             <h1 className='text-base font-semibold mb-3 flex items-center gap-2'>Assignee</h1>
-            <div className='flex flex-col gap-4 p-3 bg-white rounded-lg shadow-sm border max-w-xs'>
+            <div className='flex flex-col gap-4 p-4 bg-white rounded-lg shadow-sm border'>
+              {/* Debug info */}
+              <div className="text-xs text-gray-500 mb-2">
+                {/* Debug: Task ID: {localTaskData.id} | Assignees: {Array.isArray(localTaskData.taskAssignees) ? localTaskData.taskAssignees.length : 0} */}
+              </div>
+              
               {/* Danh sách tất cả assignees */}
-              {Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0 ? (
-                task.taskAssignees.map((a, idx) => {
+                              {Array.isArray(localTaskData.taskAssignees) && localTaskData.taskAssignees.length > 0 ? (
+                  localTaskData.taskAssignees.map((a, idx) => {
                   const isCurrentUser = String(myProjectMemberId) === String(a.projectMemberId)
                   const isLeader = isUserLeader
                   console.log(
@@ -775,114 +1148,62 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     '| isLeader =',
                     isLeader
                   )
-                  const removeReason = removeReasonMap[a.projectMemberId] || ''
-                  const removeLoading = removeLoadingMap[a.projectMemberId] || false
-                  const leaveReason = leaveReasonMap[a.projectMemberId] || ''
                   const leaveLoading = leaveLoadingMap[a.projectMemberId] || false
                   return (
                     <div
                       key={a.projectMemberId || idx}
-                      className='flex flex-col gap-2 border-b last:border-b-0 pb-3 last:pb-0 mb-3 last:mb-0'
+                      className='flex items-center justify-between p-3 border-b last:border-b-0 bg-gray-50 rounded-lg'
                     >
                       <div className='flex items-center gap-3'>
-                        <Avatar className='w-10 h-10 border border-gray-200 shadow'>
+                        <Avatar className='w-12 h-12 border border-gray-200 shadow'>
                           <AvatarImage src={a.avatar} alt={a.executor} />
                           <AvatarFallback>{a.executor?.[0] || '?'}</AvatarFallback>
                         </Avatar>
-                        <span className='font-medium text-gray-800 text-base'>{a.executor}</span>
-                        <span className='ml-2 text-xs text-gray-400'>{a.role}</span>
+                        <div className='flex flex-col'>
+                          <span className='font-semibold text-gray-800 text-base'>{a.executor}</span>
+                          <span className='text-sm text-gray-500'>{a.role}</span>
+                        </div>
                       </div>
-                      {/* Leave task - chỉ hiển thị cho assignee hiện tại (member hoặc leader) */}
-                      {isCurrentUser ? (
-                        <div className='flex flex-col gap-2'>
-                          <input
-                            type='text'
-                            placeholder='Lý do rời task...'
-                            value={leaveReason}
-                            onChange={(e) =>
-                              setLeaveReasonMap((prev) => ({ ...prev, [a.projectMemberId]: e.target.value }))
-                            }
-                            className='rounded border px-2 py-1 text-sm focus:border-blue-400 transition bg-gray-50'
-                            disabled={leaveLoading}
-                          />
-                          <Button
-                            onClick={async () => {
-                              setLeaveLoadingMap((prev) => ({ ...prev, [a.projectMemberId]: true }))
-                              try {
-                                await taskApi.leaveTaskAssignment(currentProject.id, task.id, { reason: leaveReason })
-                                showToast({ title: 'Success', description: 'You have left this task!' })
-                                setAssignee(null)
-                                setLeaveReasonMap((prev) => ({ ...prev, [a.projectMemberId]: '' }))
-                                onTaskUpdated()
-                              } catch {
-                                showToast({
-                                  title: 'Error',
-                                  description: 'Failed to leave task',
-                                  variant: 'destructive'
-                                })
-                              } finally {
-                                setLeaveLoadingMap((prev) => ({ ...prev, [a.projectMemberId]: false }))
-                              }
+                      {/* Action buttons - hiển thị icon thay vì nút */}
+                      <div className='flex items-center gap-2'>
+                        {/* Leave task - chỉ hiển thị cho assignee hiện tại */}
+                        {isCurrentUser && (
+                          <button
+                            onClick={() => {
+                              setSelectedAssignee(a.projectMemberId)
+                              setShowLeaveConfirm(true)
                             }}
                             disabled={leaveLoading}
-                            variant='outline'
-                            size='sm'
                             title='Rời khỏi task'
-                            className='flex items-center gap-1 text-gray-700 border-gray-300 hover:bg-gray-100 w-full justify-center'
+                            className='p-1.5 rounded-full hover:bg-orange-50 hover:text-orange-600 text-gray-400 transition-all duration-200 hover:scale-110'
                           >
-                            <UserPlus className='w-4 h-4 mr-1' />
-                            {leaveLoading ? 'Leaving...' : 'Leave'}
-                          </Button>
-                        </div>
-                      ) : (
-                        // Remove chỉ hiển thị cho leader và không phải chính mình
-                        isLeader &&
-                        !isCurrentUser && (
-                          <div className='flex flex-col gap-2'>
-                            <input
-                              type='text'
-                              placeholder='Lý do xóa assignee...'
-                              value={removeReason}
-                              onChange={(e) =>
-                                setRemoveReasonMap((prev) => ({ ...prev, [a.projectMemberId]: e.target.value }))
-                              }
-                              className='rounded border px-2 py-1 text-sm focus:border-red-400 transition bg-gray-50'
-                              disabled={removeLoading}
-                            />
-                            <Button
-                              onClick={async () => {
-                                setRemoveLoadingMap((prev) => ({ ...prev, [a.projectMemberId]: true }))
-                                try {
-                                  await taskApi.removeTaskAssignment(currentProject.id, task.id, {
-                                    implementId: a.projectMemberId,
-                                    reason: removeReason
-                                  })
-                                  showToast({ title: 'Success', description: 'Assignee removed from task!' })
-                                  setAssignee(null)
-                                  setRemoveReasonMap((prev) => ({ ...prev, [a.projectMemberId]: '' }))
-                                  onTaskUpdated()
-                                } catch {
-                                  showToast({
-                                    title: 'Error',
-                                    description: 'Failed to remove assignee',
-                                    variant: 'destructive'
-                                  })
-                                } finally {
-                                  setRemoveLoadingMap((prev) => ({ ...prev, [a.projectMemberId]: false }))
-                                }
-                              }}
-                              disabled={removeLoading}
-                              variant='destructive'
-                              size='sm'
-                              title='Xóa assignee khỏi task'
-                              className='flex items-center gap-1 w-full justify-center'
-                            >
-                              <X className='w-4 h-4 mr-1' />
-                              {removeLoading ? 'Removing...' : 'Remove'}
-                            </Button>
-                          </div>
-                        )
-                      )}
+                            {leaveLoading ? (
+                              <Loader2 className='w-4 h-4 animate-spin' />
+                            ) : (
+                              <LogOut className='w-4 h-4' />
+                            )}
+                          </button>
+                        )}
+                        
+                        {/* Remove assignee - chỉ hiển thị cho leader và không phải chính mình */}
+                        {isLeader && !isCurrentUser && (
+                          <button
+                            onClick={() => {
+                              setSelectedAssignee(a.projectMemberId)
+                              setShowRemoveConfirm(true)
+                            }}
+                            disabled={removeLoadingMap[a.projectMemberId] || false}
+                            title='Xóa assignee khỏi task'
+                            className='p-1.5 rounded-full hover:bg-red-50 hover:text-red-600 text-gray-400 transition-all duration-200 hover:scale-110'
+                          >
+                            {removeLoadingMap[a.projectMemberId] ? (
+                              <Loader2 className='w-4 h-4 animate-spin' />
+                            ) : (
+                              <X className='w-4 h-4' />
+                            )}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )
                 })
@@ -891,7 +1212,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               )}
               {/* Dropdown chọn assignee (nếu là leader) */}
               {isUserLeader && (
-                <div className='mt-2'>
+                <div className='mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200'>
+                  <div className='text-sm font-medium text-blue-800 mb-2'>Assign new member</div>
                   <Select
                     onValueChange={async (memberId) => {
                       await handleAssignMember(memberId)
@@ -971,9 +1293,9 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             </div>
           </div>
 
-          {/* Tags Section */}
+          {/* Tags Section - Cột phải */}
           <div>
-            <h1 className='text-base font-medium mb-2 flex items-center gap-2'>
+            <h1 className='text-base font-semibold mb-3 flex items-center gap-2'>
               Tags
               <button
                 type='button'
@@ -984,7 +1306,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                 <Settings className='w-4 h-4' />
               </button>
             </h1>
-            <div className='flex items-center gap-2 flex-wrap'>
+            <div className='p-4 bg-white rounded-lg shadow-sm border'>
+              <div className='flex items-center gap-2 flex-wrap'>
               {taskTags.map((tag, idx) => (
                 <span
                   key={tag.id || idx}
@@ -1045,6 +1368,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     )}
                   </div>
                 )}
+              </div>
               </div>
             </div>
             <ProjectTagManager isOpen={isTagManagerOpen} onClose={() => setIsTagManagerOpen(false)} />
@@ -1185,6 +1509,62 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           </div>
         </div>
       </DialogContent>
+
+      {/* Leave Task Confirmation Dialog */}
+      <Dialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogTitle>Xác nhận rời task</DialogTitle>
+          <DialogDescription>
+            Bạn có chắc chắn muốn rời khỏi task này? Hành động này sẽ gỡ bỏ bạn khỏi danh sách assignee.
+          </DialogDescription>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowLeaveConfirm(false)
+                setSelectedAssignee(null)
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => selectedAssignee && handleLeaveTask(selectedAssignee)}
+              disabled={selectedAssignee ? leaveLoadingMap[selectedAssignee] : false}
+            >
+              {selectedAssignee && leaveLoadingMap[selectedAssignee] ? 'Đang xử lý...' : 'Rời task'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove Assignee Confirmation Dialog */}
+      <Dialog open={showRemoveConfirm} onOpenChange={setShowRemoveConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogTitle>Xác nhận xóa assignee</DialogTitle>
+          <DialogDescription>
+            Bạn có chắc chắn muốn xóa assignee này khỏi task? Hành động này sẽ gỡ bỏ họ khỏi danh sách assignee.
+          </DialogDescription>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowRemoveConfirm(false)
+                setSelectedAssignee(null)
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => selectedAssignee && handleRemoveAssignee(selectedAssignee)}
+              disabled={selectedAssignee ? removeLoadingMap[selectedAssignee] : false}
+            >
+              {selectedAssignee && removeLoadingMap[selectedAssignee] ? 'Đang xử lý...' : 'Xóa assignee'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   )
 }

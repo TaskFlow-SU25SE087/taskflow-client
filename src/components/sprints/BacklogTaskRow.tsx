@@ -150,7 +150,7 @@ function AvatarStack({ assignees }: { assignees: Assignee[] }) {
 
 export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
   task,
-  showMeta,
+  showMeta = true,
   checked = false,
   onCheck,
   onTaskUpdate

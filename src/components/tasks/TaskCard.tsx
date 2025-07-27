@@ -1,9 +1,7 @@
-import { projectMemberApi } from '@/api/projectMembers'
 import { taskApi } from '@/api/tasks'
 import { useSignalR } from '@/contexts/SignalRContext'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { TaskP } from '@/types/task'
-import { ProjectMember } from '@/types/project'
 import { format } from 'date-fns'
 import { Calendar, ChevronDown, ChevronsDown, ChevronsUp, ChevronUp, Clock, FileText, MessageSquare, User } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
@@ -66,29 +64,19 @@ interface TaskCardProps {
 export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { children?: React.ReactNode }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
-  const [assignedMember, setAssignedMember] = useState<ProjectMember | null>(null)
   const { currentProject } = useCurrentProject()
   const navigate = useNavigate()
   const { notificationService } = useSignalR()
 
-  const fetchTaskDetailsAndMember = useCallback(async () => {
+  const fetchTaskDetails = useCallback(async () => {
     if (!currentProject) return
 
     try {
       const tasks = await taskApi.getTasksFromProject(currentProject.id)
       const currentTask = tasks.find((taskFromArray) => taskFromArray.id === task.id)
       if (currentTask) {
-        if (currentTask.assigneeId) {
-          const members = await projectMemberApi.getMembersByProjectId(currentTask.projectId || '')
-          const member = members.find((m) => m.userId === currentTask.assigneeId)
-          if (member) {
-            setAssignedMember(member)
-          } else {
-            setAssignedMember(null)
-          }
-        } else {
-          setAssignedMember(null)
-        }
+        // Task details updated, component will re-render with new data
+        console.log('Task details updated:', currentTask)
       }
     } catch (error) {
       console.error('Error fetching task details:', error)
@@ -99,15 +87,15 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
     if (!currentProject) {
       return
     }
-    fetchTaskDetailsAndMember()
-  }, [currentProject, navigate, fetchTaskDetailsAndMember])
+    fetchTaskDetails()
+  }, [currentProject, navigate, fetchTaskDetails])
 
   // SignalR: Listen for task-related notifications
   useEffect(() => {
     const handleTaskNotification = (notification: any) => {
       if (notification.taskId === task.id) {
         console.log('Task updated via SignalR:', notification.message)
-        fetchTaskDetailsAndMember()
+        fetchTaskDetails()
       }
     }
 
@@ -116,11 +104,11 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
     return () => {
       notificationService.removeListener(handleTaskNotification)
     }
-  }, [task.id, notificationService, fetchTaskDetailsAndMember])
+  }, [task.id, notificationService, fetchTaskDetails])
 
   const handleTaskUpdated = useCallback(() => {
-    fetchTaskDetailsAndMember()
-  }, [fetchTaskDetailsAndMember])
+    fetchTaskDetails()
+  }, [fetchTaskDetails])
 
   if (!currentProject) {
     return <div className='p-4 text-center text-gray-500'>Chưa chọn project</div>
