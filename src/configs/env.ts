@@ -11,37 +11,16 @@ const getFirstAvailableUrl = (envValue: string | undefined, fallback: string): s
 // Get production URLs based on environment
 const getProductionUrls = () => {
   const isProd = import.meta.env.PROD
-  const vercelUrl = import.meta.env.VITE_VERCEL_URL
-  const customDomain = import.meta.env.VITE_CUSTOM_DOMAIN
-  const azureApiUrl = import.meta.env.VITE_AZURE_API_URL
-  const productionApiUrl = import.meta.env.VITE_PRODUCTION_API_URL
   
-  if (isProd) {
-    // Priority: Production API URL > Azure API URL > Custom Domain > Vercel URL
-    if (productionApiUrl) {
-      return {
-        apiUrl: productionApiUrl,
-        signalRUrl: `${productionApiUrl}/taskHub`,
-        githubRedirect: customDomain ? `${customDomain}/github/callback` : (vercelUrl ? `https://${vercelUrl}/github/callback` : '')
-      }
-    }
-    
-    if (azureApiUrl) {
-      return {
-        apiUrl: azureApiUrl,
-        signalRUrl: `${azureApiUrl}/taskHub`,
-        githubRedirect: customDomain ? `${customDomain}/github/callback` : (vercelUrl ? `https://${vercelUrl}/github/callback` : '')
-      }
-    }
-    
-    // Use custom domain if available, otherwise use Vercel URL
-    const baseUrl = customDomain || (vercelUrl ? `https://${vercelUrl}` : '')
-    if (baseUrl) {
-      return {
-        apiUrl: `${baseUrl}/api`,
-        signalRUrl: `${baseUrl}/api/taskHub`,
-        githubRedirect: `${baseUrl}/github/callback`
-      }
+  // Always use the configured API URL from environment variables
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
+  const signalRHubUrl = import.meta.env.VITE_SIGNALR_HUB_URL
+  
+  if (isProd && apiBaseUrl) {
+    return {
+      apiUrl: apiBaseUrl,
+      signalRUrl: signalRHubUrl || `${apiBaseUrl}/taskHub`,
+      githubRedirect: import.meta.env.VITE_GITHUB_REDIRECT_URI || ''
     }
   }
   
