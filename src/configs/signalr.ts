@@ -25,15 +25,15 @@ export class SignalRService {
   private signalREnabled = ENV_CONFIG.ENABLE_SIGNALR
 
   async connect() {
-    // Disable SignalR if not enabled or in production without proper server
+    // Disable SignalR if not enabled
     if (!this.signalREnabled) {
       console.log('[SignalR] SignalR is disabled')
       return
     }
 
     // Check if we're in production and don't have a proper SignalR server
-    if (ENV_CONFIG.IS_PRODUCTION && SIGNALR_CONFIG.HUB_URL.includes('localhost')) {
-      console.warn('[SignalR] Production environment detected but SignalR server is localhost. Disabling SignalR.')
+    if (ENV_CONFIG.IS_PRODUCTION && (SIGNALR_CONFIG.HUB_URL.includes('localhost') || !SIGNALR_CONFIG.HUB_URL)) {
+      console.warn('[SignalR] Production environment detected but SignalR server is not properly configured. Disabling SignalR.')
       this.signalREnabled = false
       return
     }
@@ -42,6 +42,9 @@ export class SignalRService {
     this.isConnecting = true
     
     try {
+      console.log('[SignalR] Environment:', ENV_CONFIG.IS_PRODUCTION ? 'PRODUCTION' : 'DEVELOPMENT')
+      console.log('[SignalR] Config HUB_URL:', SIGNALR_CONFIG.HUB_URL)
+      console.log('[SignalR] ENV_CONFIG.SIGNALR_HUB_URL:', ENV_CONFIG.SIGNALR_HUB_URL)
       console.log('[SignalR] Đang kết nối tới:', SIGNALR_CONFIG.HUB_URL)
       
       this.connection = new signalR.HubConnectionBuilder()
@@ -54,7 +57,7 @@ export class SignalRService {
           transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.ServerSentEvents | signalR.HttpTransportType.LongPolling
         })
         .withAutomaticReconnect([0, 2000, 10000, 30000])
-        .configureLogging(signalR.LogLevel.Warning) // Change from Debug to Warning for production
+        .configureLogging(signalR.LogLevel.Warning)
         .build()
 
       // Register event handlers

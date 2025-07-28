@@ -71,6 +71,7 @@ export default function LoginPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 required
                 disabled={isSubmitting}
+                autoComplete='username'
                 className='w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lavender-700 focus:border-transparent'
               />
             </div>
@@ -92,6 +93,7 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   disabled={isSubmitting}
+                  autoComplete='current-password'
                   className='w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-lavender-700 focus:border-transparent pr-10'
                 />
                 <button

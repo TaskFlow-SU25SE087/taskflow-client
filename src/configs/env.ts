@@ -16,10 +16,17 @@ const getProductionUrls = () => {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
   const signalRHubUrl = import.meta.env.VITE_SIGNALR_HUB_URL
   
-  if (isProd && apiBaseUrl) {
+  // Debug logging
+  console.log('[ENV DEBUG] Environment variables:')
+  console.log('[ENV DEBUG] VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL)
+  console.log('[ENV DEBUG] VITE_SIGNALR_HUB_URL:', import.meta.env.VITE_SIGNALR_HUB_URL)
+  console.log('[ENV DEBUG] IS_PRODUCTION:', isProd)
+  
+  if (isProd) {
+    // In production, use relative URLs that will be proxied by Vercel
     return {
-      apiUrl: apiBaseUrl,
-      signalRUrl: signalRHubUrl || `${apiBaseUrl}/taskHub`,
+      apiUrl: apiBaseUrl || '/api',
+      signalRUrl: signalRHubUrl || '/api/taskHub',
       githubRedirect: import.meta.env.VITE_GITHUB_REDIRECT_URI || ''
     }
   }
