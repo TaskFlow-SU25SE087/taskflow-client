@@ -10,16 +10,24 @@ import { useCurrentProject } from '@/hooks/useCurrentProject';
 import { useProjectParts } from '@/hooks/useProjectParts';
 import { format } from 'date-fns';
 import { Calendar, ChevronDown, Filter, Search } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CommitDetail, CommitListItem, ProjectPart } from '@/types/commits';
 
 export default function GitCommits() {
+  console.log('[GitCommits] Component rendered');
+  
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const { currentProject, isLoading } = useCurrentProject();
   const projectPartsHook = useProjectParts();
+  
+  console.log('[GitCommits] currentProject:', currentProject?.id);
+  console.log('[GitCommits] isLoading:', isLoading);
+  
   const fetchPartsRef = useRef(projectPartsHook.fetchParts);
   fetchPartsRef.current = projectPartsHook.fetchParts;
+  
+  console.log('[GitCommits] fetchPartsRef updated');
   
   const [parts, setParts] = useState<ProjectPart[]>([]);
   const [selectedPartId, setSelectedPartId] = useState<string>('');
@@ -31,13 +39,25 @@ export default function GitCommits() {
   const [commitDetail, setCommitDetail] = useState<CommitDetail[] | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
+  // Debug state changes
+  useEffect(() => {
+    console.log('[GitCommits] State changed - parts:', parts.length, 'selectedPartId:', selectedPartId);
+  }, [parts, selectedPartId]);
+
+  useEffect(() => {
+    console.log('[GitCommits] State changed - commits:', commits.length, 'page:', page, 'totalPages:', totalPages);
+  }, [commits, page, totalPages]);
+
   // Memoize fetchParts to prevent infinite loop
   const memoizedFetchParts = useCallback(async (projectId: string) => {
+    console.log('[GitCommits] memoizedFetchParts called with projectId:', projectId);
     try {
       console.log('[GitCommits] Fetching parts for project:', projectId);
       const res = await fetchPartsRef.current(projectId);
+      console.log('[GitCommits] Parts fetched successfully:', res.data?.length || 0, 'parts');
       setParts(res.data || []);
       if (res.data && res.data.length > 0) {
+        console.log('[GitCommits] Setting selectedPartId to:', res.data[0].id);
         setSelectedPartId(res.data[0].id);
       }
     } catch (error) {
@@ -47,17 +67,21 @@ export default function GitCommits() {
   }, []);
 
   useEffect(() => {
+    console.log('[GitCommits] useEffect triggered - currentProject?.id:', currentProject?.id);
     if (currentProject?.id) {
+      console.log('[GitCommits] Calling memoizedFetchParts');
       memoizedFetchParts(currentProject.id);
     }
   }, [currentProject?.id]);
 
   useEffect(() => {
+    console.log('[GitCommits] Commits useEffect triggered - currentProject?.id:', currentProject?.id, 'selectedPartId:', selectedPartId, 'page:', page);
     if (currentProject?.id && selectedPartId) {
       console.log('[GitCommits] Fetching commits for part:', selectedPartId, 'page:', page);
       setLoadingCommits(true);
       getProjectPartCommitsV2(currentProject.id, selectedPartId, page)
         .then((res) => {
+          console.log('[GitCommits] Commits fetched successfully:', res.data?.items?.length || 0, 'commits');
           setCommits(res.data?.items || []);
           setTotalPages(res.data?.totalPages || 1);
         })
