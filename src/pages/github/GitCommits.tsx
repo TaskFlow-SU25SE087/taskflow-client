@@ -8,10 +8,10 @@ import { Loader } from '@/components/ui/loader';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCurrentProject } from '@/hooks/useCurrentProject';
 import { useProjectParts } from '@/hooks/useProjectParts';
+import { CommitDetail, CommitListItem, ProjectPart } from '@/types/commits';
 import { format } from 'date-fns';
 import { Calendar, ChevronDown, Filter, Search } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { CommitDetail, CommitListItem, ProjectPart } from '@/types/commits';
 
 export default function GitCommits() {
   console.log('[GitCommits] Component rendered');
