@@ -38,7 +38,7 @@ export default function GitCommits() {
         }
       });
     }
-  }, [currentProject?.id, fetchParts]);
+  }, [currentProject?.id]);
 
   useEffect(() => {
     if (currentProject?.id && selectedPartId) {
@@ -47,6 +47,11 @@ export default function GitCommits() {
         .then((res) => {
           setCommits(res.data?.items || []);
           setTotalPages(res.data?.totalPages || 1);
+        })
+        .catch((error) => {
+          console.error('Error fetching commits:', error);
+          setCommits([]);
+          setTotalPages(1);
         })
         .finally(() => setLoadingCommits(false));
     }
@@ -57,18 +62,19 @@ export default function GitCommits() {
   };
 
   const filteredCommits = commits.filter((commit) =>
-    commit.commitMessage?.toLowerCase().includes(searchQuery.toLowerCase())
+    commit.commitMessage?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    commit.pusher?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleShowDetail = async (commit: CommitListItem) => {
-    if (!currentProject) return;
-    // No need to set selectedCommit since we're not using it
+    if (!currentProject || !selectedPartId) return;
     setShowDetail(true);
     setLoadingDetail(true);
     try {
       const res = await getProjectPartCommitDetail(currentProject.id, selectedPartId, commit.commitId);
       setCommitDetail(res.data);
     } catch (err) {
+      console.error('Error fetching commit detail:', err);
       setCommitDetail(null);
     } finally {
       setLoadingDetail(false);
