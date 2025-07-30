@@ -201,7 +201,7 @@ export default function ProjectBoard() {
   const [isLockDialogOpen, setIsLockDialogOpen] = useState(false)
   const [lockedColumns, setLockedColumns] = useState<string[]>([])
   const [lockAll, setLockAll] = useState(false)
-  const [isDragging, setIsDragging] = useState(false)
+
   const [movingTaskId, setMovingTaskId] = useState<string | null>(null)
 
 
@@ -304,7 +304,6 @@ export default function ProjectBoard() {
     console.log('[TIMING] 🕐 Drag end started at:', new Date().toISOString())
     
     const { active, over } = event
-    setIsDragging(false)
     // Prevent drag if locked
     const isBoardDrag = boards.some((b) => b.id === active.id)
     if (isBoardDrag) {
@@ -497,10 +496,8 @@ export default function ProjectBoard() {
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
-  const handleDragStart = (event: any) => {
-    const dragStartTime = performance.now()
+  const handleDragStart = () => {
     console.log('[TIMING] 🎬 Drag start at:', new Date().toISOString())
-    setIsDragging(true)
   }
 
   console.log('All tasks:', tasks)

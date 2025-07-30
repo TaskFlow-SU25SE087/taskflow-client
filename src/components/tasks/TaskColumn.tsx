@@ -173,7 +173,7 @@ export function TaskColumn({ title, tasks, onTaskCreated, boardId, movingTaskId 
         ) : (
           <div className='overflow-y-auto px-4 py-2 scroll-smooth'>
             <div className='space-y-3 pb-4'>
-              {tasks.map((task, index) => (
+              {tasks.map((task) => (
                 <div 
                   key={task.id} 
                 >
