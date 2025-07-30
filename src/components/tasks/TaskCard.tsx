@@ -59,9 +59,10 @@ interface TaskCardProps {
   task: TaskP
   compact?: boolean
   children?: React.ReactNode
+  isMoving?: boolean
 }
 
-export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { children?: React.ReactNode }) => {
+export const TaskCard = ({ task, compact = false, children, isMoving = false }: TaskCardProps & { children?: React.ReactNode }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const { currentProject } = useCurrentProject()
@@ -256,9 +257,13 @@ export const TaskCard = ({ task, compact = false, children }: TaskCardProps & { 
         />
 
         <Card className={`
-          w-full border-none shadow-none cursor-pointer transition-all duration-300 ml-2 
+          w-full border-none shadow-none cursor-pointer transition-all duration-150 ml-2 
           ${isHovered 
             ? 'hover:shadow-lg hover:shadow-xl transform hover:-translate-y-1' 
+            : ''
+          }
+          ${isMoving 
+            ? 'opacity-90 border-2 border-blue-400' 
             : ''
           }
           ${priorityConfig.bg} backdrop-blur-sm

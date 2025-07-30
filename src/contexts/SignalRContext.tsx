@@ -7,8 +7,12 @@ interface SignalRContextType {
   signalRService: SignalRService
   notificationService: NotificationService
   isConnected: boolean
+  isSecondaryConnected: boolean
   notifications: NotificationData[]
   connectionState: string
+  secondaryConnectionState: string
+  connectSecondary: () => Promise<void>
+  disconnectSecondary: () => Promise<void>
 }
 
 const SignalRContext = createContext<SignalRContextType | null>(null)
@@ -18,18 +22,20 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [signalRService] = useState(() => new SignalRService())
   const [notificationService] = useState(() => new NotificationService(signalRService, showToast))
   const [isConnected, setIsConnected] = useState(false)
+  const [isSecondaryConnected, setIsSecondaryConnected] = useState(false)
   const [notifications, setNotifications] = useState<NotificationData[]>([])
   const [connectionState, setConnectionState] = useState('Disconnected')
+  const [secondaryConnectionState, setSecondaryConnectionState] = useState('Disconnected')
 
   useEffect(() => {
     const initializeSignalR = async () => {
       try {
         console.log('[SignalR] Bắt đầu kết nối...')
-        // Connect to real SignalR hub
+        // Connect to primary SignalR hub
         await signalRService.connect()
         console.log('[SignalR] Kết nối thành công!')
 
-        // Set up connection state listeners
+        // Set up connection state listeners for primary
         signalRService.on('close', () => {
           setIsConnected(false)
           setConnectionState('Disconnected')
@@ -60,47 +66,67 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({ child
           setNotifications(notificationService.getNotifications())
         }
 
-        document.addEventListener('notificationCountUpdate', handleCountUpdate as EventListener)
-
-        // Set connected state
-        setIsConnected(true)
-        setConnectionState('Connected')
-
-        // Join user group nếu đã đăng nhập
-        // (Đã bỏ logic joinUserGroup vì backend không hỗ trợ)
+        document.addEventListener('notificationCountUpdate', handleCountUpdate)
 
         return () => {
-          document.removeEventListener('notificationCountUpdate', handleCountUpdate as EventListener)
+          document.removeEventListener('notificationCountUpdate', handleCountUpdate)
         }
       } catch (error) {
-        console.error('[SignalR] Lỗi khi kết nối:', error)
-        setIsConnected(false)
-        setConnectionState('Failed')
+        console.error('[SignalR] Lỗi khởi tạo:', error)
       }
     }
 
     initializeSignalR()
-
-    return () => {
-      signalRService.disconnect()
-    }
   }, [signalRService, notificationService])
+
+  const connectSecondary = async () => {
+    try {
+      console.log('[Secondary SignalR] Bắt đầu kết nối...')
+      await signalRService.connectSecondary()
+      setIsSecondaryConnected(true)
+      setSecondaryConnectionState('Connected')
+      console.log('[Secondary SignalR] Kết nối thành công!')
+    } catch (error) {
+      console.error('[Secondary SignalR] Lỗi kết nối:', error)
+      setIsSecondaryConnected(false)
+      setSecondaryConnectionState('Disconnected')
+    }
+  }
+
+  const disconnectSecondary = async () => {
+    try {
+      await signalRService.disconnect()
+      setIsSecondaryConnected(false)
+      setSecondaryConnectionState('Disconnected')
+      console.log('[Secondary SignalR] Đã ngắt kết nối')
+    } catch (error) {
+      console.error('[Secondary SignalR] Lỗi ngắt kết nối:', error)
+    }
+  }
 
   const value: SignalRContextType = {
     signalRService,
     notificationService,
     isConnected,
+    isSecondaryConnected,
     notifications,
-    connectionState
+    connectionState,
+    secondaryConnectionState,
+    connectSecondary,
+    disconnectSecondary
   }
 
-  return <SignalRContext.Provider value={value}>{children}</SignalRContext.Provider>
+  return (
+    <SignalRContext.Provider value={value}>
+      {children}
+    </SignalRContext.Provider>
+  )
 }
 
 export const useSignalR = () => {
   const context = useContext(SignalRContext)
   if (!context) {
-    throw new Error('useSignalR must be used within SignalRProvider')
+    throw new Error('useSignalR must be used within a SignalRProvider')
   }
   return context
 }

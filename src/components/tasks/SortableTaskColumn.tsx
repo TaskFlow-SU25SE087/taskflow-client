@@ -13,6 +13,7 @@ interface SortableTaskColumnProps {
   onTaskCreated: () => void
   status: string
   boardId: string
+  movingTaskId?: string | null
 }
 
 export function SortableTaskColumn(props: SortableTaskColumnProps) {
@@ -29,7 +30,7 @@ export function SortableTaskColumn(props: SortableTaskColumnProps) {
   
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: transition || 'transform 250ms ease-in-out',
+    transition: transition || 'transform 150ms ease-in-out',
     opacity: isDragging ? 0.8 : 1,
     cursor: isDragging ? 'grabbing' : 'grab',
     zIndex: isDragging ? 1000 : 1
@@ -41,7 +42,7 @@ export function SortableTaskColumn(props: SortableTaskColumnProps) {
       style={style} 
       className={`
         w-full
-        transition-all duration-300 ease-in-out
+        transition-all duration-150 ease-in-out
         ${isDragging ? 'animate-drag-preview scale-105 rotate-2 shadow-2xl' : ''}
         ${isOver ? 'animate-drop-zone' : ''}
         ${isSorting ? 'animate-bounce-subtle' : ''}
@@ -73,7 +74,7 @@ export function SortableBoardColumn({ id, children }: SortableBoardColumnProps) 
   
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: transition || 'transform 250ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
+    transition: transition || 'transform 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
     opacity: isDragging ? 0.9 : 1,
     cursor: isDragging ? 'grabbing' : 'grab',
     zIndex: isDragging ? 999 : 1
@@ -85,7 +86,7 @@ export function SortableBoardColumn({ id, children }: SortableBoardColumnProps) 
       style={style} 
       className={`
         w-full
-        transition-all duration-300 ease-in-out
+        transition-all duration-150 ease-in-out
         ${isDragging ? 'animate-drag-preview scale-105 rotate-1 shadow-2xl' : ''}
         ${isOver ? 'animate-drop-zone ring-2 ring-lavender-300 ring-opacity-50' : ''}
         ${isSorting ? 'animate-bounce-subtle' : ''}

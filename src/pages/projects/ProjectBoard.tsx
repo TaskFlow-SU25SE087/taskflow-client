@@ -29,10 +29,10 @@ import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import {
-    arrayMove,
-    horizontalListSortingStrategy,
-    SortableContext,
-    verticalListSortingStrategy
+  arrayMove,
+  horizontalListSortingStrategy,
+  SortableContext,
+  verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { CheckCircle, ChevronDown, Clock, Filter, Link2, Pencil, Plus, Search, Settings, TrendingUp } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -132,18 +132,43 @@ const fetchCurrentSprintAndTasks = async (
 ) => {
   if (projectId) {
     try {
+      console.log(`🔄 [ProjectBoard] Fetching current sprint for project: ${projectId}`)
       const currentSprint = await sprintApi.getCurrentSprint(projectId)
+      
       if (currentSprint && currentSprint.id) {
+        console.log(`✅ [ProjectBoard] Found current sprint: ${currentSprint.name} (${currentSprint.id})`)
         setSelectedSprintId(currentSprint.id)
+        
         // Lấy task của current sprint và set luôn
+        console.log(`🔄 [ProjectBoard] Fetching tasks for sprint: ${currentSprint.id}`)
         const tasks = await sprintApi.getSprintTasks(projectId, currentSprint.id)
+        console.log(`✅ [ProjectBoard] Successfully fetched ${Array.isArray(tasks) ? tasks.length : 0} tasks`)
         setSprintTasks(Array.isArray(tasks) ? tasks : [])
         return
+      } else {
+        console.log(`⚠️ [ProjectBoard] No current sprint found for project: ${projectId}`)
+        setSprintTasks([])
       }
-    } catch (err) {
+    } catch (err: any) {
+      console.error(`❌ [ProjectBoard] Error fetching sprint data:`, err)
+      console.error(`❌ [ProjectBoard] Error details:`, {
+        message: err.message,
+        code: err.code,
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        isTimeout: err.isTimeout
+      })
+      
+      // Handle timeout errors specifically
+      if (err.isTimeout) {
+        console.error(`⏰ [ProjectBoard] Timeout error detected - showing user notification`)
+        // You can show a toast notification here if needed
+      }
+      
       setSprintTasks([])
     }
   } else {
+    console.log(`⚠️ [ProjectBoard] No project ID provided`)
     setSprintTasks([])
   }
 }
@@ -176,6 +201,9 @@ export default function ProjectBoard() {
   const [isLockDialogOpen, setIsLockDialogOpen] = useState(false)
   const [lockedColumns, setLockedColumns] = useState<string[]>([])
   const [lockAll, setLockAll] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
+  const [movingTaskId, setMovingTaskId] = useState<string | null>(null)
+
 
   const { showToast } = useToastContext()
   const { leaveProject, loading: memberLoading, error: memberError } = useProjectMembers()
@@ -183,9 +211,25 @@ export default function ProjectBoard() {
 
   // Refs and mouse handlers removed since they're not being used
 
+  // Track when movingTaskId changes to measure UI update timing
+  useEffect(() => {
+    if (movingTaskId) {
+      console.log('[TIMING] 🎯 movingTaskId set to:', movingTaskId, 'at:', new Date().toISOString())
+    } else if (movingTaskId === null) {
+      console.log('[TIMING] ✅ movingTaskId cleared at:', new Date().toISOString())
+    }
+  }, [movingTaskId])
+
+  // Track when sprintTasks state updates to measure UI re-render timing
+  useEffect(() => {
+    console.log('[TIMING] 🔄 sprintTasks state updated at:', new Date().toISOString(), 'with', sprintTasks.length, 'tasks')
+  }, [sprintTasks])
+
   // Lấy sprint hiện tại (in progress) khi vào trang
   useEffect(() => {
-    fetchCurrentSprintAndTasks(currentProject?.id, setSelectedSprintId, setSprintTasks)
+    if (currentProject?.id) {
+      fetchCurrentSprintAndTasks(currentProject?.id, setSelectedSprintId, setSprintTasks)
+    }
   }, [currentProject])
 
   useEffect(() => {
@@ -256,7 +300,11 @@ export default function ProjectBoard() {
 
   // Hàm xử lý kéo thả chung cho cả board và task
   const handleDragEnd = async (event: any) => {
+    const dragStartTime = performance.now()
+    console.log('[TIMING] 🕐 Drag end started at:', new Date().toISOString())
+    
     const { active, over } = event
+    setIsDragging(false)
     // Prevent drag if locked
     const isBoardDrag = boards.some((b) => b.id === active.id)
     if (isBoardDrag) {
@@ -303,11 +351,15 @@ export default function ProjectBoard() {
     // Nếu kéo task (id của task nằm trong bất kỳ filteredBoards)
     const allTaskIds = filteredBoards.flatMap((b) => b.tasks.map((t) => t.id))
     if (allTaskIds.includes(active.id)) {
+      const taskMoveStartTime = performance.now()
+      console.log('[TIMING] 🎯 Task move operation started at:', new Date().toISOString())
+      
       if (!currentProject?.id) {
         console.log('[DnD] Không có currentProject khi kéo task')
         return
       }
       const taskId = active.id
+      setMovingTaskId(taskId)
       let newBoardId = over.id
       // Nếu over là taskId, tìm board chứa task đó
       if (allTaskIds.includes(over.id)) {
@@ -321,28 +373,135 @@ export default function ProjectBoard() {
         return
       }
       console.log('[DnD] moveTaskToBoard', { projectId: currentProject.id, taskId, newBoardId })
-      try {
-        const boardObj = filteredBoards.find((b) => b.id === newBoardId)
-        console.log('[DnD] DEBUG taskObj:', taskObj)
-        console.log('[DnD] DEBUG boardObj:', boardObj)
-        await taskApi.moveTaskToBoard(currentProject.id, taskId, newBoardId)
-        await fetchCurrentSprintAndTasks(currentProject?.id, setSelectedSprintId, setSprintTasks)
+      
+             const boardObj = filteredBoards.find((b) => b.id === newBoardId)
+       console.log('[DnD] DEBUG taskObj:', taskObj)
+       console.log('[DnD] DEBUG boardObj:', boardObj)
+       
+       // OPTIMISTIC UPDATE FIRST - Move task immediately in UI
+       const optimisticUpdateStartTime = performance.now()
+       console.log('[TIMING] ⚡ Optimistic update starting at:', new Date().toISOString())
+       
+       // Cập nhật state ngay lập tức để task di chuyển liền
+       if (sprintTasks.length > 0) {
+         // Nếu đang sử dụng sprint tasks
+         setSprintTasks(prevTasks => 
+           prevTasks.map(task => 
+             task.id === taskId 
+               ? { ...task, boardId: newBoardId, status: boardObj?.name || task.status }
+               : task
+           )
+         )
+       }
+       
+       // Cập nhật state của boards để UI được refresh ngay lập tức
+       setBoards(prevBoards => 
+         prevBoards.map(board => ({
+           ...board,
+           tasks: board.tasks.map(task => 
+             task.id === taskId 
+               ? { ...task, boardId: newBoardId, status: boardObj?.name || task.status }
+               : task
+           )
+         }))
+       )
+       
+       const optimisticUpdateEndTime = performance.now()
+       const optimisticUpdateDuration = optimisticUpdateEndTime - optimisticUpdateStartTime
+       console.log('[TIMING] ⚡ Optimistic update completed in:', optimisticUpdateDuration.toFixed(2), 'ms')
+       
+       // Force a micro-task to ensure React has processed the state update
+       await new Promise(resolve => setTimeout(resolve, 0))
+       const uiRenderTime = performance.now()
+       const uiRenderDuration = uiRenderTime - optimisticUpdateEndTime
+       console.log('[TIMING] 🎨 UI render time after optimistic update:', uiRenderDuration.toFixed(2), 'ms')
+       
+       // API CALL AFTER - Update backend in background
+       const apiCallStartTime = performance.now()
+       console.log('[TIMING] 📡 API call starting at:', new Date().toISOString())
+       
+       try {
+         await taskApi.moveTaskToBoard(currentProject.id, taskId, newBoardId)
+         
+         const apiCallEndTime = performance.now()
+         const apiCallDuration = apiCallEndTime - apiCallStartTime
+         console.log('[TIMING] 📡 API call completed in:', apiCallDuration.toFixed(2), 'ms')
+        
+        // Thêm toast thông báo thành công
+        showToast({
+          title: 'Task moved successfully',
+          description: `Task moved to ${boardObj?.name || 'new board'}`,
+          variant: 'default'
+        })
+        
+        const totalTaskMoveTime = performance.now() - taskMoveStartTime
+        const totalDragEndTime = performance.now() - dragStartTime
+        
+        console.log('[TIMING] 🎯 Task move operation completed in:', totalTaskMoveTime.toFixed(2), 'ms')
+        console.log('[TIMING] 🕐 Total drag end operation completed in:', totalDragEndTime.toFixed(2), 'ms')
+        console.log('[TIMING] 📊 Breakdown: API call:', apiCallDuration.toFixed(2), 'ms, Optimistic update:', optimisticUpdateDuration.toFixed(2), 'ms')
+        
         console.log('[DnD] Đã chuyển task sang board mới thành công', { taskId, newBoardId })
-      } catch (err) {
-        // Log chi tiết lỗi trả về từ backend
-        const error = err as any
-        if (error.response) {
-          console.error('[DnD] API error', error.response.data)
-        } else {
-          console.error('[DnD] API error', error)
-        }
-      }
+        setMovingTaskId(null)
+             } catch (err) {
+         const errorTime = performance.now()
+         const errorDuration = errorTime - taskMoveStartTime
+         console.log('[TIMING] ❌ Task move failed after:', errorDuration.toFixed(2), 'ms')
+         
+         // ROLLBACK OPTIMISTIC UPDATE - Revert the UI change since API failed
+         console.log('[TIMING] 🔄 Rolling back optimistic update due to API failure')
+         
+         // Revert sprintTasks to original state
+         if (sprintTasks.length > 0) {
+           setSprintTasks(prevTasks => 
+             prevTasks.map(task => 
+               task.id === taskId 
+                 ? { ...task, boardId: taskObj?.boardId || task.boardId, status: taskObj?.status || task.status }
+                 : task
+             )
+           )
+         }
+         
+         // Revert boards to original state
+         setBoards(prevBoards => 
+           prevBoards.map(board => ({
+             ...board,
+             tasks: board.tasks.map(task => 
+               task.id === taskId 
+                 ? { ...task, boardId: taskObj?.boardId || task.boardId, status: taskObj?.status || task.status }
+                 : task
+             )
+           }))
+         )
+         
+         // Log chi tiết lỗi trả về từ backend
+         const error = err as any
+         if (error.response) {
+           console.error('[DnD] API error', error.response.data)
+         } else {
+           console.error('[DnD] API error', error)
+         }
+         
+         // Hiển thị thông báo lỗi cho user
+         showToast({
+           title: 'Error moving task',
+           description: 'Failed to move task to new board. The task has been moved back to its original position.',
+           variant: 'destructive'
+         })
+         setMovingTaskId(null)
+       }
       return
     }
     console.log('[DnD] Không phải kéo board hoặc task hợp lệ', { active, over })
   }
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+
+  const handleDragStart = (event: any) => {
+    const dragStartTime = performance.now()
+    console.log('[TIMING] 🎬 Drag start at:', new Date().toISOString())
+    setIsDragging(true)
+  }
 
   console.log('All tasks:', tasks)
 
@@ -482,7 +641,7 @@ export default function ProjectBoard() {
       <div className='flex flex-col flex-1 overflow-hidden'> {/* Added flex-1 and overflow-hidden */}
         {/* Header content - có thể scroll */}
         <div className='flex-shrink-0 p-3 sm:p-6 bg-white/50 backdrop-blur-sm overflow-y-auto max-h-[60vh]'> {/* Made this scrollable with max height */}
-          <SprintSelector />
+                     <SprintSelector />
           
           {/* Sprint deadline display */}
           {(() => {
@@ -705,7 +864,7 @@ export default function ProjectBoard() {
         {/* Board container - chỉ phần này scroll ngang */}
         <div className="flex-1 overflow-hidden"> {/* Container chính cho boards */}
           <div className="overflow-x-auto overflow-y-hidden p-3 sm:p-6 pt-0 board-container"> {/* Scroll container - removed h-full */}
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
               <SortableContext items={filteredBoards.map((b) => b.id)} strategy={horizontalListSortingStrategy}>
                 <div className="flex flex-row gap-4 sm:gap-6" style={{ minWidth: 'max-content' }}> {/* Board row - removed h-full */}
                   {/* Drop zone đầu */}
@@ -732,6 +891,7 @@ export default function ProjectBoard() {
                               onTaskCreated={refreshBoards}
                               status={board.name}
                               boardId={board.id}
+                              movingTaskId={movingTaskId}
                             />
                           </SortableContext>
                         </DroppableBoard>

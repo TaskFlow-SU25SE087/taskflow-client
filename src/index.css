@@ -57,7 +57,7 @@
 
   /* Enhanced Board Drag & Drop Effects */
   .task-card {
-    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition: all 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     will-change: transform, opacity, box-shadow;
   }
   
@@ -72,7 +72,7 @@
   }
   
   .board-column {
-    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition: all 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     will-change: transform, opacity, box-shadow;
   }
   
@@ -87,7 +87,7 @@
   }
   
   .board-droppable {
-    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition: all 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     border-radius: 16px;
     will-change: transform, border-color, background-color;
   }
@@ -151,7 +151,7 @@
   }
   
   .animate-fade-in {
-    animation: fade-in 0.3s ease-out;
+    animation: fade-in 0.15s ease-out;
   }
   
   @keyframes fade-in {
@@ -166,7 +166,7 @@
   }
   
   .animate-slide-in {
-    animation: slide-in 0.3s ease-out;
+    animation: slide-in 0.15s ease-out;
   }
   
   @keyframes slide-in {
@@ -182,7 +182,7 @@
   
   /* Task-specific animations */
   .animate-task-hover {
-    animation: task-hover 0.3s ease-out;
+    animation: task-hover 0.15s ease-out;
   }
   
   @keyframes task-hover {
@@ -246,12 +246,12 @@
   
   /* Smooth height transitions for boards */
   .board-column {
-    transition: height 0.3s ease-in-out;
+    transition: height 0.15s ease-in-out;
   }
   
   /* Ensure task cards don't cause layout issues */
   .task-card {
-    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition: all 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     will-change: transform, opacity, box-shadow;
   }
   

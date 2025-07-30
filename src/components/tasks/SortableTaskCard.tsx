@@ -3,7 +3,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { TaskCard } from './TaskCard';
 
-export function SortableTaskCard({ task, compact }: { task: TaskP; compact?: boolean }) {
+export function SortableTaskCard({ task, compact, isMoving }: { task: TaskP; compact?: boolean; isMoving?: boolean }) {
   const { 
     attributes, 
     listeners, 
@@ -36,7 +36,7 @@ export function SortableTaskCard({ task, compact }: { task: TaskP; compact?: boo
       {...attributes} 
       {...listeners}
     >
-      <TaskCard task={task} compact={compact} />
+      <TaskCard task={task} compact={compact} isMoving={isMoving} />
     </div>
   )
 }

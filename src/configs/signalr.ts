@@ -8,20 +8,30 @@ export const SIGNALR_CONFIG = {
   MAX_RECONNECT_ATTEMPTS: ENV_CONFIG.SIGNALR_MAX_RECONNECT_ATTEMPTS
 }
 
+export const SECONDARY_SIGNALR_CONFIG = {
+  HUB_URL: ENV_CONFIG.SECONDARY_SIGNALR_HUB_URL,
+  RECONNECT_INTERVAL: ENV_CONFIG.SIGNALR_RECONNECT_INTERVAL,
+  MAX_RECONNECT_ATTEMPTS: ENV_CONFIG.SIGNALR_MAX_RECONNECT_ATTEMPTS
+}
+
 export interface NotificationData {
   id: string
   userId: string
   projectId: string
   taskId?: string
   message: string
+  type: string
   isRead: boolean
   createdAt: string
 }
 
 export class SignalRService {
   private connection: signalR.HubConnection | null = null
+  private secondaryConnection: signalR.HubConnection | null = null
   private reconnectAttempts = 0
+  private secondaryReconnectAttempts = 0
   private isConnecting = false
+  private isSecondaryConnecting = false
   private signalREnabled = ENV_CONFIG.ENABLE_SIGNALR
 
   async connect() {
@@ -75,11 +85,44 @@ export class SignalRService {
     }
   }
 
+  async connectSecondary() {
+    if (this.isSecondaryConnecting) return
+    this.isSecondaryConnecting = true
+    try {
+      this.secondaryConnection = new signalR.HubConnectionBuilder()
+        .withUrl(SECONDARY_SIGNALR_CONFIG.HUB_URL, {
+          accessTokenFactory: () => {
+            const rememberMe = localStorage.getItem('rememberMe') === 'true'
+            return rememberMe ? localStorage.getItem('accessToken') || '' : sessionStorage.getItem('accessToken') || ''
+          }
+        })
+        .withAutomaticReconnect([0, 2000, 10000, 30000])
+        .configureLogging(signalR.LogLevel.Debug)
+        .build()
+
+      // Register secondary event handlers
+      this.registerSecondaryEventHandlers()
+
+      console.log('[Secondary SignalR] Đang kết nối tới:', SECONDARY_SIGNALR_CONFIG.HUB_URL)
+      await this.secondaryConnection.start()
+      console.log('✅ Secondary SignalR Connected!')
+      this.secondaryReconnectAttempts = 0
+    } catch (error) {
+      SignalRErrorHandler.handleConnectionError(error, this)
+      this.handleSecondaryReconnect()
+    } finally {
+      this.isSecondaryConnecting = false
+    }
+  }
+
   async disconnect() {
     if (this.connection) {
-      console.log('[SignalR] Ngắt kết nối SignalR')
       await this.connection.stop()
       this.connection = null
+    }
+    if (this.secondaryConnection) {
+      await this.secondaryConnection.stop()
+      this.secondaryConnection = null
     }
   }
 
@@ -88,100 +131,101 @@ export class SignalRService {
     
     if (this.reconnectAttempts < SIGNALR_CONFIG.MAX_RECONNECT_ATTEMPTS) {
       this.reconnectAttempts++
-      SignalRErrorHandler.handleReconnectionAttempt(this.reconnectAttempts, SIGNALR_CONFIG.MAX_RECONNECT_ATTEMPTS)
-      setTimeout(() => this.connect(), SIGNALR_CONFIG.RECONNECT_INTERVAL)
+      console.log(`🔄 [SignalR] Reconnecting... Attempt ${this.reconnectAttempts}/${SIGNALR_CONFIG.MAX_RECONNECT_ATTEMPTS}`)
+      setTimeout(() => {
+        this.connect()
+      }, SIGNALR_CONFIG.RECONNECT_INTERVAL)
     } else {
-      console.warn('[SignalR] Max reconnection attempts reached. Disabling SignalR.')
-      this.signalREnabled = false
+      console.error('❌ [SignalR] Max reconnection attempts reached')
+    }
+  }
+
+  private handleSecondaryReconnect() {
+    if (this.secondaryReconnectAttempts < SECONDARY_SIGNALR_CONFIG.MAX_RECONNECT_ATTEMPTS) {
+      this.secondaryReconnectAttempts++
+      console.log(`🔄 [Secondary SignalR] Reconnecting... Attempt ${this.secondaryReconnectAttempts}/${SECONDARY_SIGNALR_CONFIG.MAX_RECONNECT_ATTEMPTS}`)
+      setTimeout(() => {
+        this.connectSecondary()
+      }, SECONDARY_SIGNALR_CONFIG.RECONNECT_INTERVAL)
+    } else {
+      console.error('❌ [Secondary SignalR] Max reconnection attempts reached')
     }
   }
 
   private registerEventHandlers() {
     if (!this.connection) return
 
-    // Connection state handlers
-    this.connection.onclose((error?: any) => {
-      console.log('🔌 SignalR disconnected', error)
+    this.connection.onclose(() => {
+      console.log('🔌 [SignalR] Connection closed')
+      this.handleReconnect()
     })
 
-    this.connection.onreconnected((connectionId?: any) => {
-      console.log('🔄 SignalR reconnected', connectionId)
+    this.connection.onreconnecting(() => {
+      console.log('🔄 [SignalR] Reconnecting...')
     })
 
-    this.connection.onreconnecting((error?: any) => {
-      console.log('🔄 SignalR reconnecting...', error)
-    })
-
-    // Lắng nghe sự kiện ReceiveNotification
-    this.connection.on('ReceiveNotification', (data: any) => {
-      console.log('[SignalR] Nhận thông báo real-time:', data)
-      // TODO: Xử lý hiển thị notification ở đây nếu cần
+    this.connection.onreconnected(() => {
+      console.log('✅ [SignalR] Reconnected!')
+      this.reconnectAttempts = 0
     })
   }
 
-  async invokeMethod(methodName: string, ...args: any[]) {
-    if (!this.connection || !this.signalREnabled) {
-      throw new Error('SignalR connection not established or disabled')
+  private registerSecondaryEventHandlers() {
+    if (!this.secondaryConnection) return
+
+    this.secondaryConnection.onclose(() => {
+      console.log('🔌 [Secondary SignalR] Connection closed')
+      this.handleSecondaryReconnect()
+    })
+
+    this.secondaryConnection.onreconnecting(() => {
+      console.log('🔄 [Secondary SignalR] Reconnecting...')
+    })
+
+    this.secondaryConnection.onreconnected(() => {
+      console.log('✅ [Secondary SignalR] Reconnected!')
+      this.secondaryReconnectAttempts = 0
+    })
+  }
+
+  on(event: string, callback: (...args: any[]) => void) {
+    if (this.connection) {
+      this.connection.on(event, callback)
     }
-    try {
-      console.log(`[SignalR] Gọi method: ${methodName}`, ...args)
-      return await this.connection.invoke(methodName, ...args)
-    } catch (error) {
-      SignalRErrorHandler.handleMethodError(error, methodName)
-      console.error(`[SignalR] Lỗi khi gọi method: ${methodName}`, error)
-      throw error
+    if (this.secondaryConnection) {
+      this.secondaryConnection.on(event, callback)
     }
   }
 
-  async joinProjectGroup(projectId: string) {
-    if (!this.isConnected() || !this.signalREnabled) {
-      console.warn('SignalR chưa kết nối hoặc bị disable, không thể join group')
-      return
+  off(event: string, callback: (...args: any[]) => void) {
+    if (this.connection) {
+      this.connection.off(event, callback)
     }
-    try {
-      return await this.invokeMethod('JoinProjectGroup', projectId)
-    } catch (error) {
-      SignalRErrorHandler.handleProjectGroupError(error, projectId, 'join')
-      throw error
+    if (this.secondaryConnection) {
+      this.secondaryConnection.off(event, callback)
     }
   }
 
-  async leaveProjectGroup(projectId: string) {
-    if (!this.isConnected() || !this.signalREnabled) {
-      console.warn('SignalR chưa kết nối hoặc bị disable, không thể leave group')
-      return
+  async invoke(method: string, ...args: any[]) {
+    if (this.connection) {
+      return await this.connection.invoke(method, ...args)
     }
-    try {
-      return await this.invokeMethod('LeaveProjectGroup', projectId)
-    } catch (error) {
-      SignalRErrorHandler.handleProjectGroupError(error, projectId, 'leave')
-      throw error
-    }
+    throw new Error('SignalR connection not available')
   }
 
-  on(eventName: string, callback: (...args: any[]) => void) {
-    if (!this.connection || !this.signalREnabled) {
-      console.warn('SignalR connection not established or disabled, cannot register event listener')
-      return
+  async invokeSecondary(method: string, ...args: any[]) {
+    if (this.secondaryConnection) {
+      return await this.secondaryConnection.invoke(method, ...args)
     }
-    this.connection.on(eventName, callback)
+    throw new Error('Secondary SignalR connection not available')
   }
 
-  off(eventName: string, callback?: (...args: any[]) => void) {
-    if (!this.connection) return
-    if (callback) {
-      this.connection.off(eventName, callback)
-    } else {
-      this.connection.off(eventName)
-    }
+  isConnected(): boolean {
+    return this.connection?.state === signalR.HubConnectionState.Connected
   }
 
-  getConnectionState() {
-    return this.connection?.state || 'Disconnected'
-  }
-
-  isConnected() {
-    return this.connection?.state === 'Connected'
+  isSecondaryConnected(): boolean {
+    return this.secondaryConnection?.state === signalR.HubConnectionState.Connected
   }
 
   isEnabled() {

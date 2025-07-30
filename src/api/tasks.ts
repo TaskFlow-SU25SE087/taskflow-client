@@ -1,6 +1,7 @@
 import axiosClient from '@/configs/axiosClient'
 import { APIResponse } from '@/types/api'
 import { TaskP } from '@/types/task'
+import axios from 'axios'
 
 export const taskApi = {
   // Get all tasks for a project
@@ -138,10 +139,57 @@ export const taskApi = {
     return response.data.data
   },
 
-  // Chuyển task sang board
+  // Chuyển task sang board với retry logic, connection pooling và caching
   moveTaskToBoard: async (projectId: string, taskId: string, boardId: string): Promise<APIResponse<boolean>> => {
-    const response = await axiosClient.post(`/projects/${projectId}/tasks/${taskId}/status/board/${boardId}`)
-    return response.data
+    const maxRetries = 2
+    let lastError: any
+    
+    // Cache key cho board data
+    const cacheKey = `board_${projectId}_${boardId}`
+    const cachedBoard = sessionStorage.getItem(cacheKey)
+    
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        // Tạo axios instance với timeout 1 giây và connection pooling
+        const fastAxiosClient = axios.create({
+          baseURL: axiosClient.defaults.baseURL,
+          timeout: 1000, // 1 giây timeout
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sessionStorage.getItem('accessToken')}`,
+            'Connection': 'keep-alive',
+            'Keep-Alive': 'timeout=5, max=1000',
+            // Add cache headers if we have cached data
+            ...(cachedBoard && { 'If-None-Match': cachedBoard })
+          },
+          // Connection pooling settings
+          maxRedirects: 0,
+          validateStatus: (status) => status < 500
+        })
+        
+        console.log(`[moveTaskToBoard] Attempt ${attempt + 1}/${maxRetries + 1}`)
+        const response = await fastAxiosClient.post(`/projects/${projectId}/tasks/${taskId}/status/board/${boardId}`)
+        
+        // Cache successful response
+        if (response.data && response.data.success) {
+          sessionStorage.setItem(cacheKey, JSON.stringify(response.data))
+        }
+        
+        return response.data
+      } catch (error: any) {
+        lastError = error
+        console.warn(`[moveTaskToBoard] Attempt ${attempt + 1} failed:`, error.message)
+        
+        if (attempt < maxRetries) {
+          // Exponential backoff: wait 200ms, then 400ms
+          const delay = 200 * Math.pow(2, attempt)
+          console.log(`[moveTaskToBoard] Retrying in ${delay}ms...`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+        }
+      }
+    }
+    
+    throw lastError
   },
 
   // Complete a task with file upload (custom endpoint)

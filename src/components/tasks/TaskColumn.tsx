@@ -14,6 +14,7 @@ interface TaskColumnProps {
   onTaskCreated: () => void
   status: string
   boardId: string
+  movingTaskId?: string | null
 }
 
 // Enhanced color mapping for different board statuses
@@ -84,7 +85,7 @@ const getBoardStyling = (boardName: string) => {
   }
 }
 
-export function TaskColumn({ title, tasks, onTaskCreated, boardId }: TaskColumnProps) {
+export function TaskColumn({ title, tasks, onTaskCreated, boardId, movingTaskId }: TaskColumnProps) {
   const [isAddingTask, setIsAddingTask] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const { currentProject } = useCurrentProject()
@@ -175,10 +176,8 @@ export function TaskColumn({ title, tasks, onTaskCreated, boardId }: TaskColumnP
               {tasks.map((task, index) => (
                 <div 
                   key={task.id} 
-                  className="animate-slide-in"
-                  style={{ animationDelay: `${index * 0.05}s` }}
                 >
-                  <SortableTaskCard task={task} />
+                  <SortableTaskCard task={task} isMoving={movingTaskId === task.id} />
                 </div>
               ))}
             </div>

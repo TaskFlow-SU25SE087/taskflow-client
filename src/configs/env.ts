@@ -8,58 +8,52 @@ const getFirstAvailableUrl = (envValue: string | undefined, fallback: string): s
   return urls[0] || fallback
 }
 
-// Get production URLs based on environment
-const getProductionUrls = () => {
+// Helper function to get URL based on environment
+const getUrlByEnvironment = (devUrl: string, prodUrl: string | undefined): string => {
   const isProd = import.meta.env.PROD
-  
-  // Always use the configured API URL from environment variables
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL
-  const signalRHubUrl = import.meta.env.VITE_SIGNALR_HUB_URL
-  
-  // Debug logging
-  console.log('[ENV DEBUG] Environment variables:')
-  console.log('[ENV DEBUG] VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL)
-  console.log('[ENV DEBUG] VITE_SIGNALR_HUB_URL:', import.meta.env.VITE_SIGNALR_HUB_URL)
-  console.log('[ENV DEBUG] IS_PRODUCTION:', isProd)
-  
-  if (isProd) {
-    // In production, use relative URLs that will be proxied by Vercel
-    return {
-      apiUrl: apiBaseUrl || '/api',
-      signalRUrl: signalRHubUrl || '/api/taskHub',
-      githubRedirect: import.meta.env.VITE_GITHUB_REDIRECT_URI || ''
-    }
-  }
-  
-  return {
-    apiUrl: 'http://localhost:7029',
-    signalRUrl: 'http://localhost:7029/taskHub',
-    githubRedirect: 'http://localhost:3000/github/callback'
-  }
+  return isProd && prodUrl ? prodUrl : devUrl
 }
-
-const productionUrls = getProductionUrls()
 
 export const ENV_CONFIG = {
   // API Configuration
-  API_BASE_URL: getFirstAvailableUrl(import.meta.env.VITE_API_BASE_URL, productionUrls.apiUrl),
-  API_TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT || '10000'),
+  API_BASE_URL: getUrlByEnvironment(
+    getFirstAvailableUrl(import.meta.env.VITE_API_BASE_URL, 'http://localhost:5041'),
+    import.meta.env.VITE_PROD_API_BASE_URL
+  ),
+  API_TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000'),
+
+  // Secondary API Configuration (Port 7029)
+  SECONDARY_API_BASE_URL: getUrlByEnvironment(
+    getFirstAvailableUrl(import.meta.env.VITE_SECONDARY_API_BASE_URL, 'http://localhost:7029'),
+    import.meta.env.VITE_PROD_SECONDARY_API_BASE_URL
+  ),
+  SECONDARY_API_TIMEOUT: parseInt(import.meta.env.VITE_SECONDARY_API_TIMEOUT || '30000'),
 
   // SignalR Configuration
-  SIGNALR_HUB_URL: getFirstAvailableUrl(import.meta.env.VITE_SIGNALR_HUB_URL, productionUrls.signalRUrl),
+  SIGNALR_HUB_URL: getUrlByEnvironment(
+    getFirstAvailableUrl(import.meta.env.VITE_SIGNALR_HUB_URL, 'http://localhost:5041/taskHub'),
+    import.meta.env.VITE_PROD_SIGNALR_HUB_URL
+  ),
   SIGNALR_RECONNECT_INTERVAL: parseInt(import.meta.env.VITE_SIGNALR_RECONNECT_INTERVAL || '5000'),
   SIGNALR_MAX_RECONNECT_ATTEMPTS: parseInt(import.meta.env.VITE_SIGNALR_MAX_RECONNECT_ATTEMPTS || '5'),
+
+  // Secondary SignalR Configuration (Port 7029)
+  SECONDARY_SIGNALR_HUB_URL: getUrlByEnvironment(
+    getFirstAvailableUrl(import.meta.env.VITE_SECONDARY_SIGNALR_HUB_URL, 'http://localhost:7029/taskHub'),
+    import.meta.env.VITE_PROD_SECONDARY_SIGNALR_HUB_URL
+  ),
 
   // Development Server
   DEV_SERVER_PORT: parseInt(import.meta.env.VITE_DEV_SERVER_PORT || '3000'),
 
   // GitHub OAuth
   GITHUB_CLIENT_ID: import.meta.env.VITE_GITHUB_CLIENT_ID || '',
-  GITHUB_REDIRECT_URI: getFirstAvailableUrl(import.meta.env.VITE_GITHUB_REDIRECT_URI, productionUrls.githubRedirect),
+  GITHUB_REDIRECT_URI: import.meta.env.VITE_GITHUB_REDIRECT_URI || 'http://localhost:3000/github/callback',
 
   // Feature Flags
   ENABLE_DEBUG_LOGS: import.meta.env.VITE_ENABLE_DEBUG_LOGS === 'true',
   ENABLE_SIGNALR: import.meta.env.VITE_ENABLE_SIGNALR !== 'false',
+  ENABLE_SECONDARY_API: import.meta.env.VITE_ENABLE_SECONDARY_API === 'true',
 
   // Storage Keys
   ACCESS_TOKEN_KEY: import.meta.env.VITE_ACCESS_TOKEN_KEY || 'accessToken',

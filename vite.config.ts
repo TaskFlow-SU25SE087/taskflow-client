@@ -11,7 +11,10 @@ export default defineConfig(({ mode }) => {
     server: {
       port: parseInt(env.VITE_DEV_SERVER_PORT || '3000'),
       proxy: {
-        '/api': env.VITE_API_BASE_URL || 'http://localhost:7029',
+        '/api': env.VITE_API_BASE_URL || 'http://localhost:5041',
+        '/api-secondary': env.VITE_SECONDARY_API_BASE_URL || 'http://localhost:7029',
+        '/signalr': env.VITE_SIGNALR_HUB_URL || 'http://localhost:5041/taskHub',
+        '/signalr-secondary': env.VITE_SECONDARY_SIGNALR_HUB_URL || 'http://localhost:7029/taskHub'
       }
     },
     css: {
