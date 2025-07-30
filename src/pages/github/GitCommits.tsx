@@ -10,14 +10,17 @@ import { useCurrentProject } from '@/hooks/useCurrentProject';
 import { useProjectParts } from '@/hooks/useProjectParts';
 import { format } from 'date-fns';
 import { Calendar, ChevronDown, Filter, Search } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { CommitDetail, CommitListItem, ProjectPart } from '@/types/commits';
 
 export default function GitCommits() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const { currentProject, isLoading } = useCurrentProject();
-  const { fetchParts } = useProjectParts();
+  const projectPartsHook = useProjectParts();
+  const fetchPartsRef = useRef(projectPartsHook.fetchParts);
+  fetchPartsRef.current = projectPartsHook.fetchParts;
+  
   const [parts, setParts] = useState<ProjectPart[]>([]);
   const [selectedPartId, setSelectedPartId] = useState<string>('');
   const [commits, setCommits] = useState<CommitListItem[]>([]);
@@ -27,18 +30,26 @@ export default function GitCommits() {
   const [showDetail, setShowDetail] = useState(false);
   const [commitDetail, setCommitDetail] = useState<CommitDetail[] | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
-  // selectedCommit state removed - commit data is passed directly to detail handler
+
+  // Memoize fetchParts to prevent infinite loop
+  const memoizedFetchParts = useCallback(async (projectId: string) => {
+    try {
+      const res = await fetchPartsRef.current(projectId);
+      setParts(res.data || []);
+      if (res.data && res.data.length > 0) {
+        setSelectedPartId(res.data[0].id);
+      }
+    } catch (error) {
+      console.error('Error fetching parts:', error);
+      setParts([]);
+    }
+  }, []);
 
   useEffect(() => {
     if (currentProject?.id) {
-      fetchParts(currentProject.id).then((res) => {
-        setParts(res.data || []);
-        if (res.data && res.data.length > 0) {
-          setSelectedPartId(res.data[0].id);
-        }
-      });
+      memoizedFetchParts(currentProject.id);
     }
-  }, [currentProject?.id]);
+  }, [currentProject?.id, memoizedFetchParts]);
 
   useEffect(() => {
     if (currentProject?.id && selectedPartId) {
