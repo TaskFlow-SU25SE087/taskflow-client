@@ -34,6 +34,7 @@ export default function GitCommits() {
   // Memoize fetchParts to prevent infinite loop
   const memoizedFetchParts = useCallback(async (projectId: string) => {
     try {
+      console.log('[GitCommits] Fetching parts for project:', projectId);
       const res = await fetchPartsRef.current(projectId);
       setParts(res.data || []);
       if (res.data && res.data.length > 0) {
@@ -49,10 +50,11 @@ export default function GitCommits() {
     if (currentProject?.id) {
       memoizedFetchParts(currentProject.id);
     }
-  }, [currentProject?.id, memoizedFetchParts]);
+  }, [currentProject?.id]);
 
   useEffect(() => {
     if (currentProject?.id && selectedPartId) {
+      console.log('[GitCommits] Fetching commits for part:', selectedPartId, 'page:', page);
       setLoadingCommits(true);
       getProjectPartCommitsV2(currentProject.id, selectedPartId, page)
         .then((res) => {
