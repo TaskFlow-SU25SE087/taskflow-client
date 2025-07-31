@@ -1,6 +1,8 @@
 // Environment Configuration
+import UrlManager from '../services/urlManager'
+
 // Helper function to get first available URL from multiple options
-const getFirstAvailableUrl = (envValue: string | undefined, fallback: string): string => {
+const getFirstAvailableUrlFromEnv = (envValue: string | undefined, fallback: string): string => {
   if (!envValue) return fallback
   
   // Split by || and get the first non-empty URL
@@ -14,9 +16,18 @@ const getUrlByEnvironment = (devUrl: string, prodUrl: string | undefined): strin
   return isProd && prodUrl ? prodUrl : devUrl
 }
 
-// Helper function to get URL with fallback options
+// Get URL with automatic fallback
 const getUrlWithFallback = (primaryUrl: string, fallbackUrl: string): string => {
-  // You can set this to 'local' or 'deployed' to switch between environments
+  const urlManager = UrlManager.getInstance()
+  const serviceName = primaryUrl.includes('taskHub') ? 'SIGNALR_HUB_URL' : 'API_BASE_URL'
+  
+  // Try to get from URL manager first
+  const managedUrl = urlManager.getUrl(serviceName)
+  if (managedUrl) {
+    return managedUrl
+  }
+  
+  // Fallback to preferred environment
   const preferredEnvironment = import.meta.env.VITE_PREFERRED_ENVIRONMENT || 'deployed'
   
   if (preferredEnvironment === 'local') {

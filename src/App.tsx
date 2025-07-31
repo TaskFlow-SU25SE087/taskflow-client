@@ -28,6 +28,8 @@ import ProjectMembers from '@/pages/projects/ProjectMembers'
 import ProjectMemberVerify from '@/pages/projects/ProjectMemberVerify'
 import ProjectReports from '@/pages/projects/ProjectReports'
 import ProjectTimeline from '@/pages/projects/ProjectTimeline'
+import UrlManager from '@/services/urlManager'
+import React from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import GitCommits from './pages/github/GitCommits'
@@ -54,6 +56,19 @@ const AuthRedirect = ({ children }: { children: React.ReactNode }) => {
 }
 
 function App() {
+  // Initialize URL Manager on app startup
+  React.useEffect(() => {
+    const initializeUrlManager = async () => {
+      try {
+        await UrlManager.getInstance().initialize()
+      } catch (error) {
+        console.error('[App] Failed to initialize URL manager:', error)
+      }
+    }
+    
+    initializeUrlManager()
+  }, [])
+
   return (
     <BrowserRouter>
       <ToastProvider>
