@@ -10,7 +10,7 @@ const getBaseURL = () => {
 }
 
 const axiosClient = axios.create({
-  baseURL: getBaseURL(),
+  baseURL: 'http://localhost:7029', // Default fallback
   timeout: ENV_CONFIG.API_TIMEOUT,
   headers: {
     'Content-Type': 'application/json'
@@ -20,13 +20,25 @@ const axiosClient = axios.create({
 
 // Secondary axios client for port 7029
 const secondaryAxiosClient = axios.create({
-  baseURL: ENV_CONFIG.SECONDARY_API_BASE_URL,
+  baseURL: 'http://localhost:5041', // Default fallback
   timeout: ENV_CONFIG.SECONDARY_API_TIMEOUT,
   headers: {
     'Content-Type': 'application/json'
   },
   withCredentials: false
 })
+
+// Function to update baseURL after URL Manager is initialized
+export const updateAxiosBaseURL = () => {
+  const newBaseURL = ENV_CONFIG.API_BASE_URL
+  const newSecondaryBaseURL = ENV_CONFIG.SECONDARY_API_BASE_URL
+  
+  console.log('[AXIOS] Updating baseURL to:', newBaseURL)
+  console.log('[AXIOS] Updating secondary baseURL to:', newSecondaryBaseURL)
+  
+  axiosClient.defaults.baseURL = newBaseURL
+  secondaryAxiosClient.defaults.baseURL = newSecondaryBaseURL
+}
 
 // Helper function to show timeout notification
 const showTimeoutNotification = (url: string) => {

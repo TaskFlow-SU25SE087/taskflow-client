@@ -2,6 +2,7 @@ import AdminProtectedRoute from '@/components/AdminProtectedRoute'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { ToastContainer } from '@/components/ui/ToastContainer'
 import { ToastProvider } from '@/components/ui/ToastContext'
+import { updateAxiosBaseURL } from '@/configs/axiosClient'
 import { SignalRProvider } from '@/contexts/SignalRContext'
 import { AuthProvider } from '@/hooks/useAuthContext.tsx'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
@@ -61,6 +62,8 @@ function App() {
     const initializeUrlManager = async () => {
       try {
         await UrlManager.getInstance().initialize()
+        // Update axios baseURL after URL manager is initialized
+        updateAxiosBaseURL()
       } catch (error) {
         console.error('[App] Failed to initialize URL manager:', error)
       }

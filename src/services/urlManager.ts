@@ -27,13 +27,29 @@ class UrlManager {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
       
-      const response = await fetch(`${url}/health`, {
-        method: 'GET',
-        signal: controller.signal
-      })
+      // Try different endpoints for health check
+      const endpoints = ['/health', '/api/health', '/', '/api']
+      let isAvailable = false
+      
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetch(`${url}${endpoint}`, {
+            method: 'GET',
+            signal: controller.signal
+          })
+          
+          if (response.ok || response.status < 500) {
+            isAvailable = true
+            break
+          }
+        } catch (endpointError) {
+          // Continue to next endpoint
+          continue
+        }
+      }
       
       clearTimeout(timeoutId)
-      return response.ok
+      return isAvailable
     } catch (error) {
       console.log(`[URLManager] URL ${url} is not available:`, error)
       return false
@@ -54,6 +70,38 @@ class UrlManager {
     return urls[0]
   }
 
+  // Get multiple URLs to try for each service
+  private getUrlsForService(serviceName: string): string[] {
+    const urlSets = {
+      'API_BASE_URL': [
+        'http://20.243.177.81:7029',
+        'http://localhost:7029',
+        'http://20.243.177.81:5041',
+        'http://localhost:5041'
+      ],
+      'SECONDARY_API_BASE_URL': [
+        'http://20.243.177.81:5041',
+        'http://localhost:5041',
+        'http://20.243.177.81:7029',
+        'http://localhost:7029'
+      ],
+      'SIGNALR_HUB_URL': [
+        'http://20.243.177.81:7029/taskHub',
+        'http://localhost:7029/taskHub',
+        'http://20.243.177.81:5041/taskHub',
+        'http://localhost:5041/taskHub'
+      ],
+      'SECONDARY_SIGNALR_HUB_URL': [
+        'http://20.243.177.81:5041/taskHub',
+        'http://localhost:5041/taskHub',
+        'http://20.243.177.81:7029/taskHub',
+        'http://localhost:7029/taskHub'
+      ]
+    }
+    
+    return urlSets[serviceName as keyof typeof urlSets] || ['http://localhost:7029']
+  }
+
   // Initialize URL manager
   async initialize(): Promise<void> {
     if (this.isInitialized) return
@@ -63,29 +111,30 @@ class UrlManager {
     const urlConfigs: UrlConfig[] = [
       {
         name: 'API_BASE_URL',
-        primary: 'http://localhost:7029',
-        fallback: 'http://20.243.177.81:7029'
+        primary: 'http://20.243.177.81:7029',
+        fallback: 'http://localhost:7029'
       },
       {
         name: 'SECONDARY_API_BASE_URL',
-        primary: 'http://localhost:5041',
-        fallback: 'http://20.243.177.81:5041'
+        primary: 'http://20.243.177.81:5041',
+        fallback: 'http://localhost:5041'
       },
       {
         name: 'SIGNALR_HUB_URL',
-        primary: 'http://localhost:7029/taskHub',
-        fallback: 'http://20.243.177.81:7029/taskHub'
+        primary: 'http://20.243.177.81:7029/taskHub',
+        fallback: 'http://localhost:7029/taskHub'
       },
       {
         name: 'SECONDARY_SIGNALR_HUB_URL',
-        primary: 'http://localhost:5041/taskHub',
-        fallback: 'http://20.243.177.81:5041/taskHub'
+        primary: 'http://20.243.177.81:5041/taskHub',
+        fallback: 'http://localhost:5041/taskHub'
       }
     ]
 
     // Check availability for each URL configuration
     for (const config of urlConfigs) {
-      const availableUrl = await this.getFirstAvailableUrl([config.primary, config.fallback])
+      const urlsToTry = this.getUrlsForService(config.name)
+      const availableUrl = await this.getFirstAvailableUrl(urlsToTry)
       this.currentUrls.set(config.name, availableUrl)
     }
 

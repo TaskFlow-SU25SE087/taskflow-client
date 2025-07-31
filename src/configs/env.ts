@@ -1,21 +1,6 @@
 // Environment Configuration
 import UrlManager from '../services/urlManager'
 
-// Helper function to get first available URL from multiple options
-// const getFirstAvailableUrlFromEnv = (envValue: string | undefined, fallback: string): string => {
-//   if (!envValue) return fallback
-//   
-//   // Split by || and get the first non-empty URL
-//   const urls = envValue.split('||').map(url => url.trim()).filter(url => url)
-//   return urls[0] || fallback
-// }
-
-// Helper function to get URL based on environment
-// const getUrlByEnvironment = (devUrl: string, prodUrl: string | undefined): string => {
-//   const isProd = import.meta.env.PROD
-//   return isProd && prodUrl ? prodUrl : devUrl
-// }
-
 // Get URL with automatic fallback
 const getUrlWithFallback = (primaryUrl: string, fallbackUrl: string): string => {
   const urlManager = UrlManager.getInstance()
@@ -24,38 +9,34 @@ const getUrlWithFallback = (primaryUrl: string, fallbackUrl: string): string => 
   // Try to get from URL manager first
   const managedUrl = urlManager.getUrl(serviceName)
   if (managedUrl) {
+    console.log(`[ENV_CONFIG] Using URL from manager for ${serviceName}: ${managedUrl}`)
     return managedUrl
   }
   
-  // Fallback to preferred environment
-  const preferredEnvironment = import.meta.env.VITE_PREFERRED_ENVIRONMENT || 'deployed'
-  
-  if (preferredEnvironment === 'local') {
-    return primaryUrl
-  } else {
-    return fallbackUrl
-  }
+  // If URL manager not initialized yet, use fallback
+  console.log(`[ENV_CONFIG] URL manager not ready for ${serviceName}, using fallback: ${fallbackUrl}`)
+  return fallbackUrl
 }
 
 export const ENV_CONFIG = {
   // API Configuration (Port 7029 - Primary - Backend đang chạy)
   API_BASE_URL: getUrlWithFallback(
     'http://localhost:7029',
-    'http://20.243.177.81:7029'
+    'http://localhost:7029'
   ),
   API_TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000'),
 
   // Secondary API Configuration (Port 5041 - Backup)
   SECONDARY_API_BASE_URL: getUrlWithFallback(
     'http://localhost:5041',
-    'http://20.243.177.81:5041'
+    'http://localhost:5041'
   ),
   SECONDARY_API_TIMEOUT: parseInt(import.meta.env.VITE_SECONDARY_API_TIMEOUT || '30000'),
 
   // SignalR Configuration (Port 7029 - Primary - Backend đang chạy)
   SIGNALR_HUB_URL: getUrlWithFallback(
     'http://localhost:7029/taskHub',
-    'http://20.243.177.81:7029/taskHub'
+    'http://localhost:7029/taskHub'
   ),
   SIGNALR_RECONNECT_INTERVAL: parseInt(import.meta.env.VITE_SIGNALR_RECONNECT_INTERVAL || '5000'),
   SIGNALR_MAX_RECONNECT_ATTEMPTS: parseInt(import.meta.env.VITE_SIGNALR_MAX_RECONNECT_ATTEMPTS || '5'),
@@ -63,7 +44,7 @@ export const ENV_CONFIG = {
   // Secondary SignalR Configuration (Port 5041 - Backup)
   SECONDARY_SIGNALR_HUB_URL: getUrlWithFallback(
     'http://localhost:5041/taskHub',
-    'http://20.243.177.81:5041/taskHub'
+    'http://localhost:5041/taskHub'
   ),
 
   // Development Server
