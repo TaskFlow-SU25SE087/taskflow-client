@@ -15,6 +15,12 @@ export class NotificationService {
     try {
       const rememberMe = localStorage.getItem('rememberMe') === 'true';
       const token = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken');
+      
+      if (!token) {
+        console.log('[NotificationService] No access token available, skipping notification fetch');
+        return;
+      }
+      
       console.log('[DEBUG] Notification token:', token);
       const response = await fetch('/api/Notification', {
         method: 'GET',
@@ -23,25 +29,44 @@ export class NotificationService {
           'Content-Type': 'application/json',
         },
       });
-      if (!response.ok) throw new Error('Failed to fetch notifications');
+      
+      if (!response.ok) {
+        if (response.status === 500) {
+          console.warn('[NotificationService] Server error when fetching notifications, skipping');
+          return;
+        }
+        throw new Error(`Failed to fetch notifications: ${response.status}`);
+      }
+      
       const data = await response.json();
       this.notifications = Array.isArray(data) ? data : [];
       this.updateNotificationBadge();
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.warn('[NotificationService] Error fetching notifications:', error);
+      // Don't throw error, just log it and continue with empty notifications
     }
   }
 
   async initialize() {
-    await this.fetchAllNotifications();
-    this.signalRService.on('ReceiveNotification', (notification: NotificationData) => {
-      // Hiển thị mọi notification cho tất cả user
-      console.log('📨 New notification received (no filter):', notification)
-      this.notifications.unshift(notification)
-      this.showToastNotification(notification)
-      this.updateNotificationBadge()
-      this.notifyListeners(notification)
-    })
+    try {
+      await this.fetchAllNotifications();
+      
+      // Only set up SignalR listeners if SignalR is enabled and connected
+      if (this.signalRService.isEnabled() && this.signalRService.isConnected()) {
+        this.signalRService.on('ReceiveNotification', (notification: NotificationData) => {
+          // Hiển thị mọi notification cho tất cả user
+          console.log('📨 New notification received (no filter):', notification)
+          this.notifications.unshift(notification)
+          this.showToastNotification(notification)
+          this.updateNotificationBadge()
+          this.notifyListeners(notification)
+        })
+      } else {
+        console.log('[NotificationService] SignalR not available, skipping notification listeners');
+      }
+    } catch (error) {
+      console.warn('[NotificationService] Error initializing notification service:', error);
+    }
   }
 
   private showToastNotification(notification: NotificationData) {
@@ -79,13 +104,23 @@ export class NotificationService {
       const rememberMe = localStorage.getItem('rememberMe') === 'true'
       const token = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken')
 
-      await fetch(`/api/Notification/mark-read/${notificationId}`, {
+      if (!token) {
+        console.log('[NotificationService] No access token available, skipping mark as read');
+        return;
+      }
+
+      const response = await fetch(`/api/Notification/mark-read/${notificationId}`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       })
+
+      if (!response.ok) {
+        console.warn('[NotificationService] Failed to mark notification as read:', response.status);
+        return;
+      }
 
       // Update local state
       const notification = this.notifications.find((n) => n.id === notificationId)
@@ -94,7 +129,7 @@ export class NotificationService {
         this.updateNotificationBadge()
       }
     } catch (error) {
-      console.error('Error marking notification as read:', error)
+      console.warn('[NotificationService] Error marking notification as read:', error)
     }
   }
 
@@ -103,7 +138,12 @@ export class NotificationService {
       const rememberMe = localStorage.getItem('rememberMe') === 'true'
       const token = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken')
 
-      await fetch('/api/Notification/delete-read', {
+      if (!token) {
+        console.log('[NotificationService] No access token available, skipping delete read notifications');
+        return;
+      }
+
+      const response = await fetch('/api/Notification/delete-read', {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -111,11 +151,16 @@ export class NotificationService {
         }
       })
 
+      if (!response.ok) {
+        console.warn('[NotificationService] Failed to delete read notifications:', response.status);
+        return;
+      }
+
       // Remove read notifications from local state
       this.notifications = this.notifications.filter((n) => !n.isRead)
       this.updateNotificationBadge()
     } catch (error) {
-      console.error('Error deleting read notifications:', error)
+      console.warn('[NotificationService] Error deleting read notifications:', error)
     }
   }
 

@@ -1,13 +1,7 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { ENV_CONFIG } from './env'
 
-// Use the original URL without forcing HTTPS to avoid SSL issues
-const getBaseURL = () => {
-  const baseURL = ENV_CONFIG.API_BASE_URL
-  console.log('[AXIOS DEBUG] API_BASE_URL:', ENV_CONFIG.API_BASE_URL)
-  console.log('[AXIOS DEBUG] Final baseURL:', baseURL)
-  return baseURL
-}
+// Removed unused getBaseURL function
 
 const axiosClient = axios.create({
   baseURL: 'http://localhost:7029', // Default fallback

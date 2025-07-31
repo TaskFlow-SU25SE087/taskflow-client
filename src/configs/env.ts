@@ -18,11 +18,23 @@ const getUrlWithFallback = (primaryUrl: string, fallbackUrl: string): string => 
   return fallbackUrl
 }
 
+// Check if we should disable SignalR based on environment
+const shouldDisableSignalR = (): boolean => {
+  // Disable SignalR if explicitly set to false
+  if (import.meta.env.VITE_ENABLE_SIGNALR === 'false') {
+    return true
+  }
+  
+  // Enable SignalR by default since server is available
+  // Only disable if explicitly set to false
+  return false
+}
+
 export const ENV_CONFIG = {
   // API Configuration (Port 7029 - Primary - Backend đang chạy)
   API_BASE_URL: getUrlWithFallback(
-    'http://localhost:7029',
-    'http://localhost:7029'
+    'http://20.243.177.81:7029',
+    'http://20.243.177.81:7029'
   ),
   API_TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000'),
 
@@ -35,8 +47,8 @@ export const ENV_CONFIG = {
 
   // SignalR Configuration (Port 7029 - Primary - Backend đang chạy)
   SIGNALR_HUB_URL: getUrlWithFallback(
-    'http://localhost:7029/taskHub',
-    'http://localhost:7029/taskHub'
+    'http://20.243.177.81:7029/taskHub',
+    'http://20.243.177.81:7029/taskHub'
   ),
   SIGNALR_RECONNECT_INTERVAL: parseInt(import.meta.env.VITE_SIGNALR_RECONNECT_INTERVAL || '5000'),
   SIGNALR_MAX_RECONNECT_ATTEMPTS: parseInt(import.meta.env.VITE_SIGNALR_MAX_RECONNECT_ATTEMPTS || '5'),
@@ -56,7 +68,7 @@ export const ENV_CONFIG = {
 
   // Feature Flags
   ENABLE_DEBUG_LOGS: import.meta.env.VITE_ENABLE_DEBUG_LOGS === 'true',
-  ENABLE_SIGNALR: import.meta.env.VITE_ENABLE_SIGNALR !== 'false',
+  ENABLE_SIGNALR: !shouldDisableSignalR(),
   ENABLE_SECONDARY_API: import.meta.env.VITE_ENABLE_SECONDARY_API === 'true',
 
   // Storage Keys

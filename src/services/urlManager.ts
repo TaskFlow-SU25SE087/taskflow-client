@@ -11,6 +11,7 @@ class UrlManager {
   private static instance: UrlManager
   private currentUrls: Map<string, string> = new Map()
   private isInitialized = false
+  private failedUrls: Set<string> = new Set()
 
   private constructor() {}
 
@@ -23,12 +24,18 @@ class UrlManager {
 
   // Check if a URL is available
   private async checkUrlAvailability(url: string): Promise<boolean> {
+    // Skip URLs that have failed too many times
+    if (this.failedUrls.has(url)) {
+      console.log(`[URLManager] Skipping failed URL: ${url}`)
+      return false
+    }
+
     try {
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 3000) // 3 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 2000) // 2 second timeout
       
       // Try different endpoints for health check
-      const endpoints = ['/health', '/api/health', '/', '/api']
+      const endpoints = ['/health', '/api/health', '/', '/api', '/swagger/index.html']
       let isAvailable = false
       
       for (const endpoint of endpoints) {
@@ -49,9 +56,16 @@ class UrlManager {
       }
       
       clearTimeout(timeoutId)
+      
+      if (!isAvailable) {
+        console.log(`[URLManager] URL ${url} is not available`)
+        this.failedUrls.add(url)
+      }
+      
       return isAvailable
     } catch (error) {
       console.log(`[URLManager] URL ${url} is not available:`, error)
+      this.failedUrls.add(url)
       return false
     }
   }
@@ -65,8 +79,15 @@ class UrlManager {
       }
     }
     
-    // If none available, return the first one as fallback
-    console.log(`[URLManager] No URLs available, using fallback: ${urls[0]}`)
+    // If none available, return localhost as fallback
+    const localhostUrl = urls.find(url => url.includes('localhost'))
+    if (localhostUrl) {
+      console.log(`[URLManager] No URLs available, using localhost fallback: ${localhostUrl}`)
+      return localhostUrl
+    }
+    
+    // If no localhost found, return the first one as fallback
+    console.warn(`[URLManager] No URLs available, using fallback: ${urls[0]}`)
     return urls[0]
   }
 
@@ -76,11 +97,9 @@ class UrlManager {
       'API_BASE_URL': [
         'http://20.243.177.81:7029',
         'http://localhost:7029',
-        'http://20.243.177.81:5041',
         'http://localhost:5041'
       ],
       'SECONDARY_API_BASE_URL': [
-        'http://20.243.177.81:5041',
         'http://localhost:5041',
         'http://20.243.177.81:7029',
         'http://localhost:7029'
@@ -88,11 +107,9 @@ class UrlManager {
       'SIGNALR_HUB_URL': [
         'http://20.243.177.81:7029/taskHub',
         'http://localhost:7029/taskHub',
-        'http://20.243.177.81:5041/taskHub',
         'http://localhost:5041/taskHub'
       ],
       'SECONDARY_SIGNALR_HUB_URL': [
-        'http://20.243.177.81:5041/taskHub',
         'http://localhost:5041/taskHub',
         'http://20.243.177.81:7029/taskHub',
         'http://localhost:7029/taskHub'
@@ -116,8 +133,8 @@ class UrlManager {
       },
       {
         name: 'SECONDARY_API_BASE_URL',
-        primary: 'http://20.243.177.81:5041',
-        fallback: 'http://localhost:5041'
+        primary: 'http://localhost:5041',
+        fallback: 'http://20.243.177.81:7029'
       },
       {
         name: 'SIGNALR_HUB_URL',
@@ -126,8 +143,8 @@ class UrlManager {
       },
       {
         name: 'SECONDARY_SIGNALR_HUB_URL',
-        primary: 'http://20.243.177.81:5041/taskHub',
-        fallback: 'http://localhost:5041/taskHub'
+        primary: 'http://localhost:5041/taskHub',
+        fallback: 'http://20.243.177.81:7029/taskHub'
       }
     ]
 
@@ -155,7 +172,14 @@ class UrlManager {
   // Force refresh URLs
   async refresh(): Promise<void> {
     this.isInitialized = false
+    this.failedUrls.clear() // Clear failed URLs cache
     await this.initialize()
+  }
+
+  // Check if a specific service has available URLs
+  hasAvailableUrls(serviceName: string): boolean {
+    const urls = this.getUrlsForService(serviceName)
+    return urls.some(url => !this.failedUrls.has(url))
   }
 }
 

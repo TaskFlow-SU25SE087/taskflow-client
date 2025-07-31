@@ -40,7 +40,7 @@ const typeOptions = [
 ]
 
 export const ProjectIssueCreateMenu: React.FC<ProjectIssueCreateMenuProps> = ({ projectId, onIssueCreated }) => {
-  const { createProjectIssue, isLoading } = useIssues()
+  const { isLoading } = useIssues()
   const { showToast } = useToastContext()
   const [open, setOpen] = useState(false)
   const [files, setFiles] = useState<File[]>([])

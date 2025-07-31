@@ -55,11 +55,7 @@ export function SprintBoard({
     Cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-700' }
   }
 
-  const getSprintStatus = () => {
-    const status = typeof sprint.status === 'string' ? sprint.status : String(sprint.status)
-    const map = statusMap[status] || { label: status, color: 'bg-gray-100 text-gray-600' }
-    return <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${map.color}`}>{map.label}</span>
-  }
+  // Removed unused getSprintStatus function
 
   const formatSprintDate = (date: string | Date | null) => {
     if (!date) return ''

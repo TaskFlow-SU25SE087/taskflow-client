@@ -33,11 +33,12 @@ export class SignalRService {
   private isConnecting = false
   private isSecondaryConnecting = false
   private signalREnabled = ENV_CONFIG.ENABLE_SIGNALR
+  private connectionDisabled = false
 
   async connect() {
-    // Disable SignalR if not enabled
-    if (!this.signalREnabled) {
-      console.log('[SignalR] SignalR is disabled')
+    // Disable SignalR if not enabled or if connection has been disabled due to failures
+    if (!this.signalREnabled || this.connectionDisabled) {
+      console.log('[SignalR] SignalR is disabled or connection disabled due to failures')
       return
     }
 
@@ -157,7 +158,7 @@ export class SignalRService {
   }
 
   private handleReconnect() {
-    if (!this.signalREnabled) return
+    if (!this.signalREnabled || this.connectionDisabled) return
     
     if (this.reconnectAttempts < SIGNALR_CONFIG.MAX_RECONNECT_ATTEMPTS) {
       this.reconnectAttempts++
@@ -166,7 +167,9 @@ export class SignalRService {
         this.connect()
       }, SIGNALR_CONFIG.RECONNECT_INTERVAL)
     } else {
-      console.error('❌ [SignalR] Max reconnection attempts reached')
+      console.error('❌ [SignalR] Max reconnection attempts reached. Disabling SignalR to prevent endless retries.')
+      this.connectionDisabled = true
+      this.signalREnabled = false
     }
   }
 
@@ -259,7 +262,15 @@ export class SignalRService {
   }
 
   isEnabled() {
-    return this.signalREnabled
+    return this.signalREnabled && !this.connectionDisabled
+  }
+
+  // Method to re-enable SignalR if needed
+  reEnable() {
+    this.connectionDisabled = false
+    this.signalREnabled = true
+    this.reconnectAttempts = 0
+    this.secondaryReconnectAttempts = 0
   }
 }
 
