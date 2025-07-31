@@ -11,6 +11,7 @@ import TaskCreateMenu from '../tasks/TaskCreateMenu'
 import { BacklogTaskRow } from './BacklogTaskRow'
 import { SprintEditMenu } from './SprintEditMenu'
 import { SprintStartMenu } from './SprintStartMenu'
+import { SprintStatusDropdown } from './SprintStatusDropdown'
 
 interface SprintBoardProps {
   sprint: Sprint
@@ -109,9 +110,10 @@ export function SprintBoard({
               />
             </div>
             <div className="flex items-center gap-3 text-sm">
-              <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-700 border border-indigo-200">
-                {getSprintStatus()}
-              </span>
+              <SprintStatusDropdown 
+                sprint={sprint} 
+                onStatusUpdate={onSprintUpdate}
+              />
               {(sprint.startDate || sprint.endDate) && (
                 <>
                   <span>•</span>

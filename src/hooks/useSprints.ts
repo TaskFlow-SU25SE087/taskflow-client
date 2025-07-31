@@ -77,6 +77,21 @@ export const useSprints = () => {
     }
   }
 
+  const updateSprintStatus = async (sprintId: string, status: string) => {
+    if (!currentProject || !currentProject.id) return false
+    setIsLoading(true)
+    try {
+      const ok = await sprintApi.updateSprintStatus(currentProject.id, sprintId, status)
+      if (ok) await fetchSprints()
+      return ok
+    } catch (err) {
+      setError(err as Error)
+      return false
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Lấy tasks của 1 sprint (cần cả projectId và sprintId)
   const getSprintTasks = useCallback(
     async (sprintId: string, projectId?: string) => {
@@ -119,6 +134,7 @@ export const useSprints = () => {
     refreshSprints,
     createSprint,
     updateSprint,
+    updateSprintStatus,
     getSprintTasks,
     addTaskToSprint,
     fetchSprints: fetchSprintsPublic

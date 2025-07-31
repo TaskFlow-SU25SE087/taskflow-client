@@ -78,6 +78,14 @@ export const sprintApi = {
     return response.data.data
   },
 
+  // Cập nhật status của sprint
+  updateSprintStatus: async (projectId: string, sprintId: string, status: string): Promise<boolean> => {
+    console.log(`🔄 [sprintApi] Updating sprint ${sprintId} status to ${status} in project ${projectId}`)
+    const response = await axiosClient.post(`/projects/${projectId}/sprints/${sprintId}/status?status=${status}`)
+    console.log(`✅ [sprintApi] Successfully updated sprint status`)
+    return response.data.data
+  },
+
   // Lấy tasks của 1 sprint (cần cả projectId và sprintId) - với retry logic cải thiện
   getSprintTasks: async (projectId: string, sprintId: string): Promise<TaskP[]> => {
     return retryRequest(async () => {
