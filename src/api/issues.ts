@@ -63,6 +63,81 @@ export const issueApi = {
     }
   },
 
+  // Create an issue for a project (using default task)
+  createProjectIssue: async (projectId: string, issueData: CreateIssueRequest): Promise<IssueResponse> => {
+    console.log('🚀 [issueApi] createProjectIssue called with:', {
+      projectId,
+      issueData
+    })
+
+    // Get the first task from the project to use for creating issue
+    let taskId = '00000000-0000-0000-0000-000000000000' // Default placeholder
+    try {
+      const tasksResponse = await axiosClient.get(`/projects/${projectId}/tasks`)
+      const tasks = tasksResponse.data?.data || []
+      if (tasks.length > 0) {
+        taskId = tasks[0].id
+        console.log('✅ [issueApi] Found task to use:', taskId)
+      } else {
+        console.log('⚠️ [issueApi] No tasks found in project, using placeholder taskId')
+      }
+    } catch (error) {
+      console.log('⚠️ [issueApi] Failed to get tasks from project, using placeholder taskId:', error)
+    }
+
+    const formData = new FormData()
+
+    // Add all the required fields to FormData
+    formData.append('Title', issueData.title)
+    formData.append('Description', issueData.description)
+    formData.append('Priority', issueData.priority.toString())
+    formData.append('Type', issueData.type.toString())
+    formData.append('Status', IssueStatus.Open.toString()) // Default status is Open
+
+    // Add optional fields if provided
+    if (issueData.explanation) {
+      formData.append('Explanation', issueData.explanation)
+    }
+    if (issueData.example) {
+      formData.append('Example', issueData.example)
+    }
+
+    // Add files if provided
+    if (issueData.files && issueData.files.length > 0) {
+      issueData.files.forEach((file) => {
+        formData.append('Files', file)
+      })
+    }
+
+    // Log FormData contents
+    console.log('📋 [issueApi] FormData contents:')
+    for (const [key, value] of formData.entries()) {
+      console.log(`  ${key}:`, value)
+    }
+
+    const url = `/projects/${projectId}/tasks/${taskId}/issues/create`
+    console.log('🌐 [issueApi] Making request to:', url)
+    console.log('🔗 [issueApi] Full URL:', `${axiosClient.defaults.baseURL}${url}`)
+
+    try {
+      console.log('⏳ [issueApi] Sending request...')
+      const response = await axiosClient.post<IssueResponse>(url, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+
+      console.log('✅ [issueApi] Response received:', response)
+      console.log('📊 [issueApi] Response data:', response.data)
+
+      return response.data
+    } catch (error) {
+      const err = error as any
+      if (err.response && err.response.data && typeof err.response.data.code === 'number') {
+        return err.response.data as IssueResponse
+      }
+      return { code: 500, message: 'Unknown error', data: false }
+    }
+  },
+
   // Get all issues for a task (if the backend supports this endpoint)
   getTaskIssues: async (projectId: string, taskId: string) => {
     console.log('🔍 [issueApi] getTaskIssues called with:', { projectId, taskId })

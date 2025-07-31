@@ -54,6 +54,53 @@ export const useIssues = () => {
     }
   }
 
+  const createProjectIssue = async (projectId: string, issueData: CreateIssueRequest): Promise<boolean> => {
+    console.log('🎯 [useIssues] createProjectIssue called with:', {
+      projectId,
+      issueData
+    })
+
+    setIsLoading(true)
+    console.log('⏳ [useIssues] Setting loading to true')
+
+    try {
+      console.log('📞 [useIssues] Calling issueApi.createProjectIssue...')
+      const response = await issueApi.createProjectIssue(projectId, issueData)
+
+      console.log('📊 [useIssues] API call result:', response)
+
+      // Check if the response indicates success (code 200 or 0)
+      if (response && (response.code === 200 || response.code === 0)) {
+        console.log('✅ [useIssues] Project issue created successfully, showing success toast')
+        showToast({
+          title: 'Success',
+          description: response.message || 'Issue created successfully',
+          variant: 'default'
+        })
+        return true
+      } else {
+        console.log('❌ [useIssues] API returned error, showing error toast')
+        showToast({
+          title: 'Error',
+          description: response?.message || 'Failed to create issue',
+          variant: 'destructive'
+        })
+        return false
+      }
+    } catch (error) {
+      console.error('💥 [useIssues] Exception caught:', error)
+      showToast({
+        title: 'Error',
+        description: 'An error occurred while creating the issue',
+        variant: 'destructive'
+      })
+      return false
+    } finally {
+      console.log('🏁 [useIssues] Setting loading to false')
+      setIsLoading(false)
+    }
+  }
+
   const getTaskIssues = async (projectId: string, taskId: string) => {
     console.log('🔍 [useIssues] getTaskIssues called with:', { projectId, taskId })
     try {
@@ -108,6 +155,7 @@ export const useIssues = () => {
 
   return {
     createIssue,
+    createProjectIssue,
     getTaskIssues,
     getProjectIssues,
     getFilteredProjectIssues,

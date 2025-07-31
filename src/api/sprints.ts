@@ -62,9 +62,13 @@ export const sprintApi = {
   // Tạo sprint mới
   createSprint: async (
     projectId: string,
-    sprint: { name: string; description: string; startDate: string; endDate: string; status: string }
+    sprint: { name: string; description: string; startDate: string; endDate: string; status?: string }
   ): Promise<boolean> => {
-    const response = await axiosClient.post(`/projects/${projectId}/sprints`, sprint)
+    // Chỉ gửi các field cần thiết, không gửi status
+    const { status, ...sprintData } = sprint
+    console.log(`🔄 [sprintApi] Creating sprint in project ${projectId}:`, sprintData)
+    const response = await axiosClient.post(`/projects/${projectId}/sprints`, sprintData)
+    console.log(`✅ [sprintApi] Sprint created successfully`)
     return response.data.data
   },
 

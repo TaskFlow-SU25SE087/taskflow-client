@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Loader } from '@/components/ui/loader'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToastContext } from '@/components/ui/ToastContext'
 import axiosClient from '@/configs/axiosClient'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
@@ -346,52 +347,139 @@ export default function ProjectGitHub() {
                   </div>
                   <div>
                     <label className='block font-semibold mb-1 text-lavender-700'>Programming Language</label>
-                    <select
-                      value={newPart.programmingLanguage}
-                      onChange={e => setNewPart({ ...newPart, programmingLanguage: e.target.value })}
-                      required
-                      className='py-3 px-4 text-base w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400'
-                    >
-                      <option value='None'>🟣 None</option>
-                      <option value='Csharp'>⚙️ C#</option>
-                      <option value='Java'>☕ Java</option>
-                      <option value='JavaScript'>🟨 JavaScript</option>
-                      <option value='TypeScript'>🟦 TypeScript</option>
-                      <option value='Python'>🐍 Python</option>
-                      <option value='PHP'>🐘 PHP</option>
-                      <option value='Go'>💙 Go</option>
-                      <option value='Ruby'>💎 Ruby</option>
-                      <option value='CPlusPlus'>🔵 C++</option>
-                      <option value='Swift'>🦅 Swift</option>
-                      <option value='Kotlin'>🟪 Kotlin</option>
-                    </select>
+                    <Select value={newPart.programmingLanguage} onValueChange={(value) => setNewPart({ ...newPart, programmingLanguage: value })}>
+                      <SelectTrigger className='py-3 px-4 text-base w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400'>
+                        <SelectValue placeholder="Select programming language" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white rounded-xl shadow-lg">
+                        <SelectItem value="None">None</SelectItem>
+                        <SelectItem value="Java">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" alt="Java" className='w-5 h-5' />
+                            <span>Java</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Csharp">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg" alt="C#" className='w-5 h-5' />
+                            <span>C#</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="JavaScript">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg" alt="JavaScript" className='w-5 h-5' />
+                            <span>JavaScript</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="TypeScript">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg" alt="TypeScript" className='w-5 h-5' />
+                            <span>TypeScript</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Python">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" alt="Python" className='w-5 h-5' />
+                            <span>Python</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="PHP">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg" alt="PHP" className='w-5 h-5' />
+                            <span>PHP</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Go">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg" alt="Go" className='w-5 h-5' />
+                            <span>Go</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Ruby">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg" alt="Ruby" className='w-5 h-5' />
+                            <span>Ruby</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="CPlusPlus">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg" alt="C++" className='w-5 h-5' />
+                            <span>C++</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Swift">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg" alt="Swift" className='w-5 h-5' />
+                            <span>Swift</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Kotlin">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg" alt="Kotlin" className='w-5 h-5' />
+                            <span>Kotlin</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
                     <label className='block font-semibold mb-1 text-lavender-700'>Framework</label>
-                    <select
-                      value={newPart.framework}
-                      onChange={e => setNewPart({ ...newPart, framework: e.target.value })}
-                      required
-                      className='py-3 px-4 text-base w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400'
-                    >
-                      <option value='None'>🟣 None</option>
-                      <option value='ASPNETCore'>🌐 ASP.NET Core</option>
-                      <option value='DotNetCore'>⚙️ .NET Core</option>
-                      <option value='SpringBoot'>🌱 Spring Boot</option>
-                      <option value='ExpressJs'>🚂 Express.js</option>
-                      <option value='NestJs'>🦉 NestJS</option>
-                      <option value='React'>⚛️ React</option>
-                      <option value='Angular'>🅰️ Angular</option>
-                      <option value='VueJs'>🟩 Vue.js</option>
-                      <option value='NextJs'>⏭️ Next.js</option>
-                      <option value='NuxtJs'>🟩 Nuxt.js</option>
-                      <option value='Django'>🌿 Django</option>
-                      <option value='Flask'>🍶 Flask</option>
-                      <option value='FastAPI'>⚡ FastAPI</option>
-                      <option value='Laravel'>🟥 Laravel</option>
-                      <option value='RubyOnRails'>🚄 Ruby on Rails</option>
-                      <option value='Ktor'>🦄 Ktor</option>
-                    </select>
+                    <Select value={newPart.framework} onValueChange={(value) => setNewPart({ ...newPart, framework: value })}>
+                      <SelectTrigger className='py-3 px-4 text-base w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400'>
+                        <SelectValue placeholder="Select framework" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-white rounded-xl shadow-lg">
+                        <SelectItem value="None">None</SelectItem>
+                        <SelectItem value="React">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg" alt="React" className='w-5 h-5' />
+                            <span>React</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Angular">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg" alt="Angular" className='w-5 h-5' />
+                            <span>Angular</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="VueJs">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg" alt="Vue.js" className='w-5 h-5' />
+                            <span>Vue.js</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="DotNetCore">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg" alt=".NET Core" className='w-5 h-5' />
+                            <span>.NET Core</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="SpringBoot">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg" alt="Spring Boot" className='w-5 h-5' />
+                            <span>Spring Boot</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Django">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg" alt="Django" className='w-5 h-5' />
+                            <span>Django</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="ExpressJs">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg" alt="Express.js" className='w-5 h-5' />
+                            <span>Express.js</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="Laravel">
+                          <div className='flex items-center gap-2'>
+                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg" alt="Laravel" className='w-5 h-5' />
+                            <span>Laravel</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className='flex gap-4 justify-end mt-6'>
                     <button

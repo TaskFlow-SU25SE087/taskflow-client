@@ -1,6 +1,6 @@
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
-import { IssueCreateMenu } from '@/components/tasks/IssueCreateMenu'
+import { ProjectIssueCreateMenu } from '@/components/tasks/ProjectIssueCreateMenu'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -318,9 +318,8 @@ export const ProjectIssues: React.FC = () => {
             </div>
           </div>
           {showCreateMenu && currentProject && (
-            <IssueCreateMenu
+            <ProjectIssueCreateMenu
               projectId={currentProject.id}
-              taskId={'demo-task-id'}
               onIssueCreated={() => {
                 setShowCreateMenu(false)
                 loadIssues()
@@ -343,9 +342,8 @@ export const ProjectIssues: React.FC = () => {
                     <h3 className='text-lg font-medium text-gray-900 mb-2'>No Issues Found</h3>
                     <p className='text-gray-500 mb-4'>There are no issues reported for this project yet.</p>
                     {currentProject && (
-                      <IssueCreateMenu
+                      <ProjectIssueCreateMenu
                         projectId={currentProject.id}
-                        taskId={'demo-task-id'}
                         onIssueCreated={handleIssueCreated}
                       />
                     )}

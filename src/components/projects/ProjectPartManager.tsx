@@ -1,4 +1,5 @@
 import { useToastContext } from '@/components/ui/ToastContext'
+import 'devicon/devicon.min.css'
 import { Github, Link, Plus, Settings } from 'lucide-react'
 import { useState } from 'react'
 import { useProjectParts } from '../../hooks/useProjectParts'
@@ -9,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Separator } from '../ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 
@@ -48,6 +50,70 @@ export default function ProjectPartManager({ projectId }: { projectId: string })
   }
 
   console.log('ProjectPartManager render', { name, programmingLanguage, framework });
+
+  // Function để lấy icon URL cho programming language
+  const getProgrammingLanguageIconUrl = (language: string) => {
+    const iconMap: { [key: string]: string } = {
+      'None': '',
+      'JavaScript': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg',
+      'TypeScript': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg',
+      'Python': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg',
+      'PHP': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg',
+      'Go': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg',
+      'Ruby': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg',
+      'C++': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg',
+      'Swift': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg',
+      'Kotlin': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg',
+      'Java': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg',
+      'C#': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg'
+    }
+    return iconMap[language] || ''
+  }
+
+  // Function để lấy icon URL cho framework
+  const getFrameworkIconUrl = (framework: string) => {
+    const iconMap: { [key: string]: string } = {
+      'None': '',
+      'React': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg',
+      'Vue': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg',
+      'Angular': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg',
+      '.NET': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg',
+      'Spring Boot': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg',
+      'Django': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg',
+      'Express': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg',
+      'Laravel': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg'
+    }
+    return iconMap[framework] || ''
+  }
+
+  // Programming language options
+  const programmingLanguageOptions = [
+    { value: 'None', label: 'None' },
+    { value: 'Java', label: 'Java' },
+    { value: 'C#', label: 'C#' },
+    { value: 'JavaScript', label: 'JavaScript' },
+    { value: 'TypeScript', label: 'TypeScript' },
+    { value: 'Python', label: 'Python' },
+    { value: 'PHP', label: 'PHP' },
+    { value: 'Go', label: 'Go' },
+    { value: 'Ruby', label: 'Ruby' },
+    { value: 'C++', label: 'C++' },
+    { value: 'Swift', label: 'Swift' },
+    { value: 'Kotlin', label: 'Kotlin' }
+  ]
+
+  // Framework options
+  const frameworkOptions = [
+    { value: 'None', label: 'None' },
+    { value: 'React', label: 'React' },
+    { value: 'Vue', label: 'Vue' },
+    { value: 'Angular', label: 'Angular' },
+    { value: '.NET', label: '.NET' },
+    { value: 'Spring Boot', label: 'Spring Boot' },
+    { value: 'Django', label: 'Django' },
+    { value: 'Express', label: 'Express' },
+    { value: 'Laravel', label: 'Laravel' }
+  ]
 
   // Kết nối repo
   const handleConnectRepo = async () => {
@@ -122,35 +188,73 @@ export default function ProjectPartManager({ projectId }: { projectId: string })
                 </div>
                 <div>
                   <Label htmlFor='programming-language'>Programming Language</Label>
-                  <select
-                    id='programming-language'
-                    value={programmingLanguage}
-                    onChange={(e) => setProgrammingLanguage(e.target.value)}
-                    className='w-full border rounded px-2 py-2'
-                  >
-                    <option value='None'>None</option>
-                    <option value='Java'>Java</option>
-                    <option value='C#'>C#</option>
-                    <option value='JavaScript'>JavaScript</option>
-                    <option value='Python'>Python</option>
-                    {/* Thêm các ngôn ngữ khác nếu cần */}
-                  </select>
+                  <Select value={programmingLanguage} onValueChange={setProgrammingLanguage}>
+                    <SelectTrigger>
+                                             <SelectValue>
+                         <div className='flex items-center gap-2'>
+                           {getProgrammingLanguageIconUrl(programmingLanguage) && (
+                             <img 
+                               src={getProgrammingLanguageIconUrl(programmingLanguage)} 
+                               alt={programmingLanguage}
+                               className='w-5 h-5'
+                             />
+                           )}
+                           <span>{programmingLanguage}</span>
+                         </div>
+                       </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                                             {programmingLanguageOptions.map((option) => (
+                         <SelectItem key={option.value} value={option.value}>
+                           <div className='flex items-center gap-2'>
+                             {getProgrammingLanguageIconUrl(option.value) && (
+                               <img 
+                                 src={getProgrammingLanguageIconUrl(option.value)} 
+                                 alt={option.label}
+                                 className='w-5 h-5'
+                               />
+                             )}
+                             <span>{option.label}</span>
+                           </div>
+                         </SelectItem>
+                       ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label htmlFor='framework'>Framework</Label>
-                  <select
-                    id='framework'
-                    value={framework}
-                    onChange={(e) => setFramework(e.target.value)}
-                    className='w-full border rounded px-2 py-2'
-                  >
-                    <option value='None'>None</option>
-                    <option value='Spring Boot'>Spring Boot</option>
-                    <option value='.NET'>.NET</option>
-                    <option value='React'>React</option>
-                    <option value='Django'>Django</option>
-                    {/* Thêm các framework khác nếu cần */}
-                  </select>
+                  <Select value={framework} onValueChange={setFramework}>
+                    <SelectTrigger>
+                                             <SelectValue>
+                         <div className='flex items-center gap-2'>
+                           {getFrameworkIconUrl(framework) && (
+                             <img 
+                               src={getFrameworkIconUrl(framework)} 
+                               alt={framework}
+                               className='w-5 h-5'
+                             />
+                           )}
+                           <span>{framework}</span>
+                         </div>
+                       </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                                             {frameworkOptions.map((option) => (
+                         <SelectItem key={option.value} value={option.value}>
+                           <div className='flex items-center gap-2'>
+                             {getFrameworkIconUrl(option.value) && (
+                               <img 
+                                 src={getFrameworkIconUrl(option.value)} 
+                                 alt={option.label}
+                                 className='w-5 h-5'
+                               />
+                             )}
+                             <span>{option.label}</span>
+                           </div>
+                         </SelectItem>
+                       ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 

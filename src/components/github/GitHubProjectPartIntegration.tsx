@@ -275,41 +275,115 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
             </div>
             <div>
               <Label htmlFor='programmingLanguage' className="text-lavender-700 font-semibold mb-1 block">Programming Language</Label>
-              <select
-                id='programmingLanguage'
-                value={newPartData.programmingLanguage}
-                onChange={(e) => setNewPartData((prev) => ({ ...prev, programmingLanguage: e.target.value }))}
-                className="w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl py-2 px-3 text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400"
-              >
-                <option value=''>None</option>
-                <option value='TypeScript'>TypeScript</option>
-                <option value='JavaScript'>JavaScript</option>
-                <option value='C#'>C#</option>
-                <option value='Java'>Java</option>
-                <option value='Python'>Python</option>
-                <option value='Go'>Go</option>
-                <option value='Rust'>Rust</option>
-                <option value='PHP'>PHP</option>
-              </select>
+              <Select value={newPartData.programmingLanguage} onValueChange={(value) => setNewPartData((prev) => ({ ...prev, programmingLanguage: value }))}>
+                <SelectTrigger className="w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400">
+                  <SelectValue placeholder="Select programming language" />
+                </SelectTrigger>
+                <SelectContent className="bg-white rounded-xl shadow-lg">
+                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="Java">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" alt="Java" className='w-5 h-5' />
+                      <span>Java</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="C#">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg" alt="C#" className='w-5 h-5' />
+                      <span>C#</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="JavaScript">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg" alt="JavaScript" className='w-5 h-5' />
+                      <span>JavaScript</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="TypeScript">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg" alt="TypeScript" className='w-5 h-5' />
+                      <span>TypeScript</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Python">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" alt="Python" className='w-5 h-5' />
+                      <span>Python</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Go">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg" alt="Go" className='w-5 h-5' />
+                      <span>Go</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="PHP">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg" alt="PHP" className='w-5 h-5' />
+                      <span>PHP</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label htmlFor='framework' className="text-lavender-700 font-semibold mb-1 block">Framework</Label>
-              <select
-                id='framework'
-                value={newPartData.framework}
-                onChange={(e) => setNewPartData((prev) => ({ ...prev, framework: e.target.value }))}
-                className="w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl py-2 px-3 text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400"
-              >
-                <option value=''>None</option>
-                <option value='React'>React</option>
-                <option value='Vue'>Vue</option>
-                <option value='Angular'>Angular</option>
-                <option value='.NET'>.NET</option>
-                <option value='Spring'>Spring</option>
-                <option value='Django'>Django</option>
-                <option value='Express'>Express</option>
-                <option value='Laravel'>Laravel</option>
-              </select>
+              <Select value={newPartData.framework} onValueChange={(value) => setNewPartData((prev) => ({ ...prev, framework: value }))}>
+                <SelectTrigger className="w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400">
+                  <SelectValue placeholder="Select framework" />
+                </SelectTrigger>
+                <SelectContent className="bg-white rounded-xl shadow-lg">
+                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value="React">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg" alt="React" className='w-5 h-5' />
+                      <span>React</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Vue">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg" alt="Vue" className='w-5 h-5' />
+                      <span>Vue</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Angular">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg" alt="Angular" className='w-5 h-5' />
+                      <span>Angular</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value=".NET">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg" alt=".NET" className='w-5 h-5' />
+                      <span>.NET</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Spring">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg" alt="Spring" className='w-5 h-5' />
+                      <span>Spring</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Django">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg" alt="Django" className='w-5 h-5' />
+                      <span>Django</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Express">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg" alt="Express" className='w-5 h-5' />
+                      <span>Express</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Laravel">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg" alt="Laravel" className='w-5 h-5' />
+                      <span>Laravel</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center justify-end gap-4 mt-6">
               <button

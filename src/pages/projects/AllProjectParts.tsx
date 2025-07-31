@@ -85,17 +85,37 @@ export default function AllProjectParts() {
 
   const getLanguageIcon = (language: string) => {
     const lang = language.toLowerCase();
-    if (lang.includes('javascript') || lang.includes('js')) return '⚡';
-    if (lang.includes('typescript') || lang.includes('ts')) return '🔷';
-    if (lang.includes('python')) return '🐍';
-    if (lang.includes('java')) return '☕';
-    if (lang.includes('c#')) return '🔷';
-    if (lang.includes('php')) return '🐘';
-    if (lang.includes('go')) return '🐹';
-    if (lang.includes('rust')) return '🦀';
-    if (lang.includes('swift')) return '🍎';
-    if (lang.includes('kotlin')) return '🟠';
-    return '💻';
+    if (lang.includes('javascript') || lang.includes('js')) {
+      return <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg" alt="JavaScript" className='w-6 h-6' />;
+    }
+    if (lang.includes('typescript') || lang.includes('ts')) {
+      return <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg" alt="TypeScript" className='w-6 h-6' />;
+    }
+    if (lang.includes('python')) {
+      return <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" alt="Python" className='w-6 h-6' />;
+    }
+    if (lang.includes('java')) {
+      return <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" alt="Java" className='w-6 h-6' />;
+    }
+    if (lang.includes('c#')) {
+      return <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg" alt="C#" className='w-6 h-6' />;
+    }
+    if (lang.includes('php')) {
+      return <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg" alt="PHP" className='w-6 h-6' />;
+    }
+    if (lang.includes('go')) {
+      return <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg" alt="Go" className='w-6 h-6' />;
+    }
+    if (lang.includes('rust')) {
+      return <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/rust/rust-plain.svg" alt="Rust" className='w-6 h-6' />;
+    }
+    if (lang.includes('swift')) {
+      return <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg" alt="Swift" className='w-6 h-6' />;
+    }
+    if (lang.includes('kotlin')) {
+      return <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg" alt="Kotlin" className='w-6 h-6' />;
+    }
+    return <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/c/c-original.svg" alt="Code" className='w-6 h-6' />;
   };
 
   const getLanguageColor = (language: string) => {
