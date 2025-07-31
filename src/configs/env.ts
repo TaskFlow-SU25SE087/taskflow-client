@@ -14,33 +14,45 @@ const getUrlByEnvironment = (devUrl: string, prodUrl: string | undefined): strin
   return isProd && prodUrl ? prodUrl : devUrl
 }
 
+// Helper function to get URL with fallback options
+const getUrlWithFallback = (primaryUrl: string, fallbackUrl: string): string => {
+  // You can set this to 'local' or 'deployed' to switch between environments
+  const preferredEnvironment = import.meta.env.VITE_PREFERRED_ENVIRONMENT || 'deployed'
+  
+  if (preferredEnvironment === 'local') {
+    return primaryUrl
+  } else {
+    return fallbackUrl
+  }
+}
+
 export const ENV_CONFIG = {
-  // API Configuration
-  API_BASE_URL: getUrlByEnvironment(
-    getFirstAvailableUrl(import.meta.env.VITE_API_BASE_URL, 'http://localhost:5041'),
-    import.meta.env.VITE_PROD_API_BASE_URL
+  // API Configuration (Port 7029 - Primary - Backend đang chạy)
+  API_BASE_URL: getUrlWithFallback(
+    'http://localhost:7029',
+    'http://20.243.177.81:7029'
   ),
   API_TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000'),
 
-  // Secondary API Configuration (Port 7029)
-  SECONDARY_API_BASE_URL: getUrlByEnvironment(
-    getFirstAvailableUrl(import.meta.env.VITE_SECONDARY_API_BASE_URL, 'http://localhost:7029'),
-    import.meta.env.VITE_PROD_SECONDARY_API_BASE_URL
+  // Secondary API Configuration (Port 5041 - Backup)
+  SECONDARY_API_BASE_URL: getUrlWithFallback(
+    'http://localhost:5041',
+    'http://20.243.177.81:5041'
   ),
   SECONDARY_API_TIMEOUT: parseInt(import.meta.env.VITE_SECONDARY_API_TIMEOUT || '30000'),
 
-  // SignalR Configuration
-  SIGNALR_HUB_URL: getUrlByEnvironment(
-    getFirstAvailableUrl(import.meta.env.VITE_SIGNALR_HUB_URL, 'http://localhost:5041/taskHub'),
-    import.meta.env.VITE_PROD_SIGNALR_HUB_URL
+  // SignalR Configuration (Port 7029 - Primary - Backend đang chạy)
+  SIGNALR_HUB_URL: getUrlWithFallback(
+    'http://localhost:7029/taskHub',
+    'http://20.243.177.81:7029/taskHub'
   ),
   SIGNALR_RECONNECT_INTERVAL: parseInt(import.meta.env.VITE_SIGNALR_RECONNECT_INTERVAL || '5000'),
   SIGNALR_MAX_RECONNECT_ATTEMPTS: parseInt(import.meta.env.VITE_SIGNALR_MAX_RECONNECT_ATTEMPTS || '5'),
 
-  // Secondary SignalR Configuration (Port 7029)
-  SECONDARY_SIGNALR_HUB_URL: getUrlByEnvironment(
-    getFirstAvailableUrl(import.meta.env.VITE_SECONDARY_SIGNALR_HUB_URL, 'http://localhost:7029/taskHub'),
-    import.meta.env.VITE_PROD_SECONDARY_SIGNALR_HUB_URL
+  // Secondary SignalR Configuration (Port 5041 - Backup)
+  SECONDARY_SIGNALR_HUB_URL: getUrlWithFallback(
+    'http://localhost:5041/taskHub',
+    'http://20.243.177.81:5041/taskHub'
   ),
 
   // Development Server

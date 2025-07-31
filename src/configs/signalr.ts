@@ -77,11 +77,41 @@ export class SignalRService {
       console.log('✅ SignalR Connected!')
       this.reconnectAttempts = 0
     } catch (error) {
-      console.error('[SignalR] Connection failed:', error)
-      SignalRErrorHandler.handleConnectionError(error, this)
-      this.handleReconnect()
+      console.error('[SignalR] Primary connection failed, trying secondary...')
+      // Try secondary connection if primary fails
+      await this.trySecondaryConnection()
     } finally {
       this.isConnecting = false
+    }
+  }
+
+  private async trySecondaryConnection() {
+    try {
+      console.log('[SignalR] Trying secondary connection to:', SECONDARY_SIGNALR_CONFIG.HUB_URL)
+      
+      this.connection = new signalR.HubConnectionBuilder()
+        .withUrl(SECONDARY_SIGNALR_CONFIG.HUB_URL, {
+          accessTokenFactory: () => {
+            const rememberMe = localStorage.getItem('rememberMe') === 'true'
+            return rememberMe ? localStorage.getItem('accessToken') || '' : sessionStorage.getItem('accessToken') || ''
+          },
+          skipNegotiation: false,
+          transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.ServerSentEvents | signalR.HttpTransportType.LongPolling
+        })
+        .withAutomaticReconnect([0, 2000, 10000, 30000])
+        .configureLogging(signalR.LogLevel.Warning)
+        .build()
+
+      // Register event handlers
+      this.registerEventHandlers()
+
+      await this.connection.start()
+      console.log('✅ Secondary SignalR Connected!')
+      this.reconnectAttempts = 0
+    } catch (error) {
+      console.error('[SignalR] Secondary connection also failed:', error)
+      SignalRErrorHandler.handleConnectionError(error, this)
+      this.handleReconnect()
     }
   }
 

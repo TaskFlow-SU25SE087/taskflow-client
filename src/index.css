@@ -236,12 +236,15 @@
     .board-container {
       padding-left: 0.5rem;
       padding-right: 0.5rem;
+      max-height: calc(100vh - 150px);
     }
   }
   
   /* Natural height board layout */
   .board-container {
     min-height: 300px;
+    height: 100%;
+    max-height: calc(100vh - 200px);
   }
   
   /* Smooth height transitions for boards */
@@ -260,6 +263,8 @@
     scroll-behavior: smooth;
     scrollbar-width: thin;
     scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+    overflow-x: auto;
+    overflow-y: auto;
   }
   
   .board-container::-webkit-scrollbar {
@@ -277,6 +282,25 @@
   }
   
   .board-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(139, 92, 246, 0.5);
+  }
+  
+  /* Task column scrollbar styling */
+  .task-column-scroll::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .task-column-scroll::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 3px;
+  }
+  
+  .task-column-scroll::-webkit-scrollbar-thumb {
+    background: rgba(139, 92, 246, 0.3);
+    border-radius: 3px;
+  }
+  
+  .task-column-scroll::-webkit-scrollbar-thumb:hover {
     background: rgba(139, 92, 246, 0.5);
   }
   

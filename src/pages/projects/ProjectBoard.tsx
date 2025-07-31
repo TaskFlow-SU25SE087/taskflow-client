@@ -29,10 +29,10 @@ import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import {
-  arrayMove,
-  horizontalListSortingStrategy,
-  SortableContext,
-  verticalListSortingStrategy
+    arrayMove,
+    horizontalListSortingStrategy,
+    SortableContext,
+    verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { CheckCircle, ChevronDown, Clock, Filter, Link2, Pencil, Plus, Search, Settings, TrendingUp } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -625,17 +625,17 @@ export default function ProjectBoard() {
   console.log('DEBUG searchQuery:', searchQuery);
   console.log('DEBUG filterStatus:', filterStatus);
 
- return (
+   return (
   <div className='flex bg-gradient-to-br from-slate-50 via-white to-lavender-50 h-screen overflow-hidden'> {/* Added overflow-hidden */}
     <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
 
-    <div className='flex-1 flex flex-col overflow-hidden'> {/* Added overflow-hidden */}
+    <div className='flex-1 flex flex-col overflow-hidden min-h-0'> {/* Added min-h-0 */}
       <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
       {/* SignalR Project Group Manager */}
       {currentProject?.id && <ProjectGroupManager projectId={currentProject.id} />}
 
-      <div className='flex flex-col flex-1 overflow-hidden'> {/* Added flex-1 and overflow-hidden */}
+      <div className='flex flex-col flex-1 overflow-hidden min-h-0'> {/* Added min-h-0 */}
         {/* Header content - có thể scroll */}
         <div className='flex-shrink-0 p-3 sm:p-6 bg-white/50 backdrop-blur-sm overflow-y-auto max-h-[60vh]'> {/* Made this scrollable with max height */}
                      <SprintSelector />
@@ -860,7 +860,7 @@ export default function ProjectBoard() {
 
         {/* Board container - chỉ phần này scroll ngang */}
         <div className="flex-1 overflow-hidden"> {/* Container chính cho boards */}
-          <div className="overflow-x-auto overflow-y-hidden p-3 sm:p-6 pt-0 board-container"> {/* Scroll container - removed h-full */}
+          <div className="overflow-x-auto overflow-y-auto p-3 sm:p-6 pt-0 board-container h-full"> {/* Scroll container - added h-full and overflow-y-auto */}
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
               <SortableContext items={filteredBoards.map((b) => b.id)} strategy={horizontalListSortingStrategy}>
                 <div className="flex flex-row gap-4 sm:gap-6" style={{ minWidth: 'max-content' }}> {/* Board row - removed h-full */}

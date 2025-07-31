@@ -39,6 +39,7 @@ import ContactPage from './pages/home/ContactPage'
 import OtpPage from './pages/home/OtpPage'
 import NotFoundPage from './pages/NotFoundPage'
 import ProjectBacklog from './pages/projects/ProjectBacklog'
+import SprintMeetings from './pages/projects/SprintMeetings'
 
 const AuthRedirect = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuth()
@@ -224,6 +225,22 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path='/members'
+                element={
+                  <ProtectedRoute>
+                    <ProjectMembers />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path='/sprint-meetings'
+                element={
+                  <ProtectedRoute>
+                    <Navigate to='/projects' replace />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* GitHub OAuth Callback */}
               <Route path='/github/callback' element={<GitHubOAuthCallback />} />
@@ -301,6 +318,15 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path='/projects/:projectId/sprint-meetings'
+                element={
+                  <ProtectedRoute>
+                    <SprintMeetings />
+                  </ProtectedRoute>
+                }
+              />
+
 
               {/* Admin routes */}
               <Route

@@ -1,9 +1,11 @@
+import { projectApi } from '@/api/projects'
 import gsap from 'gsap'
 import { LucideLayoutDashboard } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
   FiAlertCircle,
   FiBarChart2,
+  FiCalendar,
   FiClock,
   FiGitBranch,
   FiGithub,
@@ -64,6 +66,13 @@ export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: stri
       section: 1,
       path: projectId ? `/projects/${projectId}/reports` : '/reports'
     },
+    {
+      id: 'sprint-meetings',
+      icon: <FiCalendar className='h-5 w-5' />,
+      label: 'Sprint Meetings',
+      section: 1,
+      path: projectId ? `/projects/${projectId}/sprint-meetings` : '/projects'
+    },
     // Section 2: GitHub, Commits, Issues
     {
       id: 'github',
@@ -99,6 +108,13 @@ export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: stri
       label: 'Code Quality',
       section: 2,
       path: '/code-quality-commits'
+    },
+    {
+      id: 'projects',
+      icon: <FiLayers className='h-5 w-5' />,
+      label: 'Projects',
+      section: 2,
+      path: '/projects'
     },
     { id: 'settings', icon: <FiSettings className='h-5 w-5' />, label: 'Settings', section: 3, path: '/settings' }
   ]
@@ -167,10 +183,31 @@ export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: stri
     updateHighlightPosition(activeTab)
   }
 
-  const handleClick = (tabId: string) => {
+  const handleClick = async (tabId: string) => {
     setActiveTab(tabId)
     const targetTab = navItems.find((item) => item.id === tabId)
-    if (targetTab) navigate(targetTab.path)
+    
+    if (targetTab) {
+      // Special handling for sprint-meetings when no project is selected
+      if (tabId === 'sprint-meetings' && !projectId) {
+        try {
+          // Get the first available project
+          const response = await projectApi.getProjects()
+          if (response.data && response.data.length > 0) {
+            const firstProject = response.data[0]
+            navigate(`/projects/${firstProject.id}/sprint-meetings`)
+            return
+          }
+        } catch (error) {
+          console.error('Failed to get projects for sprint meetings:', error)
+        }
+        // Fallback to projects page if no projects available
+        navigate('/projects')
+        return
+      }
+      
+      navigate(targetTab.path)
+    }
   }
 
   const getTabStyles = (tabId: string) => {
@@ -200,8 +237,10 @@ export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: stri
     return (
       <div className='relative' onMouseMove={handleMouseMove}>
         {sectionItems.map((item) => {
+          // Show all items normally - let them navigate even without project
+
           // Special handling for GitHub item
-          if (item.id === 'github' && projectId) {
+          if (item.id === 'github') {
             return (
               <div
                 key={item.id}

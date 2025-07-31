@@ -1,6 +1,6 @@
 import axiosClient from '@/configs/axiosClient'
 import { APIResponse } from '@/types/api'
-import { Sprint } from '@/types/sprint'
+import { Sprint, SprintMeeting, SprintMeetingDetail, SprintMeetingUpdateRequest, TaskUpdate } from '@/types/sprint'
 import { TaskP } from '@/types/task'
 
 // Helper function for retry logic with better timeout handling
@@ -113,5 +113,57 @@ export const sprintApi = {
       console.log(`✅ [sprintApi] Successfully fetched current sprint:`, response.data.data?.name)
       return response.data.data
     }, 3, 2000) // 3 retries, 2 second base delay
+  },
+
+  // Sprint Meeting APIs
+  // Lấy tất cả sprint meetings của project
+  getSprintMeetings: async (projectId: string): Promise<SprintMeeting[]> => {
+    const response = await axiosClient.get(`/projects/${projectId}/sprint-meetings`)
+    return response.data.data
+  },
+
+  // Lấy danh sách task updates
+  getTaskUpdates: async (projectId: string): Promise<TaskUpdate[]> => {
+    const response = await axiosClient.get(`/projects/${projectId}/sprint-meetings/list-task-update`)
+    return response.data.data
+  },
+
+  // Lấy chi tiết sprint meeting
+  getSprintMeetingDetail: async (projectId: string, sprintMeetingId: string): Promise<SprintMeetingDetail> => {
+    const response = await axiosClient.get(`/projects/${projectId}/sprint-meetings/${sprintMeetingId}`)
+    return response.data.data
+  },
+
+  // Cập nhật task trong sprint meeting
+  updateSprintMeetingTask: async (
+    projectId: string,
+    sprintMeetingId: string,
+    taskId: string,
+    itemVersion: number,
+    reason: string
+  ): Promise<string> => {
+    const response = await axiosClient.patch(
+      `/projects/${projectId}/sprint-meetings/${sprintMeetingId}?taskId=${taskId}&itemVersion=${itemVersion}&reason=${encodeURIComponent(reason)}`
+    )
+    return response.data.data
+  },
+
+  // Cập nhật sprint meeting
+  updateSprintMeeting: async (
+    projectId: string,
+    sprintMeetingId: string,
+    data: SprintMeetingUpdateRequest
+  ): Promise<string> => {
+    const response = await axiosClient.put(`/projects/${projectId}/sprint-meetings/${sprintMeetingId}`, data)
+    return response.data.data
+  },
+
+  // Cập nhật next plan
+  updateNextPlan: async (projectId: string, sprintMeetingId: string, nextPlan: string): Promise<boolean> => {
+    const response = await axiosClient.patch(
+      `/projects/${projectId}/sprint-meetings/${sprintMeetingId}/next-plan`,
+      nextPlan
+    )
+    return response.data.data
   }
 }

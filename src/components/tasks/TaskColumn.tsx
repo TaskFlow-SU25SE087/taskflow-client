@@ -167,11 +167,11 @@ export function TaskColumn({ title, tasks, onTaskCreated, boardId, movingTaskId 
       </div>
 
       {/* Tasks container */}
-      <div className='flex-1 min-h-0'>
+      <div className='flex-1 min-h-0 overflow-hidden'>
         {tasks.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className='overflow-y-auto px-4 py-2 scroll-smooth'>
+          <div className='overflow-y-auto px-4 py-2 scroll-smooth h-full max-h-[calc(100vh-300px)] task-column-scroll'>
             <div className='space-y-3 pb-4'>
               {tasks.map((task) => (
                 <div 

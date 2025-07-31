@@ -43,7 +43,10 @@ export const useCurrentProject = () => {
         // If project fetch fails, clear both cookie and localStorage
         Cookies.remove(CURRENT_PROJECT_COOKIE)
         localStorage.removeItem(CURRENT_PROJECT_LOCAL)
-        navigate('/project')
+        // Only navigate if not already on a project-specific page
+        if (!window.location.pathname.includes('/projects/')) {
+          navigate('/projects')
+        }
       } finally {
         setIsLoading(false)
       }
@@ -97,7 +100,10 @@ export const useCurrentProject = () => {
         }
         Cookies.remove(CURRENT_PROJECT_COOKIE)
         localStorage.removeItem(CURRENT_PROJECT_LOCAL)
-        navigate('/project')
+        // Only navigate if not already on a project-specific page
+        if (!window.location.pathname.includes('/projects/')) {
+          navigate('/projects')
+        }
       } finally {
         setIsLoading(false)
       }
