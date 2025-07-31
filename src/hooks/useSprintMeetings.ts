@@ -24,8 +24,7 @@ export const useSprintMeetings = (projectId: string) => {
       setError(err.message || 'Failed to fetch sprint meetings')
       toast({
         title: 'Error',
-        description: err.message || 'Failed to fetch sprint meetings',
-        variant: 'destructive'
+        description: err.message || 'Failed to fetch sprint meetings'
       })
     } finally {
       setLoading(false)
@@ -46,8 +45,7 @@ export const useSprintMeetings = (projectId: string) => {
       setError(err.message || 'Failed to fetch task updates')
       toast({
         title: 'Error',
-        description: err.message || 'Failed to fetch task updates',
-        variant: 'destructive'
+        description: err.message || 'Failed to fetch task updates'
       })
     } finally {
       setLoading(false)
@@ -64,8 +62,7 @@ export const useSprintMeetings = (projectId: string) => {
     } catch (err: any) {
       toast({
         title: 'Error',
-        description: err.message || 'Failed to fetch sprint meeting detail',
-        variant: 'destructive'
+        description: err.message || 'Failed to fetch sprint meeting detail'
       })
       return null
     }
@@ -90,8 +87,7 @@ export const useSprintMeetings = (projectId: string) => {
     } catch (err: any) {
       toast({
         title: 'Error',
-        description: err.message || 'Failed to update task',
-        variant: 'destructive'
+        description: err.message || 'Failed to update task'
       })
       return false
     }
@@ -114,8 +110,7 @@ export const useSprintMeetings = (projectId: string) => {
     } catch (err: any) {
       toast({
         title: 'Error',
-        description: err.message || 'Failed to update sprint meeting',
-        variant: 'destructive'
+        description: err.message || 'Failed to update sprint meeting'
       })
       return false
     }
@@ -138,8 +133,7 @@ export const useSprintMeetings = (projectId: string) => {
     } catch (err: any) {
       toast({
         title: 'Error',
-        description: err.message || 'Failed to update next plan',
-        variant: 'destructive'
+        description: err.message || 'Failed to update next plan'
       })
       return false
     }

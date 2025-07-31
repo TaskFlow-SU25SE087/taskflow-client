@@ -29,10 +29,10 @@ import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import {
-    arrayMove,
-    horizontalListSortingStrategy,
-    SortableContext,
-    verticalListSortingStrategy
+  arrayMove,
+  horizontalListSortingStrategy,
+  SortableContext,
+  verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { CheckCircle, ChevronDown, Clock, Filter, Link2, Pencil, Plus, Search, Settings, TrendingUp } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -203,6 +203,7 @@ export default function ProjectBoard() {
   const [lockAll, setLockAll] = useState(false)
 
   const [movingTaskId, setMovingTaskId] = useState<string | null>(null)
+  const [showStatsCards, setShowStatsCards] = useState(true)
 
 
   const { showToast } = useToastContext()
@@ -657,90 +658,120 @@ export default function ProjectBoard() {
             return null
           })()}
 
+          {/* Stats cards toggle button */}
+          <div className='flex items-center justify-between mb-4'>
+            <div className='flex items-center gap-2'>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowStatsCards(!showStatsCards)}
+                className='flex items-center gap-2 text-gray-600 hover:text-gray-800'
+              >
+                {showStatsCards ? (
+                  <>
+                    <TrendingUp className='h-4 w-4' />
+                    Hide Stats
+                  </>
+                ) : (
+                  <>
+                    <TrendingUp className='h-4 w-4' />
+                    Show Stats
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+
           {/* Stats cards */}
-          <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-6'>
-            {(() => {
-              const stats = calculateBoardProgress(tasks)
-              let timeProgress = 0
-              const currentSprint = sprints.find((s) => s.id === selectedSprintId)
-              if (currentSprint && currentSprint.startDate && currentSprint.endDate) {
-                const now = new Date()
-                const start = new Date(currentSprint.startDate)
-                const end = new Date(currentSprint.endDate)
-                if (now >= start && now <= end) {
-                  timeProgress = Math.round(((now.getTime() - start.getTime()) / (end.getTime() - start.getTime())) * 100)
-                } else if (now > end) {
-                  timeProgress = 100
-                } else {
-                  timeProgress = 0
+          <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+            showStatsCards ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+          }`}>
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-6'>
+              {(() => {
+                const stats = calculateBoardProgress(tasks)
+                let timeProgress = 0
+                const currentSprint = sprints.find((s) => s.id === selectedSprintId)
+                if (currentSprint && currentSprint.startDate && currentSprint.endDate) {
+                  const now = new Date()
+                  const start = new Date(currentSprint.startDate)
+                  const end = new Date(currentSprint.endDate)
+                  if (now >= start && now <= end) {
+                    timeProgress = Math.round(((now.getTime() - start.getTime()) / (end.getTime() - start.getTime())) * 100)
+                  } else if (now > end) {
+                    timeProgress = 100
+                  } else {
+                    timeProgress = 0
+                  }
                 }
-              }
-              return <>
-                {/* Completed Card */}
-                <div className='bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300'>
-                  <div className='flex items-center justify-between'>
-                    <div>
-                      <p className='text-emerald-100 text-sm font-medium'>Completed</p>
-                      <p className='text-2xl font-bold'>{stats.completed}</p>
+                return (
+                  <>
+                    {/* Completed Card */}
+                    <div className='bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300'>
+                      <div className='flex items-center justify-between'>
+                        <div>
+                          <p className='text-emerald-100 text-sm font-medium'>Completed</p>
+                          <p className='text-2xl font-bold'>{stats.completed}</p>
+                        </div>
+                        <div className='p-3 bg-emerald-400/30 rounded-xl'>
+                          <CheckCircle className='h-6 w-6' />
+                        </div>
+                      </div>
+                      <div className='mt-3 flex items-center gap-2'>
+                        <div className='flex-1 bg-emerald-400/30 rounded-full h-2'>
+                          <div 
+                            className='bg-white rounded-full h-2 transition-all duration-500'
+                            style={{ width: `${stats.completionPercentage}%` }}
+                          />
+                        </div>
+                        <span className='text-xs text-emerald-100'>{stats.completionPercentage}%</span>
+                      </div>
                     </div>
-                    <div className='p-3 bg-emerald-400/30 rounded-xl'>
-                      <CheckCircle className='h-6 w-6' />
+                    {/* Progress Card */}
+                    <div className='bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300'>
+                      <div className='flex items-center justify-between'>
+                        <div>
+                          <p className='text-purple-100 text-sm font-medium'>Progress</p>
+                          <p className='text-2xl font-bold'>{stats.completionPercentage}%</p>
+                        </div>
+                        <div className='p-3 bg-purple-400/30 rounded-xl'>
+                          <TrendingUp className='h-6 w-6' />
+                        </div>
+                      </div>
+                      <div className='mt-3 flex items-center gap-2'>
+                        <div className='flex-1 bg-purple-400/30 rounded-full h-2'>
+                          <div 
+                            className='bg-white rounded-full h-2 transition-all duration-500'
+                            style={{ width: `${stats.completionPercentage}%` }}
+                          />
+                        </div>
+                        <span className='text-xs text-purple-100'>Completed</span>
+                      </div>
                     </div>
-                  </div>
-                  <div className='mt-3 flex items-center gap-2'>
-                    <div className='flex-1 bg-emerald-400/30 rounded-full h-2'>
-                      <div 
-                        className='bg-white rounded-full h-2 transition-all duration-500'
-                        style={{ width: `${stats.completionPercentage}%` }}
-                      />
+                    {/* Time Card */}
+                    <div className='bg-gradient-to-br from-gray-400 to-gray-600 rounded-2xl p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300'>
+                      <div className='flex items-center justify-between'>
+                        <div>
+                          <p className='text-gray-100 text-sm font-medium'>Time</p>
+                          <p className='text-2xl font-bold'>{timeProgress}%</p>
+                        </div>
+                        <div className='p-3 bg-gray-400/30 rounded-xl'>
+                          <Clock className='h-6 w-6' />
+                        </div>
+                      </div>
+                      <div className='mt-3 flex items-center gap-2'>
+                        <div className='flex-1 bg-gray-400/30 rounded-full h-2'>
+                          <div 
+                            className='bg-gray-900 rounded-full h-2 transition-all duration-500'
+                            style={{ width: `${timeProgress}%` }}
+                          />
+                        </div>
+                        <span className='text-xs text-gray-100'>Time 100%</span>
+                      </div>
                     </div>
-                    <span className='text-xs text-emerald-100'>{stats.completionPercentage}%</span>
-                  </div>
-                </div>
-                {/* Progress Card */}
-                <div className='bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300'>
-                  <div className='flex items-center justify-between'>
-                    <div>
-                      <p className='text-purple-100 text-sm font-medium'>Progress</p>
-                      <p className='text-2xl font-bold'>{stats.completionPercentage}%</p>
-                    </div>
-                    <div className='p-3 bg-purple-400/30 rounded-xl'>
-                      <TrendingUp className='h-6 w-6' />
-                    </div>
-                  </div>
-                  <div className='mt-3 flex items-center gap-2'>
-                    <div className='flex-1 bg-purple-400/30 rounded-full h-2'>
-                      <div 
-                        className='bg-white rounded-full h-2 transition-all duration-500'
-                        style={{ width: `${stats.completionPercentage}%` }}
-                      />
-                    </div>
-                    <span className='text-xs text-purple-100'>Completed</span>
-                  </div>
-                </div>
-                {/* Time Card */}
-                <div className='bg-gradient-to-br from-gray-400 to-gray-600 rounded-2xl p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300'>
-                  <div className='flex items-center justify-between'>
-                    <div>
-                      <p className='text-gray-100 text-sm font-medium'>Time</p>
-                      <p className='text-2xl font-bold'>{timeProgress}%</p>
-                    </div>
-                    <div className='p-3 bg-gray-400/30 rounded-xl'>
-                      <Clock className='h-6 w-6' />
-                    </div>
-                  </div>
-                  <div className='mt-3 flex items-center gap-2'>
-                    <div className='flex-1 bg-gray-400/30 rounded-full h-2'>
-                      <div 
-                        className='bg-gray-900 rounded-full h-2 transition-all duration-500'
-                        style={{ width: `${timeProgress}%` }}
-                      />
-                    </div>
-                    <span className='text-xs text-gray-100'>Time 100%</span>
-                  </div>
-                </div>
-              </>
-            })()}
+                  </>
+                )
+              })()}
+            </div>
           </div>
 
           <div className='flex-none w-full flex flex-col sm:flex-row sm:items-center justify-between pb-6 gap-4'>

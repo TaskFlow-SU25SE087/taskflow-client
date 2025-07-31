@@ -6,13 +6,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { SprintMeetingDetail, UnfinishedTask } from '@/types/sprint'
+import { SprintMeetingDetail as SprintMeetingDetailType, UnfinishedTask } from '@/types/sprint'
 import { format } from 'date-fns'
 import { ArrowLeft, CheckCircle, Clock, Edit, Save, XCircle } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 
 interface SprintMeetingDetailProps {
-  meetingDetail: SprintMeetingDetail | null
+  meetingDetail: SprintMeetingDetailType | null
   onBack: () => void
   onUpdate: (data: { unfinishedTasks: UnfinishedTask[]; nextPlan: string }) => Promise<boolean>
   onUpdateNextPlan: (nextPlan: string) => Promise<boolean>
@@ -22,7 +22,7 @@ interface SprintMeetingDetailProps {
 export const SprintMeetingDetail: React.FC<SprintMeetingDetailProps> = ({
   meetingDetail,
   onBack,
-  onUpdate,
+  // onUpdate,
   onUpdateNextPlan,
   loading = false
 }) => {
@@ -39,11 +39,11 @@ export const SprintMeetingDetail: React.FC<SprintMeetingDetailProps> = ({
     }
   }, [meetingDetail])
 
-  const handleSave = async () => {
-    if (await onUpdate({ unfinishedTasks, nextPlan })) {
-      setIsEditing(false)
-    }
-  }
+  // const handleSave = async () => {
+  //   if (await onUpdate({ unfinishedTasks, nextPlan })) {
+  //     setIsEditing(false)
+  //   }
+  // }
 
   const handleUpdateNextPlan = async () => {
     if (await onUpdateNextPlan(nextPlan)) {

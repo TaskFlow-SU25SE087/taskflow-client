@@ -2,19 +2,19 @@
 import UrlManager from '../services/urlManager'
 
 // Helper function to get first available URL from multiple options
-const getFirstAvailableUrlFromEnv = (envValue: string | undefined, fallback: string): string => {
-  if (!envValue) return fallback
-  
-  // Split by || and get the first non-empty URL
-  const urls = envValue.split('||').map(url => url.trim()).filter(url => url)
-  return urls[0] || fallback
-}
+// const getFirstAvailableUrlFromEnv = (envValue: string | undefined, fallback: string): string => {
+//   if (!envValue) return fallback
+//   
+//   // Split by || and get the first non-empty URL
+//   const urls = envValue.split('||').map(url => url.trim()).filter(url => url)
+//   return urls[0] || fallback
+// }
 
 // Helper function to get URL based on environment
-const getUrlByEnvironment = (devUrl: string, prodUrl: string | undefined): string => {
-  const isProd = import.meta.env.PROD
-  return isProd && prodUrl ? prodUrl : devUrl
-}
+// const getUrlByEnvironment = (devUrl: string, prodUrl: string | undefined): string => {
+//   const isProd = import.meta.env.PROD
+//   return isProd && prodUrl ? prodUrl : devUrl
+// }
 
 // Get URL with automatic fallback
 const getUrlWithFallback = (primaryUrl: string, fallbackUrl: string): string => {
