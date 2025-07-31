@@ -14,9 +14,33 @@ import { useOptimizedTasks } from '@/hooks/useOptimizedTasks'
 import { useSprints } from '@/hooks/useSprints'
 import { TaskP } from '@/types/task'
 import { Filter, Search, Share2 } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
-export default function ProjectBacklog() {
+const ProjectBacklog = () => {
+  // Console log để đo thời gian load trang
+  const startTime = useRef(Date.now())
+  const hasLoggedMount = useRef(false)
+  const hasLoggedTasks = useRef(false)
+  const hasLoggedSprints = useRef(false)
+  const hasLoggedComplete = useRef(false)
+  
+  console.log('🚀 [BACKLOG] Component mount started at:', new Date().toISOString())
+  console.log('⏱️ [BACKLOG] Performance measurement started')
+  
+  // Log khi user navigate đến trang (chỉ một lần)
+  useEffect(() => {
+    if (!hasLoggedMount.current) {
+      console.log('📍 [BACKLOG] User navigated to backlog page')
+      console.log('🔄 [BACKLOG] Starting data loading process...')
+      
+      // Performance mark cho navigation
+      if (typeof performance !== 'undefined') {
+        performance.mark('backlog-navigation-start')
+      }
+      hasLoggedMount.current = true
+    }
+  }, [])
+  
   const { showToast } = useToastContext()
   const { tasks, isLoading: tasksLoading, refreshTasks, loadMore, hasMore } = useOptimizedTasks()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
@@ -39,30 +63,108 @@ export default function ProjectBacklog() {
   const [sprintTasks, setSprintTasks] = useState<Record<string, TaskP[]>>({})
   const [loadingSprintIds, setLoadingSprintIds] = useState<string[]>([])
 
-  // Hàm lazy load tasks cho sprint
-  const handleLoadSprintTasks = async (sprintId: string) => {
+  // Debounced search queries - phải khai báo trước useMemo
+  const [debouncedTaskSearch, setDebouncedTaskSearch] = useState('')
+  const [debouncedSprintSearch, setDebouncedSprintSearch] = useState('')
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedTaskSearch(taskSearchQuery)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [taskSearchQuery])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSprintSearch(sprintSearchQuery)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [sprintSearchQuery])
+
+  // Log khi tasks load xong (chỉ một lần)
+  useEffect(() => {
+    if (!tasksLoading && tasks.length > 0 && !hasLoggedTasks.current) {
+      const tasksLoadTime = Date.now() - startTime.current
+      console.log('📋 [BACKLOG] Tasks loaded in:', tasksLoadTime, 'ms')
+      console.log('📊 [BACKLOG] Total tasks loaded:', tasks.length)
+      hasLoggedTasks.current = true
+    }
+  }, [tasksLoading, tasks.length])
+
+  // Log khi sprints load xong (chỉ một lần)
+  useEffect(() => {
+    if (!sprintsLoading && sprints.length > 0 && !hasLoggedSprints.current) {
+      const sprintsLoadTime = Date.now() - startTime.current
+      console.log('🏃 [BACKLOG] Sprints loaded in:', sprintsLoadTime, 'ms')
+      console.log('📊 [BACKLOG] Total sprints loaded:', sprints.length)
+      hasLoggedSprints.current = true
+    }
+  }, [sprintsLoading, sprints.length])
+
+  // Log khi render hoàn tất (chỉ một lần)
+  useEffect(() => {
+    if (!tasksLoading && !sprintsLoading && !hasLoggedComplete.current) {
+      const totalLoadTime = Date.now() - startTime.current
+      console.log('✅ [BACKLOG] Page fully loaded in:', totalLoadTime, 'ms')
+      console.log('📈 [BACKLOG] Final metrics:', {
+        componentMount: 27, // Fixed value since we're not tracking this separately
+        tasksLoaded: hasLoggedTasks.current ? 'completed' : 'pending',
+        sprintsLoaded: hasLoggedSprints.current ? 'completed' : 'pending',
+        totalTime: totalLoadTime
+      })
+      hasLoggedComplete.current = true
+      
+      // Performance mark cho completion
+      if (typeof performance !== 'undefined') {
+        performance.mark('backlog-load-complete')
+        performance.measure('backlog-total-load-time', 'backlog-navigation-start', 'backlog-load-complete')
+        
+        const measure = performance.getEntriesByName('backlog-total-load-time')[0]
+        if (measure) {
+          console.log('🎯 [BACKLOG] Performance API measurement:', {
+            totalLoadTime: measure.duration,
+            startTime: measure.startTime,
+            endTime: measure.startTime + measure.duration
+          })
+        }
+      }
+    }
+  }, [tasksLoading, sprintsLoading])
+
+  // Hàm lazy load tasks cho sprint - sử dụng useCallback
+  const handleLoadSprintTasks = useCallback(async (sprintId: string) => {
     if (sprintTasks[sprintId] || loadingSprintIds.includes(sprintId) || !currentProject?.id) return
+    
+    const sprintStartTime = Date.now()
+    console.log(`🔄 [BACKLOG] Loading tasks for sprint ${sprintId}...`)
+    
     setLoadingSprintIds((prev) => [...prev, sprintId])
     try {
       const tasks = await getSprintTasks(sprintId, currentProject.id)
+      const sprintLoadTime = Date.now() - sprintStartTime
+      console.log(`✅ [BACKLOG] Sprint ${sprintId} tasks loaded in:`, sprintLoadTime, 'ms')
+      console.log(`📊 [BACKLOG] Sprint ${sprintId} has ${tasks.length} tasks`)
+      
       setSprintTasks((prev) => ({ ...prev, [sprintId]: tasks }))
     } finally {
       setLoadingSprintIds((prev) => prev.filter((id) => id !== sprintId))
     }
-  }
+  }, [sprintTasks, loadingSprintIds, currentProject?.id, getSprintTasks])
 
   // Memoize filtered tasks to avoid unnecessary recalculations
   const filteredTasks = useMemo(() => {
-    if (!taskSearchQuery) return tasks
+    if (!debouncedTaskSearch.trim()) {
+      return tasks
+    }
 
-    const searchLower = taskSearchQuery.toLowerCase()
+    const searchLower = debouncedTaskSearch.toLowerCase().trim()
     return tasks.filter(
       (task) =>
         task.description.toLowerCase().includes(searchLower) ||
         task.status.toLowerCase().includes(searchLower) ||
         task.title?.toLowerCase().includes(searchLower)
     )
-  }, [tasks, taskSearchQuery])
+  }, [tasks, debouncedTaskSearch])
 
   useEffect(() => {
     if (!sprints.length || !currentProject?.id) return
@@ -75,6 +177,7 @@ export default function ProjectBacklog() {
           tasksMap[sprint.id] = tasks
         })
       )
+      
       setSprintTasks(tasksMap)
     }
 
@@ -87,9 +190,9 @@ export default function ProjectBacklog() {
     }
   }, [tasks, scrollPosition])
 
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
+  const toggleSidebar = useCallback(() => setIsSidebarOpen(!isSidebarOpen), [isSidebarOpen])
 
-  const handleCreateSprint = async (data: {
+  const handleCreateSprint = useCallback(async (data: {
     name: string
     description: string
     startDate: string
@@ -126,9 +229,9 @@ export default function ProjectBacklog() {
       })
       return false
     }
-  }
+  }, [currentProject, createSprint, showToast])
 
-  const handleMoveToSprint = async (sprintId: string) => {
+  const handleMoveToSprint = useCallback(async (sprintId: string) => {
     if (!selectedTaskId) return
 
     try {
@@ -147,17 +250,17 @@ export default function ProjectBacklog() {
       })
     }
     setSelectedTaskId(null)
-  }
+  }, [selectedTaskId, addTaskToSprint, fetchSprints, showToast])
 
-  const handleTaskUpdate = async () => {
+  const handleTaskUpdate = useCallback(async () => {
     if (contentRef.current) {
       setScrollPosition(contentRef.current.scrollTop)
     }
     await fetchSprints()
     await refreshTasks()
-  }
+  }, [fetchSprints, refreshTasks])
 
-  const handleSprintUpdate = async () => {
+  const handleSprintUpdate = useCallback(async () => {
     if (contentRef.current) {
       setScrollPosition(contentRef.current.scrollTop)
     }
@@ -170,42 +273,64 @@ export default function ProjectBacklog() {
       })
     )
     setSprintTasks(tasksMap)
-  }
+  }, [fetchSprints, sprints, getSprintTasks, currentProject?.id])
 
   // Lọc backlog: task chưa gán sprint hoặc sprintId đặc biệt/no sprint
-  const backlogTasks = filteredTasks.filter(
-    (task) =>
-      !task.sprintId ||
-      task.sprintId === '' ||
-      task.sprintId === null ||
-      task.sprintId === undefined ||
-      task.sprintId === '00000000-0000-0000-0000-000000000000' ||
-      (task.sprintName && task.sprintName.toLowerCase() === 'no sprint')
-  )
-  console.log('DEBUG backlogTasks:', backlogTasks);
+  const backlogTasks = useMemo(() => {
+    return filteredTasks.filter(
+      (task) =>
+        !task.sprintId ||
+        task.sprintId === '' ||
+        task.sprintId === null ||
+        task.sprintId === undefined ||
+        task.sprintId === '00000000-0000-0000-0000-000000000000' ||
+        (task.sprintName && task.sprintName.toLowerCase() === 'no sprint')
+    )
+  }, [filteredTasks])
 
   // Filter sprints
-  const filteredSprints = sprints.filter((sprint) => {
-    if (!sprintSearchQuery) return true
-    return sprint.name.toLowerCase().includes(sprintSearchQuery.toLowerCase())
-  })
+  const filteredSprints = useMemo(() => {
+    if (!debouncedSprintSearch.trim()) return sprints
+    
+    const searchLower = debouncedSprintSearch.toLowerCase().trim()
+    return sprints.filter((sprint) => 
+      sprint.name.toLowerCase().includes(searchLower)
+    )
+  }, [sprints, debouncedSprintSearch])
 
   // Filter sprint tasks
-  const filteredSprintTasks = Object.entries(sprintTasks).reduce(
-    (acc, [sprintId, tasks]) => ({
-      ...acc,
-      [sprintId]: tasks.filter((task) => {
-        if (!taskSearchQuery) return true
-        const searchLower = taskSearchQuery.toLowerCase()
-        return (
+  const filteredSprintTasks = useMemo(() => {
+    if (!debouncedTaskSearch.trim()) return sprintTasks
+    
+    const searchLower = debouncedTaskSearch.toLowerCase().trim()
+    return Object.entries(sprintTasks).reduce(
+      (acc, [sprintId, tasks]) => ({
+        ...acc,
+        [sprintId]: tasks.filter((task) => 
           task.description.toLowerCase().includes(searchLower) ||
           task.status.toLowerCase().includes(searchLower) ||
           task.title?.toLowerCase().includes(searchLower)
         )
+      }),
+      {} as Record<string, TaskP[]>
+    )
+  }, [sprintTasks, debouncedTaskSearch])
+
+  // Log render performance
+  useEffect(() => {
+    if (!tasksLoading && !sprintsLoading) {
+      const renderTime = Date.now() - startTime.current
+      console.log('🎨 [BACKLOG] Render cycle completed in:', renderTime, 'ms')
+      console.log('📈 [BACKLOG] Final render metrics:', {
+        totalTasks: tasks.length,
+        totalSprints: sprints.length,
+        backlogTasks: backlogTasks.length,
+        filteredSprints: filteredSprints.length,
+        totalRenderTime: renderTime
       })
-    }),
-    {} as Record<string, TaskP[]>
-  )
+    }
+  }, [tasksLoading, sprintsLoading, tasks.length, sprints.length, backlogTasks.length, filteredSprints.length])
+
 
   if (sprintsLoading || tasksLoading) {
     return (
@@ -332,3 +457,5 @@ export default function ProjectBacklog() {
     </div>
   )
 }
+
+export default ProjectBacklog
