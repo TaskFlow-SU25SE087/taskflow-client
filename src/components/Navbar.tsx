@@ -8,7 +8,6 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
 import { useAuth } from '@/hooks/useAuth'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjects } from '@/hooks/useProjects'
@@ -20,14 +19,17 @@ import {
     Layout,
     LogOut,
     Plus,
-    Search,
     Settings,
     Shield,
     User
 } from 'lucide-react'
+import { useState } from 'react'
 import { FiMenu, FiX } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
+import { GlobalSearch } from './GlobalSearch'
 import NotificationCenter from './NotificationCenter'
+import SearchErrorBoundary from './SearchErrorBoundary'
+import { TutorialModal } from './TutorialModal'
 
 interface NavbarProps {
   isSidebarOpen: boolean
@@ -40,6 +42,7 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
   const navigate = useNavigate()
   const { logout } = useAuth()
   const { user } = useAuth()
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false)
 
   console.log('user in Navbar:', user)
 
@@ -133,20 +136,19 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
             </DropdownMenu>
           </div>
         </div>
-        {/* Search Bar ở giữa */}
+        {/* Global Search Bar ở giữa */}
         <div className='flex-1 flex justify-center'>
-          <div className='relative w-[300px] xl:w-[400px]'>
-            <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
-            <Input
-              placeholder='Search For Anything...'
-              className='w-full rounded-lg bg-gray-100 pl-10 focus-visible:ring-offset-0 focus-visible:ring-0'
-            />
-          </div>
+          <SearchErrorBoundary>
+            <GlobalSearch />
+          </SearchErrorBoundary>
         </div>
 
         <div className='flex items-center gap-2 sm:gap-4'>
           {/* Help Icon - Hidden on mobile */}
-          <div className='hidden md:block text-gray-500 px-2 hover:bg-transparent cursor-pointer'>
+          <div 
+            className='hidden md:block text-gray-500 px-2 hover:bg-transparent cursor-pointer hover:text-blue-600 transition-colors'
+            onClick={() => setIsTutorialOpen(true)}
+          >
             <HelpCircle className='h-5 w-5' />
           </div>
 
@@ -217,6 +219,12 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Tutorial Modal */}
+      <TutorialModal 
+        isOpen={isTutorialOpen} 
+        onClose={() => setIsTutorialOpen(false)} 
+      />
     </div>
   )
 }
