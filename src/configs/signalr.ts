@@ -8,11 +8,7 @@ export const SIGNALR_CONFIG = {
   MAX_RECONNECT_ATTEMPTS: ENV_CONFIG.SIGNALR_MAX_RECONNECT_ATTEMPTS
 }
 
-export const SECONDARY_SIGNALR_CONFIG = {
-  HUB_URL: ENV_CONFIG.SECONDARY_SIGNALR_HUB_URL,
-  RECONNECT_INTERVAL: ENV_CONFIG.SIGNALR_RECONNECT_INTERVAL,
-  MAX_RECONNECT_ATTEMPTS: ENV_CONFIG.SIGNALR_MAX_RECONNECT_ATTEMPTS
-}
+
 
 export interface NotificationData {
   id: string
@@ -27,11 +23,8 @@ export interface NotificationData {
 
 export class SignalRService {
   private connection: signalR.HubConnection | null = null
-  private secondaryConnection: signalR.HubConnection | null = null
   private reconnectAttempts = 0
-  private secondaryReconnectAttempts = 0
   private isConnecting = false
-  private isSecondaryConnecting = false
   private signalREnabled = ENV_CONFIG.ENABLE_SIGNALR
   private connectionDisabled = false
 
@@ -78,82 +71,23 @@ export class SignalRService {
       console.log('✅ SignalR Connected!')
       this.reconnectAttempts = 0
     } catch (error) {
-      console.error('[SignalR] Primary connection failed, trying secondary...')
-      // Try secondary connection if primary fails
-      await this.trySecondaryConnection()
+      console.error('[SignalR] Connection failed:', error)
+      SignalRErrorHandler.handleConnectionError(error, this)
+      this.handleReconnect()
     } finally {
       this.isConnecting = false
     }
   }
 
-  private async trySecondaryConnection() {
-    try {
-      console.log('[SignalR] Trying secondary connection to:', SECONDARY_SIGNALR_CONFIG.HUB_URL)
-      
-      this.connection = new signalR.HubConnectionBuilder()
-        .withUrl(SECONDARY_SIGNALR_CONFIG.HUB_URL, {
-          accessTokenFactory: () => {
-            const rememberMe = localStorage.getItem('rememberMe') === 'true'
-            return rememberMe ? localStorage.getItem('accessToken') || '' : sessionStorage.getItem('accessToken') || ''
-          },
-          skipNegotiation: false,
-          transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.ServerSentEvents | signalR.HttpTransportType.LongPolling
-        })
-        .withAutomaticReconnect([0, 2000, 10000, 30000])
-        .configureLogging(signalR.LogLevel.Warning)
-        .build()
-
-      // Register event handlers
-      this.registerEventHandlers()
-
-      await this.connection.start()
-      console.log('✅ Secondary SignalR Connected!')
-      this.reconnectAttempts = 0
-    } catch (error) {
-      console.error('[SignalR] Secondary connection also failed:', error)
-      SignalRErrorHandler.handleConnectionError(error, this)
-      this.handleReconnect()
-    }
-  }
-
+  // Secondary connection methods (disabled for single API setup)
   async connectSecondary() {
-    if (this.isSecondaryConnecting) return
-    this.isSecondaryConnecting = true
-    try {
-      this.secondaryConnection = new signalR.HubConnectionBuilder()
-        .withUrl(SECONDARY_SIGNALR_CONFIG.HUB_URL, {
-          accessTokenFactory: () => {
-            const rememberMe = localStorage.getItem('rememberMe') === 'true'
-            return rememberMe ? localStorage.getItem('accessToken') || '' : sessionStorage.getItem('accessToken') || ''
-          }
-        })
-        .withAutomaticReconnect([0, 2000, 10000, 30000])
-        .configureLogging(signalR.LogLevel.Debug)
-        .build()
-
-      // Register secondary event handlers
-      this.registerSecondaryEventHandlers()
-
-      console.log('[Secondary SignalR] Đang kết nối tới:', SECONDARY_SIGNALR_CONFIG.HUB_URL)
-      await this.secondaryConnection.start()
-      console.log('✅ Secondary SignalR Connected!')
-      this.secondaryReconnectAttempts = 0
-    } catch (error) {
-      SignalRErrorHandler.handleConnectionError(error, this)
-      this.handleSecondaryReconnect()
-    } finally {
-      this.isSecondaryConnecting = false
-    }
+    console.log('[SignalR] Secondary connection is disabled in single API setup')
   }
 
   async disconnect() {
     if (this.connection) {
       await this.connection.stop()
       this.connection = null
-    }
-    if (this.secondaryConnection) {
-      await this.secondaryConnection.stop()
-      this.secondaryConnection = null
     }
   }
 
@@ -173,17 +107,7 @@ export class SignalRService {
     }
   }
 
-  private handleSecondaryReconnect() {
-    if (this.secondaryReconnectAttempts < SECONDARY_SIGNALR_CONFIG.MAX_RECONNECT_ATTEMPTS) {
-      this.secondaryReconnectAttempts++
-      console.log(`🔄 [Secondary SignalR] Reconnecting... Attempt ${this.secondaryReconnectAttempts}/${SECONDARY_SIGNALR_CONFIG.MAX_RECONNECT_ATTEMPTS}`)
-      setTimeout(() => {
-        this.connectSecondary()
-      }, SECONDARY_SIGNALR_CONFIG.RECONNECT_INTERVAL)
-    } else {
-      console.error('❌ [Secondary SignalR] Max reconnection attempts reached')
-    }
-  }
+
 
   private registerEventHandlers() {
     if (!this.connection) return
@@ -203,23 +127,7 @@ export class SignalRService {
     })
   }
 
-  private registerSecondaryEventHandlers() {
-    if (!this.secondaryConnection) return
 
-    this.secondaryConnection.onclose(() => {
-      console.log('🔌 [Secondary SignalR] Connection closed')
-      this.handleSecondaryReconnect()
-    })
-
-    this.secondaryConnection.onreconnecting(() => {
-      console.log('🔄 [Secondary SignalR] Reconnecting...')
-    })
-
-    this.secondaryConnection.onreconnected(() => {
-      console.log('✅ [Secondary SignalR] Reconnected!')
-      this.secondaryReconnectAttempts = 0
-    })
-  }
 
   on(event: string, callback: (...args: any[]) => void) {
     if (this.connection) {
@@ -246,19 +154,18 @@ export class SignalRService {
     throw new Error('SignalR connection not available')
   }
 
+  // Secondary methods (disabled for single API setup)
   async invokeSecondary(method: string, ...args: any[]) {
-    if (this.secondaryConnection) {
-      return await this.secondaryConnection.invoke(method, ...args)
-    }
-    throw new Error('Secondary SignalR connection not available')
+    throw new Error('Secondary SignalR connection is disabled in single API setup')
   }
 
   isConnected(): boolean {
     return this.connection?.state === signalR.HubConnectionState.Connected
   }
 
+  // Secondary connection check (disabled for single API setup)
   isSecondaryConnected(): boolean {
-    return this.secondaryConnection?.state === signalR.HubConnectionState.Connected
+    return false
   }
 
   isEnabled() {

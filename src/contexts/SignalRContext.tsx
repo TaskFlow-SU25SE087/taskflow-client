@@ -7,12 +7,8 @@ interface SignalRContextType {
   signalRService: SignalRService
   notificationService: NotificationService
   isConnected: boolean
-  isSecondaryConnected: boolean
   notifications: NotificationData[]
   connectionState: string
-  secondaryConnectionState: string
-  connectSecondary: () => Promise<void>
-  disconnectSecondary: () => Promise<void>
 }
 
 const SignalRContext = createContext<SignalRContextType | null>(null)
@@ -22,10 +18,8 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [signalRService] = useState(() => new SignalRService())
   const [notificationService] = useState(() => new NotificationService(signalRService, showToast))
   const [isConnected, setIsConnected] = useState(false)
-  const [isSecondaryConnected, setIsSecondaryConnected] = useState(false)
   const [notifications, setNotifications] = useState<NotificationData[]>([])
   const [connectionState, setConnectionState] = useState('Disconnected')
-  const [secondaryConnectionState, setSecondaryConnectionState] = useState('Disconnected')
 
   useEffect(() => {
     const initializeSignalR = async () => {
@@ -105,41 +99,12 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({ child
     initializeSignalR()
   }, [signalRService, notificationService])
 
-  const connectSecondary = async () => {
-    try {
-      console.log('[Secondary SignalR] Bắt đầu kết nối...')
-      await signalRService.connectSecondary()
-      setIsSecondaryConnected(true)
-      setSecondaryConnectionState('Connected')
-      console.log('[Secondary SignalR] Kết nối thành công!')
-    } catch (error) {
-      console.error('[Secondary SignalR] Lỗi kết nối:', error)
-      setIsSecondaryConnected(false)
-      setSecondaryConnectionState('Disconnected')
-    }
-  }
-
-  const disconnectSecondary = async () => {
-    try {
-      await signalRService.disconnect()
-      setIsSecondaryConnected(false)
-      setSecondaryConnectionState('Disconnected')
-      console.log('[Secondary SignalR] Đã ngắt kết nối')
-    } catch (error) {
-      console.error('[Secondary SignalR] Lỗi ngắt kết nối:', error)
-    }
-  }
-
   const value: SignalRContextType = {
     signalRService,
     notificationService,
     isConnected,
-    isSecondaryConnected,
     notifications,
-    connectionState,
-    secondaryConnectionState,
-    connectSecondary,
-    disconnectSecondary
+    connectionState
   }
 
   return (

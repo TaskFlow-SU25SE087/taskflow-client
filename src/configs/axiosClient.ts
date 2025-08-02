@@ -1,21 +1,9 @@
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { ENV_CONFIG } from './env'
 
-// Removed unused getBaseURL function
-
 const axiosClient = axios.create({
-  baseURL: 'http://localhost:7029', // Default fallback
+  baseURL: '', // Will be set from environment variables
   timeout: ENV_CONFIG.API_TIMEOUT,
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  withCredentials: false
-})
-
-// Secondary axios client for port 7029
-const secondaryAxiosClient = axios.create({
-  baseURL: 'http://localhost:5041', // Default fallback
-  timeout: ENV_CONFIG.SECONDARY_API_TIMEOUT,
   headers: {
     'Content-Type': 'application/json'
   },
@@ -25,13 +13,10 @@ const secondaryAxiosClient = axios.create({
 // Function to update baseURL after URL Manager is initialized
 export const updateAxiosBaseURL = () => {
   const newBaseURL = ENV_CONFIG.API_BASE_URL
-  const newSecondaryBaseURL = ENV_CONFIG.SECONDARY_API_BASE_URL
   
   console.log('[AXIOS] Updating baseURL to:', newBaseURL)
-  console.log('[AXIOS] Updating secondary baseURL to:', newSecondaryBaseURL)
   
   axiosClient.defaults.baseURL = newBaseURL
-  secondaryAxiosClient.defaults.baseURL = newSecondaryBaseURL
 }
 
 // Helper function to show timeout notification
@@ -87,30 +72,7 @@ axiosClient.interceptors.request.use(
   }
 )
 
-// Request interceptor for secondary client
-secondaryAxiosClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    console.log('🌐 [secondaryAxiosClient] Request interceptor called')
-    console.log('📤 [secondaryAxiosClient] Request URL:', config.url)
-    console.log('📤 [secondaryAxiosClient] Request method:', config.method?.toUpperCase())
 
-    // Get access token from session storage
-    const accessToken = sessionStorage.getItem('accessToken')
-
-    if (accessToken) {
-      console.log('🔑 [secondaryAxiosClient] Adding Authorization header with token')
-      config.headers.Authorization = `Bearer ${accessToken}`
-    } else {
-      console.log('⚠️ [secondaryAxiosClient] No access token found in session storage')
-    }
-
-    return config
-  },
-  (error: AxiosError) => {
-    console.error('❌ [secondaryAxiosClient] Request interceptor error:', error)
-    return Promise.reject(error)
-  }
-)
 
 // Response interceptor for primary client
 axiosClient.interceptors.response.use(
@@ -172,50 +134,4 @@ axiosClient.interceptors.response.use(
   }
 )
 
-// Response interceptor for secondary client
-secondaryAxiosClient.interceptors.response.use(
-  (response: AxiosResponse) => {
-    console.log('✅ [secondaryAxiosClient] Response interceptor called')
-    console.log('📥 [secondaryAxiosClient] Response URL:', response.config.url)
-    console.log('📥 [secondaryAxiosClient] Response status:', response.status)
-    return response
-  },
-  (error: AxiosError) => {
-    console.error('❌ [secondaryAxiosClient] Response interceptor error:', error)
-
-    if (error.code === 'ECONNABORTED' && error.message.includes('timeout')) {
-      console.error('⏰ [secondaryAxiosClient] Request timeout detected')
-      showTimeoutNotification(error.config?.url || 'unknown')
-      
-      return Promise.reject({
-        ...error,
-        message: 'Request timeout. Please check your connection and try again.',
-        isTimeout: true
-      })
-    }
-
-    if (error.response) {
-      const { status, data } = error.response
-      console.error('📡 [secondaryAxiosClient] Error response status:', status)
-      console.error('📡 [secondaryAxiosClient] Error response data:', data)
-
-      if (status === 401) {
-        console.error('🔒 [secondaryAxiosClient] Unauthorized - removing token')
-        localStorage.removeItem('token')
-      } else if (status === 403) {
-        console.error('🚫 [secondaryAxiosClient] Forbidden - You do not have permission to perform this action.')
-      } else if (status === 500) {
-        console.error('💥 [secondaryAxiosClient] Internal server error. Please try again later.')
-      }
-    } else if (error.request) {
-      console.error('🌐 [secondaryAxiosClient] Network error - No response received:', error.request)
-    } else {
-      console.error('⚙️ [secondaryAxiosClient] Request setup error:', error.message)
-    }
-
-    return Promise.reject(error)
-  }
-)
-
 export default axiosClient
-export { secondaryAxiosClient }
