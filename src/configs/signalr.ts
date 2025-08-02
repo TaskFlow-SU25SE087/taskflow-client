@@ -154,17 +154,11 @@ export class SignalRService {
     if (this.connection) {
       this.connection.on(event, callback)
     }
-    if (this.secondaryConnection) {
-      this.secondaryConnection.on(event, callback)
-    }
   }
 
   off(event: string, callback: (...args: any[]) => void) {
     if (this.connection) {
       this.connection.off(event, callback)
-    }
-    if (this.secondaryConnection) {
-      this.secondaryConnection.off(event, callback)
     }
   }
 
@@ -176,7 +170,7 @@ export class SignalRService {
   }
 
   // Secondary methods (disabled for single API setup)
-  async invokeSecondary(method: string, ...args: any[]) {
+  async invokeSecondary(_method: string, ..._args: any[]) {
     throw new Error('Secondary SignalR connection is disabled in single API setup')
   }
 
@@ -198,7 +192,6 @@ export class SignalRService {
     this.connectionDisabled = false
     this.signalREnabled = true
     this.reconnectAttempts = 0
-    this.secondaryReconnectAttempts = 0
   }
 }
 

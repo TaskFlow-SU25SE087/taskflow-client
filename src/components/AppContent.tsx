@@ -35,7 +35,9 @@ import ProjectMembers from '@/pages/projects/ProjectMembers'
 import ProjectMemberVerify from '@/pages/projects/ProjectMemberVerify'
 import ProjectReports from '@/pages/projects/ProjectReports'
 import ProjectTimeline from '@/pages/projects/ProjectTimeline'
+import SimpleReports from '@/pages/projects/SimpleReports'
 import SprintMeetings from '@/pages/projects/SprintMeetings'
+import TestReports from '@/pages/projects/TestReports'
 import React from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
@@ -189,14 +191,7 @@ const AppContent: React.FC = () => {
           </ProtectedRoute>
         }
       />
-      <Route
-        path='/reports'
-        element={
-          <ProtectedRoute>
-            <ProjectReports />
-          </ProtectedRoute>
-        }
-      />
+
       <Route
         path='/commits'
         element={
@@ -272,6 +267,22 @@ const AppContent: React.FC = () => {
         element={
           <ProtectedRoute>
             <ProjectReports />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/projects/:projectId/test-reports'
+        element={
+          <ProtectedRoute>
+            <TestReports />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path='/projects/:projectId/simple-reports'
+        element={
+          <ProtectedRoute>
+            <SimpleReports />
           </ProtectedRoute>
         }
       />

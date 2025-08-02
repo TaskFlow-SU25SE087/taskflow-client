@@ -43,7 +43,7 @@ const statusOptions = [
 export const ProjectIssues: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>()
   const { currentProject } = useCurrentProject()
-  const { getProjectIssues, getFilteredProjectIssues, isLoading, lastLoadTime } = useIssues()
+  const { getProjectIssues, getFilteredProjectIssues, isLoading } = useIssues()
   const [issues, setIssues] = useState<Issue[]>([])
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all')

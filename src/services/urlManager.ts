@@ -22,7 +22,7 @@ class UrlManager {
   }
 
   // Get current URL for a specific service (not used in single API setup)
-  getUrl(serviceName: string): string {
+  getUrl(_serviceName: string): string {
     return ''
   }
 
@@ -38,7 +38,7 @@ class UrlManager {
   }
 
   // Check if a specific service has available URLs (not used in single API setup)
-  hasAvailableUrls(serviceName: string): boolean {
+  hasAvailableUrls(_serviceName: string): boolean {
     return false
   }
 }

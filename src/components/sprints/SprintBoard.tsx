@@ -47,13 +47,13 @@ export function SprintBoard({
   const [loadingBatch, setLoadingBatch] = useState(false)
 
   // Map backend status string to UI status
-  const statusMap: Record<string, { label: string; color: string }> = {
-    NotStarted: { label: 'Not Started', color: 'bg-gray-200 text-gray-700' },
-    InProgress: { label: 'In Progress', color: 'bg-blue-100 text-blue-700' },
-    Completed: { label: 'Completed', color: 'bg-green-100 text-green-700' },
-    OnHold: { label: 'On Hold', color: 'bg-yellow-100 text-yellow-700' },
-    Cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-700' }
-  }
+  // const _statusMap: Record<string, { label: string; color: string }> = {
+  //   NotStarted: { label: 'Not Started', color: 'bg-gray-200 text-gray-700' },
+  //   InProgress: { label: 'In Progress', color: 'bg-blue-100 text-blue-700' },
+  //   Completed: { label: 'Completed', color: 'bg-green-100 text-green-700' },
+  //   OnHold: { label: 'On Hold', color: 'bg-yellow-100 text-yellow-700' },
+  //   Cancelled: { label: 'Cancelled', color: 'bg-red-100 text-red-700' }
+  // }
 
   // Removed unused getSprintStatus function
 

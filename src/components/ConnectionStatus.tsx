@@ -10,7 +10,7 @@ interface ConnectionStatusProps {
 export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ className = '' }) => {
   const [isOnline, setIsOnline] = useState(navigator.onLine)
   const [showAlert, setShowAlert] = useState(false)
-  const [connectionIssues, setConnectionIssues] = useState<string[]>([])
+  const [, setConnectionIssues] = useState<string[]>([])
 
   useEffect(() => {
     const handleOnline = () => {
@@ -39,19 +39,19 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ className = 
       }
 
       // Check for recent SignalR errors in console
-      const signalRErrors = [
-        'WebSocket connection to',
-        'Failed to start the transport',
-        '401 (Unauthorized)',
-        'SignalR connection failed'
-      ]
+      // const _signalRErrors = [
+      //   'WebSocket connection to',
+      //   'Failed to start the transport',
+      //   '401 (Unauthorized)',
+      //   'SignalR connection failed'
+      // ]
 
       // Check for API timeout errors
-      const apiErrors = [
-        'timeout of',
-        'ECONNABORTED',
-        'Request timeout'
-      ]
+      // const _apiErrors = [
+      //   'timeout of',
+      //   'ECONNABORTED',
+      //   'Request timeout'
+      // ]
 
       // For now, we'll show the alert if we're offline or if there are obvious connection issues
       if (issues.length > 0) {
