@@ -154,13 +154,40 @@ export const issueApi = {
   // Get all issues for a project (if the backend supports this endpoint)
   getProjectIssues: async (projectId: string) => {
     console.log('🔍 [issueApi] getProjectIssues called with:', { projectId })
+    const startTime = Date.now()
+    
     try {
-      const response = await axiosClient.get(`/projects/${projectId}/issues`)
-      console.log('✅ [issueApi] getProjectIssues response:', response.data)
+      const response = await axiosClient.get(`/projects/${projectId}/issues`, {
+        timeout: 5000 // Reduced to 5 seconds for much faster feedback
+      })
+      const endTime = Date.now()
+      const loadTime = endTime - startTime
+      console.log(`✅ [issueApi] getProjectIssues response in ${loadTime}ms:`, response.data)
+      
+      // Log performance warning if too slow
+      if (loadTime > 3000) {
+        console.warn(`⚠️ [issueApi] Slow response: ${loadTime}ms. Consider optimizing backend.`)
+      }
+      
       return response.data.data
-    } catch (error) {
-      console.error('❌ [issueApi] getProjectIssues error:', error)
-      throw error
+    } catch (error: any) {
+      const endTime = Date.now()
+      const loadTime = endTime - startTime
+      console.error(`❌ [issueApi] getProjectIssues error after ${loadTime}ms:`, error)
+      
+      // Handle specific error types
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        console.error('⏰ [issueApi] Request timeout after 5s. Server is very slow.')
+      } else if (error.response?.status === 401) {
+        console.error('🔐 [issueApi] Authentication failed. Check your access token.')
+      } else if (error.response?.status === 404) {
+        console.error('🔍 [issueApi] Endpoint not found. Check if the API endpoint exists.')
+      } else if (error.response?.status >= 500) {
+        console.error('🚨 [issueApi] Server error. Backend may be down.')
+      }
+      
+      // Return empty array instead of throwing to prevent loading state issues
+      return []
     }
   },
 

@@ -42,6 +42,13 @@ export class SignalRService {
       return
     }
 
+    // Check if SignalR URL is configured
+    if (!SIGNALR_CONFIG.HUB_URL || SIGNALR_CONFIG.HUB_URL === '') {
+      console.warn('[SignalR] SignalR HUB_URL is not configured. Disabling SignalR.')
+      this.signalREnabled = false
+      return
+    }
+
     if (this.isConnecting) return
     this.isConnecting = true
     
@@ -55,7 +62,11 @@ export class SignalRService {
         .withUrl(SIGNALR_CONFIG.HUB_URL, {
           accessTokenFactory: () => {
             const rememberMe = localStorage.getItem('rememberMe') === 'true'
-            return rememberMe ? localStorage.getItem('accessToken') || '' : sessionStorage.getItem('accessToken') || ''
+            const token = rememberMe ? localStorage.getItem('accessToken') || '' : sessionStorage.getItem('accessToken') || ''
+            if (!token) {
+              console.warn('[SignalR] No access token found. SignalR connection may fail.')
+            }
+            return token
           },
           skipNegotiation: false,
           transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.ServerSentEvents | signalR.HttpTransportType.LongPolling
@@ -70,8 +81,18 @@ export class SignalRService {
       await this.connection.start()
       console.log('✅ SignalR Connected!')
       this.reconnectAttempts = 0
-    } catch (error) {
+    } catch (error: any) {
       console.error('[SignalR] Connection failed:', error)
+      
+      // Handle specific error types
+      if (error.message?.includes('401')) {
+        console.error('[SignalR] Authentication failed. Check your access token.')
+      } else if (error.message?.includes('timeout')) {
+        console.error('[SignalR] Connection timeout. Server may be down or slow.')
+      } else if (error.message?.includes('WebSocket failed to connect')) {
+        console.error('[SignalR] WebSocket connection failed. Server may not support WebSockets or is down.')
+      }
+      
       SignalRErrorHandler.handleConnectionError(error, this)
       this.handleReconnect()
     } finally {

@@ -1,5 +1,6 @@
 import { Github, Loader } from 'lucide-react'
 import { useState } from 'react'
+import { useGitHubStatus } from '../../contexts/GitHubStatusContext'
 import { useWebhooks } from '../../hooks/useWebhooks'
 import { GitHubRepository } from '../../types/webhook'
 import { Button } from '../ui/button'
@@ -17,6 +18,7 @@ export default function GitHubOAuth({ projectId, partId, onConnectionSuccess }: 
   const [isConnecting, setIsConnecting] = useState(false)
 
   const { repositories, oauthLoading, startGitHubOAuth, connectOAuthRepository } = useWebhooks()
+  const { updateConnectionStatus } = useGitHubStatus()
 
   // Note: Removed fetchConnectionStatus because /projects/{projectId}/parts/{partId}/repo-status endpoint doesn't exist
   // Connection status will be managed through the OAuth flow
@@ -43,11 +45,15 @@ export default function GitHubOAuth({ projectId, partId, onConnectionSuccess }: 
         repositoryFullName: selectedRepo
       })
 
+      // Cập nhật trạng thái toàn cục khi kết nối thành công
+      updateConnectionStatus(true)
+
       if (onConnectionSuccess) {
         onConnectionSuccess()
       }
     } catch (error) {
       console.error('Failed to connect repository:', error)
+      updateConnectionStatus(false)
     } finally {
       setIsConnecting(false)
     }

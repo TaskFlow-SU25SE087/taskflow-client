@@ -7,10 +7,14 @@ interface MainSidebarProps {
   isOpen: boolean
   onToggle: () => void
   currentProject?: any
-  connectionStatus?: boolean | null
 }
 
-export const Sidebar = ({ isOpen, onToggle, currentProject, connectionStatus }: MainSidebarProps) => {
+export const Sidebar = ({ isOpen, onToggle, currentProject }: MainSidebarProps) => {
+  console.log('[Sidebar] currentProject:', currentProject)
+  console.log('[Sidebar] currentProject?.id:', currentProject?.id)
+  console.log('[Sidebar] currentProject type:', typeof currentProject)
+  console.log('[Sidebar] currentProject keys:', currentProject ? Object.keys(currentProject) : 'null')
+  
   return (
     <>
       {/* Mobile Overlay */}
@@ -35,7 +39,7 @@ export const Sidebar = ({ isOpen, onToggle, currentProject, connectionStatus }: 
             </Button>
           </div>
           <div className='flex-1 overflow-y-auto'>
-            <SidebarLogic projectId={currentProject?.id} connectionStatus={connectionStatus} />
+            <SidebarLogic projectId={currentProject?.id} />
           </div>
         </div>
       </div>

@@ -56,7 +56,8 @@ const AppContent: React.FC = () => {
   useNavigationError()
 
   return (
-    <Routes>
+    <>
+      <Routes>
       <Route
         path='/'
         element={
@@ -233,7 +234,7 @@ const AppContent: React.FC = () => {
         path='/sprint-meetings'
         element={
           <ProtectedRoute>
-            <Navigate to='/projects' replace />
+            <Navigate to='/projects?view=sprint-meetings' replace />
           </ProtectedRoute>
         }
       />
@@ -369,6 +370,8 @@ const AppContent: React.FC = () => {
       {/* Legacy redirects */}
       <Route path='/project' element={<Navigate to='/projects/' />} />
       
+
+      
       {/* Additional protected routes */}
       <Route
         path='/all-parts'
@@ -398,7 +401,8 @@ const AppContent: React.FC = () => {
         path="*"
         element={<NotFoundPage />}
       />
-    </Routes>
+            </Routes>
+        </>
   )
 }
 

@@ -13,9 +13,12 @@ import debounce from 'debounce'
 import { ChevronLeft, ChevronRight, Search, Share2 } from 'lucide-react'
 import { useCallback } from 'react'
 import { FiPlus } from 'react-icons/fi'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 
 export default function ProjectList() {
+  const [searchParams] = useSearchParams()
+  const viewParam = searchParams.get('view')
+  
   const {
     projects,
     isLoading,
@@ -30,6 +33,11 @@ export default function ProjectList() {
     goToPage,
     fetchProjects
   } = useProjects()
+  
+  // If view=sprint-meetings, redirect to first project's sprint-meetings
+  if (viewParam === 'sprint-meetings' && !isLoading && projects && projects.length > 0) {
+    return <Navigate to={`/projects/${projects[0].id}/sprint-meetings`} replace />
+  }
   const navigate = useNavigate()
   const { setCurrentProjectId } = useCurrentProject()
 

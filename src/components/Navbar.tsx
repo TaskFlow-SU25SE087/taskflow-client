@@ -155,11 +155,6 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
           {/* Notification Center */}
           <NotificationCenter />
 
-          {/* Connection Status - Hidden on mobile */}
-          {/* <div className='hidden sm:block'>
-            <ConnectionStatus />
-          </div> */}
-
           {/* Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

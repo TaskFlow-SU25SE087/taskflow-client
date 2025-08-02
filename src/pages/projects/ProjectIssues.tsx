@@ -10,40 +10,40 @@ import { Separator } from '@/components/ui/separator'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useIssues } from '@/hooks/useIssues'
 import { Issue, IssuePriority, IssueStatus, IssueType } from '@/types/issue'
-import { AlertCircle, Bug, ChevronDown, ChevronUp, FileText, Lightbulb, MessageSquare, Plus } from 'lucide-react'
+import { AlertCircle, Bug, ChevronDown, ChevronUp, FileText, GitBranch, Lightbulb, MessageSquare, Plus, RefreshCw } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
 const priorityOptions = [
-  { value: IssuePriority.Low, label: 'Low', color: 'bg-blue-100 text-blue-800' },
-  { value: IssuePriority.Medium, label: 'Medium', color: 'bg-orange-100 text-orange-800' },
-  { value: IssuePriority.High, label: 'High', color: 'bg-red-100 text-red-800' },
-  { value: IssuePriority.Urgent, label: 'Urgent', color: 'bg-red-200 text-red-900' }
+  { value: IssuePriority.Low, label: 'Low', color: 'bg-blue-100 text-blue-800', stringValue: 'Low' },
+  { value: IssuePriority.Medium, label: 'Medium', color: 'bg-orange-100 text-orange-800', stringValue: 'Medium' },
+  { value: IssuePriority.High, label: 'High', color: 'bg-red-100 text-red-800', stringValue: 'High' },
+  { value: IssuePriority.Urgent, label: 'Urgent', color: 'bg-red-200 text-red-900', stringValue: 'Urgent' }
 ]
 
 const typeOptions = [
-  { value: IssueType.Bug, label: 'Bug', icon: Bug, color: 'bg-red-100 text-red-800' },
-  { value: IssueType.FeatureRequest, label: 'Feature Request', icon: Plus, color: 'bg-green-100 text-green-800' },
-  { value: IssueType.Improvement, label: 'Improvement', icon: Lightbulb, color: 'bg-blue-100 text-blue-800' },
-  { value: IssueType.Task, label: 'Task', icon: MessageSquare, color: 'bg-purple-100 text-purple-800' },
-  { value: IssueType.Documentation, label: 'Documentation', icon: FileText, color: 'bg-purple-100 text-purple-800' },
-  { value: IssueType.Other, label: 'Other', icon: AlertCircle, color: 'bg-gray-100 text-gray-800' }
+  { value: IssueType.Bug, label: 'Bug', icon: Bug, color: 'bg-red-100 text-red-800', stringValue: 'Bug' },
+  { value: IssueType.FeatureRequest, label: 'Feature Request', icon: Plus, color: 'bg-green-100 text-green-800', stringValue: 'FeatureRequest' },
+  { value: IssueType.Improvement, label: 'Improvement', icon: Lightbulb, color: 'bg-blue-100 text-blue-800', stringValue: 'Improvement' },
+  { value: IssueType.Task, label: 'Task', icon: MessageSquare, color: 'bg-purple-100 text-purple-800', stringValue: 'Task' },
+  { value: IssueType.Documentation, label: 'Documentation', icon: FileText, color: 'bg-purple-100 text-purple-800', stringValue: 'Documentation' },
+  { value: IssueType.Other, label: 'Other', icon: AlertCircle, color: 'bg-gray-100 text-gray-800', stringValue: 'Other' }
 ]
 
 const statusOptions = [
-  { value: IssueStatus.Open, label: 'Open', color: 'bg-green-100 text-green-800' },
-  { value: IssueStatus.InProgress, label: 'In Progress', color: 'bg-blue-100 text-blue-800' },
-  { value: IssueStatus.Resolved, label: 'Resolved', color: 'bg-purple-100 text-purple-800' },
-  { value: IssueStatus.Closed, label: 'Closed', color: 'bg-gray-100 text-gray-800' },
-  { value: IssueStatus.Reopened, label: 'Reopened', color: 'bg-orange-100 text-orange-800' },
-  { value: IssueStatus.OnHold, label: 'On Hold', color: 'bg-yellow-100 text-yellow-800' },
-  { value: IssueStatus.Cancelled, label: 'Cancelled', color: 'bg-red-100 text-red-800' }
+  { value: IssueStatus.Open, label: 'Open', color: 'bg-green-100 text-green-800', stringValue: 'Open' },
+  { value: IssueStatus.InProgress, label: 'In Progress', color: 'bg-blue-100 text-blue-800', stringValue: 'InProgress' },
+  { value: IssueStatus.Resolved, label: 'Resolved', color: 'bg-purple-100 text-purple-800', stringValue: 'Resolved' },
+  { value: IssueStatus.Closed, label: 'Closed', color: 'bg-gray-100 text-gray-800', stringValue: 'Closed' },
+  { value: IssueStatus.Reopened, label: 'Reopened', color: 'bg-orange-100 text-orange-800', stringValue: 'Reopened' },
+  { value: IssueStatus.OnHold, label: 'On Hold', color: 'bg-yellow-100 text-yellow-800', stringValue: 'OnHold' },
+  { value: IssueStatus.Cancelled, label: 'Cancelled', color: 'bg-red-100 text-red-800', stringValue: 'Cancelled' }
 ]
 
 export const ProjectIssues: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>()
   const { currentProject } = useCurrentProject()
-  const { getProjectIssues, getFilteredProjectIssues, isLoading } = useIssues()
+  const { getProjectIssues, getFilteredProjectIssues, isLoading, lastLoadTime } = useIssues()
   const [issues, setIssues] = useState<Issue[]>([])
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all')
@@ -52,6 +52,7 @@ export const ProjectIssues: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [openIndexes, setOpenIndexes] = useState<{ [key: string]: boolean }>({})
   const [showCreateMenu, setShowCreateMenu] = useState(false)
+  const [loadingTimeout, setLoadingTimeout] = useState(false)
   const toggleOpen = (id: string) => {
     setOpenIndexes(prev => ({ ...prev, [id]: !prev[id] }))
   }
@@ -64,13 +65,22 @@ export const ProjectIssues: React.FC = () => {
     }
   }, [projectId])
 
-  const loadIssues = async () => {
+  const loadIssues = async (forceRefresh = false) => {
     if (!projectId) return
     try {
-      const projectIssues = await getProjectIssues(projectId)
+      // Set timeout to show loading timeout message after 8 seconds
+      const timeoutId = setTimeout(() => {
+        setLoadingTimeout(true)
+      }, 8000)
+      
+      const projectIssues = await getProjectIssues(projectId, forceRefresh)
+      
+      clearTimeout(timeoutId)
+      setLoadingTimeout(false)
       setIssues(projectIssues || [])
     } catch (error) {
       console.error('Error loading issues:', error)
+      setLoadingTimeout(false)
     }
   }
 
@@ -106,20 +116,32 @@ export const ProjectIssues: React.FC = () => {
     handleFilterChange(filterStatus, filterType, value)
   }
 
-  const getPriorityInfo = (priority: IssuePriority) => {
-    return priorityOptions.find((p) => p.value === priority) || priorityOptions[0]
+  const getPriorityInfo = (priority: IssuePriority | string) => {
+    // Handle both enum values and string values from API
+    if (typeof priority === 'string') {
+      return priorityOptions.find((p) => p.stringValue === priority) || priorityOptions[1] // Default to Medium
+    }
+    return priorityOptions.find((p) => p.value === priority) || priorityOptions[1]
   }
 
-  const getTypeInfo = (type: IssueType) => {
+  const getTypeInfo = (type: IssueType | string) => {
+    // Handle both enum values and string values from API
+    if (typeof type === 'string') {
+      return typeOptions.find((t) => t.stringValue === type) || typeOptions[5] // Default to Other
+    }
     return typeOptions.find((t) => t.value === type) || typeOptions[5]
   }
 
-  const getStatusInfo = (status: IssueStatus) => {
+  const getStatusInfo = (status: IssueStatus | string) => {
+    // Handle both enum values and string values from API
+    if (typeof status === 'string') {
+      return statusOptions.find((s) => s.stringValue === status) || statusOptions[0] // Default to Open
+    }
     return statusOptions.find((s) => s.value === status) || statusOptions[0]
   }
 
   const handleIssueCreated = () => {
-    loadIssues()
+    loadIssues(true) // Force refresh when new issue is created
   }
 
   if (!currentProject) {
@@ -158,8 +180,19 @@ export const ProjectIssues: React.FC = () => {
         <div className='px-6 pt-2 pb-1'>
           <h2 className='text-xl font-bold text-gray-900 flex items-center gap-2'>
             <TypeIcon className={`inline w-6 h-6 ${typeInfo.color} p-1 rounded-full`} />
-            {issue.title || issueAny.titleTask}
+            {issue.title}
           </h2>
+          
+          {/* Hiển thị tên task nếu có */}
+          {issueAny.titleTask && (
+            <div className='mt-2'>
+              <Badge variant='outline' className='text-xs bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1 w-fit'>
+                <GitBranch className='w-3 h-3' />
+                Task: {issueAny.titleTask}
+              </Badge>
+            </div>
+          )}
+          
           <p className='text-gray-600 mt-1'>{issueAny.shortDescription || issue.description}</p>
         </div>
         {/* Người tạo, tag, thời gian, ... */}
@@ -172,9 +205,9 @@ export const ProjectIssues: React.FC = () => {
           <span>• {issueAny.createdAt ? new Date(issueAny.createdAt).toLocaleDateString() : ''}</span>
           {issueAny.reportedBy && <span className='bg-gray-100 rounded px-2 py-0.5 ml-2'>Reported by {issueAny.reportedBy}</span>}
           {issueAny.timeToFix && <span className='bg-gray-100 rounded px-2 py-0.5'>Time to fix: {issueAny.timeToFix}</span>}
-          <Badge className={`${priorityInfo.color} font-bold shadow-sm border border-white`}>{priorityInfo.label || issueAny.priorityTask}</Badge>
-          <Badge className={`${typeInfo.color} font-bold shadow-sm border border-white flex items-center gap-1`}><TypeIcon className='w-4 h-4' />{typeInfo.label || issueAny.type}</Badge>
-          <Badge className={`${statusInfo.color} font-bold shadow-sm border border-white`}>{statusInfo.label || issueAny.status}</Badge>
+          <Badge className={`${priorityInfo.color} font-bold shadow-sm border border-white`}>{priorityInfo.label}</Badge>
+          <Badge className={`${typeInfo.color} font-bold shadow-sm border border-white flex items-center gap-1`}><TypeIcon className='w-4 h-4' />{typeInfo.label}</Badge>
+          <Badge className={`${statusInfo.color} font-bold shadow-sm border border-white`}>{statusInfo.label}</Badge>
         </div>
         {/* Collapse content */}
         <div
@@ -254,15 +287,28 @@ export const ProjectIssues: React.FC = () => {
         <div className='flex flex-col flex-1 overflow-y-auto bg-white/90'>
           {/* Header */}
           <div className='flex flex-col gap-4 px-4 md:px-8 pt-8 pb-4 border-b border-gray-200 bg-white/80 sticky top-0 z-10 shadow-sm'>
-            <div className='flex flex-col md:flex-row items-start md:items-center justify-between gap-2'>
-              <h1 className='text-3xl md:text-4xl font-extrabold text-gray-900 mb-2'>Code Issues</h1>
-              <Button
-                className='bg-lavender-600 hover:bg-lavender-700 text-white font-semibold rounded-lg px-5 py-2 text-base shadow flex items-center gap-2'
-                onClick={() => setShowCreateMenu(true)}
-              >
-                <Plus className='w-5 h-5' /> New Issue
-              </Button>
-            </div>
+                         <div className='flex flex-col md:flex-row items-start md:items-center justify-between gap-2'>
+                               <div className='flex items-center gap-4'>
+                  <h1 className='text-3xl md:text-4xl font-extrabold text-gray-900 mb-2'>Code Issues</h1>
+                </div>
+               <div className='flex gap-2'>
+                 <Button
+                   variant='outline'
+                   className='bg-white hover:bg-gray-50 text-gray-700 border-gray-300 font-semibold rounded-lg px-4 py-2 text-base shadow flex items-center gap-2'
+                   onClick={() => loadIssues(true)}
+                   disabled={isLoading}
+                 >
+                   <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                   Refresh
+                 </Button>
+                 <Button
+                   className='bg-lavender-600 hover:bg-lavender-700 text-white font-semibold rounded-lg px-5 py-2 text-base shadow flex items-center gap-2'
+                   onClick={() => setShowCreateMenu(true)}
+                 >
+                   <Plus className='w-5 h-5' /> New Issue
+                 </Button>
+               </div>
+             </div>
             <div className='flex flex-wrap gap-3 items-center'>
               <Select value={filterStatus} onValueChange={handleStatusChange}>
                 <SelectTrigger className='w-32'>
@@ -271,7 +317,7 @@ export const ProjectIssues: React.FC = () => {
                 <SelectContent>
                   <SelectItem value='all'>All Statuses</SelectItem>
                   {statusOptions.map((s) => (
-                    <SelectItem key={s.value} value={s.value.toString()}>{s.label}</SelectItem>
+                    <SelectItem key={s.value} value={s.stringValue}>{s.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -282,7 +328,7 @@ export const ProjectIssues: React.FC = () => {
                 <SelectContent>
                   <SelectItem value='all'>All Types</SelectItem>
                   {typeOptions.map((t) => (
-                    <SelectItem key={t.value} value={t.value.toString()} className='flex items-center gap-2'>
+                    <SelectItem key={t.value} value={t.stringValue} className='flex items-center gap-2'>
                       <t.icon className={`inline w-4 h-4 mr-1 ${t.color}`} />{t.label}
                     </SelectItem>
                   ))}
@@ -295,7 +341,7 @@ export const ProjectIssues: React.FC = () => {
                 <SelectContent>
                   <SelectItem value='all'>All Priorities</SelectItem>
                   {priorityOptions.map((p) => (
-                    <SelectItem key={p.value} value={p.value.toString()}>{p.label}</SelectItem>
+                    <SelectItem key={p.value} value={p.stringValue}>{p.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -320,20 +366,40 @@ export const ProjectIssues: React.FC = () => {
           {showCreateMenu && currentProject && (
             <ProjectIssueCreateMenu
               projectId={currentProject.id}
-              onIssueCreated={() => {
-                setShowCreateMenu(false)
-                loadIssues()
-              }}
+                             onIssueCreated={() => {
+                 setShowCreateMenu(false)
+                 loadIssues(true) // Force refresh when new issue is created
+               }}
             />
           )}
           <div className='flex-1 flex flex-col gap-6 p-8'>
-            {isLoading ? (
-              <div className='flex items-center justify-center h-64'>
-                <div className='text-center'>
-                  <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4'></div>
-                  <p className='text-gray-500'>Loading issues...</p>
-                </div>
-              </div>
+                         {isLoading ? (
+               <div className='flex items-center justify-center h-64'>
+                 <div className='text-center'>
+                   <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-lavender-600 mx-auto mb-4'></div>
+                   <p className='text-lavender-600 font-medium'>
+                     {loadingTimeout ? 'Loading is taking longer than expected...' : 'Loading issues...'}
+                   </p>
+                   {loadingTimeout && (
+                     <div className='mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg'>
+                       <p className='text-sm text-orange-700 mb-2'>
+                         ⚠️ Server response is slow. This might be due to:
+                       </p>
+                       <ul className='text-xs text-orange-600 space-y-1'>
+                         <li>• Large amount of data</li>
+                         <li>• Server performance issues</li>
+                         <li>• Network connectivity problems</li>
+                       </ul>
+                       <button 
+                         onClick={() => loadIssues(true)}
+                         className='mt-3 text-xs bg-orange-100 hover:bg-orange-200 text-orange-800 px-3 py-1 rounded'
+                       >
+                         Try refreshing
+                       </button>
+                     </div>
+                   )}
+                 </div>
+               </div>
             ) : issues.length === 0 ? (
               <Card>
                 <CardContent className='flex items-center justify-center h-64'>

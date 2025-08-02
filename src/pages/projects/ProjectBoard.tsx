@@ -29,10 +29,10 @@ import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import {
-  arrayMove,
-  horizontalListSortingStrategy,
-  SortableContext,
-  verticalListSortingStrategy
+    arrayMove,
+    horizontalListSortingStrategy,
+    SortableContext,
+    verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { CheckCircle, ChevronDown, Clock, Filter, Link2, Pencil, Plus, Search, Settings, TrendingUp } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -576,7 +576,7 @@ export default function ProjectBoard() {
   if (isLoading || isBoardLoading || !currentProject) {
     return (
       <div className='flex h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50'>
-        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
+        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
         <div className='flex-1 flex flex-col overflow-hidden'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
           <div className='flex-1 flex items-center justify-center'>
@@ -593,7 +593,7 @@ export default function ProjectBoard() {
   if (boardError) {
     return (
       <div className='flex h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50'>
-        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
+        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
         <div className='flex-1 flex flex-col overflow-hidden'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
           <div className='flex-1 flex items-center justify-center'>
@@ -628,7 +628,7 @@ export default function ProjectBoard() {
 
    return (
   <div className='flex bg-gradient-to-br from-slate-50 via-white to-lavender-50 h-screen overflow-hidden'> {/* Added overflow-hidden */}
-    <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
+    <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
 
     <div className='flex-1 flex flex-col overflow-hidden min-h-0'> {/* Added min-h-0 */}
       <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />

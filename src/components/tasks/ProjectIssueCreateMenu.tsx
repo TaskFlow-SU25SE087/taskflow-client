@@ -15,7 +15,7 @@ import { useToastContext } from '@/components/ui/ToastContext'
 import axiosClient from '@/configs/axiosClient'
 import { useIssues } from '@/hooks/useIssues'
 import { CreateIssueRequest, IssuePriority, IssueType } from '@/types/issue'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Plus } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 
 interface ProjectIssueCreateMenuProps {
@@ -327,7 +327,9 @@ export const ProjectIssueCreateMenu: React.FC<ProjectIssueCreateMenuProps> = ({ 
             <Button
               type='submit'
               disabled={isLoading || !formData.title || !formData.description || !selectedTaskId}
+              className='flex items-center gap-2'
             >
+              <Plus className='h-4 w-4 flex-shrink-0' />
               {isLoading ? 'Creating...' : 'Create Issue'}
             </Button>
           </div>

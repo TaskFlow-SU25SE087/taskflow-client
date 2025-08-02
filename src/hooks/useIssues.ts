@@ -5,7 +5,12 @@ import { useState } from 'react'
 
 export const useIssues = () => {
   const [isLoading, setIsLoading] = useState(false)
+  const [cache, setCache] = useState<{ [key: string]: { data: any; timestamp: number } }>({})
+  const [lastLoadTime, setLastLoadTime] = useState<number>()
   const { showToast } = useToastContext()
+
+  // Cache duration: 2 minutes (increased to reduce API calls)
+  const CACHE_DURATION = 2 * 60 * 1000
 
   const createIssue = async (projectId: string, taskId: string, issueData: CreateIssueRequest): Promise<boolean> => {
     console.log('🎯 [useIssues] createIssue called with:', {
@@ -118,20 +123,52 @@ export const useIssues = () => {
     }
   }
 
-  const getProjectIssues = async (projectId: string) => {
-    console.log('🔍 [useIssues] getProjectIssues called with:', { projectId })
+  const getProjectIssues = async (projectId: string, forceRefresh = false) => {
+    console.log('🔍 [useIssues] getProjectIssues called with:', { projectId, forceRefresh })
+    
+    const startTime = Date.now()
+    
+    // Check cache first
+    const cacheKey = `project-issues-${projectId}`
+    const cached = cache[cacheKey]
+    const now = Date.now()
+    
+    if (!forceRefresh && cached && (now - cached.timestamp) < CACHE_DURATION) {
+      console.log('📦 [useIssues] Returning cached data')
+      setLastLoadTime(0) // Cache hit
+      return cached.data
+    }
+    
+    setIsLoading(true)
     try {
       const result = await issueApi.getProjectIssues(projectId)
-      console.log('✅ [useIssues] getProjectIssues result:', result)
+      const endTime = Date.now()
+      const loadTime = endTime - startTime
+      
+      console.log(`✅ [useIssues] getProjectIssues result in ${loadTime}ms:`, result)
+      setLastLoadTime(loadTime)
+      
+      // Update cache
+      setCache(prev => ({
+        ...prev,
+        [cacheKey]: { data: result, timestamp: now }
+      }))
+      
       return result
     } catch (error) {
-      console.error('❌ [useIssues] getProjectIssues error:', error)
+      const endTime = Date.now()
+      const loadTime = endTime - startTime
+      console.error(`❌ [useIssues] getProjectIssues error after ${loadTime}ms:`, error)
+      setLastLoadTime(loadTime)
+      
       showToast({
         title: 'Error',
         description: 'Failed to fetch project issues',
         variant: 'destructive'
       })
       return []
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -159,6 +196,7 @@ export const useIssues = () => {
     getTaskIssues,
     getProjectIssues,
     getFilteredProjectIssues,
-    isLoading
+    isLoading,
+    lastLoadTime
   }
 }

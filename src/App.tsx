@@ -1,13 +1,16 @@
 import { ToastContainer } from '@/components/ui/ToastContainer'
 import { ToastProvider } from '@/components/ui/ToastContext'
 import { updateAxiosBaseURL } from '@/configs/axiosClient'
+import { GitHubStatusProvider } from '@/contexts/GitHubStatusContext'
 import { SignalRProvider } from '@/contexts/SignalRContext'
 import { AuthProvider } from '@/hooks/useAuthContext.tsx'
 import UrlManager from '@/services/urlManager'
 import React from 'react'
 import { BrowserRouter } from 'react-router-dom'
 import AppContent from './components/AppContent'
+import { ConnectionStatus } from './components/ConnectionStatus'
 import ErrorBoundary from './components/ErrorBoundary'
+
 
 function App() {
   // Initialize URL Manager on app startup
@@ -31,9 +34,12 @@ function App() {
         <ToastContainer />
         <AuthProvider>
           <SignalRProvider>
-            <ErrorBoundary>
-              <AppContent />
-            </ErrorBoundary>
+            <GitHubStatusProvider>
+              <ErrorBoundary>
+                <AppContent />
+                <ConnectionStatus />
+              </ErrorBoundary>
+            </GitHubStatusProvider>
           </SignalRProvider>
         </AuthProvider>
       </ToastProvider>

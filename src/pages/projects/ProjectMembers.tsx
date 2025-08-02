@@ -2,14 +2,14 @@ import { projectApi } from '@/api/projects'
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -156,7 +156,7 @@ export default function ProjectMembers() {
   return (
     <>
       <div className='flex min-h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50'>
-        <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen((v) => !v)} />
+        <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen((v) => !v)} currentProject={currentProject || { id: projectId } as any} />
         <div className='flex-1 flex flex-col'>
           <Navbar isSidebarOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen((v) => !v)} />
           <main className='flex-1 max-w-3xl mx-auto p-4 sm:p-8'>

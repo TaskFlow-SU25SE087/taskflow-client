@@ -1,22 +1,23 @@
 import { projectApi } from '@/api/projects'
+import { useGitHubStatus } from '@/contexts/GitHubStatusContext'
 import gsap from 'gsap'
 import { LucideLayoutDashboard } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
-  FiAlertCircle,
-  FiBarChart2,
-  FiCalendar,
-  FiClock,
-  FiGitBranch,
-  FiGithub,
-  FiLayers,
-  FiSettings,
-  FiUsers
+    FiAlertCircle,
+    FiBarChart2,
+    FiCalendar,
+    FiClock,
+    FiGitBranch,
+    FiGithub,
+    FiLayers,
+    FiSettings,
+    FiUsers
 } from 'react-icons/fi'
 import { useLocation, useNavigate } from 'react-router-dom'
 import GitHubSidebarItem from './github/GitHubSidebarItem'
 
-export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: string, connectionStatus?: boolean | null }) => {
+export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
   const [activeTab, setActiveTab] = useState('board')
   const [hoveredTab, setHoveredTab] = useState<string | null>(null)
   const highlightRef = useRef<HTMLDivElement>(null)
@@ -24,6 +25,9 @@ export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: stri
   const lastHoveredTabRef = useRef<string | null>(null)
   const navigate = useNavigate()
   const location = useLocation()
+  
+  // Sử dụng hook để lấy trạng thái GitHub toàn cục
+  const { connectionStatus, isLoading } = useGitHubStatus()
 
   useEffect(() => {
     updateHighlightPosition(activeTab)
@@ -121,13 +125,65 @@ export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: stri
 
   useEffect(() => {
     const currentPath = location.pathname
-    const activeItem = navItems.find((item) => item.path === currentPath)
+    const searchParams = new URLSearchParams(location.search)
+    const viewParam = searchParams.get('view')
+    
+    console.log('[SidebarLogic] useEffect - currentPath:', currentPath)
+    console.log('[SidebarLogic] useEffect - viewParam:', viewParam)
+    console.log('[SidebarLogic] useEffect - navItems paths:', navItems.map(item => ({ id: item.id, path: item.path })))
+    
+    // Try exact match first
+    let activeItem = navItems.find((item) => item.path === currentPath)
+    
+    // If no exact match, try to find by path pattern for project-specific routes
+    if (!activeItem) {
+      activeItem = navItems.find((item) => {
+        // Check if this is a project-specific route and currentPath matches the pattern
+        if (item.path.includes('/projects/') && currentPath.includes('/projects/')) {
+          // Extract the route part after /projects/{projectId}/
+          const itemRoutePart = item.path.split('/projects/')[1]?.split('/')[1] || ''
+          const currentRoutePart = currentPath.split('/projects/')[1]?.split('/')[1] || ''
+          console.log(`[SidebarLogic] Comparing itemRoutePart: "${itemRoutePart}" with currentRoutePart: "${currentRoutePart}" for item: ${item.id}`)
+          return itemRoutePart === currentRoutePart
+        }
+        return false
+      })
+    }
+    
+    // If still no match, try to find by current path segments and query params
+    if (!activeItem) {
+      activeItem = navItems.find((item) => {
+        // Handle special cases for routes that might not be project-specific
+        if (currentPath === '/sprint-meetings' && item.id === 'sprint-meetings') {
+          return true
+        }
+        if (currentPath === '/board' && item.id === 'board') {
+          return true
+        }
+        if (currentPath === '/backlog' && item.id === 'backlog') {
+          return true
+        }
+        if (currentPath === '/timeline' && item.id === 'timeline') {
+          return true
+        }
+        // Check if we're on the projects page with sprint-meetings view
+        if (currentPath === '/projects' && viewParam === 'sprint-meetings' && item.id === 'sprint-meetings') {
+          return true
+        }
+        return false
+      })
+    }
+    
+    console.log('[SidebarLogic] useEffect - activeItem found:', activeItem)
     if (activeItem) {
+      console.log('[SidebarLogic] useEffect - setting activeTab to:', activeItem.id)
       setActiveTab(activeItem.id) // Update the activeTab state
       updateHighlightPosition(activeItem.id)
+    } else {
+      console.log('[SidebarLogic] useEffect - no activeItem found for currentPath:', currentPath)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname])
+  }, [location.pathname, location.search])
 
   const updateHighlightPosition = (tabId: string) => {
     const highlight = highlightRef.current
@@ -184,10 +240,20 @@ export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: stri
   }
 
   const handleClick = async (tabId: string) => {
+    console.log('[SidebarLogic] handleClick called with tabId:', tabId)
+    console.log('[SidebarLogic] current projectId:', projectId)
+    console.log('[SidebarLogic] current location.pathname:', location.pathname)
+    console.log('[SidebarLogic] current location.search:', location.search)
+    
     setActiveTab(tabId)
     const targetTab = navItems.find((item) => item.id === tabId)
+    console.log('[SidebarLogic] targetTab found:', targetTab)
     
     if (targetTab) {
+      console.log('[SidebarLogic] navigating to path:', targetTab.path)
+      console.log('[SidebarLogic] targetTab.path type:', typeof targetTab.path)
+      console.log('[SidebarLogic] targetTab.path value:', targetTab.path)
+      
       // Special handling for sprint-meetings when no project is selected
       if (tabId === 'sprint-meetings' && !projectId) {
         try {
@@ -206,7 +272,18 @@ export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: stri
         return
       }
       
+      // Check if projectId is missing for project-specific routes
+      if (targetTab.path.includes('/projects/') && !projectId) {
+        console.error('[SidebarLogic] projectId is missing for project-specific route:', targetTab.path)
+        console.log('[SidebarLogic] redirecting to /projects instead')
+        navigate('/projects')
+        return
+      }
+      
+      console.log('[SidebarLogic] about to navigate to:', targetTab.path)
       navigate(targetTab.path)
+    } else {
+      console.error('[SidebarLogic] targetTab not found for tabId:', tabId)
     }
   }
 
@@ -233,6 +310,7 @@ export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: stri
 
   const renderSection = (sectionNumber: number) => {
     const sectionItems = navItems.filter((item) => item.section === sectionNumber)
+    console.log(`[SidebarLogic] renderSection ${sectionNumber} - items:`, sectionItems.map(item => item.id))
 
     return (
       <div className='relative' onMouseMove={handleMouseMove}>
@@ -246,9 +324,12 @@ export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: stri
                 key={item.id}
                 data-tab-id={item.id}
                 className={`relative flex items-center gap-3 px-2 py-3 cursor-pointer rounded-md transition-colors duration-200 ${getTabStyles(item.id).text}`}
-                onClick={() => handleClick(item.id)}
+                onClick={() => {
+                  console.log('[SidebarLogic] GitHub item clicked')
+                  handleClick(item.id)
+                }}
               >
-                <GitHubSidebarItem connectionStatus={connectionStatus} />
+                <GitHubSidebarItem connectionStatus={connectionStatus} isLoading={isLoading} />
               </div>
             )
           }
@@ -260,7 +341,10 @@ export const SidebarLogic = ({ projectId, connectionStatus }: { projectId?: stri
               data-tab-id={item.id}
               className={`relative flex items-center gap-3 px-2 py-3 cursor-pointer rounded-md transition-colors duration-200
                 ${getTabStyles(item.id).text}`}
-              onClick={() => handleClick(item.id)}
+              onClick={() => {
+                console.log(`[SidebarLogic] ${item.id} item clicked`)
+                handleClick(item.id)
+              }}
             >
               <div className={`transition-colors duration-200 ${getTabStyles(item.id).icon}`}>{item.icon}</div>
               <span className='font-medium'>{item.label}</span>

@@ -8,6 +8,7 @@ import { Loader } from '@/components/ui/loader'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToastContext } from '@/components/ui/ToastContext'
 import axiosClient from '@/configs/axiosClient'
+import { useGitHubStatus } from '@/contexts/GitHubStatusContext'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { CheckCircle, Github, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -33,6 +34,7 @@ export default function ProjectGitHub() {
   const { projectId: urlProjectId } = useParams<{ projectId: string }>()
   const { currentProject, isLoading } = useCurrentProject()
   const { showToast } = useToastContext()
+  const { updateConnectionStatus } = useGitHubStatus()
 
   // Use projectId from URL if available, otherwise use currentProject.id
   const projectId = urlProjectId || currentProject?.id
@@ -63,8 +65,12 @@ export default function ProjectGitHub() {
     setLoading(true)
     try {
       const res = await axiosClient.get('/api/github/connection-status')
-      setConnectionStatus(res.data.data)
-      if (res.data.data) {
+      const status = res.data.data
+      setConnectionStatus(status)
+      // Cập nhật trạng thái toàn cục
+      updateConnectionStatus(status)
+      
+      if (status) {
         const repoRes = await axiosClient.get('/api/github/repos')
         setRepos(repoRes.data.data)
       }
@@ -79,6 +85,7 @@ export default function ProjectGitHub() {
       }
     } catch (err) {
       setError('Error loading data')
+      updateConnectionStatus(null)
     } finally {
       setLoading(false)
     }
@@ -208,7 +215,7 @@ export default function ProjectGitHub() {
 
   return (
     <div className='flex h-screen bg-gray-100'>
-      <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} connectionStatus={connectionStatus} />
+      <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
       <div className='flex-1 flex flex-col overflow-hidden'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
         <div className='flex-1 overflow-y-auto flex flex-col items-center justify-center p-6'>

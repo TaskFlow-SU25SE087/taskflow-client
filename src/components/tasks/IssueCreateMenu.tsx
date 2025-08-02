@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { useIssues } from '@/hooks/useIssues'
 import { CreateIssueRequest, IssuePriority, IssueType } from '@/types/issue'
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle, Plus } from 'lucide-react'
 import React, { useState } from 'react'
 
 interface IssueCreateMenuProps {
@@ -259,7 +259,9 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
               type='submit'
               disabled={isLoading}
               onClick={() => console.log('🔘 [IssueCreateMenu] Create Issue button clicked')}
+              className='flex items-center gap-2'
             >
+              <Plus className='h-4 w-4 flex-shrink-0' />
               {isLoading ? 'Creating...' : 'Create Issue'}
             </Button>
           </div>

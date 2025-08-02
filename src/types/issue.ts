@@ -41,6 +41,13 @@ export interface Issue {
   updatedAt?: string
   taskId?: string
   projectId?: string
+  // Additional fields from API
+  titleTask?: string
+  nameCreate?: string
+  avatarCreate?: string
+  roleCreate?: string
+  issueAttachmentUrls?: string[]
+  taskAssignees?: any[]
 }
 
 export interface CreateIssueRequest {
