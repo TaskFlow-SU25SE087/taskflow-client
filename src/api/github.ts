@@ -43,7 +43,9 @@ export async function connectRepositoryToPart(
     accessToken: string
   }
 ) {
-  const res = await axiosClient.patch(`/projects/${projectId}/parts/${partId}/connect-repo`, repoData)
+  // URL encode the partId to handle special characters and spaces
+  const encodedPartId = encodeURIComponent(partId)
+  const res = await axiosClient.patch(`/projects/${projectId}/parts/${encodedPartId}/connect-repo`, repoData)
   return res.data
 }
 

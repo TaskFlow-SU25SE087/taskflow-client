@@ -7,10 +7,10 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/hooks/useAuth'
-import { Eye, EyeOff, Shield, Zap, Users, ArrowLeft } from 'lucide-react'
-import { useEffect, useState, useRef } from 'react'
-import { Link } from 'react-router-dom'
 import { gsap } from 'gsap'
+import { ArrowLeft, Eye, EyeOff, Shield, Users, Zap } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 export default function LoginPage() {
   const { login, error } = useAuth()
@@ -243,12 +243,12 @@ export default function LoginPage() {
           </form>
 
           <div className='text-center mt-8'>
-            <p className='text-gray-600 mb-4'>
+            {/* <p className='text-gray-600 mb-4'>
               Don't have an account?{' '}
               <Link to='/signup' className='text-lavender-600 hover:text-lavender-700 font-semibold underline'>
                 Sign up
               </Link>
-            </p>
+            </p> */}
             <p className='text-xs text-gray-500 leading-relaxed'>
               By signing in, you acknowledge that you have read and agree to TaskFlow's{' '}
               <Link to='/terms' className='text-lavender-600 hover:text-lavender-700 underline'>

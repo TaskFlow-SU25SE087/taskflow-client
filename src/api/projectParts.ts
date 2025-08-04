@@ -10,6 +10,7 @@ export async function createProjectPart(
   const res = await axiosClient.post(`/projects/${projectId}/parts`, payload, {
     headers: { 'Content-Type': 'application/json-patch+json' }
   })
+  console.log('Create Project Part response:', res.data);
   return res.data
 }
 
@@ -19,7 +20,9 @@ export async function connectRepoToPart(
   partId: string,
   payload: { repoUrl: string }
 ) {
-  const res = await axiosClient.patch(`/projects/${projectId}/parts/${partId}/connect-repo`, payload, {
+  // URL encode the partId to handle special characters and spaces
+  const encodedPartId = encodeURIComponent(partId)
+  const res = await axiosClient.patch(`/projects/${projectId}/parts/${encodedPartId}/connect-repo`, payload, {
     headers: { 'Content-Type': 'application/json-patch+json' }
   })
   return res.data
@@ -28,6 +31,7 @@ export async function connectRepoToPart(
 // Lấy danh sách Project Parts
 export async function getProjectParts(projectId: string) {
   const res = await axiosClient.get(`/projects/${projectId}/parts`)
+  console.log('Get Project Parts response:', res.data);
   return res.data
 }
 
@@ -38,8 +42,10 @@ export async function addGitMemberLocal(
   projectMemberId: string,
   payload: { nameLocal: string; emailLocal: string }
 ) {
+  // URL encode the projectPartId to handle special characters and spaces
+  const encodedProjectPartId = encodeURIComponent(projectPartId)
   const res = await axiosClient.post(
-    `/projects/${projectId}/parts/${projectPartId}/gitmember/${projectMemberId}`,
+    `/projects/${projectId}/parts/${encodedProjectPartId}/gitmember/${projectMemberId}`,
     payload,
     {
       headers: { 'Content-Type': 'application/json-patch+json' }
@@ -54,8 +60,10 @@ export async function updateGitMemberLocal(
   gitMemberId: string,
   payload: { nameLocal: string; emailLocal: string }
 ) {
+  // URL encode the projectPartId to handle special characters and spaces
+  const encodedProjectPartId = encodeURIComponent(projectPartId)
   const res = await axiosClient.patch(
-    `/projects/${projectId}/parts/${projectPartId}/gitmember/${gitMemberId}/local`,
+    `/projects/${projectId}/parts/${encodedProjectPartId}/gitmember/${gitMemberId}/local`,
     payload,
     {
       headers: { 'Content-Type': 'application/json-patch+json' }
@@ -66,6 +74,8 @@ export async function updateGitMemberLocal(
 
 // Note: GET endpoint không có trong specification, có thể cần thêm
 export async function getGitMembersLocal(projectId: string, projectPartId: string) {
-  const res = await axiosClient.get(`/projects/${projectId}/parts/${projectPartId}/gitmember`)
+  // URL encode the projectPartId to handle special characters and spaces
+  const encodedProjectPartId = encodeURIComponent(projectPartId)
+  const res = await axiosClient.get(`/projects/${projectId}/parts/${encodedProjectPartId}/gitmember`)
   return res.data
 }

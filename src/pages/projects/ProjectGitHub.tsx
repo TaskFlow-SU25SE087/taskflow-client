@@ -10,6 +10,7 @@ import { useToastContext } from '@/components/ui/ToastContext'
 import axiosClient from '@/configs/axiosClient'
 import { useGitHubStatus } from '@/contexts/GitHubStatusContext'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
+import { extractPartId, processPartsData, validatePartId, type ProjectPart } from '@/utils/partIdHelper'
 import { CheckCircle, Github, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
@@ -18,16 +19,6 @@ interface Repo {
   name: string
   fullName: string
   htmlUrl: string
-}
-interface ProjectPart {
-  id: string;
-  name: string;
-  programmingLanguage: string;
-  framework: string;
-  repoUrl?: string;
-  ownerId?: string;
-  ownerName?: string;
-  avatrarUrl?: string;
 }
 
 export default function ProjectGitHub() {
@@ -78,8 +69,16 @@ export default function ProjectGitHub() {
       if (projectId) {
         try {
           const partsRes = await axiosClient.get(`/projects/${projectId}/parts`)
-          setParts(partsRes.data.data)
+          console.log('Parts response:', partsRes.data)
+          
+          // Sử dụng utility function để xử lý dữ liệu parts
+          let partsData = partsRes.data.data || partsRes.data || []
+          const processedParts = processPartsData(partsData)
+          
+          console.log('Processed parts data:', processedParts)
+          setParts(processedParts)
         } catch (err) {
+          console.error('Error fetching parts:', err)
           setParts([])
         }
       }
@@ -123,10 +122,14 @@ export default function ProjectGitHub() {
         programmingLanguage: newPart.programmingLanguage || 'None',
         framework: newPart.framework || 'None',
       });
-      let partId = response.data;
-      if (typeof partId === 'object' && partId.id) {
-        partId = partId.id;
+      console.log('Create part response:', response)
+      
+      // Sử dụng utility function để lấy id chính xác
+      const partId = extractPartId(response.data);
+      if (!partId) {
+        throw new Error('Failed to extract part ID from response');
       }
+      
       const newPartWithId = {
         id: partId,
         name: newPart.name,
@@ -150,6 +153,19 @@ export default function ProjectGitHub() {
       setError('Please select both repository and project part')
       return
     }
+    
+    // Sử dụng utility function để validate part ID
+    if (!validatePartId(selectedPart, parts)) {
+      console.error('Selected part not found in parts list:', selectedPart)
+      console.log('Available parts:', parts)
+      setError('Invalid project part selected. Please try again.')
+      return
+    }
+    
+    const selectedPartObj = parts.find(part => part.id === selectedPart)!
+    
+    console.log('Connecting repo to part:', selectedPartObj)
+    
     setConnecting(true)
     setError(null)
     setSuccess(null)

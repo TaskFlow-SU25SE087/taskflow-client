@@ -18,7 +18,7 @@ import HomePage from '@/pages/home/HomePage'
 import LoginPage from '@/pages/home/LoginPage'
 import OtpPage from '@/pages/home/OtpPage'
 import ResetPasswordPage from '@/pages/home/ResetPasswordPage'
-import SignUpPage from '@/pages/home/SignupPage'
+// import SignUpPage from '@/pages/home/SignupPage'
 import UserProfilePage from '@/pages/home/UserProfilePage'
 import VerifyEmailPage from '@/pages/home/VerifyEmailPage'
 import NotFoundPage from '@/pages/NotFoundPage'
@@ -103,14 +103,14 @@ const AppContent: React.FC = () => {
           </AuthRedirect>
         }
       />
-      <Route
+      {/* <Route
         path='signup'
         element={
           <AuthRedirect>
             <SignUpPage />
           </AuthRedirect>
         }
-      />
+      /> */}
 
       <Route
         path='verify-email'

@@ -36,55 +36,55 @@ export const authApi = {
     }
   },
 
-  register: async (
-    email: string,
-    fullName: string,
-    password: string,
-    confirmPassword: string
-  ): Promise<AuthResponse> => {
-    try {
-      const formData = new FormData()
-      formData.append('Email', email)
-      formData.append('FullName', fullName)
-      formData.append('Password', password)
-      formData.append('ConfirmPassword', confirmPassword)
+  // register: async (
+  //   email: string,
+  //   fullName: string,
+  //   password: string,
+  //   confirmPassword: string
+  // ): Promise<AuthResponse> => {
+  //   try {
+  //     const formData = new FormData()
+  //     formData.append('Email', email)
+  //     formData.append('FullName', fullName)
+  //     formData.append('Password', password)
+  //     formData.append('ConfirmPassword', confirmPassword)
 
-      const response = await axiosClient.post<{
-        code: number
-        message: string
-        data: {
-          accessToken: string
-          refreshToken: string
-        }
-      }>(`${ENDPOINT}/register`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
+  //     const response = await axiosClient.post<{
+  //       code: number
+  //       message: string
+  //       data: {
+  //         accessToken: string
+  //         refreshToken: string
+  //       }
+  //     }>(`${ENDPOINT}/register`, formData, {
+  //       headers: {
+  //         'Content-Type': 'multipart/form-data'
+  //       }
+  //     })
 
-      const { accessToken, refreshToken } = response.data.data
+  //     const { accessToken, refreshToken } = response.data.data
 
-      // Store tokens
-      axiosClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
-      localStorage.setItem('refreshToken', refreshToken)
+  //     // Store tokens
+  //     axiosClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+  //     localStorage.setItem('refreshToken', refreshToken)
 
-      return {
-        accessToken,
-        refreshToken
-      }
-    } catch (error: any) {
-      if (error.response?.data?.errors) {
-        const errorMessages = Object.entries(error.response.data.errors)
-          .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
-          .join('\n')
-        throw new Error(errorMessages)
-      }
-      if (error.response?.data?.message) {
-        throw new Error(error.response.data.message)
-      }
-      throw new Error('Registration failed. Please try again.')
-    }
-  },
+  //     return {
+  //       accessToken,
+  //       refreshToken
+  //     }
+  //   } catch (error: any) {
+  //     if (error.response?.data?.errors) {
+  //       const errorMessages = Object.entries(error.response.data.errors)
+  //         .map(([field, messages]) => `${field}: ${(messages as string[]).join(', ')}`)
+  //         .join('\n')
+  //       throw new Error(errorMessages)
+  //     }
+  //     if (error.response?.data?.message) {
+  //       throw new Error(error.response.data.message)
+  //     }
+  //     throw new Error('Registration failed. Please try again.')
+  //   }
+  // },
 
   refreshToken: async (accessToken: string, refreshToken: string): Promise<AuthResponse> => {
     try {

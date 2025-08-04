@@ -119,7 +119,7 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
           </DropdownMenu>
 
           {/* Teams Dropdown - Hidden on mobile */}
-          <div className='hidden md:block'>
+          {/* <div className='hidden md:block'>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -134,7 +134,7 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
                 <DropdownMenuItem className='cursor-not-allowed opacity-50'>Coming soon...</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
+          </div> */}
         </div>
         {/* Global Search Bar ở giữa */}
         <div className='flex-1 flex justify-center'>

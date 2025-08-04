@@ -113,13 +113,13 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
       section: 2,
       path: '/code-quality-commits'
     },
-    {
-      id: 'projects',
-      icon: <FiLayers className='h-5 w-5' />,
-      label: 'Projects',
-      section: 2,
-      path: '/projects'
-    },
+    // {
+    //   id: 'projects',
+    //   icon: <FiLayers className='h-5 w-5' />,
+    //   label: 'Projects',
+    //   section: 2,
+    //   path: '/projects'
+    // },
     { id: 'settings', icon: <FiSettings className='h-5 w-5' />, label: 'Settings', section: 3, path: '/settings' }
   ]
 

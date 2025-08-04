@@ -1,22 +1,21 @@
-import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import {
-  CheckCircle,
-  Code,
-  GitBranch,
-  Users,
-  Shield,
-  BarChart3,
-  Rocket,
-  Play,
-  Star,
-  Calendar,
-  Bug,
-  Target,
-  LogIn
+    BarChart3,
+    Bug,
+    Calendar,
+    CheckCircle,
+    Code,
+    GitBranch,
+    LogIn,
+    Rocket,
+    Shield,
+    Star,
+    Target,
+    Users
 } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -139,12 +138,12 @@ export default function HomePage() {
               <Link to='/contact' className='text-gray-600 hover:text-gray-900 transition-colors'>
                 Contact
               </Link>
-              <Link
+              {/* <Link
                 to='/signup'
                 className='bg-lavender-600 text-white px-4 py-2 rounded-lg hover:bg-lavender-700 transition-colors'
               >
                 Get Started
-              </Link>
+              </Link> */}
             </div>
           </div>
           {/* Mobile nav dropdown with GSAP animation - now positioned absolutely */}
@@ -176,13 +175,13 @@ export default function HomePage() {
                 >
                   Contact
                 </Link>
-                <Link
+                {/* <Link
                   to='/signup'
                   className='block px-6 py-2 bg-lavender-600 text-white rounded hover:bg-lavender-700 mx-2'
                   onClick={() => setMobileNavOpen(false)}
                 >
                   Get Started
-                </Link>
+                </Link> */}
               </>
             )}
           </div>
@@ -210,13 +209,13 @@ export default function HomePage() {
               </div>
 
               <div className='hero-cta flex flex-col sm:flex-row gap-4'>
-                <Link
+                {/* <Link
                   to='/signup'
                   className='bg-lavender-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-lavender-700 transition-colors flex items-center justify-center'
                 >
                   <Play className='w-5 h-5 mr-2' />
                   Start Building
-                </Link>
+                </Link> */}
                 <Link
                   to='/login'
                   className='border border-gray-300 text-gray-700 px-8 py-3 rounded-lg font-medium hover:border-gray-400 hover:bg-gray-50 transition-colors flex items-center justify-center'
@@ -436,13 +435,13 @@ export default function HomePage() {
           </p>
 
           <div className='flex flex-col sm:flex-row gap-4 justify-center'>
-            <Link
+            {/* <Link
               to='/signup'
               className='bg-white text-lavender-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center'
             >
               <Play className='w-5 h-5 mr-2' />
               Get Started Now
-            </Link>
+            </Link> */}
             <Link
               to='/login'
               className='border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-lavender-600 transition-colors flex items-center justify-center'

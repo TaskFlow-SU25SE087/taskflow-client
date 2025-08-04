@@ -10,7 +10,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   authLoading: boolean
   login: (username: string, password: string) => Promise<void>
-  register: (email: string, fullName: string, password: string, confirmPassword: string) => Promise<void>
+  // register: (email: string, fullName: string, password: string, confirmPassword: string) => Promise<void>
   logout: () => void
   error: string | null
   resendVerificationEmail: () => Promise<void>
@@ -194,35 +194,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const register = async (email: string, fullName: string, password: string, confirmPassword: string) => {
-    try {
-      console.log('Starting registration process...')
-      setError(null)
-      const response = await authApi.register(email, fullName, password, confirmPassword)
-      console.log('Registration response:', response)
-      const { accessToken, refreshToken } = response
+  // const register = async (email: string, fullName: string, password: string, confirmPassword: string) => {
+  //   try {
+  //     console.log('Starting registration process...')
+  //     setError(null)
+  //     const response = await authApi.register(email, fullName, password, confirmPassword)
+  //     console.log('Registration response:', response)
+  //     const { accessToken, refreshToken } = response
 
-      // Store tokens
-      axiosClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
-      localStorage.setItem('refreshToken', refreshToken)
-      sessionStorage.setItem('accessToken', accessToken)
+  //     // Store tokens
+  //     axiosClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+  //     localStorage.setItem('refreshToken', refreshToken)
+  //     sessionStorage.setItem('accessToken', accessToken)
 
-      // Store user info
-      sessionStorage.setItem('auth_user', JSON.stringify({ email })) // Only store email in session storage for simplification
-      sessionStorage.setItem('otp_verified', 'false')
-      setUser({ email: email, fullName: '', id: '', role: '', phoneNumber: '', username: '' }) // Simplified User object for initial state, removed avatar as it's not in User interface
-      setIsOtpVerified(false)
+  //     // Store user info
+  //     sessionStorage.setItem('auth_user', JSON.stringify({ email })) // Only store email in session storage for simplification
+  //     sessionStorage.setItem('otp_verified', 'false')
+  //     setUser({ email: email, fullName: '', id: '', role: '', phoneNumber: '', username: '' }) // Simplified User object for initial state, removed avatar as it's not in User interface
+  //     setIsOtpVerified(false)
 
-      console.log('Registration successful, redirecting to OTP page...')
-      setTimeout(() => {
-        navigate('/verify-otp', { replace: true })
-      }, 200) // Add a small delay for toast to appear
-    } catch (error: any) {
-      console.error('Registration error:', error)
-      setError(error.message || 'Failed to register')
-      throw error
-    }
-  }
+  //     console.log('Registration successful, redirecting to OTP page...')
+  //     setTimeout(() => {
+  //       navigate('/verify-otp', { replace: true })
+  //     }, 200) // Add a small delay for toast to appear
+  //   } catch (error: any) {
+  //     console.error('Registration error:', error)
+  //     setError(error.message || 'Failed to register')
+  //     throw error
+  //   }
+  // }
 
   const logout = () => {
     authApi.logout()
@@ -362,7 +362,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         authLoading,
         login,
-        register,
+        // register,
         logout,
         error,
         resendVerificationEmail,

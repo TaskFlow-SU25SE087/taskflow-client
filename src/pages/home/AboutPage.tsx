@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { Play, LogIn } from 'lucide-react'
+import { LogIn } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -166,13 +166,13 @@ export default function AboutPage() {
                 >
                   Contact
                 </Link>
-                <Link
+                {/* <Link
                   to='/signup'
                   className='block px-4 py-2 bg-lavender-600 text-white rounded hover:bg-lavender-700'
                   onClick={() => setMobileNavOpen(false)}
                 >
                   Get Started
-                </Link>
+                </Link> */}
               </>
             )}
           </div>
@@ -279,13 +279,13 @@ export default function AboutPage() {
           </p>
 
           <div className='flex flex-col sm:flex-row gap-4 justify-center'>
-            <Link
+            {/* <Link
               to='/signup'
               className='bg-white text-lavender-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center'
             >
               <Play className='w-5 h-5 mr-2' />
               Get Started Now
-            </Link>
+            </Link> */}
             <Link
               to='/login'
               className='border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-lavender-600 transition-colors flex items-center justify-center'
