@@ -115,9 +115,6 @@ export default function ContactPage() {
               <Link to='/contact' className='text-lavender-600 font-medium'>
                 Contact
               </Link>
-              <button className='bg-lavender-600 text-white px-4 py-2 rounded-lg hover:bg-lavender-700 transition-colors'>
-                Get Started
-              </button>
             </div>
           </div>
           {/* Mobile nav dropdown with GSAP animation */}

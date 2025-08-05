@@ -1,18 +1,19 @@
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import {
-    BarChart3,
-    Bug,
-    Calendar,
-    CheckCircle,
-    Code,
-    GitBranch,
-    LogIn,
-    Rocket,
-    Shield,
-    Star,
-    Target,
-    Users
+  BarChart3,
+  Bug,
+  Calendar,
+  CheckCircle,
+  Code,
+  GitBranch,
+  LogIn,
+  Rocket,
+  Shield,
+  Star,
+  Target,
+  Users,
+  Github // Add Github icon
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -218,11 +219,20 @@ export default function HomePage() {
                 </Link> */}
                 <Link
                   to='/login'
-                  className='border border-gray-300 text-gray-700 px-8 py-3 rounded-lg font-medium hover:border-gray-400 hover:bg-gray-50 transition-colors flex items-center justify-center'
+                  className='bg-lavender-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-lavender-700 transition-colors flex items-center justify-center'
                 >
-                  <LogIn className='w-5 h-5 mr-2' />
+                  <Rocket className='w-5 h-5 mr-2' />
                   Login
                 </Link>
+                <a
+                  href='https://github.com/TaskFlow-SU25SE087'
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='bg-white text-gray-900 border border-gray-300 px-8 py-3 rounded-lg font-medium hover:bg-gray-50 hover:border-gray-400 transition-colors flex items-center justify-center'
+                >
+                  <Github className='w-5 h-5 mr-2' />
+                  Source
+                </a>
               </div>
 
               <div className='flex items-center space-x-12 pt-8'>

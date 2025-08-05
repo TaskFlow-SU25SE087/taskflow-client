@@ -132,9 +132,6 @@ export default function AboutPage() {
               <Link to='/contact' className='text-gray-600 hover:text-gray-900 transition-colors'>
                 Contact
               </Link>
-              <button className='bg-lavender-600 text-white px-4 py-2 rounded-lg hover:bg-lavender-700 transition-colors'>
-                Get Started
-              </button>
             </div>
           </div>
           {/* Mobile nav dropdown with GSAP animation */}
