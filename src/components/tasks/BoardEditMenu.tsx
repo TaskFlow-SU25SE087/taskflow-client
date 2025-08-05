@@ -14,9 +14,17 @@ interface BoardEditMenuProps {
   currentName: string
   currentDescription: string
   onEdited: () => void
+  trigger?: React.ReactNode // add this
 }
 
-export function BoardEditMenu({ projectId, boardId, currentName, currentDescription, onEdited }: BoardEditMenuProps) {
+export function BoardEditMenu({
+  projectId,
+  boardId,
+  currentName,
+  currentDescription,
+  onEdited,
+  trigger
+}: BoardEditMenuProps) {
   const { showToast } = useToastContext()
   const [isOpen, setIsOpen] = useState(false)
   const [name, setName] = useState(currentName)
@@ -36,7 +44,11 @@ export function BoardEditMenu({ projectId, boardId, currentName, currentDescript
       setIsOpen(false)
     } catch (error) {
       const err = error as APIError
-      showToast({ title: 'Error', description: err?.response?.data?.message || err?.message || 'Failed to update board.', variant: 'destructive' })
+      showToast({
+        title: 'Error',
+        description: err?.response?.data?.message || err?.message || 'Failed to update board.',
+        variant: 'destructive'
+      })
     } finally {
       setLoading(false)
     }
@@ -45,9 +57,16 @@ export function BoardEditMenu({ projectId, boardId, currentName, currentDescript
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button variant='ghost' size='icon' className='p-2 rounded-lg hover:bg-black/5 transition-all duration-200 text-slate-600 hover:text-slate-800 shadow-sm hover:shadow-md'>
-          <Pencil className='w-4 h-4' />
-        </Button>
+        {trigger ? (
+          trigger
+        ) : (
+          <button
+            type='button'
+            className='w-8 h-8 p-0 flex items-center justify-center bg-lavender-100 hover:bg-lavender-200 rounded-xl transition-colors duration-150 shadow-none border-none focus:outline-none'
+          >
+            <Pencil className='h-4 w-4 text-lavender-600' />
+          </button>
+        )}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

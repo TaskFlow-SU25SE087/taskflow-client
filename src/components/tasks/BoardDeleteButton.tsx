@@ -1,16 +1,15 @@
 import { boardApi } from '@/api/boards'
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
 } from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
@@ -20,9 +19,10 @@ interface BoardDeleteButtonProps {
   projectId: string
   boardId: string
   onDeleted: () => void
+  trigger?: React.ReactNode // add this
 }
 
-export function BoardDeleteButton({ projectId, boardId, onDeleted }: BoardDeleteButtonProps) {
+export function BoardDeleteButton({ projectId, boardId, onDeleted, trigger }: BoardDeleteButtonProps) {
   const { showToast } = useToastContext()
   const [loading, setLoading] = useState(false)
 
@@ -38,7 +38,11 @@ export function BoardDeleteButton({ projectId, boardId, onDeleted }: BoardDelete
       onDeleted()
     } catch (error) {
       const err = error as APIError
-      showToast({ title: 'Error', description: err?.response?.data?.message || err?.message || 'Failed to delete board.', variant: 'destructive' })
+      showToast({
+        title: 'Error',
+        description: err?.response?.data?.message || err?.message || 'Failed to delete board.',
+        variant: 'destructive'
+      })
     } finally {
       setLoading(false)
     }
@@ -47,9 +51,16 @@ export function BoardDeleteButton({ projectId, boardId, onDeleted }: BoardDelete
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant='ghost' size='icon' className='p-2 rounded-lg hover:bg-red-50 transition-all duration-200 text-red-500 hover:text-red-600 shadow-sm hover:shadow-md'>
-          <Trash2 className='w-4 h-4' />
-        </Button>
+        {trigger ? (
+          trigger
+        ) : (
+          <button
+            type='button'
+            className='w-8 h-8 p-0 flex items-center justify-center bg-red-100 hover:bg-red-200 rounded-xl transition-colors duration-150 shadow-none border-none focus:outline-none'
+          >
+            <Trash2 className='h-4 w-4 text-red-600' />
+          </button>
+        )}
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
