@@ -17,111 +17,61 @@ interface TaskColumnProps {
   movingTaskId?: string | null
 }
 
-// Enhanced color mapping for different board statuses
-const getBoardStyling = (boardName: string) => {
+// Enhanced color mapping for different board statuses (adapted from V2)
+const getBoardColor = (boardName: string, fallbackColor: string) => {
   const name = boardName.toLowerCase()
-  
+
   if (name.includes('todo') || name.includes('backlog') || name.includes('new')) {
-    return {
-      bgColor: 'bg-gradient-to-br from-slate-50 to-slate-100',
-      borderColor: 'border-slate-200',
-      headerColor: 'bg-slate-100',
-      accentColor: 'bg-slate-400',
-      textColor: 'text-slate-700',
-      countBg: 'bg-slate-200',
-      countText: 'text-slate-600'
-    }
+    return '#64748b' // slate-500
   } else if (name.includes('progress') || name.includes('doing') || name.includes('active')) {
-    return {
-      bgColor: 'bg-gradient-to-br from-blue-50 to-blue-100',
-      borderColor: 'border-blue-200',
-      headerColor: 'bg-blue-100',
-      accentColor: 'bg-blue-400',
-      textColor: 'text-blue-700',
-      countBg: 'bg-blue-200',
-      countText: 'text-blue-600'
-    }
+    return '#3b82f6' // blue-500
   } else if (name.includes('review') || name.includes('testing') || name.includes('qa')) {
-    return {
-      bgColor: 'bg-gradient-to-br from-amber-50 to-amber-100',
-      borderColor: 'border-amber-200',
-      headerColor: 'bg-amber-100',
-      accentColor: 'bg-amber-400',
-      textColor: 'text-amber-700',
-      countBg: 'bg-amber-200',
-      countText: 'text-amber-600'
-    }
+    return '#f59e0b' // amber-500
   } else if (name.includes('done') || name.includes('complete') || name.includes('finished')) {
-    return {
-      bgColor: 'bg-gradient-to-br from-emerald-50 to-emerald-100',
-      borderColor: 'border-emerald-200',
-      headerColor: 'bg-emerald-100',
-      accentColor: 'bg-emerald-400',
-      textColor: 'text-emerald-700',
-      countBg: 'bg-emerald-200',
-      countText: 'text-emerald-600'
-    }
+    return '#10b981' // emerald-500
   } else if (name.includes('blocked') || name.includes('error') || name.includes('failed')) {
-    return {
-      bgColor: 'bg-gradient-to-br from-red-50 to-red-100',
-      borderColor: 'border-red-200',
-      headerColor: 'bg-red-100',
-      accentColor: 'bg-red-400',
-      textColor: 'text-red-700',
-      countBg: 'bg-red-200',
-      countText: 'text-red-600'
-    }
+    return '#ef4444' // red-500
   }
-  
-  // Default lavender theme
-  return {
-    bgColor: 'bg-gradient-to-br from-lavender-50 to-lavender-100',
-    borderColor: 'border-lavender-200',
-    headerColor: 'bg-lavender-100',
-    accentColor: 'bg-lavender-400',
-    textColor: 'text-lavender-700',
-    countBg: 'bg-lavender-200',
-    countText: 'text-lavender-600'
-  }
+
+  return fallbackColor
 }
 
-export function TaskColumn({ title, tasks, onTaskCreated, boardId, movingTaskId }: TaskColumnProps) {
+export function TaskColumn({ title, tasks, color, onTaskCreated, boardId, movingTaskId }: TaskColumnProps) {
   const [isAddingTask, setIsAddingTask] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const { currentProject } = useCurrentProject()
-  
-  const styling = getBoardStyling(title)
+
+  // Use the enhanced color logic from V2 while keeping V1's design
+  const dynamicColor = getBoardColor(title, color)
 
   const EmptyState = () => (
-    <div className={`flex flex-col items-center justify-center py-8 ${styling.textColor} opacity-60`}>
-      <Inbox className='w-12 h-12 mb-3 stroke-1' />
-      <p className='text-base font-medium'>No tasks yet</p>
-      <p className='text-sm opacity-75 mt-1'>Click + to add your first task</p>
+    <div className='flex flex-col items-center justify-center py-12 text-gray-400'>
+      <Inbox className='w-16 h-16 mb-4 stroke-1' />
+      <p className='text-lg font-medium'>Nothing here yet!</p>
+      <p className='text-sm text-gray-300 mt-1'>Click + to add your first task</p>
     </div>
   )
 
   return (
-    <div 
-      className={`${styling.bgColor} rounded-2xl w-full flex flex-col border-none shadow-none animate-fade-in`}
+    <div
+      className='bg-white rounded-lg border border-gray-300 w-full flex flex-col'
       style={{ width: '320px', minWidth: '320px', minHeight: '200px' }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Header */}
-      <div className={`${styling.headerColor} rounded-t-2xl flex-none`}>
-        <div className='flex items-center justify-between px-6 py-4'>
-          <div className='flex items-center gap-x-3'>
-            <div 
-              className={`w-3 h-3 rounded-full ${styling.accentColor} shadow-sm`}
-            />
-            <span className={`font-semibold text-lg ${styling.textColor}`}>
-              {title}
-            </span>
-            <span className={`${styling.countBg} ${styling.countText} px-3 py-1 rounded-full text-sm font-medium transition-all duration-200`}>
-              {tasks.length}
-            </span>
+      <div className='flex-none'>
+        <div className='flex items-center justify-between px-6 pt-6 pb-4'>
+          <div className='flex items-center gap-2'>
+            <div style={{ backgroundColor: dynamicColor }} className='w-2 h-2 rounded-full' />
+            <span className='font-medium text-gray-800'>{title}</span>
+            <span className='bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full text-sm'>{tasks.length}</span>
           </div>
-          <div className={`flex items-center gap-x-2 transition-all duration-200 ${isHovered ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-2'}`}>
+          <div
+            className={`flex items-center gap-2 transition-opacity duration-200 ${
+              isHovered ? 'opacity-100' : 'opacity-0'
+            }`}
+          >
             {currentProject && (
               <TaskCreateMenuForBoard
                 isOpen={isAddingTask}
@@ -130,8 +80,11 @@ export function TaskColumn({ title, tasks, onTaskCreated, boardId, movingTaskId 
                 onTaskCreated={onTaskCreated}
                 boardId={boardId}
                 trigger={
-                  <button className={`p-2 rounded-lg ${styling.accentColor} hover:opacity-80 transition-all duration-200 text-white shadow-sm hover:shadow-md`}>
-                    <Plus className='h-4 w-4' />
+                  <button
+                    type='button'
+                    className='w-8 h-8 p-0 flex items-center justify-center bg-lavender-100 hover:bg-lavender-200 rounded-xl transition-colors duration-150 shadow-none border-none focus:outline-none'
+                  >
+                    <Plus className='h-4 w-4 text-lavender-600' />
                   </button>
                 }
               />
@@ -143,40 +96,55 @@ export function TaskColumn({ title, tasks, onTaskCreated, boardId, movingTaskId 
                 currentName={title}
                 currentDescription={''}
                 onEdited={onTaskCreated}
+                trigger={
+                  <button
+                    type='button'
+                    className='w-8 h-8 p-0 flex items-center justify-center bg-lavender-100 hover:bg-lavender-200 rounded-xl transition-colors duration-150 shadow-none border-none focus:outline-none'
+                  >
+                    <Inbox className='h-4 w-4 text-lavender-600' /> {/* Replace with Pencil if desired */}
+                  </button>
+                }
               />
             )}
             {currentProject && (
-              <BoardDeleteButton 
-                projectId={currentProject.id} 
-                boardId={boardId} 
+              <BoardDeleteButton
+                projectId={currentProject.id}
+                boardId={boardId}
                 onDeleted={onTaskCreated}
+                trigger={
+                  <button
+                    type='button'
+                    className='w-8 h-8 p-0 flex items-center justify-center bg-red-100 hover:bg-red-200 rounded-xl transition-colors duration-150 shadow-none border-none focus:outline-none'
+                  >
+                    <svg
+                      className='h-4 w-4 text-red-600'
+                      fill='none'
+                      stroke='currentColor'
+                      strokeWidth={2}
+                      viewBox='0 0 24 24'
+                    >
+                      <path strokeLinecap='round' strokeLinejoin='round' d='M6 18L18 6M6 6l12 12' />
+                    </svg>
+                  </button>
+                }
               />
             )}
           </div>
         </div>
-        
         {/* Progress bar */}
-        <div className='px-6 pb-4'>
-          <div className={`h-2 ${styling.countBg} rounded-full overflow-hidden shadow-inner`}>
-            <div 
-              className={`h-full ${styling.accentColor} rounded-full transition-all duration-500 ease-out shadow-sm`}
-              style={{ width: tasks.length > 0 ? '100%' : '0%' }}
-            />
-          </div>
+        <div className='px-6'>
+          <div style={{ backgroundColor: dynamicColor }} className='h-1 w-full rounded-full mb-4' />
         </div>
       </div>
-
       {/* Tasks container */}
       <div className='flex-1 min-h-0 overflow-hidden'>
         {tasks.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className='overflow-y-auto px-4 py-2 scroll-smooth h-full max-h-[calc(100vh-300px)] task-column-scroll'>
-            <div className='space-y-3 pb-4'>
+          <div className='overflow-y-auto px-6 h-full max-h-[calc(100vh-300px)]'>
+            <div className='space-y-4 pb-4'>
               {tasks.map((task) => (
-                <div 
-                  key={task.id} 
-                >
+                <div key={task.id}>
                   <SortableTaskCard task={task} isMoving={movingTaskId === task.id} />
                 </div>
               ))}
