@@ -4,15 +4,15 @@ import gsap from 'gsap'
 import { LucideLayoutDashboard } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import {
-    FiAlertCircle,
-    FiBarChart2,
-    FiCalendar,
-    FiClock,
-    FiGitBranch,
-    FiGithub,
-    FiLayers,
-    FiSettings,
-    FiUsers
+  FiAlertCircle,
+  FiBarChart2,
+  FiCalendar,
+  FiClock,
+  FiGitBranch,
+  FiGithub,
+  FiLayers,
+  FiSettings,
+  FiUsers
 } from 'react-icons/fi'
 import { useLocation, useNavigate } from 'react-router-dom'
 import GitHubSidebarItem from './github/GitHubSidebarItem'
@@ -25,7 +25,7 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
   const lastHoveredTabRef = useRef<string | null>(null)
   const navigate = useNavigate()
   const location = useLocation()
-  
+
   // Sử dụng hook để lấy trạng thái GitHub toàn cục
   const { connectionStatus, isLoading } = useGitHubStatus()
 
@@ -62,7 +62,7 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
       section: 1,
       path: projectId ? `/projects/${projectId}/members` : '/members'
     },
-  
+
     {
       id: 'reports',
       icon: <FiBarChart2 className='h-5 w-5' />,
@@ -127,63 +127,54 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
     const currentPath = location.pathname
     const searchParams = new URLSearchParams(location.search)
     const viewParam = searchParams.get('view')
-    
+
     console.log('[SidebarLogic] useEffect - currentPath:', currentPath)
     console.log('[SidebarLogic] useEffect - viewParam:', viewParam)
-    console.log('[SidebarLogic] useEffect - navItems paths:', navItems.map(item => ({ id: item.id, path: item.path })))
-    
-    // Try exact match first
-    let activeItem = navItems.find((item) => item.path === currentPath)
-    
-    // If no exact match, try to find by path pattern for project-specific routes
-    if (!activeItem) {
+
+    // Find matching nav item based on current path
+    let activeItem = null
+
+    // First, try exact path match
+    activeItem = navItems.find((item) => item.path === currentPath)
+
+    // If no exact match and we're in a project context, match by route segment
+    if (!activeItem && currentPath.includes('/projects/')) {
+      const pathSegments = currentPath.split('/')
+      const lastSegment = pathSegments[pathSegments.length - 1]
+
+      // Find item that matches the last segment of the path
       activeItem = navItems.find((item) => {
-        // Check if this is a project-specific route and currentPath matches the pattern
-        if (item.path.includes('/projects/') && currentPath.includes('/projects/')) {
-          // Extract the route part after /projects/{projectId}/
-          const itemRoutePart = item.path.split('/projects/')[1]?.split('/')[1] || ''
-          const currentRoutePart = currentPath.split('/projects/')[1]?.split('/')[1] || ''
-          console.log(`[SidebarLogic] Comparing itemRoutePart: "${itemRoutePart}" with currentRoutePart: "${currentRoutePart}" for item: ${item.id}`)
-          return itemRoutePart === currentRoutePart
-        }
-        return false
+        const itemSegments = item.path.split('/')
+        const itemLastSegment = itemSegments[itemSegments.length - 1]
+        return itemLastSegment === lastSegment
       })
     }
-    
-    // If still no match, try to find by current path segments and query params
+
+    // Handle special cases for root paths
     if (!activeItem) {
-      activeItem = navItems.find((item) => {
-        // Handle special cases for routes that might not be project-specific
-        if (currentPath === '/sprint-meetings' && item.id === 'sprint-meetings') {
-          return true
-        }
-        if (currentPath === '/board' && item.id === 'board') {
-          return true
-        }
-        if (currentPath === '/backlog' && item.id === 'backlog') {
-          return true
-        }
-        if (currentPath === '/timeline' && item.id === 'timeline') {
-          return true
-        }
-        // Check if we're on the projects page with sprint-meetings view
-        if (currentPath === '/projects' && viewParam === 'sprint-meetings' && item.id === 'sprint-meetings') {
-          return true
-        }
-        return false
-      })
+      if (currentPath === '/projects' && viewParam === 'sprint-meetings') {
+        activeItem = navItems.find((item) => item.id === 'sprint-meetings')
+      } else if (currentPath === '/projects' && !viewParam) {
+        // Don't set any active item for plain /projects page
+        return
+      } else {
+        // Try to match by path ending
+        const pathEnd = currentPath.split('/').pop() || ''
+        activeItem = navItems.find((item) => item.id === pathEnd)
+      }
     }
-    
+
     console.log('[SidebarLogic] useEffect - activeItem found:', activeItem)
+
     if (activeItem) {
       console.log('[SidebarLogic] useEffect - setting activeTab to:', activeItem.id)
-      setActiveTab(activeItem.id) // Update the activeTab state
-      updateHighlightPosition(activeItem.id)
+      setActiveTab(activeItem.id)
     } else {
-      console.log('[SidebarLogic] useEffect - no activeItem found for currentPath:', currentPath)
+      console.log('[SidebarLogic] useEffect - no activeItem found, keeping current activeTab:', activeTab)
+      // Don't change activeTab if no match found, just update highlight
+      updateHighlightPosition(activeTab)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname, location.search])
+  }, [location.pathname, location.search, navItems])
 
   const updateHighlightPosition = (tabId: string) => {
     const highlight = highlightRef.current
@@ -241,23 +232,19 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
 
   const handleClick = async (tabId: string) => {
     console.log('[SidebarLogic] handleClick called with tabId:', tabId)
-    console.log('[SidebarLogic] current projectId:', projectId)
-    console.log('[SidebarLogic] current location.pathname:', location.pathname)
-    console.log('[SidebarLogic] current location.search:', location.search)
-    
+
+    // Set active tab immediately for better UX
     setActiveTab(tabId)
+
     const targetTab = navItems.find((item) => item.id === tabId)
     console.log('[SidebarLogic] targetTab found:', targetTab)
-    
+
     if (targetTab) {
       console.log('[SidebarLogic] navigating to path:', targetTab.path)
-      console.log('[SidebarLogic] targetTab.path type:', typeof targetTab.path)
-      console.log('[SidebarLogic] targetTab.path value:', targetTab.path)
-      
+
       // Special handling for sprint-meetings when no project is selected
       if (tabId === 'sprint-meetings' && !projectId) {
         try {
-          // Get the first available project
           const response = await projectApi.getProjects()
           if (response.data && response.data.length > 0) {
             const firstProject = response.data[0]
@@ -267,23 +254,18 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
         } catch (error) {
           console.error('Failed to get projects for sprint meetings:', error)
         }
-        // Fallback to projects page if no projects available
         navigate('/projects')
         return
       }
-      
-      // Check if projectId is missing for project-specific routes
+
+      // For project-specific routes without projectId, redirect to projects
       if (targetTab.path.includes('/projects/') && !projectId) {
-        console.error('[SidebarLogic] projectId is missing for project-specific route:', targetTab.path)
-        console.log('[SidebarLogic] redirecting to /projects instead')
+        console.log('[SidebarLogic] projectId missing, redirecting to /projects')
         navigate('/projects')
         return
       }
-      
-      console.log('[SidebarLogic] about to navigate to:', targetTab.path)
+
       navigate(targetTab.path)
-    } else {
-      console.error('[SidebarLogic] targetTab not found for tabId:', tabId)
     }
   }
 
@@ -310,7 +292,10 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
 
   const renderSection = (sectionNumber: number) => {
     const sectionItems = navItems.filter((item) => item.section === sectionNumber)
-    console.log(`[SidebarLogic] renderSection ${sectionNumber} - items:`, sectionItems.map(item => item.id))
+    console.log(
+      `[SidebarLogic] renderSection ${sectionNumber} - items:`,
+      sectionItems.map((item) => item.id)
+    )
 
     return (
       <div className='relative' onMouseMove={handleMouseMove}>
