@@ -349,7 +349,6 @@ export default function ProjectBoard() {
       setBoards(newBoards)
       const orderPayload = newBoards.map((b, idx) => ({ id: b.id, order: idx }))
       await boardApi.updateBoardOrder(currentProject.id, orderPayload)
-      refreshBoards()
       console.log('[DnD] Đã cập nhật thứ tự board', { orderPayload })
       return
     }
