@@ -2,14 +2,14 @@ import { projectApi } from '@/api/projects'
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,10 +30,13 @@ interface Member {
 }
 
 export default function ProjectMembers() {
-  const { currentProject } = useCurrentProject()
+  const { projectId } = useParams<{ projectId: string }>()
+
+  const { currentProject } = useCurrentProject(projectId)
+
   const params = useParams()
-  const projectId = currentProject?.id || params.projectId
-  console.log('[ProjectMembers] projectId:', projectId)
+  const id = currentProject?.id || params.projectId
+  console.log('[ProjectMembers] projectId:', id)
   const navigate = useNavigate()
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(false)
@@ -49,11 +52,11 @@ export default function ProjectMembers() {
   const { showToast } = useToastContext()
 
   const fetchMembers = async () => {
-    if (!projectId) return
+    if (!id) return
     setLoading(true)
     setError(null)
     try {
-      const data: Member[] = await projectApi.getProjectMembers(projectId)
+      const data: Member[] = await projectApi.getProjectMembers(id)
       console.log('[ProjectMembers] fetchMembers response:', data)
       setMembers(data)
 
@@ -77,14 +80,14 @@ export default function ProjectMembers() {
   useEffect(() => {
     fetchMembers()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [projectId])
+  }, [id])
 
   const handleInvite = async () => {
-    if (!projectId || !inviteEmail) return
+    if (!id || !inviteEmail) return
 
     setInviteLoading(true)
     try {
-      const success = await projectApi.addMemberToProject(projectId, inviteEmail)
+      const success = await projectApi.addMemberToProject(id, inviteEmail)
       showToast({
         title: success ? 'Success' : 'Error',
         description: success ? 'Member invited!' : 'Failed to invite member',
@@ -106,9 +109,9 @@ export default function ProjectMembers() {
   }
 
   const handleRemove = async (userId: string) => {
-    if (!projectId) return
+    if (!id) return
     try {
-      const success = await projectApi.removeProjectMember(projectId, userId)
+      const success = await projectApi.removeProjectMember(id, userId)
       showToast({
         title: success ? 'Success' : 'Error',
         description: success ? 'Member removed' : 'Failed to remove member',
@@ -126,11 +129,11 @@ export default function ProjectMembers() {
   }
 
   const handleLeave = async () => {
-    if (!projectId) return
+    if (!id) return
     if (!window.confirm('Are you sure you want to leave this project?')) return
 
     try {
-      await projectApi.leaveProject(projectId)
+      await projectApi.leaveProject(id)
       navigate('/projects')
       showToast({
         title: 'Success',
@@ -156,7 +159,11 @@ export default function ProjectMembers() {
   return (
     <>
       <div className='flex min-h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50'>
-        <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen((v) => !v)} currentProject={currentProject || { id: projectId } as any} />
+        <Sidebar
+          isOpen={sidebarOpen}
+          onToggle={() => setSidebarOpen((v) => !v)}
+          currentProject={currentProject || ({ id: id } as any)}
+        />
         <div className='flex-1 flex flex-col'>
           <Navbar isSidebarOpen={sidebarOpen} toggleSidebar={() => setSidebarOpen((v) => !v)} />
           <main className='flex-1 max-w-3xl mx-auto p-4 sm:p-8'>

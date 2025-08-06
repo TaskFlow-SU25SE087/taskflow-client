@@ -7,51 +7,52 @@ import { useNavigate } from 'react-router-dom'
 const CURRENT_PROJECT_COOKIE = 'current_project_id'
 const CURRENT_PROJECT_LOCAL = 'currentProjectId'
 
-export const useCurrentProject = () => {
+export const useCurrentProject = (urlProjectId?: string) => {
   const [currentProject, setCurrentProject] = useState<Project | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const navigate = useNavigate()
 
-  useEffect(() => {
-    const fetchProject = async (projectId: string) => {
-      try {
-        console.log('[useCurrentProject] Calling API with projectId:', projectId)
-        const response = await projectApi.getProjectById(projectId)
-        console.log('[useCurrentProject] API response:', response)
-        console.log('[useCurrentProject] response.data:', response.data)
+  const fetchProject = async (projectId: string) => {
+    try {
+      console.log('[useCurrentProject] Calling API with projectId:', projectId)
+      const response = await projectApi.getProjectById(projectId)
+      console.log('[useCurrentProject] API response:', response)
+      console.log('[useCurrentProject] response.data:', response.data)
 
-        if (!response.data) {
-          console.error('[useCurrentProject] No data in response')
-          throw new Error('No data received from API')
-        }
+      if (!response.data) {
+        console.error('[useCurrentProject] No data in response')
+        throw new Error('No data received from API')
+      }
 
-        setCurrentProject({
-          ...response.data,
-          analysisResults: [],
-          boards: response.data.boards || [],
-          projectMembers: [],
-          sprints: [],
-          taskPs: []
-        })
-      } catch (error) {
-        console.error('Failed to fetch project:', error)
-        const err = error as any; if (err && err.response) {
-          console.error('[useCurrentProject] error.response:', err.response)
-          console.error('[useCurrentProject] error.response.data:', err.response.data)
-          console.error('[useCurrentProject] error.response.status:', err.response.status)
-        }
-        // If project fetch fails, clear both cookie and localStorage
+      setCurrentProject({
+        ...response.data,
+        analysisResults: [],
+        boards: response.data.boards || [],
+        projectMembers: [],
+        sprints: [],
+        taskPs: []
+      })
+    } catch (error) {
+      console.error('Failed to fetch project:', error)
+      const err = error as any
+      if (err && err.response) {
+        console.error('[useCurrentProject] error.response:', err.response)
+        console.error('[useCurrentProject] error.response.data:', err.response.data)
+        console.error('[useCurrentProject] error.response.status:', err.response.status)
+      }
+      // CRITICAL FIX: Don't redirect on error if we're already on a project page
+      // Only clear cookies if it's a 404 or similar error
+      if (err?.response?.status === 404) {
         Cookies.remove(CURRENT_PROJECT_COOKIE)
         localStorage.removeItem(CURRENT_PROJECT_LOCAL)
-        // Only navigate if not already on a project-specific page
-        if (!window.location.pathname.includes('/projects/')) {
-          navigate('/projects')
-        }
-      } finally {
-        setIsLoading(false)
       }
+      // Don't auto-navigate - let the user stay on the current page
+    } finally {
+      setIsLoading(false)
     }
+  }
 
+  useEffect(() => {
     let savedProjectId = Cookies.get(CURRENT_PROJECT_COOKIE)
     if (!savedProjectId) {
       savedProjectId = localStorage.getItem(CURRENT_PROJECT_LOCAL) || undefined
@@ -67,13 +68,33 @@ export const useCurrentProject = () => {
     } else {
       setIsLoading(false)
     }
-  }, [navigate])
+  }, [])
 
   const setCurrentProjectId = (projectId: string) => {
     Cookies.set(CURRENT_PROJECT_COOKIE, projectId, { path: '/' })
     localStorage.setItem(CURRENT_PROJECT_LOCAL, projectId)
     console.log('[useCurrentProject] setCurrentProjectId:', projectId)
+
+    // Immediately fetch the project if it's different from current
+    if (!currentProject || currentProject.id !== projectId) {
+      setCurrentProject(null)
+      fetchProject(projectId)
+    }
   }
+
+  // Sync URL projectId with current project - FIX THE RACE CONDITION
+  useEffect(() => {
+    // Only sync if we have a urlProjectId and it's different from stored projectId
+    if (urlProjectId) {
+      const savedProjectId = Cookies.get(CURRENT_PROJECT_COOKIE) || localStorage.getItem(CURRENT_PROJECT_LOCAL)
+
+      // Only set if the URL projectId is different from what's saved
+      if (savedProjectId !== urlProjectId) {
+        console.log('[useCurrentProject] URL projectId different from saved, syncing:', urlProjectId)
+        setCurrentProjectId(urlProjectId)
+      }
+    }
+  }, [urlProjectId]) // Remove currentProject dependency to prevent race condition
 
   const refreshCurrentProject = async () => {
     let projectId = Cookies.get(CURRENT_PROJECT_COOKIE)
@@ -95,14 +116,14 @@ export const useCurrentProject = () => {
         })
       } catch (error) {
         console.error('Failed to fetch project:', error)
-        const err = error as any; if (err && err.response) {
+        const err = error as any
+        if (err && err.response) {
           console.error('[useCurrentProject] error.response:', err.response)
         }
-        Cookies.remove(CURRENT_PROJECT_COOKIE)
-        localStorage.removeItem(CURRENT_PROJECT_LOCAL)
-        // Only navigate if not already on a project-specific page
-        if (!window.location.pathname.includes('/projects/')) {
-          navigate('/projects')
+        // CRITICAL FIX: Don't redirect on refresh error
+        if (err?.response?.status === 404) {
+          Cookies.remove(CURRENT_PROJECT_COOKIE)
+          localStorage.removeItem(CURRENT_PROJECT_LOCAL)
         }
       } finally {
         setIsLoading(false)

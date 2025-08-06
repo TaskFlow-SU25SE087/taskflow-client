@@ -33,49 +33,54 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
     updateHighlightPosition(activeTab)
   }, [activeTab])
 
+  // Extract project ID from URL to ensure we always have it when on project routes
+  const currentPath = location.pathname
+  const projectIdMatch = currentPath.match(/\/projects\/([^\/]+)/)
+  const urlProjectId = projectIdMatch ? projectIdMatch[1] : null
+  const activeProjectId = projectId || urlProjectId
+
   const navItems = [
     {
       id: 'timeline',
       icon: <FiClock className='h-5 w-5' />,
       label: 'Timeline',
       section: 1,
-      path: projectId ? `/projects/${projectId}/timeline` : '/timeline'
+      path: activeProjectId ? `/projects/${activeProjectId}/timeline` : '/timeline'
     },
     {
       id: 'board',
       icon: <LucideLayoutDashboard className='h-5 w-5' />,
       label: 'Board',
       section: 1,
-      path: projectId ? `/projects/${projectId}/board` : '/board'
+      path: activeProjectId ? `/projects/${activeProjectId}/board` : '/board'
     },
     {
       id: 'backlog',
       icon: <FiLayers className='h-5 w-5' />,
       label: 'Backlog',
       section: 1,
-      path: projectId ? `/projects/${projectId}/backlog` : '/backlog'
+      path: activeProjectId ? `/projects/${activeProjectId}/backlog` : '/backlog'
     },
     {
       id: 'members',
       icon: <FiUsers className='h-5 w-5' />,
       label: 'Members',
       section: 1,
-      path: projectId ? `/projects/${projectId}/members` : '/members'
+      path: activeProjectId ? `/projects/${activeProjectId}/members` : '/members'
     },
-
     {
       id: 'reports',
       icon: <FiBarChart2 className='h-5 w-5' />,
       label: 'Reports',
       section: 1,
-      path: projectId ? `/projects/${projectId}/reports` : '/reports'
+      path: activeProjectId ? `/projects/${activeProjectId}/reports` : '/reports'
     },
     {
       id: 'sprint-meetings',
       icon: <FiCalendar className='h-5 w-5' />,
       label: 'Sprint Meetings',
       section: 1,
-      path: projectId ? `/projects/${projectId}/sprint-meetings` : '/projects'
+      path: activeProjectId ? `/projects/${activeProjectId}/sprint-meetings` : '/projects'
     },
     // Section 2: GitHub, Commits, Issues
     {
@@ -83,21 +88,21 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
       icon: <FiGithub className='h-5 w-5' />,
       label: 'GitHub',
       section: 2,
-      path: projectId ? `/projects/${projectId}/github` : '/github'
+      path: activeProjectId ? `/projects/${activeProjectId}/github` : '/github'
     },
     {
       id: 'commits',
       icon: <FiGitBranch className='h-5 w-5' />,
       label: 'Commits',
       section: 2,
-      path: projectId ? `/projects/${projectId}/commits` : '/commits'
+      path: activeProjectId ? `/projects/${activeProjectId}/commits` : '/commits'
     },
     {
       id: 'issues',
       icon: <FiAlertCircle className='h-5 w-5' />,
       label: 'Issues',
       section: 2,
-      path: projectId ? `/projects/${projectId}/issues` : '/issues'
+      path: activeProjectId ? `/projects/${activeProjectId}/issues` : '/issues'
     },
     {
       id: 'allparts',
@@ -113,13 +118,6 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
       section: 2,
       path: '/code-quality-commits'
     },
-    // {
-    //   id: 'projects',
-    //   icon: <FiLayers className='h-5 w-5' />,
-    //   label: 'Projects',
-    //   section: 2,
-    //   path: '/projects'
-    // },
     { id: 'settings', icon: <FiSettings className='h-5 w-5' />, label: 'Settings', section: 3, path: '/settings' }
   ]
 
@@ -243,7 +241,7 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
       console.log('[SidebarLogic] navigating to path:', targetTab.path)
 
       // Special handling for sprint-meetings when no project is selected
-      if (tabId === 'sprint-meetings' && !projectId) {
+      if (tabId === 'sprint-meetings' && !activeProjectId) {
         try {
           const response = await projectApi.getProjects()
           if (response.data && response.data.length > 0) {
@@ -258,13 +256,7 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
         return
       }
 
-      // For project-specific routes without projectId, redirect to projects
-      if (targetTab.path.includes('/projects/') && !projectId) {
-        console.log('[SidebarLogic] projectId missing, redirecting to /projects')
-        navigate('/projects')
-        return
-      }
-
+      // Simply navigate to the pre-computed path
       navigate(targetTab.path)
     }
   }
