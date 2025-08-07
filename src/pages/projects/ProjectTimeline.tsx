@@ -13,7 +13,18 @@ import { cn } from '@/lib/utils'
 import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
 import { addMonths, eachDayOfInterval, endOfMonth, format, startOfMonth } from 'date-fns'
-import { Calendar, CheckCircle, ChevronLeft, ChevronRight, Clock, PlayCircle, Search, Target, TrendingUp, Users } from 'lucide-react'
+import {
+  Calendar,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  PlayCircle,
+  Search,
+  Target,
+  TrendingUp,
+  Users
+} from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 interface SprintWithTasks extends Sprint {
@@ -23,13 +34,13 @@ interface SprintWithTasks extends Sprint {
 // Progress statistics calculation
 const calculateSprintProgress = (tasks: TaskP[]) => {
   const total = tasks.length
-  const completed = tasks.filter(task => task.status === 'done' || task.status === 'Completed').length
-  const inProgress = tasks.filter(task => task.status === 'ongoing' || task.status === 'In Progress').length
-  const blocked = tasks.filter(task => task.status === 'Blocked').length
-  const notStarted = tasks.filter(task => task.status === 'Not Started').length
-  
+  const completed = tasks.filter((task) => task.status === 'done' || task.status === 'Completed').length
+  const inProgress = tasks.filter((task) => task.status === 'ongoing' || task.status === 'In Progress').length
+  const blocked = tasks.filter((task) => task.status === 'Blocked').length
+  const notStarted = tasks.filter((task) => task.status === 'Not Started').length
+
   const completionPercentage = total > 0 ? Math.round((completed / total) * 100) : 0
-  
+
   return {
     total,
     completed,
@@ -42,98 +53,105 @@ const calculateSprintProgress = (tasks: TaskP[]) => {
 
 // Statistics overview component
 function StatisticsOverview({ sprintsWithTasks }: { sprintsWithTasks: SprintWithTasks[] }) {
-  const allTasks = sprintsWithTasks.flatMap(sprint => sprint.tasks)
+  const allTasks = sprintsWithTasks.flatMap((sprint) => sprint.tasks)
   const stats = calculateSprintProgress(allTasks)
-  const averageProgress = sprintsWithTasks.length > 0 
-    ? Math.round(sprintsWithTasks.reduce((sum, sprint) => {
-        const sprintStats = calculateSprintProgress(sprint.tasks)
-        return sum + sprintStats.completionPercentage
-      }, 0) / sprintsWithTasks.length)
-    : 0
+  const averageProgress =
+    sprintsWithTasks.length > 0
+      ? Math.round(
+          sprintsWithTasks.reduce((sum, sprint) => {
+            const sprintStats = calculateSprintProgress(sprint.tasks)
+            return sum + sprintStats.completionPercentage
+          }, 0) / sprintsWithTasks.length
+        )
+      : 0
 
   return (
-    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6'>
-      <div className='bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300'>
+    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6'>
+      {/* Total Tasks Card - Clean white design */}
+      <div className='bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow'>
         <div className='flex items-center justify-between'>
           <div>
-            <p className='text-blue-100 text-sm font-medium'>Total Tasks</p>
-            <p className='text-2xl font-bold'>{stats.total}</p>
+            <p className='text-gray-600 text-sm font-medium'>Total Tasks</p>
+            <p className='text-2xl font-bold text-gray-900'>{stats.total}</p>
           </div>
-          <div className='p-3 bg-blue-400/30 rounded-xl'>
-            <Target className='h-6 w-6' />
+          <div className='p-3 bg-blue-50 rounded-lg'>
+            <Target className='h-6 w-6 text-blue-600' />
           </div>
         </div>
         <div className='mt-3 flex items-center gap-2'>
-          <div className='flex-1 bg-blue-400/30 rounded-full h-2'>
-            <div 
-              className='bg-white rounded-full h-2 transition-all duration-500'
+          <div className='flex-1 bg-gray-200 rounded-full h-2'>
+            <div
+              className='bg-blue-500 rounded-full h-2 transition-all duration-500'
               style={{ width: `${stats.total > 0 ? 100 : 0}%` }}
             />
           </div>
-          <span className='text-xs text-blue-100'>Active</span>
+          <span className='text-xs text-gray-500'>Active</span>
         </div>
       </div>
 
-      <div className='bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300'>
+      {/* Completed Card - Clean white design */}
+      <div className='bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow'>
         <div className='flex items-center justify-between'>
           <div>
-            <p className='text-emerald-100 text-sm font-medium'>Completed</p>
-            <p className='text-2xl font-bold'>{stats.completed}</p>
+            <p className='text-gray-600 text-sm font-medium'>Completed</p>
+            <p className='text-2xl font-bold text-gray-900'>{stats.completed}</p>
           </div>
-          <div className='p-3 bg-emerald-400/30 rounded-xl'>
-            <CheckCircle className='h-6 w-6' />
+          <div className='p-3 bg-green-50 rounded-lg'>
+            <CheckCircle className='h-6 w-6 text-green-600' />
           </div>
         </div>
         <div className='mt-3 flex items-center gap-2'>
-          <div className='flex-1 bg-emerald-400/30 rounded-full h-2'>
-            <div 
-              className='bg-white rounded-full h-2 transition-all duration-500'
+          <div className='flex-1 bg-gray-200 rounded-full h-2'>
+            <div
+              className='bg-green-500 rounded-full h-2 transition-all duration-500'
               style={{ width: `${stats.completionPercentage}%` }}
             />
           </div>
-          <span className='text-xs text-emerald-100'>{stats.completionPercentage}%</span>
+          <span className='text-xs text-gray-500'>{stats.completionPercentage}%</span>
         </div>
       </div>
 
-      <div className='bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300'>
+      {/* In Progress Card - Clean white design */}
+      <div className='bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow'>
         <div className='flex items-center justify-between'>
           <div>
-            <p className='text-orange-100 text-sm font-medium'>In Progress</p>
-            <p className='text-2xl font-bold'>{stats.inProgress}</p>
+            <p className='text-gray-600 text-sm font-medium'>In Progress</p>
+            <p className='text-2xl font-bold text-gray-900'>{stats.inProgress}</p>
           </div>
-          <div className='p-3 bg-orange-400/30 rounded-xl'>
-            <PlayCircle className='h-6 w-6' />
+          <div className='p-3 bg-orange-50 rounded-lg'>
+            <PlayCircle className='h-6 w-6 text-orange-600' />
           </div>
         </div>
         <div className='mt-3 flex items-center gap-2'>
-          <div className='flex-1 bg-orange-400/30 rounded-full h-2'>
-            <div 
-              className='bg-white rounded-full h-2 transition-all duration-500'
+          <div className='flex-1 bg-gray-200 rounded-full h-2'>
+            <div
+              className='bg-orange-500 rounded-full h-2 transition-all duration-500'
               style={{ width: `${stats.total > 0 ? (stats.inProgress / stats.total) * 100 : 0}%` }}
             />
           </div>
-          <span className='text-xs text-orange-100'>Active</span>
+          <span className='text-xs text-gray-500'>Active</span>
         </div>
       </div>
 
-      <div className='bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-4 text-white shadow-lg hover:shadow-xl transition-all duration-300'>
+      {/* Average Progress Card - Clean white design */}
+      <div className='bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow'>
         <div className='flex items-center justify-between'>
           <div>
-            <p className='text-purple-100 text-sm font-medium'>Avg Progress</p>
-            <p className='text-2xl font-bold'>{averageProgress}%</p>
+            <p className='text-gray-600 text-sm font-medium'>Avg Progress</p>
+            <p className='text-2xl font-bold text-gray-900'>{averageProgress}%</p>
           </div>
-          <div className='p-3 bg-purple-400/30 rounded-xl'>
-            <TrendingUp className='h-6 w-6' />
+          <div className='p-3 bg-gray-50 rounded-lg'>
+            <TrendingUp className='h-6 w-6 text-gray-600' />
           </div>
         </div>
         <div className='mt-3 flex items-center gap-2'>
-          <div className='flex-1 bg-purple-400/30 rounded-full h-2'>
-            <div 
-              className='bg-white rounded-full h-2 transition-all duration-500'
+          <div className='flex-1 bg-gray-200 rounded-full h-2'>
+            <div
+              className='bg-gray-500 rounded-full h-2 transition-all duration-500'
               style={{ width: `${averageProgress}%` }}
             />
           </div>
-          <span className='text-xs text-purple-100'>Overall</span>
+          <span className='text-xs text-gray-500'>Overall</span>
         </div>
       </div>
     </div>
@@ -164,26 +182,24 @@ function TimelineHeader({
         <div className='flex items-center gap-4'>
           <div className='flex items-center gap-2'>
             <Clock className='h-5 w-5 text-lavender-600' />
-            <h2 className='text-xl font-bold text-gray-900 tracking-tight'>
-              {format(currentDate, 'MMMM yyyy')}
-            </h2>
+            <h2 className='text-xl font-bold text-gray-900'>{format(currentDate, 'MMMM yyyy')}</h2>
           </div>
-          <div className='flex items-center gap-1 bg-lavender-50 rounded-xl p-1'>
-            <Button 
-              variant='ghost' 
-              size='sm' 
-              className='h-8 w-8 rounded-lg hover:bg-lavender-100 transition-all duration-200' 
+          <div className='flex items-center gap-1 bg-gray-50 rounded-lg p-1'>
+            <Button
+              variant='ghost'
+              size='sm'
+              className='h-8 w-8 rounded-lg hover:bg-gray-100 transition-colors'
               onClick={() => onNavigate('prev')}
             >
-              <ChevronLeft className='h-4 w-4 text-lavender-600' />
+              <ChevronLeft className='h-4 w-4' />
             </Button>
-            <Button 
-              variant='ghost' 
-              size='sm' 
-              className='h-8 w-8 rounded-lg hover:bg-lavender-100 transition-all duration-200' 
+            <Button
+              variant='ghost'
+              size='sm'
+              className='h-8 w-8 rounded-lg hover:bg-gray-100 transition-colors'
               onClick={() => onNavigate('next')}
             >
-              <ChevronRight className='h-4 w-4 text-lavender-600' />
+              <ChevronRight className='h-4 w-4' />
             </Button>
           </div>
         </div>
@@ -192,29 +208,23 @@ function TimelineHeader({
           <span>Timeline View</span>
         </div>
       </div>
-      
-      <div className='grid grid-cols-[240px,1fr] border-t border-gray-200 bg-gradient-to-r from-slate-50 to-white'>
-        <div className='p-4 font-semibold text-gray-700 bg-gradient-to-r from-lavender-50 to-slate-50 border-r border-gray-200 flex items-center gap-2'>
-          <Users className='h-4 w-4 text-lavender-600' />
+
+      <div className='grid grid-cols-[240px,1fr] border-t border-gray-200 bg-gray-50'>
+        <div className='p-4 font-semibold text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center gap-2'>
+          <Users className='h-4 w-4' />
           <span>Sprints</span>
         </div>
         <div className='grid grid-cols-31 border-l border-gray-200 overflow-hidden'>
-          {days.map((day, index) => (
+          {days.map((day, _index) => (
             <div
               key={day.toString()}
               className={cn(
-                'px-1 py-2 text-center text-xs border-r border-gray-200 transition-all duration-200',
-                isWeekend(day) 
-                  ? 'bg-gradient-to-b from-rose-50 to-rose-100 text-rose-700' 
-                  : 'bg-gradient-to-b from-white to-gray-50 text-gray-700 hover:bg-lavender-50',
-                'animate-fade-in'
+                'px-1 py-2 text-center text-xs border-r border-gray-200 transition-colors',
+                isWeekend(day) ? 'bg-red-50 text-red-600' : 'bg-white text-gray-700 hover:bg-gray-50'
               )}
-              style={{ animationDelay: `${index * 0.01}s` }}
             >
               <div className='font-bold text-sm mb-1'>{format(day, 'd')}</div>
-              <div className='text-xs opacity-75 font-medium'>
-                {weekdays[day.getDay() === 0 ? 6 : day.getDay() - 1]}
-              </div>
+              <div className='text-xs opacity-75'>{weekdays[day.getDay() === 0 ? 6 : day.getDay() - 1]}</div>
             </div>
           ))}
         </div>
@@ -271,30 +281,28 @@ function CurrentTimeIndicator({ currentDate }: { currentDate: Date }) {
 
 function getSprintColor(index: number) {
   const colors = [
-    { bg: 'bg-gradient-to-br from-blue-50 to-blue-100', border: 'border-blue-300', accent: 'bg-blue-500', text: 'text-blue-700' },
-    { bg: 'bg-gradient-to-br from-emerald-50 to-emerald-100', border: 'border-emerald-300', accent: 'bg-emerald-500', text: 'text-emerald-700' },
-    { bg: 'bg-gradient-to-br from-amber-50 to-amber-100', border: 'border-amber-300', accent: 'bg-amber-500', text: 'text-amber-700' },
-    { bg: 'bg-gradient-to-br from-rose-50 to-rose-100', border: 'border-rose-300', accent: 'bg-rose-500', text: 'text-rose-700' },
-    { bg: 'bg-gradient-to-br from-violet-50 to-violet-100', border: 'border-violet-300', accent: 'bg-violet-500', text: 'text-violet-700' },
-    { bg: 'bg-gradient-to-br from-orange-50 to-orange-100', border: 'border-orange-300', accent: 'bg-orange-500', text: 'text-orange-700' },
-    { bg: 'bg-gradient-to-br from-cyan-50 to-cyan-100', border: 'border-cyan-300', accent: 'bg-cyan-500', text: 'text-cyan-700' },
-    { bg: 'bg-gradient-to-br from-lime-50 to-lime-100', border: 'border-lime-300', accent: 'bg-lime-500', text: 'text-lime-700' },
-    { bg: 'bg-gradient-to-br from-pink-50 to-pink-100', border: 'border-pink-300', accent: 'bg-pink-500', text: 'text-pink-700' },
-    { bg: 'bg-gradient-to-br from-indigo-50 to-indigo-100', border: 'border-indigo-300', accent: 'bg-indigo-500', text: 'text-indigo-700' }
+    { bg: 'bg-blue-50', border: 'border-blue-200', accent: 'bg-blue-500', text: 'text-blue-700' },
+    { bg: 'bg-green-50', border: 'border-green-200', accent: 'bg-green-500', text: 'text-green-700' },
+    { bg: 'bg-orange-50', border: 'border-orange-200', accent: 'bg-orange-500', text: 'text-orange-700' },
+    { bg: 'bg-red-50', border: 'border-red-200', accent: 'bg-red-500', text: 'text-red-700' },
+    { bg: 'bg-purple-50', border: 'border-purple-200', accent: 'bg-purple-500', text: 'text-purple-700' },
+    { bg: 'bg-yellow-50', border: 'border-yellow-200', accent: 'bg-yellow-500', text: 'text-yellow-700' },
+    { bg: 'bg-cyan-50', border: 'border-cyan-200', accent: 'bg-cyan-500', text: 'text-cyan-700' },
+    { bg: 'bg-pink-50', border: 'border-pink-200', accent: 'bg-pink-500', text: 'text-pink-700' }
   ]
   return colors[index % colors.length]
 }
 
 // Enhanced avatar colors with gradients
 const avatarColors = [
-  { bg: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', text: '#FFFFFF' },
-  { bg: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', text: '#FFFFFF' },
-  { bg: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)', text: '#FFFFFF' },
-  { bg: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)', text: '#000000' },
-  { bg: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)', text: '#000000' },
-  { bg: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)', text: '#000000' },
-  { bg: 'linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)', text: '#000000' },
-  { bg: 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)', text: '#000000' }
+  { bg: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%)', text: '#FFFFFF' },
+  { bg: 'linear-gradient(135deg, #4ECDC4 0%, #45B7AF 100%)', text: '#FFFFFF' },
+  { bg: 'linear-gradient(135deg, #FFD93D 0%, #FFE566 100%)', text: '#000000' },
+  { bg: 'linear-gradient(135deg, #6C5CE7 0%, #8480E9 100%)', text: '#FFFFFF' },
+  { bg: 'linear-gradient(135deg, #A8E6CF 0%, #DCEDC1 100%)', text: '#000000' },
+  { bg: 'linear-gradient(135deg, #FF8B94 0%, #FFC2C7 100%)', text: '#000000' },
+  { bg: 'linear-gradient(135deg, #98ACFF 0%, #6C63FF 100%)', text: '#FFFFFF' },
+  { bg: 'linear-gradient(135deg, #FFA62B 0%, #FFB85C 100%)', text: '#000000' }
 ]
 
 const getAvatarColor = (index: number) => avatarColors[index % avatarColors.length]
@@ -313,7 +321,10 @@ function AvatarStack({ assignees }: { assignees: any[] }) {
       {assignees.slice(0, 3).map((assignee, idx) => {
         const { bg, text } = getAvatarColor(idx)
         return (
-          <Avatar key={assignee.projectMemberId || idx} className='h-7 w-7 border-2 border-white shadow-md ring-2 ring-white/50'>
+          <Avatar
+            key={assignee.projectMemberId || idx}
+            className='h-7 w-7 border-2 border-white shadow-md ring-2 ring-white/50'
+          >
             {assignee.avatar ? (
               <AvatarImage src={assignee.avatar} alt={assignee.executor} />
             ) : (
@@ -337,19 +348,19 @@ function AvatarStack({ assignees }: { assignees: any[] }) {
 
 function SprintProgressBar({ tasks }: { tasks: TaskP[] }) {
   const progress = calculateSprintProgress(tasks)
-  
+
   return (
-    <div className='w-full bg-white/50 rounded-full h-2 mb-2 overflow-hidden'>
+    <div className='w-full bg-gray-200 rounded-full h-2 mb-2 overflow-hidden'>
       <div className='flex h-full'>
-        <div 
-          className='bg-emerald-500 transition-all duration-500'
+        <div
+          className='bg-green-500 transition-all duration-500'
           style={{ width: `${progress.total > 0 ? (progress.completed / progress.total) * 100 : 0}%` }}
         />
-        <div 
+        <div
           className='bg-blue-500 transition-all duration-500'
           style={{ width: `${progress.total > 0 ? (progress.inProgress / progress.total) * 100 : 0}%` }}
         />
-        <div 
+        <div
           className='bg-red-500 transition-all duration-500'
           style={{ width: `${progress.total > 0 ? (progress.blocked / progress.total) * 100 : 0}%` }}
         />
@@ -373,15 +384,14 @@ function SprintRow({
   const monthEnd = endOfMonth(currentDate)
   const days = eachDayOfInterval({ start: monthStart, end: monthEnd })
   const totalDays = days.length
-  const [isHovered, setIsHovered] = useState(false)
-  
+
   const progress = calculateSprintProgress(sprint.tasks)
 
   // Handle null dates by providing defaults or returning early
   if (!sprint.startDate || !sprint.endDate) {
     return (
-      <div className='grid grid-cols-[240px,1fr] min-h-[200px] border-b border-gray-200 group hover:bg-gradient-to-r hover:from-gray-50 hover:to-white transition-all duration-300'>
-        <div className='p-6 bg-gradient-to-r from-gray-50 to-white border-r border-gray-200'>
+      <div className='grid grid-cols-[240px,1fr] min-h-[200px] border-b border-gray-200 hover:bg-gray-50 transition-colors'>
+        <div className='p-6 bg-white border-r border-gray-200'>
           <div className='flex items-center gap-2 mb-3'>
             <div className='w-3 h-3 rounded-full bg-gray-400' />
             <h3 className='font-semibold text-gray-900'>{sprint.name}</h3>
@@ -389,15 +399,13 @@ function SprintRow({
           <p className='text-sm text-gray-500 mb-3'>📅 Dates not set</p>
           <div className='flex items-center gap-2 text-xs text-gray-500 mb-2'>
             <Target className='h-3 w-3' />
-            <span className='bg-gray-100 px-2 py-1 rounded-full'>
-              {sprint.tasks.length} task(s)
-            </span>
+            <span className='bg-gray-100 px-2 py-1 rounded-full'>{sprint.tasks.length} task(s)</span>
           </div>
           <div className='w-full bg-gray-200 rounded-full h-2'>
             <div className='bg-gray-400 h-2 rounded-full' style={{ width: '0%' }} />
           </div>
         </div>
-        <div className='relative border-l border-gray-200 bg-gradient-to-r from-white to-gray-50'>
+        <div className='relative border-l border-gray-200 bg-gray-50'>
           <div className='flex items-center justify-center h-full text-sm text-gray-500'>
             <div className='text-center'>
               <Clock className='h-8 w-8 mx-auto mb-2 text-gray-400' />
@@ -427,16 +435,11 @@ function SprintRow({
   const sprintColor = getSprintColor(index)
 
   return (
-    <div
-      className={`grid grid-cols-[240px,1fr] min-h-[200px] border-b border-gray-200 group hover:shadow-lg transition-all duration-300 animate-fade-in ${sprintColor.bg}`}
-      style={{ animationDelay: `${index * 0.1}s` }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      <div className='p-6 bg-gradient-to-r from-white/80 to-white/60 backdrop-blur-sm border-r border-gray-200'>
+    <div className='grid grid-cols-[240px,1fr] min-h-[200px] border-b border-gray-200 hover:bg-gray-50 transition-colors'>
+      <div className='p-6 bg-white border-r border-gray-200'>
         <div className='flex items-center gap-2 mb-3'>
-          <div className={`w-3 h-3 rounded-full ${sprintColor.accent} shadow-sm`} />
-          <h3 className='font-bold text-gray-900 text-lg'>{sprint.name}</h3>
+          <div className={`w-3 h-3 rounded-full ${sprintColor.accent}`} />
+          <h3 className='font-semibold text-gray-900'>{sprint.name}</h3>
         </div>
         <div className='flex items-center gap-2 text-sm text-gray-600 mb-3'>
           <Calendar className='h-4 w-4' />
@@ -444,7 +447,7 @@ function SprintRow({
             {format(sprintStartDate, 'MMM dd')} - {format(sprintEndDate, 'MMM dd')}
           </span>
         </div>
-        
+
         {/* Progress Statistics */}
         <div className='mb-3'>
           <div className='flex items-center justify-between text-xs text-gray-600 mb-1'>
@@ -453,11 +456,11 @@ function SprintRow({
           </div>
           <SprintProgressBar tasks={sprint.tasks} />
         </div>
-        
+
         {/* Task Statistics */}
         <div className='grid grid-cols-2 gap-2 text-xs'>
           <div className='flex items-center gap-2'>
-            <div className='w-2 h-2 bg-emerald-500 rounded-full' />
+            <div className='w-2 h-2 bg-green-500 rounded-full' />
             <span>Done: {progress.completed}</span>
           </div>
           <div className='flex items-center gap-2'>
@@ -474,24 +477,23 @@ function SprintRow({
           </div>
         </div>
       </div>
-      
-      <div className='relative border-l border-gray-200 bg-gradient-to-r from-white/50 to-white/30'>
+
+      <div className='relative border-l border-gray-200 bg-gray-50'>
         <div className='grid grid-cols-31 h-full absolute inset-0'>
-          {days.map((day, dayIndex) => (
+          {days.map((day) => (
             <div
               key={day.toString()}
               className={cn(
-                'border-r border-gray-200 transition-all duration-200',
-                format(day, 'eee') === 'Sat' || format(day, 'eee') === 'Sun' ? 'bg-red-50/50' : 'hover:bg-lavender-50/30'
+                'border-r border-gray-200',
+                format(day, 'eee') === 'Sat' || format(day, 'eee') === 'Sun' ? 'bg-red-50' : ''
               )}
-              style={{ animationDelay: `${dayIndex * 0.005}s` }}
             />
           ))}
         </div>
 
         {startOffset < totalDays && visibleDuration > 0 && (
           <div
-            className={`absolute top-3 bottom-3 rounded-xl border-2 ${sprintColor.border} bg-white/90 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 ${isHovered ? 'scale-105' : ''}`}
+            className={`absolute top-3 bottom-3 rounded-lg border ${sprintColor.border} ${sprintColor.bg} shadow-md hover:shadow-lg transition-shadow`}
             style={{
               left: `${(startOffset / totalDays) * 100}%`,
               width: `${(visibleDuration / totalDays) * 100}%`,
@@ -500,40 +502,35 @@ function SprintRow({
           >
             <div className='p-4 space-y-3 h-full overflow-y-auto'>
               {sprint.tasks && sprint.tasks.length > 0 ? (
-                sprint.tasks.map((task, taskIndex) => (
+                sprint.tasks.map((task) => (
                   <div
                     key={task.id}
                     className={cn(
-                      'px-4 py-3 bg-white rounded-lg border-2 text-sm shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group/task animate-slide-in',
+                      'px-3 py-2 bg-white rounded-lg border text-sm shadow-sm hover:shadow-md transition-shadow cursor-pointer',
                       task.status === 'done' || task.status === 'Completed'
-                        ? 'border-emerald-300 hover:border-emerald-400 bg-emerald-50/50'
+                        ? 'border-green-200 bg-green-50'
                         : task.status === 'ongoing' || task.status === 'In Progress'
-                          ? 'border-blue-300 hover:border-blue-400 bg-blue-50/50'
+                          ? 'border-blue-200 bg-blue-50'
                           : task.status === 'Blocked'
-                            ? 'border-red-300 hover:border-red-400 bg-red-50/50'
-                            : 'border-gray-300 hover:border-lavender-300 bg-gray-50/50'
+                            ? 'border-red-200 bg-red-50'
+                            : 'border-gray-200'
                     )}
-                    style={{ animationDelay: `${taskIndex * 0.05}s` }}
                     onClick={() => onTaskClick && onTaskClick(task)}
-                    onMouseEnter={() => {/* Not used */}}
-                    onMouseLeave={() => {/* Not used */}}
                   >
-                    <div className='font-semibold text-gray-900 truncate group-hover/task:text-lavender-700 transition-colors'>
-                      {task.title}
-                    </div>
-                    <div className='flex items-center justify-between mt-2 gap-2'>
+                    <div className='font-medium text-gray-900 truncate mb-2'>{task.title}</div>
+                    <div className='flex items-center justify-between gap-2'>
                       <AvatarStack assignees={Array.isArray(task.taskAssignees) ? task.taskAssignees : []} />
                       <div className='flex items-center gap-1 text-xs text-gray-600'>
                         <Calendar className='w-3 h-3' />
                         <span>{task.deadline ? format(new Date(task.deadline), 'MMM dd') : 'N/A'}</span>
                       </div>
                     </div>
-                    <div className='flex items-center justify-between mt-2'>
+                    <div className='mt-2'>
                       <span
                         className={cn(
-                          'px-2 py-1 rounded-full text-xs font-semibold flex items-center gap-1',
+                          'px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit',
                           task.status === 'done' || task.status === 'Completed'
-                            ? 'bg-emerald-100 text-emerald-700'
+                            ? 'bg-green-100 text-green-700'
                             : task.status === 'ongoing' || task.status === 'In Progress'
                               ? 'bg-blue-100 text-blue-700'
                               : task.status === 'Blocked'
@@ -545,7 +542,6 @@ function SprintRow({
                         {task.status}
                       </span>
                     </div>
-                    {/* {hoveredTaskId === task.id && <TaskTooltip task={task} />} */}
                   </div>
                 ))
               ) : (
@@ -629,14 +625,14 @@ export default function ProjectTimeline() {
 
   if (projectLoading || sprintsLoading || !currentProject) {
     return (
-      <div className='flex h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50'>
+      <div className='flex h-screen bg-gray-50'>
         <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
         <div className='flex-1 flex flex-col overflow-hidden'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
           <div className='flex-1 flex items-center justify-center'>
             <div className='text-center'>
               <Loader />
-              <p className='mt-4 text-gray-600 animate-pulse'>Loading project timeline...</p>
+              <p className='mt-4 text-gray-600'>Loading project timeline...</p>
             </div>
           </div>
         </div>
@@ -645,22 +641,22 @@ export default function ProjectTimeline() {
   }
 
   return (
-    <div className='flex h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50'>
+    <div className='flex h-screen bg-gray-50'>
       <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
 
       <div className='flex-1 flex flex-col overflow-hidden'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
-        <div className='flex flex-col h-full bg-white/50 backdrop-blur-sm'>
+        <div className='flex flex-col h-full bg-white'>
           <div className='flex-none w-full p-6 pb-4'>
             <div className='flex items-center justify-between mb-6'>
               <div className='flex items-center gap-4'>
                 <div className='flex items-center gap-2'>
-                  <div className='p-2 bg-lavender-100 rounded-xl'>
+                  <div className='p-2 bg-lavender-100 rounded-lg'>
                     <Clock className='h-6 w-6 text-lavender-600' />
                   </div>
                   <div>
-                    <h1 className='text-3xl font-bold text-gray-900 tracking-tight'>Timeline</h1>
+                    <h1 className='text-3xl font-bold text-gray-900'>Timeline</h1>
                     <p className='text-sm text-gray-600'>Project: {currentProject.title}</p>
                   </div>
                 </div>
@@ -669,13 +665,10 @@ export default function ProjectTimeline() {
               <div className='flex items-center gap-3'>
                 <div className='relative'>
                   <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
-                  <Input 
-                    placeholder='Search sprints and tasks...' 
-                    className='w-[300px] pl-10 bg-white/80 backdrop-blur-sm border-gray-200 hover:border-gray-300 focus:border-lavender-400 focus:ring-lavender-400 rounded-xl shadow-sm hover:shadow-md transition-all duration-200' 
-                  />
+                  <Input placeholder='Search sprints and tasks...' className='w-[300px] pl-10 border-gray-300' />
                 </div>
                 <Select defaultValue='month'>
-                  <SelectTrigger className='w-[180px] bg-white/80 backdrop-blur-sm border-gray-200 hover:border-gray-300 rounded-xl shadow-sm hover:shadow-md transition-all duration-200'>
+                  <SelectTrigger className='w-[180px] border-gray-300'>
                     <Calendar className='mr-2 h-4 w-4' />
                     <SelectValue placeholder='View' />
                   </SelectTrigger>
@@ -687,18 +680,18 @@ export default function ProjectTimeline() {
                 </Select>
               </div>
             </div>
-            
+
             {/* Statistics Overview */}
             <StatisticsOverview sprintsWithTasks={sprintsWithTasks} />
           </div>
 
-          <div className='flex-1 overflow-hidden bg-white/30 backdrop-blur-sm rounded-t-3xl shadow-lg border border-white/50'>
+          <div className='flex-1 overflow-hidden bg-white rounded-t-lg shadow-sm border border-gray-200'>
             <div className='min-w-[1200px] relative h-full'>
               <TimelineHeader currentDate={currentDate} onNavigate={handleNavigate} />
               <CurrentTimeIndicator currentDate={currentDate} />
               <div
                 ref={timelineScrollRef}
-                className='relative overflow-x-auto overflow-y-auto h-full cursor-grab select-none timeline-scroll-container'
+                className='relative overflow-x-auto overflow-y-auto h-full cursor-grab select-none'
                 onMouseDown={handleMouseDown}
                 onMouseLeave={handleMouseLeave}
                 onMouseUp={handleMouseUp}
@@ -726,7 +719,7 @@ export default function ProjectTimeline() {
             </div>
           </div>
         </div>
-        
+
         {selectedTask && (
           <TaskDetailMenu
             task={selectedTask}
