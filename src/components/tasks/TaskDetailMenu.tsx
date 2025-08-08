@@ -224,7 +224,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           // Refresh task data từ server
           const updatedTasks = await taskApi.getTasksFromProject(currentProject.id)
           const updatedTask = updatedTasks?.find((t) => t.id === task.id)
-          
+
           if (updatedTask) {
             // Cập nhật task assignees từ server data
             if (updatedTask.taskAssignees) {
@@ -232,7 +232,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                 Array.isArray(updatedTask.taskAssignees) && updatedTask.taskAssignees.length > 0
                   ? updatedTask.taskAssignees[0]
                   : null
-                  
+
               if (assigneeFromTask) {
                 const newAssignee = {
                   userId: assigneeFromTask.projectMemberId,
@@ -247,21 +247,21 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                 setAssignee(null)
               }
             }
-            
+
             // Refresh comments từ server
             setComments(updatedTask.commnets || [])
           }
-          
+
           // Refresh members list từ server
           const updatedMembers = await projectMemberApi.getMembersByProjectId(currentProject.id)
           setProjectMembers(updatedMembers)
-          
+
           console.log('✅ Dialog data refreshed on open')
         } catch (error) {
           console.error('❌ Error refreshing dialog data on open:', error)
         }
       }
-      
+
       refreshOnOpen()
     }
   }, [isOpen, currentProject?.id, task.id])
@@ -277,7 +277,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         try {
           const members = await projectMemberApi.getMembersByProjectId(currentProject?.id || '')
           setProjectMembers(members)
-          
+
           const tasks = await taskApi.getTasksFromProject(currentProject?.id || '')
           const taskDetails = tasks?.find((t) => t.id === task.id)
           if (taskDetails?.taskAssignees) {
@@ -400,26 +400,26 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       console.log('🚀 Calling assignTask API...')
       await taskApi.assignTask(currentProject!.id, task.id, implementerId)
       console.log('✅ API call successful')
-      
+
       // 2. Force reload toàn bộ dialog data từ server
       console.log('🔄 Force reloading all dialog data...')
-      
+
       // Refresh task data từ server
       const updatedTasks = await taskApi.getTasksFromProject(currentProject!.id)
       const updatedTask = updatedTasks?.find((t) => t.id === task.id)
       console.log('📋 Updated task data:', updatedTask)
-      
+
       if (updatedTask) {
         // Cập nhật local task data từ server
         setLocalTaskData(updatedTask)
-        
+
         // Cập nhật task assignees từ server data
         if (updatedTask.taskAssignees) {
           const assigneeFromTask =
             Array.isArray(updatedTask.taskAssignees) && updatedTask.taskAssignees.length > 0
               ? updatedTask.taskAssignees[0]
               : null
-              
+
           if (assigneeFromTask) {
             const newAssignee = {
               userId: assigneeFromTask.projectMemberId,
@@ -434,33 +434,34 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             setAssignee(null)
           }
         }
-        
+
         // Refresh comments từ server
         setComments(updatedTask.commnets || [])
       }
-      
+
       // Refresh members list từ server
       const updatedMembers = await projectMemberApi.getMembersByProjectId(currentProject!.id)
       setProjectMembers(updatedMembers)
-      
+
       // 3. Refresh parent component ngay lập tức
       onTaskUpdated()
-      
+
       // 4. Force refresh parent component sau 500ms
       setTimeout(() => {
         console.log('🔄 Force refreshing parent component...')
         onTaskUpdated()
       }, 500)
-      
+
       // 5. Trigger một reload bổ sung sau 1s để đảm bảo
       setTimeout(async () => {
         console.log('🔄 Additional reload after 1s...')
         const finalTasks = await taskApi.getTasksFromProject(currentProject!.id)
         const finalTask = finalTasks?.find((t) => t.id === task.id)
         if (finalTask?.taskAssignees) {
-          const finalAssignee = Array.isArray(finalTask.taskAssignees) && finalTask.taskAssignees.length > 0
-            ? finalTask.taskAssignees[0]
-            : null
+          const finalAssignee =
+            Array.isArray(finalTask.taskAssignees) && finalTask.taskAssignees.length > 0
+              ? finalTask.taskAssignees[0]
+              : null
           if (finalAssignee) {
             setAssignee({
               userId: finalAssignee.projectMemberId,
@@ -472,13 +473,12 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         }
         onTaskUpdated()
       }, 1000)
-      
+
       showToast({
         title: 'Success',
         description: `Task assigned to ${member.fullName || member.email || member.userId || member.id}`,
         variant: 'default'
       })
-      
     } catch (error) {
       console.error('❌ Error in assign task:', error)
       const message = error instanceof Error ? error.message : 'Failed to assign task.'
@@ -632,12 +632,12 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         description: res ? 'Task marked as complete!' : 'Failed to complete task',
         variant: res ? 'default' : 'destructive'
       })
-      
+
       // Refresh data immediately using the optimized function
       console.log('🔄 Refreshing data after complete task...')
       await fetchAssigneeAndMembers()
       onTaskUpdated()
-      
+
       // Close modal after a short delay to ensure data is refreshed
       setTimeout(() => {
         onClose()
@@ -724,19 +724,18 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const handleLeaveTask = async (projectMemberId: string) => {
     setLeaveLoadingMap((prev) => ({ ...prev, [projectMemberId]: true }))
     try {
-      await taskApi.leaveTaskAssignment(currentProject!.id, task.id, { 
-        reason: 'User voluntarily left the task' 
+      await taskApi.leaveTaskAssignment(currentProject!.id, task.id, {
+        reason: 'User voluntarily left the task'
       })
       showToast({ title: 'Success', description: 'You have left this task!' })
       setAssignee(null)
-      
+
       // Refresh data immediately using the optimized function
       await fetchAssigneeAndMembers()
       onTaskUpdated()
-      
+
       // Force reload dialog data
       await reloadDialogData()
-      
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to leave task'
       showToast({
@@ -757,7 +756,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       // Refresh task data từ server
       const updatedTasks = await taskApi.getTasksFromProject(currentProject!.id)
       const updatedTask = updatedTasks?.find((t) => t.id === task.id)
-      
+
       if (updatedTask) {
         // Refresh assignee data
         if (updatedTask.taskAssignees) {
@@ -765,7 +764,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             Array.isArray(updatedTask.taskAssignees) && updatedTask.taskAssignees.length > 0
               ? updatedTask.taskAssignees[0]
               : null
-              
+
           if (assigneeFromTask) {
             const newAssignee = {
               userId: assigneeFromTask.projectMemberId,
@@ -778,15 +777,15 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             setAssignee(null)
           }
         }
-        
+
         // Refresh comments
         setComments(updatedTask.commnets || [])
       }
-      
+
       // Refresh members list
       const updatedMembers = await projectMemberApi.getMembersByProjectId(currentProject!.id)
       setProjectMembers(updatedMembers)
-      
+
       console.log('✅ Dialog data reloaded successfully')
     } catch (error) {
       console.error('❌ Error reloading dialog data:', error)
@@ -801,26 +800,26 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         reason: 'Assignee removed by project leader'
       })
       showToast({ title: 'Success', description: 'Assignee removed from task!' })
-      
+
       // Force refresh task data từ server ngay lập tức
       console.log('🔄 Force refreshing task data after remove...')
       const updatedTasks = await taskApi.getTasksFromProject(currentProject!.id)
       const updatedTask = updatedTasks?.find((t) => t.id === task.id)
-      
+
       if (updatedTask) {
         console.log('📋 Updated task data after remove:', updatedTask)
         console.log('📋 Task assignees after remove:', updatedTask.taskAssignees)
-        
+
         // Cập nhật local task data từ server
         setLocalTaskData(updatedTask)
-        
+
         // Cập nhật assignee state từ server data
         if (updatedTask.taskAssignees) {
           const assigneeFromTask =
             Array.isArray(updatedTask.taskAssignees) && updatedTask.taskAssignees.length > 0
               ? updatedTask.taskAssignees[0]
               : null
-              
+
           if (assigneeFromTask) {
             const newAssignee = {
               userId: assigneeFromTask.projectMemberId,
@@ -838,24 +837,24 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           console.log('❌ No taskAssignees found after remove')
           setAssignee(null)
         }
-        
+
         // Refresh comments từ server
         setComments(updatedTask.commnets || [])
       }
-      
+
       // Refresh members list từ server
       const updatedMembers = await projectMemberApi.getMembersByProjectId(currentProject!.id)
       setProjectMembers(updatedMembers)
-      
+
       // Refresh parent component ngay lập tức
       onTaskUpdated()
-      
+
       // Force refresh parent component sau 500ms
       setTimeout(() => {
         console.log('🔄 Force refreshing parent component after remove...')
         onTaskUpdated()
       }, 500)
-      
+
       // Trigger một reload bổ sung sau 1s để đảm bảo
       setTimeout(async () => {
         console.log('🔄 Additional reload after 1s for remove...')
@@ -863,9 +862,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         const finalTask = finalTasks?.find((t) => t.id === task.id)
         console.log('📋 Final task data after remove:', finalTask)
         if (finalTask?.taskAssignees) {
-          const finalAssignee = Array.isArray(finalTask.taskAssignees) && finalTask.taskAssignees.length > 0
-            ? finalTask.taskAssignees[0]
-            : null
+          const finalAssignee =
+            Array.isArray(finalTask.taskAssignees) && finalTask.taskAssignees.length > 0
+              ? finalTask.taskAssignees[0]
+              : null
           if (finalAssignee) {
             setAssignee({
               userId: finalAssignee.projectMemberId,
@@ -881,7 +881,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         }
         onTaskUpdated()
       }, 1000)
-      
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to remove assignee'
       showToast({
@@ -897,7 +896,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   }
 
   if (!currentProject) {
-    return <div className='p-4 text-center text-gray-500'>Chưa chọn project</div>
+    return null
   }
 
   return (
@@ -1129,13 +1128,13 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             <h1 className='text-base font-semibold mb-3 flex items-center gap-2'>Assignee</h1>
             <div className='flex flex-col gap-4 p-4 bg-white rounded-lg shadow-sm border'>
               {/* Debug info */}
-              <div className="text-xs text-gray-500 mb-2">
+              <div className='text-xs text-gray-500 mb-2'>
                 {/* Debug: Task ID: {localTaskData.id} | Assignees: {Array.isArray(localTaskData.taskAssignees) ? localTaskData.taskAssignees.length : 0} */}
               </div>
-              
+
               {/* Danh sách tất cả assignees */}
-                              {Array.isArray(localTaskData.taskAssignees) && localTaskData.taskAssignees.length > 0 ? (
-                  localTaskData.taskAssignees.map((a, idx) => {
+              {Array.isArray(localTaskData.taskAssignees) && localTaskData.taskAssignees.length > 0 ? (
+                localTaskData.taskAssignees.map((a, idx) => {
                   const isCurrentUser = String(myProjectMemberId) === String(a.projectMemberId)
                   const isLeader = isUserLeader
                   console.log(
@@ -1184,7 +1183,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                             )}
                           </button>
                         )}
-                        
+
                         {/* Remove assignee - chỉ hiển thị cho leader và không phải chính mình */}
                         {isLeader && !isCurrentUser && (
                           <button
@@ -1308,67 +1307,67 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             </h1>
             <div className='p-4 bg-white rounded-lg shadow-sm border'>
               <div className='flex items-center gap-2 flex-wrap'>
-              {taskTags.map((tag, idx) => (
-                <span
-                  key={tag.id || idx}
-                  style={{
-                    backgroundColor: tag.color || '#eee',
-                    color: '#fff',
-                    borderRadius: '8px',
-                    padding: '6px 16px',
-                    fontWeight: 500,
-                    fontSize: '1em',
-                    display: 'inline-block'
+                {taskTags.map((tag, idx) => (
+                  <span
+                    key={tag.id || idx}
+                    style={{
+                      backgroundColor: tag.color || '#eee',
+                      color: '#fff',
+                      borderRadius: '8px',
+                      padding: '6px 16px',
+                      fontWeight: 500,
+                      fontSize: '1em',
+                      display: 'inline-block'
+                    }}
+                  >
+                    {tag.name}
+                  </span>
+                ))}
+                <div
+                  className='flex items-center gap-2 cursor-pointer relative group'
+                  ref={tagDropdownRef}
+                  onClick={() => setIsTagSelectOpen((v) => !v)}
+                  tabIndex={0}
+                  role='button'
+                  aria-label='Add tag'
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') setIsTagSelectOpen((v) => !v)
                   }}
                 >
-                  {tag.name}
-                </span>
-              ))}
-              <div
-                className='flex items-center gap-2 cursor-pointer relative group'
-                ref={tagDropdownRef}
-                onClick={() => setIsTagSelectOpen((v) => !v)}
-                tabIndex={0}
-                role='button'
-                aria-label='Add tag'
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') setIsTagSelectOpen((v) => !v)
-                }}
-              >
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  className='h-6 w-6 rounded-lg bg-lavender-200 group-hover:bg-lavender-300/60 transition-colors duration-150 pointer-events-none'
-                  aria-label='Add tag icon'
-                >
-                  <Plus className='h-4 w-4 text-lavender-500 group-hover:text-lavender-800 transition-colors duration-150' />
-                </Button>
-                <span className='font-medium text-lavender-500 group-hover:text-lavender-800 transition-colors duration-150'>
-                  Add
-                </span>
-                {isTagSelectOpen && (
-                  <div className='absolute left-0 top-8 z-50 bg-white border rounded shadow-lg min-w-[160px] max-h-60 overflow-y-auto'>
-                    {tags.filter((t) => !taskTags.some((tag) => tag.id === t.id)).length === 0 ? (
-                      <div className='px-4 py-2 text-gray-400 text-sm'>No tags available</div>
-                    ) : (
-                      tags
-                        .filter((t) => !taskTags.some((tag) => tag.id === t.id))
-                        .map((tag) => (
-                          <button
-                            key={tag.id}
-                            className='w-full text-left px-4 py-2 hover:bg-lavender-50 text-sm text-gray-700 font-medium'
-                            onClick={async () => {
-                              await handleTagSelect(tag.id)
-                              setIsTagSelectOpen(false)
-                            }}
-                          >
-                            {tag.name}
-                          </button>
-                        ))
-                    )}
-                  </div>
-                )}
-              </div>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='h-6 w-6 rounded-lg bg-lavender-200 group-hover:bg-lavender-300/60 transition-colors duration-150 pointer-events-none'
+                    aria-label='Add tag icon'
+                  >
+                    <Plus className='h-4 w-4 text-lavender-500 group-hover:text-lavender-800 transition-colors duration-150' />
+                  </Button>
+                  <span className='font-medium text-lavender-500 group-hover:text-lavender-800 transition-colors duration-150'>
+                    Add
+                  </span>
+                  {isTagSelectOpen && (
+                    <div className='absolute left-0 top-8 z-50 bg-white border rounded shadow-lg min-w-[160px] max-h-60 overflow-y-auto'>
+                      {tags.filter((t) => !taskTags.some((tag) => tag.id === t.id)).length === 0 ? (
+                        <div className='px-4 py-2 text-gray-400 text-sm'>No tags available</div>
+                      ) : (
+                        tags
+                          .filter((t) => !taskTags.some((tag) => tag.id === t.id))
+                          .map((tag) => (
+                            <button
+                              key={tag.id}
+                              className='w-full text-left px-4 py-2 hover:bg-lavender-50 text-sm text-gray-700 font-medium'
+                              onClick={async () => {
+                                await handleTagSelect(tag.id)
+                                setIsTagSelectOpen(false)
+                              }}
+                            >
+                              {tag.name}
+                            </button>
+                          ))
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             <ProjectTagManager isOpen={isTagManagerOpen} onClose={() => setIsTagManagerOpen(false)} />
@@ -1512,14 +1511,14 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
       {/* Leave Task Confirmation Dialog */}
       <Dialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
-        <DialogContent className="max-w-md">
+        <DialogContent className='max-w-md'>
           <DialogTitle>Xác nhận rời task</DialogTitle>
           <DialogDescription>
             Bạn có chắc chắn muốn rời khỏi task này? Hành động này sẽ gỡ bỏ bạn khỏi danh sách assignee.
           </DialogDescription>
-          <div className="flex justify-end gap-2 mt-4">
+          <div className='flex justify-end gap-2 mt-4'>
             <Button
-              variant="outline"
+              variant='outline'
               onClick={() => {
                 setShowLeaveConfirm(false)
                 setSelectedAssignee(null)
@@ -1528,7 +1527,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               Hủy
             </Button>
             <Button
-              variant="destructive"
+              variant='destructive'
               onClick={() => selectedAssignee && handleLeaveTask(selectedAssignee)}
               disabled={selectedAssignee ? leaveLoadingMap[selectedAssignee] : false}
             >
@@ -1540,14 +1539,14 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
       {/* Remove Assignee Confirmation Dialog */}
       <Dialog open={showRemoveConfirm} onOpenChange={setShowRemoveConfirm}>
-        <DialogContent className="max-w-md">
+        <DialogContent className='max-w-md'>
           <DialogTitle>Xác nhận xóa assignee</DialogTitle>
           <DialogDescription>
             Bạn có chắc chắn muốn xóa assignee này khỏi task? Hành động này sẽ gỡ bỏ họ khỏi danh sách assignee.
           </DialogDescription>
-          <div className="flex justify-end gap-2 mt-4">
+          <div className='flex justify-end gap-2 mt-4'>
             <Button
-              variant="outline"
+              variant='outline'
               onClick={() => {
                 setShowRemoveConfirm(false)
                 setSelectedAssignee(null)
@@ -1556,7 +1555,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               Hủy
             </Button>
             <Button
-              variant="destructive"
+              variant='destructive'
               onClick={() => selectedAssignee && handleRemoveAssignee(selectedAssignee)}
               disabled={selectedAssignee ? removeLoadingMap[selectedAssignee] : false}
             >

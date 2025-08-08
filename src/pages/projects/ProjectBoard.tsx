@@ -566,7 +566,7 @@ export default function ProjectBoard() {
           <div className='flex-1 flex items-center justify-center'>
             <div className='text-center'>
               <Loader />
-              <p className='mt-4 text-gray-600'>Loading your project board...</p>
+              <p className='mt-4 text-gray-600'>Loading project board...</p>
             </div>
           </div>
         </div>

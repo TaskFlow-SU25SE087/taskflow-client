@@ -3,7 +3,17 @@ import { useSignalR } from '@/contexts/SignalRContext'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { TaskP } from '@/types/task'
 import { format } from 'date-fns'
-import { Calendar, ChevronDown, ChevronsDown, ChevronsUp, ChevronUp, Clock, FileText, MessageSquare, User } from 'lucide-react'
+import {
+  Calendar,
+  ChevronDown,
+  ChevronsDown,
+  ChevronsUp,
+  ChevronUp,
+  Clock,
+  FileText,
+  MessageSquare,
+  User
+} from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
@@ -62,7 +72,12 @@ interface TaskCardProps {
   isMoving?: boolean
 }
 
-export const TaskCard = ({ task, compact = false, children, isMoving = false }: TaskCardProps & { children?: React.ReactNode }) => {
+export const TaskCard = ({
+  task,
+  compact = false,
+  children,
+  isMoving = false
+}: TaskCardProps & { children?: React.ReactNode }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const { currentProject } = useCurrentProject()
@@ -112,7 +127,7 @@ export const TaskCard = ({ task, compact = false, children, isMoving = false }: 
   }, [fetchTaskDetails])
 
   if (!currentProject) {
-    return <div className='p-4 text-center text-gray-500'>Chưa chọn project</div>
+    return null
   }
 
   const commentCount = Array.isArray(task.comments)
@@ -122,7 +137,7 @@ export const TaskCard = ({ task, compact = false, children, isMoving = false }: 
       : 0
   const fileCount = task.attachmentUrl ? 1 : 0
   const assignees = Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0 ? task.taskAssignees : []
-  
+
   const priorityConfig = getPriorityConfig(Number(task.priority))
 
   // Enhanced avatar colors with gradients
@@ -136,7 +151,7 @@ export const TaskCard = ({ task, compact = false, children, isMoving = false }: 
     { bg: 'linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)', text: '#000000' },
     { bg: 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)', text: '#000000' }
   ]
-  
+
   const getAvatarColor = (index: number) => avatarColors[index % avatarColors.length]
 
   function AvatarStack({ assignees }: { assignees: any[] }) {
@@ -153,7 +168,10 @@ export const TaskCard = ({ task, compact = false, children, isMoving = false }: 
         {assignees.slice(0, 3).map((assignee, idx) => {
           const { bg, text } = getAvatarColor(idx)
           return (
-            <Avatar key={assignee.projectMemberId || idx} className='h-8 w-8 border-2 border-white shadow-md ring-2 ring-white/50'>
+            <Avatar
+              key={assignee.projectMemberId || idx}
+              className='h-8 w-8 border-2 border-white shadow-md ring-2 ring-white/50'
+            >
               {assignee.avatar ? (
                 <AvatarImage src={assignee.avatar} alt={assignee.executor} />
               ) : (
@@ -180,26 +198,26 @@ export const TaskCard = ({ task, compact = false, children, isMoving = false }: 
     'to do': 'bg-gray-200 text-gray-700',
     'not started': 'bg-gray-200 text-gray-700',
     'in progress': 'bg-blue-100 text-blue-700',
-    'done': 'bg-green-100 text-green-700',
-    'completed': 'bg-green-100 text-green-700',
-    'review': 'bg-yellow-100 text-yellow-700',
-    'blocked': 'bg-red-100 text-red-700',
-    'cancelled': 'bg-pink-100 text-pink-700',
+    done: 'bg-green-100 text-green-700',
+    completed: 'bg-green-100 text-green-700',
+    review: 'bg-yellow-100 text-yellow-700',
+    blocked: 'bg-red-100 text-red-700',
+    cancelled: 'bg-pink-100 text-pink-700',
     'on hold': 'bg-amber-100 text-amber-700',
-    'unassigned': 'bg-slate-100 text-slate-500',
-    'urgent': 'bg-red-200 text-red-800',
-    'testing': 'bg-purple-100 text-purple-700',
-    'pending': 'bg-orange-100 text-orange-700',
+    unassigned: 'bg-slate-100 text-slate-500',
+    urgent: 'bg-red-200 text-red-800',
+    testing: 'bg-purple-100 text-purple-700',
+    pending: 'bg-orange-100 text-orange-700',
     'n/a': 'bg-gray-100 text-gray-500'
   }
-  const getStatusColor = (status: string) => statusColorMap[status?.toLowerCase?.()] || 'bg-gray-100 text-gray-600';
+  const getStatusColor = (status: string) => statusColorMap[status?.toLowerCase?.()] || 'bg-gray-100 text-gray-600'
 
   if (compact) {
     return (
       <div className='group flex items-center gap-3 border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 min-h-[44px] shadow-sm hover:shadow-md'>
         {/* Priority indicator */}
         <div className={`w-1 h-8 rounded-full ${priorityConfig.color.replace('text-', 'bg-')}`} />
-        
+
         {/* Tags */}
         {task.tags && task.tags.length > 0 && (
           <div className='flex gap-1'>
@@ -219,24 +237,26 @@ export const TaskCard = ({ task, compact = false, children, isMoving = false }: 
             )}
           </div>
         )}
-        
+
         {/* Title */}
         <span className='font-semibold truncate max-w-[150px] text-gray-900'>{task.title}</span>
-        
+
         {/* Description */}
         <span className='text-gray-500 truncate max-w-[150px]'>{task.description}</span>
-        
+
         {/* Priority */}
         <div className={`flex items-center gap-1 ${priorityConfig.color} text-xs font-medium`}>
           {priorityConfig.icon}
           <span>{priorityConfig.text}</span>
         </div>
-        
+
         {/* Status badge */}
         {task.status && (
-          <span className={`px-2 py-0.5 rounded text-xs font-semibold ml-2 ${getStatusColor(task.status)}`}>{task.status}</span>
+          <span className={`px-2 py-0.5 rounded text-xs font-semibold ml-2 ${getStatusColor(task.status)}`}>
+            {task.status}
+          </span>
         )}
-        
+
         {/* Move to Sprint button if present */}
         <span className='ml-auto'>{children}</span>
       </div>
@@ -245,7 +265,7 @@ export const TaskCard = ({ task, compact = false, children, isMoving = false }: 
 
   return (
     <>
-      <div 
+      <div
         className='relative group'
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -256,19 +276,15 @@ export const TaskCard = ({ task, compact = false, children, isMoving = false }: 
           className={`absolute left-0 top-4 bottom-4 w-1 rounded-full ${priorityConfig.color.replace('text-', 'bg-')} shadow-sm transition-all duration-200`}
         />
 
-        <Card className={`
+        <Card
+          className={`
           w-full border-none shadow-none cursor-pointer transition-all duration-150 ml-2 
-          ${isHovered 
-            ? 'hover:shadow-lg hover:shadow-xl transform hover:-translate-y-1' 
-            : ''
-          }
-          ${isMoving 
-            ? 'opacity-90 border-2 border-blue-400' 
-            : ''
-          }
+          ${isHovered ? 'hover:shadow-lg transform hover:-translate-y-1' : ''}
+          ${isMoving ? 'opacity-90 border-2 border-blue-400' : ''}
           ${priorityConfig.bg} backdrop-blur-sm
           hover:animate-task-hover
-        `}>
+        `}
+        >
           <div className='p-4'>
             {/* Tags */}
             {task.tags && task.tags.length > 0 && (
@@ -287,19 +303,17 @@ export const TaskCard = ({ task, compact = false, children, isMoving = false }: 
 
             {/* Title and Priority */}
             <div className='flex items-start justify-between mb-3'>
-              <h3 className='font-bold text-lg text-gray-900 leading-tight flex-1 mr-3'>
-                {task.title}
-              </h3>
-              <div className={`flex items-center gap-1 ${priorityConfig.color} ${priorityConfig.bg} px-2 py-1 rounded-full text-xs font-semibold border ${priorityConfig.border}`}>
+              <h3 className='font-bold text-lg text-gray-900 leading-tight flex-1 mr-3'>{task.title}</h3>
+              <div
+                className={`flex items-center gap-1 ${priorityConfig.color} ${priorityConfig.bg} px-2 py-1 rounded-full text-xs font-semibold border ${priorityConfig.border}`}
+              >
                 {priorityConfig.icon}
                 <span>{priorityConfig.text}</span>
               </div>
             </div>
 
             {/* Description */}
-            <p className='text-gray-600 mb-4 line-clamp-2 text-sm leading-relaxed'>
-              {task.description}
-            </p>
+            <p className='text-gray-600 mb-4 line-clamp-2 text-sm leading-relaxed'>{task.description}</p>
 
             {/* Stats */}
             <div className='flex items-center gap-4 mb-4'>
@@ -314,9 +328,7 @@ export const TaskCard = ({ task, compact = false, children, isMoving = false }: 
               {task.deadline && (
                 <div className='flex items-center gap-1 text-gray-500'>
                   <Clock className='w-4 h-4' />
-                  <span className='text-sm font-medium'>
-                    {format(new Date(task.deadline), 'MMM d')}
-                  </span>
+                  <span className='text-sm font-medium'>{format(new Date(task.deadline), 'MMM d')}</span>
                 </div>
               )}
             </div>
@@ -324,13 +336,11 @@ export const TaskCard = ({ task, compact = false, children, isMoving = false }: 
             {/* Footer */}
             <div className='flex justify-between items-center'>
               <AvatarStack assignees={assignees} />
-              
+
               {task.deadline && (
                 <div className='flex items-center gap-1 text-gray-500'>
                   <Calendar className='w-4 h-4' />
-                  <span className='text-sm font-semibold'>
-                    {format(new Date(task.deadline), 'dd/MM/yyyy')}
-                  </span>
+                  <span className='text-sm font-semibold'>{format(new Date(task.deadline), 'dd/MM/yyyy')}</span>
                 </div>
               )}
             </div>
