@@ -13,9 +13,9 @@ const axiosClient = axios.create({
 // Function to update baseURL after URL Manager is initialized
 export const updateAxiosBaseURL = () => {
   const newBaseURL = ENV_CONFIG.API_BASE_URL
-  
+
   console.log('[AXIOS] Updating baseURL to:', newBaseURL)
-  
+
   axiosClient.defaults.baseURL = newBaseURL
 }
 
@@ -40,9 +40,7 @@ axiosClient.interceptors.request.use(
 
     // Get access token from storage
     const rememberMe = localStorage.getItem('rememberMe') === 'true'
-    const accessToken = rememberMe 
-      ? localStorage.getItem('accessToken') 
-      : sessionStorage.getItem('accessToken')
+    const accessToken = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken')
 
     if (accessToken) {
       if (ENV_CONFIG.IS_DEVELOPMENT) {
@@ -72,8 +70,6 @@ axiosClient.interceptors.request.use(
   }
 )
 
-
-
 // Response interceptor for primary client
 axiosClient.interceptors.response.use(
   (response: AxiosResponse) => {
@@ -92,7 +88,7 @@ axiosClient.interceptors.response.use(
     if (error.code === 'ECONNABORTED' && error.message.includes('timeout')) {
       console.error('⏰ [axiosClient] Request timeout detected')
       showTimeoutNotification(error.config?.url || 'unknown')
-      
+
       // Return a more user-friendly error
       return Promise.reject({
         ...error,
@@ -108,12 +104,20 @@ axiosClient.interceptors.response.use(
 
       if (status === 401) {
         console.error('🔒 [axiosClient] Unauthorized - removing token')
-        localStorage.removeItem('accessToken')
-        sessionStorage.removeItem('accessToken')
-        // Redirect to login if in browser
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login'
+
+        // Check if this is a login request - don't redirect for login attempts
+        const isLoginRequest = error.config?.url?.includes('/auth/login')
+
+        if (!isLoginRequest) {
+          // Only remove tokens and redirect if this is NOT a login attempt
+          localStorage.removeItem('accessToken')
+          sessionStorage.removeItem('accessToken')
+          // Redirect to login if in browser
+          if (typeof window !== 'undefined') {
+            window.location.href = '/login'
+          }
         }
+        // For login requests, just pass the error through without redirecting
       } else if (status === 403) {
         console.error('🚫 [axiosClient] Forbidden - You do not have permission to perform this action.')
       } else if (status === 500) {
@@ -121,10 +125,12 @@ axiosClient.interceptors.response.use(
       }
     } else if (error.request) {
       console.error('🌐 [axiosClient] Network error - No response received:', error.request)
-      
+
       // Check if it's a localhost connection in production
       if (ENV_CONFIG.IS_PRODUCTION && error.config?.url?.includes('localhost')) {
-        console.error('🚨 [axiosClient] Production environment trying to connect to localhost. Check your API_BASE_URL configuration.')
+        console.error(
+          '🚨 [axiosClient] Production environment trying to connect to localhost. Check your API_BASE_URL configuration.'
+        )
       }
     } else {
       console.error('⚙️ [axiosClient] Request setup error:', error.message)

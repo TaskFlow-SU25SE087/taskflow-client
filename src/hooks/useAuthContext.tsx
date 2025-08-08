@@ -127,6 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (username: string, password: string) => {
     try {
+      setError(null) // Clear any previous errors
       console.log('Starting login process...')
       const response = await authApi.login(username, password)
       console.log('Login response:', response)
@@ -189,8 +190,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }, 200) // Add a small delay for toast to appear
     } catch (error: any) {
       console.error('Login error:', error)
-      setError(error.message || 'Failed to login')
-      throw error
+      // Set a user-friendly error message
+      const errorMessage =
+        error.response?.data?.message || error.message || 'Login failed. Please check your credentials and try again.'
+      setError(errorMessage)
+      // Don't throw the error - this prevents any unhandled promise rejection
     }
   }
 

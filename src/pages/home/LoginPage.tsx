@@ -56,18 +56,26 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    e.stopPropagation() // Prevent event bubbling
+
+    if (isSubmitting) return // Prevent double submission
+
     setIsSubmitting(true)
+
+    // Save rememberMe state to localStorage for useAuthContext
+    localStorage.setItem('rememberMe', rememberMe ? 'true' : 'false')
+
     try {
-      // Save rememberMe state to localStorage for useAuthContext
-      localStorage.setItem('rememberMe', rememberMe ? 'true' : 'false')
       await login(username, password)
+      // Only handle success case for remember me
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', username)
       } else {
         localStorage.removeItem('rememberedEmail')
       }
     } catch (error) {
-      console.error('Login error:', error)
+      console.error('Login submission error:', error)
+      // Error is already handled in the login function, don't do anything here
     } finally {
       setIsSubmitting(false)
     }
