@@ -2,7 +2,7 @@ import { projectApi } from '@/api/projects'
 import { Project } from '@/types/project'
 import Cookies from 'js-cookie'
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 
 const CURRENT_PROJECT_COOKIE = 'current_project_id'
 const CURRENT_PROJECT_LOCAL = 'currentProjectId'
@@ -10,7 +10,9 @@ const CURRENT_PROJECT_LOCAL = 'currentProjectId'
 export const useCurrentProject = () => {
   const [currentProject, setCurrentProject] = useState<Project | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [hasManuallyNavigatedToProjects, setHasManuallyNavigatedToProjects] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
   const { projectId: urlProjectId } = useParams<{ projectId: string }>()
 
   const fetchProject = async (projectId: string) => {
@@ -59,25 +61,37 @@ export const useCurrentProject = () => {
     if (urlProjectId) {
       // URL has project ID - use it (Jira-style)
       setCurrentProject(null)
+      setHasManuallyNavigatedToProjects(false) // Reset flag when accessing a project
       fetchProject(urlProjectId)
     } else {
-      // No URL project ID, try to load from cookie and redirect
-      let savedProjectId = Cookies.get(CURRENT_PROJECT_COOKIE)
-      if (!savedProjectId) {
-        savedProjectId = localStorage.getItem(CURRENT_PROJECT_LOCAL) || undefined
-      }
+      const isOnProjectsPage = location.pathname === '/projects'
 
-      if (savedProjectId) {
-        // Redirect to project URL instead of loading
-        navigate(`/projects/${savedProjectId}/board`)
+      if (isOnProjectsPage) {
+        // We're on /projects page, don't redirect
+        setHasManuallyNavigatedToProjects(true)
+        setIsLoading(false)
+      } else if (!hasManuallyNavigatedToProjects) {
+        // Only auto-redirect if user hasn't manually navigated to /projects in this session
+        let savedProjectId = Cookies.get(CURRENT_PROJECT_COOKIE)
+        if (!savedProjectId) {
+          savedProjectId = localStorage.getItem(CURRENT_PROJECT_LOCAL) || undefined
+        }
+
+        if (savedProjectId) {
+          // Redirect to project URL instead of loading
+          navigate(`/projects/${savedProjectId}/board`)
+        } else {
+          setIsLoading(false)
+        }
       } else {
         setIsLoading(false)
       }
     }
-  }, [urlProjectId, navigate])
+  }, [urlProjectId, navigate, location.pathname, hasManuallyNavigatedToProjects])
 
   const setCurrentProjectId = (projectId: string) => {
     // Navigate to project URL instead of just saving
+    setHasManuallyNavigatedToProjects(false) // Reset flag when selecting a project
     navigate(`/projects/${projectId}/board`)
   }
 
