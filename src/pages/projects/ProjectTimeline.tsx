@@ -26,6 +26,7 @@ import {
   Users
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 
 interface SprintWithTasks extends Sprint {
   tasks: TaskP[]
@@ -565,12 +566,17 @@ export default function ProjectTimeline() {
   const { currentProject, isLoading: projectLoading } = useCurrentProject()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [sprintsWithTasks, setSprintsWithTasks] = useState<SprintWithTasks[]>([])
-  const { sprints, isLoading: sprintsLoading } = useSprints()
+  const { sprints, isLoading: sprintsLoading, fetchSprints } = useSprints()
   const [selectedTask, setSelectedTask] = useState<TaskP | null>(null)
   const timelineScrollRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
   const startX = useRef(0)
   const scrollLeft = useRef(0)
+  const { projectId: urlProjectId } = useParams<{ projectId: string }>()
+  const navigate = useNavigate()
+
+  // Use URL projectId as a fallback so reloads on /projects/:id/timeline still work even if hook state is momentarily null
+  const effectiveProjectId = currentProject?.id || urlProjectId
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     isDragging.current = true
@@ -596,13 +602,21 @@ export default function ProjectTimeline() {
     }
   }
 
+  // Ensure sprints are fetched using the effective project ID (from URL when needed)
+  useEffect(() => {
+    if (effectiveProjectId) {
+      fetchSprints(effectiveProjectId)
+    }
+  }, [effectiveProjectId])
+
+  // Load tasks for each sprint once sprints are available
   useEffect(() => {
     const loadSprintTasks = async () => {
-      if (!sprints.length || !currentProject?.id) return
+      if (!sprints.length || !effectiveProjectId) return
 
       const sprintsData = await Promise.all(
         sprints.map(async (sprint) => {
-          const tasks = await sprintApi.getSprintTasks(currentProject.id, sprint.id)
+          const tasks = await sprintApi.getSprintTasks(effectiveProjectId, sprint.id)
           return {
             ...sprint,
             tasks
@@ -613,7 +627,7 @@ export default function ProjectTimeline() {
     }
 
     loadSprintTasks()
-  }, [sprints, currentProject])
+  }, [sprints, effectiveProjectId])
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen)
@@ -623,10 +637,22 @@ export default function ProjectTimeline() {
     setCurrentDate((current) => (direction === 'prev' ? addMonths(current, -1) : addMonths(current, 1)))
   }
 
-  if (projectLoading || sprintsLoading || !currentProject) {
+  // If we don't even have an ID from URL or state, send user back to project list
+  useEffect(() => {
+    if (!projectLoading && !effectiveProjectId) {
+      navigate('/projects')
+    }
+  }, [projectLoading, effectiveProjectId])
+
+  // Show loader while fetching sprints or if we lack any project identifier yet
+  if (sprintsLoading || !effectiveProjectId) {
     return (
       <div className='flex h-screen bg-gray-50'>
-        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
+        <Sidebar
+          isOpen={isSidebarOpen}
+          onToggle={toggleSidebar}
+          currentProject={currentProject || (effectiveProjectId ? ({ id: effectiveProjectId } as any) : null)}
+        />
         <div className='flex-1 flex flex-col overflow-hidden'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
           <div className='flex-1 flex items-center justify-center'>
@@ -642,7 +668,11 @@ export default function ProjectTimeline() {
 
   return (
     <div className='flex h-screen bg-gray-50'>
-      <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onToggle={toggleSidebar}
+        currentProject={currentProject || ({ id: effectiveProjectId } as any)}
+      />
 
       <div className='flex-1 flex flex-col overflow-hidden'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
@@ -657,7 +687,7 @@ export default function ProjectTimeline() {
                   </div>
                   <div>
                     <h1 className='text-3xl font-bold text-gray-900'>Timeline</h1>
-                    <p className='text-sm text-gray-600'>Project: {currentProject.title}</p>
+                    <p className='text-sm text-gray-600'>Project: {currentProject?.title || ''}</p>
                   </div>
                 </div>
               </div>

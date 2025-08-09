@@ -2,7 +2,8 @@ import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'ax
 import { ENV_CONFIG } from './env'
 
 const axiosClient = axios.create({
-  baseURL: '', // Will be set from environment variables
+  // Set immediately from env to avoid race conditions on first requests
+  baseURL: ENV_CONFIG.API_BASE_URL,
   timeout: ENV_CONFIG.API_TIMEOUT,
   headers: {
     'Content-Type': 'application/json'
@@ -73,6 +74,21 @@ axiosClient.interceptors.request.use(
 // Response interceptor for primary client
 axiosClient.interceptors.response.use(
   (response: AxiosResponse) => {
+    // Detect cases where a frontend HTML page is returned instead of JSON (common when baseURL is wrong)
+    const contentType = (response.headers as any)['content-type'] || (response.headers as any)['Content-Type']
+    const looksLikeHtml = typeof response.data === 'string' && /<!doctype html>|<html[\s\S]*>/i.test(response.data)
+    if ((contentType && String(contentType).includes('text/html')) || looksLikeHtml) {
+      const url = response.config?.url || 'unknown'
+      console.error(
+        '🚨 [axiosClient] HTML response detected for API request. Check API_BASE_URL or proxy configuration. URL:',
+        url
+      )
+      return Promise.reject({
+        message: 'Received HTML instead of JSON from API. Check API_BASE_URL.',
+        isHtmlResponse: true,
+        url
+      })
+    }
     if (ENV_CONFIG.IS_DEVELOPMENT) {
       console.log('✅ [axiosClient] Response interceptor called')
       console.log('📥 [axiosClient] Response URL:', response.config.url)
