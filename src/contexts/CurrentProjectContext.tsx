@@ -76,11 +76,26 @@ export const CurrentProjectProvider: React.FC<{ children: React.ReactNode }> = (
       return
     }
 
-    // If no project in URL, try from cookie/localStorage and go to board
-    let saved = Cookies.get(CURRENT_PROJECT_COOKIE) || localStorage.getItem(CURRENT_PROJECT_LOCAL) || undefined
-    if (saved) {
-      navigate(`/projects/${saved}/board`)
-      return
+    // If no project in URL, only auto-redirect on legacy project routes or home
+    const legacyProjectRoutes = new Set([
+      '/',
+      '/timeline',
+      '/backlog',
+      '/board',
+      '/members',
+      '/reports',
+      '/commits',
+      '/issues',
+      '/github',
+      '/sprint-meetings'
+    ])
+
+    if (legacyProjectRoutes.has(location.pathname)) {
+      const saved = Cookies.get(CURRENT_PROJECT_COOKIE) || localStorage.getItem(CURRENT_PROJECT_LOCAL) || undefined
+      if (saved) {
+        navigate(`/projects/${saved}/board`)
+        return
+      }
     }
 
     // Nothing to do
