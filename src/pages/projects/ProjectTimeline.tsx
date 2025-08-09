@@ -1,4 +1,3 @@
-import { sprintApi } from '@/api/sprints'
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
 import { TaskDetailMenu } from '@/components/tasks/TaskDetailMenu'
@@ -9,6 +8,7 @@ import { Loader } from '@/components/ui/loader'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useSprints } from '@/hooks/useSprints'
+import { useProjectTasksAndSprints } from '@/hooks/useProjectTasksAndSprints'
 import { cn } from '@/lib/utils'
 import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
@@ -25,7 +25,7 @@ import {
   TrendingUp,
   Users
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 
 interface SprintWithTasks extends Sprint {
@@ -374,12 +374,14 @@ function SprintRow({
   sprint,
   currentDate,
   index,
-  onTaskClick
+  onTaskClick,
+  isHydratingTasks
 }: {
   sprint: SprintWithTasks
   currentDate: Date
   index: number
   onTaskClick?: (task: TaskP) => void
+  isHydratingTasks?: boolean
 }) {
   const monthStart = startOfMonth(currentDate)
   const monthEnd = endOfMonth(currentDate)
@@ -545,7 +547,7 @@ function SprintRow({
                     </div>
                   </div>
                 ))
-              ) : (
+              ) : isHydratingTasks ? null : (
                 <div className='flex items-center justify-center h-full text-sm text-gray-500'>
                   <div className='text-center'>
                     <Target className='h-8 w-8 mx-auto mb-2 text-gray-400' />
@@ -565,11 +567,12 @@ export default function ProjectTimeline() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const { currentProject, isLoading: projectLoading } = useCurrentProject()
   const [currentDate, setCurrentDate] = useState(new Date())
-  const [sprintsWithTasks, setSprintsWithTasks] = useState<SprintWithTasks[]>([])
-  const [tasksLoading, setTasksLoading] = useState(false)
-  const lastTasksFetchKeyRef = useRef<string>('')
-  const lastProjectRef = useRef<string | undefined>(undefined)
   const { sprints, isLoading: sprintsLoading, didInitialLoad } = useSprints()
+  const { tasks, isTaskLoading } = useProjectTasksAndSprints()
+  const sprintsWithTasks: SprintWithTasks[] = useMemo(
+    () => sprints.map((s) => ({ ...s, tasks: tasks.filter((t) => t.sprintId === s.id) })),
+    [sprints, tasks]
+  )
   const [selectedTask, setSelectedTask] = useState<TaskP | null>(null)
   const timelineScrollRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
@@ -605,56 +608,7 @@ export default function ProjectTimeline() {
     }
   }
 
-  // Sprints are fetched by useSprints when currentProject is available via the centralized provider
-
-  // Load tasks for each sprint once sprints are available
-  useEffect(() => {
-    const loadSprintTasks = async () => {
-      if (!effectiveProjectId) return
-
-      // Build a stable key from sprint IDs to detect meaningful changes
-      const key = sprints.map((s) => s.id).join(',')
-      const projectChanged = lastProjectRef.current !== effectiveProjectId
-      const sprintsChanged = lastTasksFetchKeyRef.current !== key
-
-      if (!projectChanged && !sprintsChanged) {
-        return
-      }
-
-      lastProjectRef.current = effectiveProjectId
-      lastTasksFetchKeyRef.current = key
-
-      // Render sprint rows immediately using existing tasks where available
-      if (sprints.length > 0) {
-        const prevById = new Map<string, TaskP[]>(sprintsWithTasks.map((sw) => [sw.id, sw.tasks]))
-        const immediate = sprints.map((s) => ({ ...s, tasks: prevById.get(s.id) || [] }))
-        setSprintsWithTasks(immediate)
-      } else {
-        setSprintsWithTasks([])
-      }
-
-      if (sprints.length === 0) return
-
-      setTasksLoading(true)
-      try {
-        // Keep previous sprintsWithTasks to avoid blank UI while fetching
-        const sprintsData = await Promise.all(
-          sprints.map(async (sprint) => {
-            const tasks = await sprintApi.getSprintTasks(effectiveProjectId, sprint.id)
-            return {
-              ...sprint,
-              tasks
-            }
-          })
-        )
-        setSprintsWithTasks(sprintsData)
-      } finally {
-        setTasksLoading(false)
-      }
-    }
-
-    loadSprintTasks()
-  }, [sprints, effectiveProjectId])
+  // Tasks and sprints are provided by hooks; no per-sprint fetching here
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen)
@@ -671,10 +625,8 @@ export default function ProjectTimeline() {
     }
   }, [projectLoading, effectiveProjectId])
 
-  // Show loader while fetching sprints or if we lack any project identifier yet
-  // Only block the page for the very first load (sprints or missing id). Keep the page visible during task fetches.
-  // Show a single consistent loader until the first sprints fetch completes (or if we lack a project id)
-  if (!didInitialLoad || !effectiveProjectId) {
+  // Show loader until both sprints and tasks complete initial load, and we have a project id
+  if (!didInitialLoad || !effectiveProjectId || sprintsLoading || isTaskLoading || projectLoading) {
     return (
       <div className='flex h-screen bg-gray-50'>
         <Sidebar
@@ -763,10 +715,11 @@ export default function ProjectTimeline() {
                     currentDate={currentDate}
                     index={idx}
                     onTaskClick={(task) => setSelectedTask(task)}
+                    isHydratingTasks={isTaskLoading}
                   />
                 ))}
                 {/* Show empty state only after initial fetch completes and not while we are still hydrating tasks */}
-                {didInitialLoad && !tasksLoading && sprints.length === 0 && (
+                {didInitialLoad && !isTaskLoading && sprints.length === 0 && (
                   <div className='flex items-center justify-center h-96 text-center'>
                     <div>
                       <Clock className='h-16 w-16 mx-auto mb-4 text-gray-400' />
