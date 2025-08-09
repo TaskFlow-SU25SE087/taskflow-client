@@ -569,7 +569,7 @@ export default function ProjectTimeline() {
   const [tasksLoading, setTasksLoading] = useState(false)
   const lastTasksFetchKeyRef = useRef<string>('')
   const lastProjectRef = useRef<string | undefined>(undefined)
-  const { sprints, isLoading: sprintsLoading } = useSprints()
+  const { sprints, isLoading: sprintsLoading, didInitialLoad } = useSprints()
   const [selectedTask, setSelectedTask] = useState<TaskP | null>(null)
   const timelineScrollRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
@@ -673,7 +673,8 @@ export default function ProjectTimeline() {
 
   // Show loader while fetching sprints or if we lack any project identifier yet
   // Only block the page for the very first load (sprints or missing id). Keep the page visible during task fetches.
-  if (sprintsLoading || !effectiveProjectId) {
+  // Show a single consistent loader until the first sprints fetch completes (or if we lack a project id)
+  if (!didInitialLoad || !effectiveProjectId) {
     return (
       <div className='flex h-screen bg-gray-50'>
         <Sidebar
@@ -764,8 +765,8 @@ export default function ProjectTimeline() {
                     onTaskClick={(task) => setSelectedTask(task)}
                   />
                 ))}
-                {/* Show empty state only when sprints have been fetched */}
-                {sprints.length === 0 && (
+                {/* Show empty state only after initial fetch completes and not while we are still hydrating tasks */}
+                {didInitialLoad && !tasksLoading && sprints.length === 0 && (
                   <div className='flex items-center justify-center h-96 text-center'>
                     <div>
                       <Clock className='h-16 w-16 mx-auto mb-4 text-gray-400' />

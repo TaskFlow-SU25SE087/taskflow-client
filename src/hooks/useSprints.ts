@@ -6,6 +6,8 @@ import { useCurrentProject } from './useCurrentProject'
 export const useSprints = () => {
   const [sprints, setSprints] = useState<Sprint[]>([])
   const [isLoading, setIsLoading] = useState(false)
+  // Tracks whether we've completed the very first load attempt for the current project
+  const [didInitialLoad, setDidInitialLoad] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const { currentProject } = useCurrentProject()
   const lastProjectIdRef = useRef<string | undefined>(undefined)
@@ -23,6 +25,7 @@ export const useSprints = () => {
       setSprints([])
     } finally {
       setIsLoading(false)
+      setDidInitialLoad(true)
     }
   }
 
@@ -139,12 +142,14 @@ export const useSprints = () => {
       setSprints([])
     } finally {
       setIsLoading(false)
+      setDidInitialLoad(true)
     }
   }
 
   return {
     sprints,
     isLoading,
+    didInitialLoad,
     error,
     refreshSprints,
     createSprint,
