@@ -624,12 +624,16 @@ export default function ProjectTimeline() {
       lastProjectRef.current = effectiveProjectId
       lastTasksFetchKeyRef.current = key
 
-      if (sprints.length === 0) {
-        // No sprints: clear after fetch key update but don't flash loader
+      // Render sprint rows immediately using existing tasks where available
+      if (sprints.length > 0) {
+        const prevById = new Map<string, TaskP[]>(sprintsWithTasks.map((sw) => [sw.id, sw.tasks]))
+        const immediate = sprints.map((s) => ({ ...s, tasks: prevById.get(s.id) || [] }))
+        setSprintsWithTasks(immediate)
+      } else {
         setSprintsWithTasks([])
-        setTasksLoading(false)
-        return
       }
+
+      if (sprints.length === 0) return
 
       setTasksLoading(true)
       try {
