@@ -566,7 +566,10 @@ export default function ProjectTimeline() {
   const { currentProject, isLoading: projectLoading } = useCurrentProject()
   const [currentDate, setCurrentDate] = useState(new Date())
   const [sprintsWithTasks, setSprintsWithTasks] = useState<SprintWithTasks[]>([])
-  const { sprints, isLoading: sprintsLoading, fetchSprints } = useSprints()
+  const [tasksLoading, setTasksLoading] = useState(false)
+  const lastTasksFetchKeyRef = useRef<string>('')
+  const lastProjectRef = useRef<string | undefined>(undefined)
+  const { sprints, isLoading: sprintsLoading } = useSprints()
   const [selectedTask, setSelectedTask] = useState<TaskP | null>(null)
   const timelineScrollRef = useRef<HTMLDivElement>(null)
   const isDragging = useRef(false)
@@ -602,28 +605,48 @@ export default function ProjectTimeline() {
     }
   }
 
-  // Ensure sprints are fetched using the effective project ID (from URL when needed)
-  useEffect(() => {
-    if (effectiveProjectId) {
-      fetchSprints(effectiveProjectId)
-    }
-  }, [effectiveProjectId])
+  // Sprints are fetched by useSprints when currentProject is available via the centralized provider
 
   // Load tasks for each sprint once sprints are available
   useEffect(() => {
     const loadSprintTasks = async () => {
-      if (!sprints.length || !effectiveProjectId) return
+      if (!effectiveProjectId) return
 
-      const sprintsData = await Promise.all(
-        sprints.map(async (sprint) => {
-          const tasks = await sprintApi.getSprintTasks(effectiveProjectId, sprint.id)
-          return {
-            ...sprint,
-            tasks
-          }
-        })
-      )
-      setSprintsWithTasks(sprintsData)
+      // Build a stable key from sprint IDs to detect meaningful changes
+      const key = sprints.map((s) => s.id).join(',')
+      const projectChanged = lastProjectRef.current !== effectiveProjectId
+      const sprintsChanged = lastTasksFetchKeyRef.current !== key
+
+      if (!projectChanged && !sprintsChanged) {
+        return
+      }
+
+      lastProjectRef.current = effectiveProjectId
+      lastTasksFetchKeyRef.current = key
+
+      if (sprints.length === 0) {
+        // No sprints: clear after fetch key update but don't flash loader
+        setSprintsWithTasks([])
+        setTasksLoading(false)
+        return
+      }
+
+      setTasksLoading(true)
+      try {
+        // Keep previous sprintsWithTasks to avoid blank UI while fetching
+        const sprintsData = await Promise.all(
+          sprints.map(async (sprint) => {
+            const tasks = await sprintApi.getSprintTasks(effectiveProjectId, sprint.id)
+            return {
+              ...sprint,
+              tasks
+            }
+          })
+        )
+        setSprintsWithTasks(sprintsData)
+      } finally {
+        setTasksLoading(false)
+      }
     }
 
     loadSprintTasks()
@@ -645,6 +668,7 @@ export default function ProjectTimeline() {
   }, [projectLoading, effectiveProjectId])
 
   // Show loader while fetching sprints or if we lack any project identifier yet
+  // Only block the page for the very first load (sprints or missing id). Keep the page visible during task fetches.
   if (sprintsLoading || !effectiveProjectId) {
     return (
       <div className='flex h-screen bg-gray-50'>
@@ -736,7 +760,8 @@ export default function ProjectTimeline() {
                     onTaskClick={(task) => setSelectedTask(task)}
                   />
                 ))}
-                {sprintsWithTasks.length === 0 && (
+                {/* Show empty state only when sprints have been fetched */}
+                {sprints.length === 0 && (
                   <div className='flex items-center justify-center h-96 text-center'>
                     <div>
                       <Clock className='h-16 w-16 mx-auto mb-4 text-gray-400' />

@@ -2,6 +2,7 @@ import { ToastContainer } from '@/components/ui/ToastContainer'
 import { ToastProvider } from '@/components/ui/ToastContext'
 import { updateAxiosBaseURL } from '@/configs/axiosClient'
 import { GitHubStatusProvider } from '@/contexts/GitHubStatusContext'
+import { CurrentProjectProvider } from '@/contexts/CurrentProjectContext'
 import { SignalRProvider } from '@/contexts/SignalRContext'
 import { AuthProvider } from '@/hooks/useAuthContext.tsx'
 import UrlManager from '@/services/urlManager'
@@ -10,7 +11,6 @@ import { BrowserRouter } from 'react-router-dom'
 import AppContent from './components/AppContent'
 import { ConnectionStatus } from './components/ConnectionStatus'
 import ErrorBoundary from './components/ErrorBoundary'
-
 
 function App() {
   // Initialize URL Manager on app startup
@@ -24,7 +24,7 @@ function App() {
         console.error('[App] Failed to initialize URL manager:', error)
       }
     }
-    
+
     initializeUrlManager()
   }, [])
 
@@ -35,10 +35,12 @@ function App() {
         <AuthProvider>
           <SignalRProvider>
             <GitHubStatusProvider>
-              <ErrorBoundary>
-                <AppContent />
-                <ConnectionStatus />
-              </ErrorBoundary>
+              <CurrentProjectProvider>
+                <ErrorBoundary>
+                  <AppContent />
+                  <ConnectionStatus />
+                </ErrorBoundary>
+              </CurrentProjectProvider>
             </GitHubStatusProvider>
           </SignalRProvider>
         </AuthProvider>

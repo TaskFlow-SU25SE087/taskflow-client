@@ -1,6 +1,6 @@
 import { sprintApi } from '@/api/sprints'
 import { Sprint } from '@/types/sprint'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useCurrentProject } from './useCurrentProject'
 
 export const useSprints = () => {
@@ -8,6 +8,8 @@ export const useSprints = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const { currentProject } = useCurrentProject()
+  const lastProjectIdRef = useRef<string | undefined>(undefined)
+  const inFlightRef = useRef<boolean>(false)
 
   const fetchSprints = async () => {
     if (!currentProject || !currentProject.id) return
@@ -25,11 +27,24 @@ export const useSprints = () => {
   }
 
   useEffect(() => {
+    const projectId = currentProject?.id
+    if (!projectId) return
+    if (lastProjectIdRef.current === projectId || inFlightRef.current) return
+    lastProjectIdRef.current = projectId
     fetchSprints()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentProject])
+  }, [currentProject?.id])
 
-  const refreshSprints = fetchSprints
+  const refreshSprints = async () => {
+    if (!currentProject?.id) return
+    if (inFlightRef.current) return
+    inFlightRef.current = true
+    try {
+      await fetchSprints()
+    } finally {
+      inFlightRef.current = false
+    }
+  }
 
   const createSprint = async (sprint: {
     name: string
