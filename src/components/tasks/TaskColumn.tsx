@@ -54,18 +54,18 @@ export function TaskColumn({ title, tasks, color, onTaskCreated, boardId, moving
 
   return (
     <div
-      className='bg-white rounded-lg border border-gray-300 w-full flex flex-col'
+      className='bg-white rounded-lg border border-t-0 border-gray-300 w-full flex flex-col'
       style={{ width: '320px', minWidth: '320px', minHeight: '200px' }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Header */}
-      <div className='flex-none'>
-        <div className='flex items-center justify-between px-6 pt-6 pb-4'>
+      <div className='flex-none sticky top-px -mt-px border-t border-t-gray-200 border-b-gray-200 z-40 bg-white shadow-sm border-b border-gray-200'>
+        <div className='flex items-center justify-between px-4 pt-3 pb-2'>
           <div className='flex items-center gap-2'>
             <div style={{ backgroundColor: dynamicColor }} className='w-2 h-2 rounded-full' />
             <span className='font-medium text-gray-800'>{title}</span>
-            <span className='bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full text-sm'>{tasks.length}</span>
+            <span className='bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full text-xs'>{tasks.length}</span>
           </div>
           <div
             className={`flex items-center gap-2 transition-opacity duration-200 ${
@@ -132,16 +132,17 @@ export function TaskColumn({ title, tasks, color, onTaskCreated, boardId, moving
           </div>
         </div>
         {/* Progress bar */}
-        <div className='px-6'>
-          <div style={{ backgroundColor: dynamicColor }} className='h-1 w-full rounded-full mb-4' />
+        <div className='px-4'>
+          <div style={{ backgroundColor: dynamicColor }} className='h-1 w-full rounded-full mb-2' />
         </div>
+        {/* bottom border now handled by header's border-b */}
       </div>
       {/* Tasks container */}
-      <div className='flex-1 min-h-0 overflow-hidden'>
+      <div className='flex-1 min-h-0'>
         {tasks.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className='overflow-y-auto px-6 h-full max-h-[calc(100vh-300px)]'>
+          <div className='px-6'>
             <div className='space-y-4 pb-4'>
               {tasks.map((task) => (
                 <div key={task.id}>

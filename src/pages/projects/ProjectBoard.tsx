@@ -620,7 +620,7 @@ export default function ProjectBoard() {
 
         {currentProject?.id && <ProjectGroupManager projectId={currentProject.id} />}
 
-        <div className='flex flex-col flex-1 overflow-hidden min-h-0'>
+        <div className='flex flex-col flex-1 min-h-0'>
           {/* Header content - redesigned to match Backlog/Timeline */}
           <div className='flex-none w-full p-6 pb-4 bg-transparent'>
             <div className='flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4'>
@@ -859,7 +859,7 @@ export default function ProjectBoard() {
               <div />
             </div>
           </div>
-          <div className='flex-1 overflow-hidden'>
+          <div className='flex-1 min-h-0'>
             <div className='overflow-x-auto overflow-y-auto px-0 pb-2 pt-0 h-full'>
               <DndContext
                 sensors={sensors}
