@@ -66,7 +66,7 @@ const boardColors: { [key: string]: string } = {
 }
 
 const getBoardColor = (status: string): string => {
-  return boardColors[status] || '#5030E5' // fallback to default color
+  return boardColors[status] || '#5030E5'
 }
 
 function MemberAvatar({
@@ -436,11 +436,11 @@ export default function ProjectBoard() {
         console.log('[TIMING] 🎯 Task move operation completed in:', totalTaskMoveTime.toFixed(2), 'ms')
         console.log('[TIMING] 🕐 Total drag end operation completed in:', totalDragEndTime.toFixed(2), 'ms')
         console.log(
-          '[TIMING] 📊 Breakdown: API call:',
+          '[TIMING] 📊 Breakdown:',
           apiCallDuration.toFixed(2),
-          'ms, Optimistic update:',
+          'ms API,',
           optimisticUpdateDuration.toFixed(2),
-          'ms'
+          'ms optimistic'
         )
 
         console.log('[DnD] Đã chuyển task sang board mới thành công', { taskId, newBoardId })
@@ -621,20 +621,37 @@ export default function ProjectBoard() {
         {currentProject?.id && <ProjectGroupManager projectId={currentProject.id} />}
 
         <div className='flex flex-col flex-1 overflow-hidden min-h-0'>
-          {/* Header content */}
-          <div className='flex-shrink-0 p-6 pt-6 pb-2 overflow-y-auto max-h-[60vh]'>
-            {/* Project name and controls section */}
-            <div className='flex items-center justify-between mb-3'>
+          {/* Header content - redesigned to match Backlog/Timeline */}
+          <div className='flex-none w-full p-6 pb-4 bg-transparent'>
+            <div className='flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4'>
               <div className='flex items-center gap-3'>
-                <h1 className='text-3xl font-bold text-gray-900'>{currentProject.title}</h1>
+                <div className='p-2 bg-lavender-100 rounded-lg'>
+                  <svg viewBox='0 0 24 24' className='h-6 w-6 text-lavender-600 fill-current'>
+                    <rect x='3' y='3' width='7' height='7' rx='1'></rect>
+                    <rect x='14' y='3' width='7' height='7' rx='1'></rect>
+                    <rect x='3' y='14' width='7' height='7' rx='1'></rect>
+                    <rect x='14' y='14' width='7' height='7' rx='1'></rect>
+                  </svg>
+                </div>
+                <div>
+                  <h1 className='text-3xl font-bold text-gray-900'>Board</h1>
+                  <p className='text-sm text-gray-600'>Project: {currentProject.title}</p>
+                </div>
+                <div className='ml-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-full px-3 py-1 border border-gray-200'>
+                  {boards.length} {boards.length === 1 ? 'board' : 'boards'}
+                </div>
+              </div>
+
+              <div className='flex items-center gap-2 lg:gap-3'>
                 <ProjectEditMenu
                   project={currentProject}
                   onProjectUpdated={refreshBoards}
                   trigger={
                     <Button
                       type='button'
-                      className='bg-lavender-100 hover:bg-lavender-200 rounded-xl p-2 transition-colors duration-150 shadow-none border-none focus:outline-none'
-                      style={{ minWidth: 0, minHeight: 0, height: '32px', width: '32px' }}
+                      className='bg-lavender-100 hover:bg-lavender-200 rounded-lg p-2 shadow-none border-none'
+                      style={{ minWidth: 0, minHeight: 0, height: '36px', width: '36px' }}
+                      title='Edit project'
                     >
                       <Pencil className='h-5 w-5 text-lavender-600' />
                     </Button>
@@ -642,48 +659,51 @@ export default function ProjectBoard() {
                 />
                 <Button
                   type='button'
-                  className='bg-lavender-100 hover:bg-lavender-200 rounded-xl p-2 transition-colors duration-150 shadow-none border-none focus:outline-none'
-                  style={{ minWidth: 0, minHeight: 0, height: '32px', width: '32px' }}
+                  className='bg-lavender-100 hover:bg-lavender-200 rounded-lg p-2 shadow-none border-none'
+                  style={{ minWidth: 0, minHeight: 0, height: '36px', width: '36px' }}
                   onClick={handleCopyProjectId}
+                  title='Copy Project ID'
                 >
                   <Link2 className='h-5 w-5 text-lavender-600' />
                 </Button>
                 <Button
                   type='button'
-                  className='bg-lavender-100 hover:bg-lavender-200 rounded-xl p-2 transition-colors duration-150 shadow-none border-none focus:outline-none'
-                  style={{ minWidth: 0, minHeight: 0, height: '32px', width: '32px' }}
+                  className='bg-lavender-100 hover:bg-lavender-200 rounded-lg p-2 shadow-none border-none'
+                  style={{ minWidth: 0, minHeight: 0, height: '36px', width: '36px' }}
                   onClick={() => setIsLockDialogOpen(true)}
                   title='Board Column Lock Settings'
                 >
                   <Settings className='h-5 w-5 text-lavender-600' />
                 </Button>
-              </div>
 
-              <div className='flex items-center gap-4'>
-                <div className='flex items-center gap-2'>
-                  <Button
-                    variant='ghost'
-                    className='flex items-center gap-2 px-3 py-2 rounded-lg bg-[#ece8fd] hover:bg-[#e0dbfa] text-[#7c3aed]'
-                    onClick={() => setIsInviteOpen(true)}
-                  >
-                    <Plus className='h-4 w-4 text-[#7c3aed]' />
-                    <span>Invite</span>
-                  </Button>
-                  <Button
-                    variant='outline'
-                    className='text-red-600 border-red-200 hover:bg-red-50'
-                    onClick={handleLeaveProject}
-                    disabled={memberLoading}
-                  >
-                    {memberLoading ? 'Leaving...' : 'Leave Project'}
-                  </Button>
-                </div>
+                <TaskBoardCreateMenu
+                  isOpen={isBoardDialogOpen}
+                  onOpenChange={setIsBoardDialogOpen}
+                  projectId={currentProject.id}
+                  onBoardCreated={refreshBoards}
+                />
+
+                <Button
+                  variant='ghost'
+                  className='flex items-center gap-2 px-3 py-2 rounded-lg bg-[#ece8fd] hover:bg-[#e0dbfa] text-[#7c3aed]'
+                  onClick={() => setIsInviteOpen(true)}
+                >
+                  <Plus className='h-4 w-4 text-[#7c3aed]' />
+                  <span>Invite</span>
+                </Button>
+                <Button
+                  variant='outline'
+                  className='text-red-600 border-red-200 hover:bg-red-50'
+                  onClick={handleLeaveProject}
+                  disabled={memberLoading}
+                >
+                  {memberLoading ? 'Leaving...' : 'Leave Project'}
+                </Button>
                 <MemberAvatarGroup members={projectMembers} />
               </div>
             </div>
 
-            {/* Filter and search section */}
-            <div className='flex items-center justify-between mb-3'>
+            <div className='flex items-center justify-between'>
               <div className='flex items-center gap-3'>
                 <Button variant='outline' className='hover:bg-gray-50 border-gray-300'>
                   <Filter className='mr-2 h-4 w-4' />
@@ -691,7 +711,7 @@ export default function ProjectBoard() {
                   <ChevronDown className='ml-2 h-4 w-4' />
                 </Button>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className='w-[140px] border-gray-300'>
+                  <SelectTrigger className='w-[160px] border-gray-300'>
                     <SelectValue placeholder='Filter status' />
                   </SelectTrigger>
                   <SelectContent>
@@ -711,154 +731,138 @@ export default function ProjectBoard() {
                   <Input
                     placeholder='Search tasks across boards...'
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className='w-[280px] pl-10 border-gray-300'
+                    className='w-[300px] pl-10 border-gray-300'
                   />
                 </div>
               </div>
-              <TaskBoardCreateMenu
-                isOpen={isBoardDialogOpen}
-                onOpenChange={setIsBoardDialogOpen}
-                projectId={currentProject.id}
-                onBoardCreated={refreshBoards}
-              />
+              <div />
             </div>
+          </div>
 
-            {/* Sprint section - moved below main controls */}
-            <div className='pt-2'>
-              <SprintSelector />
-
-              {/* Sprint deadline display */}
-              {(() => {
-                const currentSprint = sprints.find((s) => s.id === selectedSprintId)
-                if (currentSprint && currentSprint.startDate && currentSprint.endDate) {
-                  return (
-                    <div className='mt-3 flex items-center gap-2 text-sm text-gray-600 bg-gray-50 rounded-lg px-3 py-2 w-fit'>
-                      <Clock className='h-4 w-4' />
-                      <span>Deadline:</span>
-                      <span className='font-medium text-gray-800'>
-                        {new Date(currentSprint.startDate).toLocaleDateString()} -{' '}
-                        {new Date(currentSprint.endDate).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )
-                }
-                return null
-              })()}
-
-              {/* Stats cards toggle button */}
-              <div className='flex items-center justify-between mt-2 mb-2'>
-                <Button
-                  variant='outline'
-                  size='sm'
-                  onClick={() => setShowStatsCards(!showStatsCards)}
-                  className='flex items-center gap-2 text-gray-600 hover:text-gray-800 border-gray-300'
-                >
-                  <TrendingUp className='h-4 w-4' />
-                  {showStatsCards ? 'Hide Stats' : 'Show Stats'}
-                </Button>
-              </div>
-
-              {/* Clean stats cards matching Figma design */}
-              <div
-                className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                  showStatsCards ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-                }`}
-              >
-                <div className='grid grid-cols-1 md:grid-cols-3 gap-3'>
-                  {(() => {
-                    const stats = calculateBoardProgress(tasks)
-                    let timeProgress = 0
-                    const currentSprint = sprints.find((s) => s.id === selectedSprintId)
-                    if (currentSprint && currentSprint.startDate && currentSprint.endDate) {
-                      const now = new Date()
-                      const start = new Date(currentSprint.startDate)
-                      const end = new Date(currentSprint.endDate)
-                      if (now >= start && now <= end) {
-                        timeProgress = Math.round(
-                          ((now.getTime() - start.getTime()) / (end.getTime() - start.getTime())) * 100
-                        )
-                      } else if (now > end) {
-                        timeProgress = 100
-                      } else {
-                        timeProgress = 0
-                      }
-                    }
+          {/* Sprint section - compact toolbar with floating stats */}
+          <div className='px-6 relative'>
+            <div className='flex items-center justify-start gap-3 flex-wrap'>
+              <div className='flex items-center gap-3 text-sm text-gray-600'>
+                <SprintSelector />
+                {(() => {
+                  const currentSprint = sprints.find((s) => s.id === selectedSprintId)
+                  if (currentSprint && currentSprint.startDate && currentSprint.endDate) {
                     return (
-                      <>
-                        {/* Completed Card - Clean white design */}
-                        <div className='bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow'>
-                          <div className='flex items-center justify-between'>
-                            <div>
-                              <p className='text-gray-600 text-sm font-medium'>Completed</p>
-                              <p className='text-2xl font-bold text-gray-900'>{stats.completed}</p>
-                            </div>
-                            <div className='p-3 bg-green-50 rounded-lg'>
-                              <CheckCircle className='h-6 w-6 text-green-600' />
-                            </div>
-                          </div>
-                          <div className='mt-3 flex items-center gap-2'>
-                            <div className='flex-1 bg-gray-200 rounded-full h-2'>
-                              <div
-                                className='bg-green-500 rounded-full h-2 transition-all duration-500'
-                                style={{ width: `${stats.completionPercentage}%` }}
-                              />
-                            </div>
-                            <span className='text-xs text-gray-500'>{stats.completionPercentage}%</span>
-                          </div>
-                        </div>
-
-                        {/* Progress Card - Clean white design */}
-                        <div className='bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow'>
-                          <div className='flex items-center justify-between'>
-                            <div>
-                              <p className='text-gray-600 text-sm font-medium'>Progress</p>
-                              <p className='text-2xl font-bold text-gray-900'>{stats.completionPercentage}%</p>
-                            </div>
-                            <div className='p-3 bg-blue-50 rounded-lg'>
-                              <TrendingUp className='h-6 w-6 text-blue-600' />
-                            </div>
-                          </div>
-                          <div className='mt-3 flex items-center gap-2'>
-                            <div className='flex-1 bg-gray-200 rounded-full h-2'>
-                              <div
-                                className='bg-blue-500 rounded-full h-2 transition-all duration-500'
-                                style={{ width: `${stats.completionPercentage}%` }}
-                              />
-                            </div>
-                            <span className='text-xs text-gray-500'>Completed</span>
-                          </div>
-                        </div>
-
-                        {/* Time Card - Clean white design */}
-                        <div className='bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow'>
-                          <div className='flex items-center justify-between'>
-                            <div>
-                              <p className='text-gray-600 text-sm font-medium'>Time</p>
-                              <p className='text-2xl font-bold text-gray-900'>{timeProgress}%</p>
-                            </div>
-                            <div className='p-3 bg-gray-50 rounded-lg'>
-                              <Clock className='h-6 w-6 text-gray-600' />
-                            </div>
-                          </div>
-                          <div className='mt-3 flex items-center gap-2'>
-                            <div className='flex-1 bg-gray-200 rounded-full h-2'>
-                              <div
-                                className='bg-gray-500 rounded-full h-2 transition-all duration-500'
-                                style={{ width: `${timeProgress}%` }}
-                              />
-                            </div>
-                            <span className='text-xs text-gray-500'>Sprint Time</span>
-                          </div>
-                        </div>
-                      </>
+                      <div className='flex items-center gap-1 text-xs text-gray-600 bg-gray-100 rounded-full px-2 py-1'>
+                        <Clock className='h-3.5 w-3.5' />
+                        <span>
+                          {new Date(currentSprint.startDate).toLocaleDateString()} -{' '}
+                          {new Date(currentSprint.endDate).toLocaleDateString()}
+                        </span>
+                      </div>
                     )
-                  })()}
+                  }
+                  return null
+                })()}
+
+                {/* Stats toggle and anchored overlay */}
+                <div className='relative'>
+                  <Button
+                    variant='ghost'
+                    size='sm'
+                    onClick={() => setShowStatsCards(!showStatsCards)}
+                    className='h-8 px-3 rounded-md bg-[#ece8fd] hover:bg-[#e0dbfa] text-[#7c3aed] flex items-center gap-1.5'
+                    title={showStatsCards ? 'Hide stats' : 'Show stats'}
+                  >
+                    <TrendingUp className='h-4 w-4' />
+                    <span className='text-xs font-medium'>Sprint Stats</span>
+                  </Button>
+
+                  {showStatsCards && (
+                    <div className='absolute left-0 top-full mt-2 z-50 w-[560px] max-w-[90vw] rounded-xl border border-gray-200 bg-white/95 backdrop-blur-md shadow-xl p-3'>
+                      {(() => {
+                        const stats = calculateBoardProgress(tasks)
+                        let timeProgress = 0
+                        const currentSprint = sprints.find((s) => s.id === selectedSprintId)
+                        if (currentSprint && currentSprint.startDate && currentSprint.endDate) {
+                          const now = new Date()
+                          const start = new Date(currentSprint.startDate)
+                          const end = new Date(currentSprint.endDate)
+                          if (now >= start && now <= end) {
+                            timeProgress = Math.round(
+                              ((now.getTime() - start.getTime()) / (end.getTime() - start.getTime())) * 100
+                            )
+                          } else if (now > end) {
+                            timeProgress = 100
+                          } else {
+                            timeProgress = 0
+                          }
+                        }
+                        return (
+                          <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
+                            <div className='bg-white rounded-md p-2 border border-gray-200 shadow-sm'>
+                              <div className='flex items-center justify-between'>
+                                <div>
+                                  <p className='text-[11px] text-gray-600 font-medium'>Completed</p>
+                                  <p className='text-lg font-bold text-gray-900'>{stats.completed}</p>
+                                </div>
+                                <div className='p-2 bg-green-50 rounded-lg'>
+                                  <CheckCircle className='h-5 w-5 text-green-600' />
+                                </div>
+                              </div>
+                              <div className='mt-2 flex items-center gap-2'>
+                                <div className='flex-1 bg-gray-200 rounded-full h-1 overflow-hidden'>
+                                  <div
+                                    className='bg-green-500 h-full'
+                                    style={{ width: `${stats.completionPercentage}%` }}
+                                  />
+                                </div>
+                                <span className='text-[10px] text-gray-500'>{stats.completionPercentage}%</span>
+                              </div>
+                            </div>
+
+                            <div className='bg-white rounded-md p-2 border border-gray-200 shadow-sm'>
+                              <div className='flex items-center justify-between'>
+                                <div>
+                                  <p className='text-[11px] text-gray-600 font-medium'>Progress</p>
+                                  <p className='text-lg font-bold text-gray-900'>{stats.completionPercentage}%</p>
+                                </div>
+                                <div className='p-2 bg-blue-50 rounded-lg'>
+                                  <TrendingUp className='h-5 w-5 text-blue-600' />
+                                </div>
+                              </div>
+                              <div className='mt-2 flex items-center gap-2'>
+                                <div className='flex-1 bg-gray-200 rounded-full h-1 overflow-hidden'>
+                                  <div
+                                    className='bg-blue-500 h-full'
+                                    style={{ width: `${stats.completionPercentage}%` }}
+                                  />
+                                </div>
+                                <span className='text-[10px] text-gray-500'>Completed</span>
+                              </div>
+                            </div>
+
+                            <div className='bg-white rounded-md p-2 border border-gray-200 shadow-sm'>
+                              <div className='flex items-center justify-between'>
+                                <div>
+                                  <p className='text-[11px] text-gray-600 font-medium'>Time</p>
+                                  <p className='text-lg font-bold text-gray-900'>{timeProgress}%</p>
+                                </div>
+                                <div className='p-2 bg-gray-50 rounded-lg'>
+                                  <Clock className='h-5 w-5 text-gray-600' />
+                                </div>
+                              </div>
+                              <div className='mt-2 flex items-center gap-2'>
+                                <div className='flex-1 bg-gray-200 rounded-full h-1 overflow-hidden'>
+                                  <div className='bg-gray-500 h-full' style={{ width: `${timeProgress}%` }} />
+                                </div>
+                                <span className='text-[10px] text-gray-500'>Sprint Time</span>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })()}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Board container */}
           <div className='flex-1 overflow-hidden'>
             <div className='overflow-x-auto overflow-y-auto px-0 pb-2 pt-0 h-full'>
               <DndContext
@@ -869,9 +873,8 @@ export default function ProjectBoard() {
               >
                 <SortableContext items={filteredBoards.map((b) => b.id)} strategy={horizontalListSortingStrategy}>
                   <div className='flex flex-row gap-4' style={{ minWidth: 'max-content' }}>
-                    {/* Drop zone start */}
                     <div
-                      className='w-0 bg-transparent flex-shrink-0' // changed from w-4 to w-0
+                      className='w-0 bg-transparent flex-shrink-0'
                       data-dropzone='start'
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={() =>
@@ -902,9 +905,8 @@ export default function ProjectBoard() {
                         </SortableBoardColumn>
                       </div>
                     ))}
-                    {/* Drop zone end */}
                     <div
-                      className='w-0 bg-transparent flex-shrink-0' // changed from w-4 to w-0
+                      className='w-0 bg-transparent flex-shrink-0'
                       data-dropzone='end'
                       onDragOver={(e) => e.preventDefault()}
                       onDrop={() =>
