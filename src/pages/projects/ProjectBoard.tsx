@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Loader } from '@/components/ui/loader'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { useBoards } from '@/hooks/useBoards'
@@ -561,12 +561,79 @@ export default function ProjectBoard() {
     return (
       <div className='flex h-screen bg-gray-50'>
         <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
-        <div className='flex-1 flex flex-col overflow-hidden'>
+        <div className='flex-1 flex flex-col overflow-hidden min-h-0'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-          <div className='flex-1 flex items-center justify-center'>
-            <div className='text-center'>
-              <Loader />
-              <p className='mt-4 text-gray-600'>Loading project board...</p>
+
+          <div className='flex flex-col flex-1 min-h-0'>
+            {/* Header skeleton to mirror Board header */}
+            <div className='flex-none w-full p-6 pb-4 bg-transparent'>
+              <div className='flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4'>
+                <div className='flex items-center gap-3'>
+                  <Skeleton className='h-10 w-10 rounded-lg' />
+                  <div className='space-y-2'>
+                    <Skeleton className='h-6 w-40' />
+                    <Skeleton className='h-4 w-64' />
+                  </div>
+                  <Skeleton className='h-6 w-24 rounded-full ml-2' />
+                </div>
+
+                <div className='flex items-center gap-2 lg:gap-3'>
+                  <Skeleton className='h-9 w-9 rounded-lg' />
+                  <Skeleton className='h-9 w-9 rounded-lg' />
+                  <Skeleton className='h-9 w-9 rounded-lg' />
+                  <Skeleton className='h-9 w-24 rounded-md' />
+                  <Skeleton className='h-9 w-32 rounded-md' />
+                  {/* Avatar group */}
+                  <div className='flex -space-x-3'>
+                    <Skeleton className='h-10 w-10 rounded-full' />
+                    <Skeleton className='h-10 w-10 rounded-full' />
+                    <Skeleton className='h-10 w-10 rounded-full' />
+                    <Skeleton className='h-10 w-10 rounded-full' />
+                  </div>
+                </div>
+              </div>
+
+              <div className='flex items-center justify-between'>
+                <div className='flex items-center gap-3 flex-wrap'>
+                  <Skeleton className='h-9 w-28 rounded-md' />
+                  <Skeleton className='h-9 w-40 rounded-md' />
+                  <Skeleton className='h-9 w-[300px] rounded-md' />
+                  {/* Sprint info and stats toggle */}
+                  <Skeleton className='h-6 w-32 rounded-md' />
+                  <Skeleton className='h-8 w-32 rounded-md' />
+                </div>
+                <div />
+              </div>
+            </div>
+
+            {/* Board columns skeleton */}
+            <div className='flex-1 min-h-0'>
+              <div className='overflow-x-auto overflow-y-auto px-0 pb-2 pt-0 h-full'>
+                <div className='flex flex-row gap-4' style={{ minWidth: 'max-content' }}>
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className='flex-shrink-0' style={{ width: '320px', minWidth: '320px' }}>
+                      <div className='rounded-xl bg-white border border-gray-200 p-3 shadow-sm'>
+                        <div className='flex items-center justify-between mb-3'>
+                          <Skeleton className='h-5 w-28' />
+                          <Skeleton className='h-8 w-8 rounded-md' />
+                        </div>
+                        <div className='space-y-3'>
+                          {Array.from({ length: 3 }).map((__, j) => (
+                            <div key={j} className='rounded-lg border border-gray-200 bg-white p-3'>
+                              <Skeleton className='h-4 w-48 mb-2' />
+                              <Skeleton className='h-3 w-56 mb-2' />
+                              <div className='flex items-center gap-2'>
+                                <Skeleton className='h-6 w-16 rounded-full' />
+                                <Skeleton className='h-6 w-16 rounded-full' />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
