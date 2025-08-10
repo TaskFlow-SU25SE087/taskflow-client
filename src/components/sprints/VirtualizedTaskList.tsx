@@ -84,15 +84,18 @@ export const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = ({
     )
   }
 
+  const autoHeight = Math.min(tasks.length * ITEM_HEIGHT, height)
+
   return (
     <List
-      height={height}
+      height={autoHeight}
       itemCount={tasks.length}
       itemSize={ITEM_HEIGHT}
       width='100%'
-      overscanCount={5}
+      overscanCount={3}
       onItemsRendered={({ visibleStopIndex }) => handleItemsRendered({ visibleStopIndex })}
       ref={listRef}
+      style={{ overflowX: 'hidden' }}
     >
       {Row}
     </List>
