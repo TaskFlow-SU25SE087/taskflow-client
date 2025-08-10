@@ -704,7 +704,7 @@ export default function ProjectBoard() {
             </div>
 
             <div className='flex items-center justify-between'>
-              <div className='flex items-center gap-3'>
+              <div className='flex items-center gap-3 flex-wrap'>
                 <Button variant='outline' className='hover:bg-gray-50 border-gray-300'>
                   <Filter className='mr-2 h-4 w-4' />
                   Filter
@@ -734,133 +734,129 @@ export default function ProjectBoard() {
                     className='w-[300px] pl-10 border-gray-300'
                   />
                 </div>
-              </div>
-              <div />
-            </div>
-          </div>
 
-          {/* Sprint section - compact toolbar with floating stats */}
-          <div className='px-6 relative'>
-            <div className='flex items-center justify-start gap-3 flex-wrap'>
-              <div className='flex items-center gap-3 text-sm text-gray-600'>
-                <SprintSelector />
-                {(() => {
-                  const currentSprint = sprints.find((s) => s.id === selectedSprintId)
-                  if (currentSprint && currentSprint.startDate && currentSprint.endDate) {
-                    return (
-                      <div className='flex items-center gap-1 text-xs text-gray-600 bg-gray-100 rounded-full px-2 py-1'>
-                        <Clock className='h-3.5 w-3.5' />
-                        <span>
-                          {new Date(currentSprint.startDate).toLocaleDateString()} -{' '}
-                          {new Date(currentSprint.endDate).toLocaleDateString()}
-                        </span>
-                      </div>
-                    )
-                  }
-                  return null
-                })()}
+                {/* Sprint info and stats moved next to search */}
+                <div className='flex items-center gap-3 text-sm text-gray-600'>
+                  <SprintSelector />
+                  {(() => {
+                    const currentSprint = sprints.find((s) => s.id === selectedSprintId)
+                    if (currentSprint && currentSprint.startDate && currentSprint.endDate) {
+                      return (
+                        <div className='flex items-center gap-1 text-xs text-gray-600 bg-gray-100 rounded-full px-2 py-1'>
+                          <Clock className='h-3.5 w-3.5' />
+                          <span>
+                            {new Date(currentSprint.startDate).toLocaleDateString()} -{' '}
+                            {new Date(currentSprint.endDate).toLocaleDateString()}
+                          </span>
+                        </div>
+                      )
+                    }
+                    return null
+                  })()}
 
-                {/* Stats toggle and anchored overlay */}
-                <div className='relative'>
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    onClick={() => setShowStatsCards(!showStatsCards)}
-                    className='h-8 px-3 rounded-md bg-[#ece8fd] hover:bg-[#e0dbfa] text-[#7c3aed] flex items-center gap-1.5'
-                    title={showStatsCards ? 'Hide stats' : 'Show stats'}
-                  >
-                    <TrendingUp className='h-4 w-4' />
-                    <span className='text-xs font-medium'>Sprint Stats</span>
-                  </Button>
+                  {/* Stats toggle and anchored overlay */}
+                  <div className='relative'>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      onClick={() => setShowStatsCards(!showStatsCards)}
+                      className='h-8 px-3 rounded-md bg-[#ece8fd] hover:bg-[#e0dbfa] text-[#7c3aed] flex items-center gap-1.5'
+                      title={showStatsCards ? 'Hide stats' : 'Show stats'}
+                    >
+                      <TrendingUp className='h-4 w-4' />
+                      <span className='text-xs font-medium'>Sprint Stats</span>
+                    </Button>
 
-                  {showStatsCards && (
-                    <div className='absolute left-0 top-full mt-2 z-50 w-[560px] max-w-[90vw] rounded-xl border border-gray-200 bg-white/95 backdrop-blur-md shadow-xl p-3'>
-                      {(() => {
-                        const stats = calculateBoardProgress(tasks)
-                        let timeProgress = 0
-                        const currentSprint = sprints.find((s) => s.id === selectedSprintId)
-                        if (currentSprint && currentSprint.startDate && currentSprint.endDate) {
-                          const now = new Date()
-                          const start = new Date(currentSprint.startDate)
-                          const end = new Date(currentSprint.endDate)
-                          if (now >= start && now <= end) {
-                            timeProgress = Math.round(
-                              ((now.getTime() - start.getTime()) / (end.getTime() - start.getTime())) * 100
-                            )
-                          } else if (now > end) {
-                            timeProgress = 100
-                          } else {
-                            timeProgress = 0
+                    {showStatsCards && (
+                      <div className='absolute left-0 top-full mt-2 z-50 w-[560px] max-w-[90vw] rounded-xl border border-gray-200 bg-white/95 backdrop-blur-md shadow-xl p-3'>
+                        {(() => {
+                          const stats = calculateBoardProgress(tasks)
+                          let timeProgress = 0
+                          const currentSprint = sprints.find((s) => s.id === selectedSprintId)
+                          if (currentSprint && currentSprint.startDate && currentSprint.endDate) {
+                            const now = new Date()
+                            const start = new Date(currentSprint.startDate)
+                            const end = new Date(currentSprint.endDate)
+                            if (now >= start && now <= end) {
+                              timeProgress = Math.round(
+                                ((now.getTime() - start.getTime()) / (end.getTime() - start.getTime())) * 100
+                              )
+                            } else if (now > end) {
+                              timeProgress = 100
+                            } else {
+                              timeProgress = 0
+                            }
                           }
-                        }
-                        return (
-                          <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
-                            <div className='bg-white rounded-md p-2 border border-gray-200 shadow-sm'>
-                              <div className='flex items-center justify-between'>
-                                <div>
-                                  <p className='text-[11px] text-gray-600 font-medium'>Completed</p>
-                                  <p className='text-lg font-bold text-gray-900'>{stats.completed}</p>
+                          return (
+                            <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
+                              <div className='bg-white rounded-md p-2 border border-gray-200 shadow-sm'>
+                                <div className='flex items-center justify-between'>
+                                  <div>
+                                    <p className='text-[11px] text-gray-600 font-medium'>Completed</p>
+                                    <p className='text-lg font-bold text-gray-900'>{stats.completed}</p>
+                                  </div>
+                                  <div className='p-2 bg-green-50 rounded-lg'>
+                                    <CheckCircle className='h-5 w-5 text-green-600' />
+                                  </div>
                                 </div>
-                                <div className='p-2 bg-green-50 rounded-lg'>
-                                  <CheckCircle className='h-5 w-5 text-green-600' />
+                                <div className='mt-2 flex items-center gap-2'>
+                                  <div className='flex-1 bg-gray-200 rounded-full h-1 overflow-hidden'>
+                                    <div
+                                      className='bg-green-500 h-full'
+                                      style={{ width: `${stats.completionPercentage}%` }}
+                                    />
+                                  </div>
+                                  <span className='text-[10px] text-gray-500'>{stats.completionPercentage}%</span>
                                 </div>
                               </div>
-                              <div className='mt-2 flex items-center gap-2'>
-                                <div className='flex-1 bg-gray-200 rounded-full h-1 overflow-hidden'>
-                                  <div
-                                    className='bg-green-500 h-full'
-                                    style={{ width: `${stats.completionPercentage}%` }}
-                                  />
-                                </div>
-                                <span className='text-[10px] text-gray-500'>{stats.completionPercentage}%</span>
-                              </div>
-                            </div>
 
-                            <div className='bg-white rounded-md p-2 border border-gray-200 shadow-sm'>
-                              <div className='flex items-center justify-between'>
-                                <div>
-                                  <p className='text-[11px] text-gray-600 font-medium'>Progress</p>
-                                  <p className='text-lg font-bold text-gray-900'>{stats.completionPercentage}%</p>
+                              <div className='bg-white rounded-md p-2 border border-gray-200 shadow-sm'>
+                                <div className='flex items-center justify-between'>
+                                  <div>
+                                    <p className='text-[11px] text-gray-600 font-medium'>Progress</p>
+                                    <p className='text-lg font-bold text-gray-900'>{stats.completionPercentage}%</p>
+                                  </div>
+                                  <div className='p-2 bg-blue-50 rounded-lg'>
+                                    <TrendingUp className='h-5 w-5 text-blue-600' />
+                                  </div>
                                 </div>
-                                <div className='p-2 bg-blue-50 rounded-lg'>
-                                  <TrendingUp className='h-5 w-5 text-blue-600' />
+                                <div className='mt-2 flex items-center gap-2'>
+                                  <div className='flex-1 bg-gray-200 rounded-full h-1 overflow-hidden'>
+                                    <div
+                                      className='bg-blue-500 h-full'
+                                      style={{ width: `${stats.completionPercentage}%` }}
+                                    />
+                                  </div>
+                                  <span className='text-[10px] text-gray-500'>Completed</span>
                                 </div>
                               </div>
-                              <div className='mt-2 flex items-center gap-2'>
-                                <div className='flex-1 bg-gray-200 rounded-full h-1 overflow-hidden'>
-                                  <div
-                                    className='bg-blue-500 h-full'
-                                    style={{ width: `${stats.completionPercentage}%` }}
-                                  />
-                                </div>
-                                <span className='text-[10px] text-gray-500'>Completed</span>
-                              </div>
-                            </div>
 
-                            <div className='bg-white rounded-md p-2 border border-gray-200 shadow-sm'>
-                              <div className='flex items-center justify-between'>
-                                <div>
-                                  <p className='text-[11px] text-gray-600 font-medium'>Time</p>
-                                  <p className='text-lg font-bold text-gray-900'>{timeProgress}%</p>
+                              <div className='bg-white rounded-md p-2 border border-gray-200 shadow-sm'>
+                                <div className='flex items-center justify-between'>
+                                  <div>
+                                    <p className='text-[11px] text-gray-600 font-medium'>Time</p>
+                                    <p className='text-lg font-bold text-gray-900'>{timeProgress}%</p>
+                                  </div>
+                                  <div className='p-2 bg-gray-50 rounded-lg'>
+                                    <Clock className='h-5 w-5 text-gray-600' />
+                                  </div>
                                 </div>
-                                <div className='p-2 bg-gray-50 rounded-lg'>
-                                  <Clock className='h-5 w-5 text-gray-600' />
+                                <div className='mt-2 flex items-center gap-2'>
+                                  <div className='flex-1 bg-gray-200 rounded-full h-1 overflow-hidden'>
+                                    <div className='bg-gray-500 h-full' style={{ width: `${timeProgress}%` }} />
+                                  </div>
+                                  <span className='text-[10px] text-gray-500'>Sprint Time</span>
                                 </div>
-                              </div>
-                              <div className='mt-2 flex items-center gap-2'>
-                                <div className='flex-1 bg-gray-200 rounded-full h-1 overflow-hidden'>
-                                  <div className='bg-gray-500 h-full' style={{ width: `${timeProgress}%` }} />
-                                </div>
-                                <span className='text-[10px] text-gray-500'>Sprint Time</span>
                               </div>
                             </div>
-                          </div>
-                        )
-                      })()}
-                    </div>
-                  )}
+                          )
+                        })()}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
+              <div />
             </div>
           </div>
           <div className='flex-1 overflow-hidden'>
