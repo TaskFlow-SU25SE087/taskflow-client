@@ -67,13 +67,13 @@ export function SprintBoard({
   }
 
   return (
-    <div className="bg-white border border-indigo-100 rounded-xl shadow-lg transition-all duration-200 hover:shadow-xl">
-      <div className="p-4 flex items-center justify-between border-b border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-blue-50 rounded-t-xl">
-        <div className="flex items-center gap-2">
+    <div className='bg-white border border-gray-200 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md'>
+      <div className='p-4 flex items-center justify-between border-b border-gray-200 rounded-t-lg bg-white'>
+        <div className='flex items-center gap-2'>
           <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 text-indigo-500 hover:bg-indigo-100"
+            variant='ghost'
+            size='icon'
+            className='h-6 w-6 text-lavender-600 hover:bg-lavender-100 rounded-lg'
             onClick={() => {
               const next = !isExpanded
               setIsExpanded(next)
@@ -82,13 +82,13 @@ export function SprintBoard({
               }
             }}
           >
-            {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            {isExpanded ? <ChevronDown className='h-4 w-4' /> : <ChevronRight className='h-4 w-4' />}
           </Button>
           <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-lg text-indigo-700">{sprint.name}</h3>
-              <span className="text-gray-500 text-sm bg-white/70 rounded px-2 py-0.5 shadow-sm">
-                ({tasks.length} {tasks.length === 1 ? 'task' : 'tasks'})
+            <div className='flex items-center gap-2'>
+              <h3 className='font-semibold text-lg text-gray-900'>{sprint.name}</h3>
+              <span className='text-gray-600 text-sm bg-gray-100 rounded-full px-2 py-0.5 border border-gray-200'>
+                {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
               </span>
               <SprintEditMenu
                 sprint={{
@@ -105,15 +105,12 @@ export function SprintBoard({
                 }}
               />
             </div>
-            <div className="flex items-center gap-3 text-sm">
-              <SprintStatusDropdown 
-                sprint={sprint} 
-                onStatusUpdate={onSprintUpdate}
-              />
+            <div className='flex items-center gap-3 text-sm'>
+              <SprintStatusDropdown sprint={sprint} onStatusUpdate={onSprintUpdate} />
               {(sprint.startDate || sprint.endDate) && (
                 <>
                   <span>•</span>
-                  <span className="text-gray-500">
+                  <span className='text-gray-500'>
                     {formatSprintDate(sprint.startDate)} - {formatSprintDate(sprint.endDate)}
                   </span>
                 </>
@@ -121,7 +118,7 @@ export function SprintBoard({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className='flex items-center gap-2'>
           <TaskCreateMenu
             isOpen={isCreateTaskOpen}
             onOpenChange={setIsCreateTaskOpen}
@@ -129,22 +126,26 @@ export function SprintBoard({
             onTaskCreated={onTaskCreated}
             sprintId={sprint.id}
             trigger={
-              <div className="flex items-center gap-2 cursor-pointer">
-                <span className="font-medium text-indigo-700">Add Task</span>
-                <Button variant="ghost" size="icon" className="h-6 w-6 rounded-lg bg-indigo-100 hover:bg-indigo-200">
-                  <Plus className="h-4 w-4 text-indigo-600" />
+              <div className='flex items-center gap-2 cursor-pointer'>
+                <span className='font-medium text-gray-800'>Add Task</span>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  className='h-6 w-6 rounded-lg bg-lavender-100 hover:bg-lavender-200'
+                >
+                  <Plus className='h-4 w-4 text-lavender-600' />
                 </Button>
               </div>
             }
           />
           {!sprint.startDate && (
             <Button
-              variant="default"
-              size="sm"
-              className="gap-2 bg-indigo-500 hover:bg-indigo-700 text-white"
+              variant='default'
+              size='sm'
+              className='gap-2 bg-lavender-600 hover:bg-lavender-700 text-white'
               onClick={() => setIsStartDialogOpen(true)}
             >
-              <PlayCircle className="h-4 w-4" />
+              <PlayCircle className='h-4 w-4' />
               Start Sprint
             </Button>
           )}
@@ -163,17 +164,30 @@ export function SprintBoard({
         </div>
       </div>
       {isExpanded && (
-        <div className="overflow-x-auto transition-all duration-200 bg-white rounded-b-xl">
-          {loadingTasks && (
-            <div className="p-4 text-center text-gray-500">Đang tải tasks...</div>
+        <div className='overflow-x-auto transition-all duration-200 bg-white rounded-b-lg'>
+          {loadingTasks && <div className='p-4 text-center text-gray-500'>Đang tải tasks...</div>}
+          {/* Column header for consistency with Backlog */}
+          {!loadingTasks && (
+            <div className='px-4 pt-4'>
+              <div className='grid grid-cols-[24px,1fr,140px,84px,60px,60px,100px,auto] items-center gap-1 text-[11px] font-medium text-gray-500 bg-gray-50 px-2 py-2 border-y border-gray-100'>
+                <div className='text-center'>{/* checkbox */}</div>
+                <div className='pl-1'>Task</div>
+                <div className='text-center'>Status</div>
+                <div className='text-center'>Assignees</div>
+                <div className='text-center'>Comments</div>
+                <div className='text-center'>Files</div>
+                <div className='text-center'>Due</div>
+                <div className='text-right pr-1'>Actions</div>
+              </div>
+            </div>
           )}
           {!loadingTasks && hasLoadedTasks && (
             <>
               {selectedTaskIds.length > 0 && (
-                <div className='mb-2 flex items-center gap-2'>
-                  <span className='text-xs text-gray-600'>{selectedTaskIds.length} selected</span>
+                <div className='pt-4 pb-2 px-4 flex items-center gap-2'>
+                  <span className='text-[11px] text-gray-600'>{selectedTaskIds.length} selected</span>
                   <Button
-                    size='sm'
+                    size='xs'
                     variant='destructive'
                     onClick={async () => {
                       if (!window.confirm('Bạn có chắc muốn xóa các task đã chọn?')) return
@@ -184,9 +198,18 @@ export function SprintBoard({
                           lastRes = await taskApi.deleteTask(projectId, id)
                         }
                         if (lastRes && typeof lastRes === 'object' && 'code' in (lastRes as any)) {
-                          const r: any = lastRes;
-                          showToast({ title: r.code === 200 ? 'Success' : 'Error', description: r.message || 'Deleted selected tasks!', variant: r.code === 200 ? 'default' : 'destructive' })
-                        } else if (lastRes && typeof lastRes === 'object' && 'data' in lastRes && lastRes.data === true) {
+                          const r: any = lastRes
+                          showToast({
+                            title: r.code === 200 ? 'Success' : 'Error',
+                            description: r.message || 'Deleted selected tasks!',
+                            variant: r.code === 200 ? 'default' : 'destructive'
+                          })
+                        } else if (
+                          lastRes &&
+                          typeof lastRes === 'object' &&
+                          'data' in lastRes &&
+                          lastRes.data === true
+                        ) {
                           showToast({ title: 'Success', description: 'Deleted selected tasks!' })
                         } else {
                           showToast({ title: 'Error', description: 'Failed to delete tasks', variant: 'destructive' })
@@ -194,7 +217,11 @@ export function SprintBoard({
                         setSelectedTaskIds([])
                         onTaskUpdate()
                       } catch (err: any) {
-                        showToast({ title: 'Error', description: err.response?.data?.message || err.message || 'Failed to delete tasks', variant: 'destructive' })
+                        showToast({
+                          title: 'Error',
+                          description: err.response?.data?.message || err.message || 'Failed to delete tasks',
+                          variant: 'destructive'
+                        })
                       } finally {
                         setLoadingBatch(false)
                       }
@@ -206,7 +233,7 @@ export function SprintBoard({
                 </div>
               )}
               {tasks.length > 0 ? (
-                <div>
+                <div className='p-4'>
                   {tasks.map((task) => (
                     <BacklogTaskRow
                       key={task.id}
@@ -228,7 +255,9 @@ export function SprintBoard({
       <SprintStartMenu
         isOpen={isStartDialogOpen}
         onOpenChange={setIsStartDialogOpen}
-        onStartSprint={async () => { /* Do nothing */ }}
+        onStartSprint={async () => {
+          /* Do nothing */
+        }}
       />
     </div>
   )
