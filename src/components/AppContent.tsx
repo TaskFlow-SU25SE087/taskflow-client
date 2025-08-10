@@ -45,8 +45,13 @@ const AuthRedirect = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuth()
   const location = useLocation()
 
-  // Nếu đã xác thực, redirect sang /projects
-  if (isAuthenticated && location.pathname !== '/projects') {
+  // When authenticated, don't auto-redirect on landing or login page; otherwise, go to /projects
+  if (
+    isAuthenticated &&
+    location.pathname !== '/projects' &&
+    location.pathname !== '/' &&
+    location.pathname !== '/login'
+  ) {
     return <Navigate to='/projects' state={{ from: location }} replace />
   }
 
@@ -60,50 +65,50 @@ const AppContent: React.FC = () => {
   return (
     <>
       <Routes>
-      <Route
-        path='/'
-        element={
-          <AuthRedirect>
-            <HomePage />
-          </AuthRedirect>
-        }
-      />
+        <Route
+          path='/'
+          element={
+            <AuthRedirect>
+              <HomePage />
+            </AuthRedirect>
+          }
+        />
 
-      <Route
-        path='/about'
-        element={
-          <AuthRedirect>
-            <AboutPage />
-          </AuthRedirect>
-        }
-      />
+        <Route
+          path='/about'
+          element={
+            <AuthRedirect>
+              <AboutPage />
+            </AuthRedirect>
+          }
+        />
 
-      <Route
-        path='/contact'
-        element={
-          <AuthRedirect>
-            <ContactPage />
-          </AuthRedirect>
-        }
-      />
+        <Route
+          path='/contact'
+          element={
+            <AuthRedirect>
+              <ContactPage />
+            </AuthRedirect>
+          }
+        />
 
-      <Route
-        path='login'
-        element={
-          <AuthRedirect>
-            <LoginPage />
-          </AuthRedirect>
-        }
-      />
-      <Route
-        path='forgot-password'
-        element={
-          <AuthRedirect>
-            <ForgotPasswordPage />
-          </AuthRedirect>
-        }
-      />
-      {/* <Route
+        <Route
+          path='login'
+          element={
+            <AuthRedirect>
+              <LoginPage />
+            </AuthRedirect>
+          }
+        />
+        <Route
+          path='forgot-password'
+          element={
+            <AuthRedirect>
+              <ForgotPasswordPage />
+            </AuthRedirect>
+          }
+        />
+        {/* <Route
         path='signup'
         element={
           <AuthRedirect>
@@ -112,309 +117,301 @@ const AppContent: React.FC = () => {
         }
       /> */}
 
-      <Route
-        path='verify-email'
-        element={
-          <AuthRedirect>
-            <VerifyEmailPage />
-          </AuthRedirect>
-        }
-      />
+        <Route
+          path='verify-email'
+          element={
+            <AuthRedirect>
+              <VerifyEmailPage />
+            </AuthRedirect>
+          }
+        />
 
-      <Route
-        path='verify-otp'
-        element={
-          <AuthRedirect>
-            <OtpPage />
-          </AuthRedirect>
-        }
-      />
+        <Route
+          path='verify-otp'
+          element={
+            <AuthRedirect>
+              <OtpPage />
+            </AuthRedirect>
+          }
+        />
 
-      <Route
-        path='activate'
-        element={
-          <AuthRedirect>
-            <ActivateAccountPage />
-          </AuthRedirect>
-        }
-      />
+        <Route
+          path='activate'
+          element={
+            <AuthRedirect>
+              <ActivateAccountPage />
+            </AuthRedirect>
+          }
+        />
 
-      <Route
-        path='/add-info'
-        element={
-          <AuthRedirect>
-            <AddUserInfoPage />
-          </AuthRedirect>
-        }
-      />
+        <Route
+          path='/add-info'
+          element={
+            <AuthRedirect>
+              <AddUserInfoPage />
+            </AuthRedirect>
+          }
+        />
 
-      <Route path='/reset-password' element={<ResetPasswordPage />} />
+        <Route path='/reset-password' element={<ResetPasswordPage />} />
 
-      {/* Protected routes require authentication */}
-      <Route
-        path='/timeline'
-        element={
-          <ProtectedRoute>
-            <ProjectTimeline />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/backlog/'
-        element={
-          <ProtectedRoute>
-            <ProjectBacklog />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/projects/new'
-        element={
-          <ProtectedRoute>
-            <ProjectCreate />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/projects/'
-        element={
-          <ProtectedRoute>
-            <ProjectList />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/board'
-        element={
-          <ProtectedRoute>
-            <ProjectBoard />
-          </ProtectedRoute>
-        }
-      />
+        {/* Protected routes require authentication */}
+        <Route
+          path='/timeline'
+          element={
+            <ProtectedRoute>
+              <ProjectTimeline />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/backlog/'
+          element={
+            <ProtectedRoute>
+              <ProjectBacklog />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/projects/new'
+          element={
+            <ProtectedRoute>
+              <ProjectCreate />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/projects/'
+          element={
+            <ProtectedRoute>
+              <ProjectList />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/board'
+          element={
+            <ProtectedRoute>
+              <ProjectBoard />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path='/commits'
-        element={
-          <ProtectedRoute>
-            <GitCommits />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/issues'
-        element={
-          <ProtectedRoute>
-            <GitIssues />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path='/commits'
+          element={
+            <ProtectedRoute>
+              <GitCommits />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/issues'
+          element={
+            <ProtectedRoute>
+              <GitIssues />
+            </ProtectedRoute>
+          }
+        />
 
-      <Route
-        path='/github'
-        element={
-          <ProtectedRoute>
-            <ProjectGitHub />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/members'
-        element={
-          <ProtectedRoute>
-            <Navigate to='/projects' replace />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/sprint-meetings'
-        element={
-          <ProtectedRoute>
-            <Navigate to='/projects?view=sprint-meetings' replace />
-          </ProtectedRoute>
-        }
-      />
+        <Route
+          path='/github'
+          element={
+            <ProtectedRoute>
+              <ProjectGitHub />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/members'
+          element={
+            <ProtectedRoute>
+              <Navigate to='/projects' replace />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/sprint-meetings'
+          element={
+            <ProtectedRoute>
+              <Navigate to='/projects?view=sprint-meetings' replace />
+            </ProtectedRoute>
+          }
+        />
 
-      {/* GitHub OAuth Callback */}
-      <Route path='/github/callback' element={<GitHubOAuthCallback />} />
+        {/* GitHub OAuth Callback */}
+        <Route path='/github/callback' element={<GitHubOAuthCallback />} />
 
-      {/* Dynamic project routes */}
-      <Route
-        path='/projects/:projectId/board'
-        element={
-          <ProtectedRoute>
-            <ProjectBoard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/projects/:projectId/timeline'
-        element={
-          <ProtectedRoute>
-            <ProjectTimeline />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/projects/:projectId/backlog'
-        element={
-          <ProtectedRoute>
-            <ProjectBacklog />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/projects/:projectId/reports'
-        element={
-          <ProtectedRoute>
-            <ProjectReports />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/projects/:projectId/test-reports'
-        element={
-          <ProtectedRoute>
-            <TestReports />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/projects/:projectId/simple-reports'
-        element={
-          <ProtectedRoute>
-            <SimpleReports />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/projects/:projectId/members'
-        element={
-          <ProtectedRoute>
-            <ProjectMembers />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/projects/:projectId/github'
-        element={
-          <ProtectedRoute>
-            <ProjectGitHub />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/projects/:projectId/git-members'
-        element={
-          <ProtectedRoute>
-            <ProjectGitMembers />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/projects/:projectId/commits'
-        element={
-          <ProtectedRoute>
-            <GitCommits />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/projects/:projectId/issues'
-        element={
-          <ProtectedRoute>
-            <ProjectIssues />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/projects/:projectId/sprint-meetings'
-        element={
-          <ProtectedRoute>
-            <SprintMeetings />
-          </ProtectedRoute>
-        }
-      />
+        {/* Dynamic project routes */}
+        <Route
+          path='/projects/:projectId/board'
+          element={
+            <ProtectedRoute>
+              <ProjectBoard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/projects/:projectId/timeline'
+          element={
+            <ProtectedRoute>
+              <ProjectTimeline />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/projects/:projectId/backlog'
+          element={
+            <ProtectedRoute>
+              <ProjectBacklog />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/projects/:projectId/reports'
+          element={
+            <ProtectedRoute>
+              <ProjectReports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/projects/:projectId/test-reports'
+          element={
+            <ProtectedRoute>
+              <TestReports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/projects/:projectId/simple-reports'
+          element={
+            <ProtectedRoute>
+              <SimpleReports />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/projects/:projectId/members'
+          element={
+            <ProtectedRoute>
+              <ProjectMembers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/projects/:projectId/github'
+          element={
+            <ProtectedRoute>
+              <ProjectGitHub />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/projects/:projectId/git-members'
+          element={
+            <ProtectedRoute>
+              <ProjectGitMembers />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/projects/:projectId/commits'
+          element={
+            <ProtectedRoute>
+              <GitCommits />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/projects/:projectId/issues'
+          element={
+            <ProtectedRoute>
+              <ProjectIssues />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/projects/:projectId/sprint-meetings'
+          element={
+            <ProtectedRoute>
+              <SprintMeetings />
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Admin routes */}
-      <Route
-        path='/admin/users'
-        element={
-          <AdminProtectedRoute>
-            <AdminUsersPage />
-          </AdminProtectedRoute>
-        }
-      />
+        {/* Admin routes */}
+        <Route
+          path='/admin/users'
+          element={
+            <AdminProtectedRoute>
+              <AdminUsersPage />
+            </AdminProtectedRoute>
+          }
+        />
 
-      <Route
-        path='/admin/dashboard'
-        element={
-          <AdminProtectedRoute>
-            <AdminDashboard />
-          </AdminProtectedRoute>
-        }
-      />
+        <Route
+          path='/admin/dashboard'
+          element={
+            <AdminProtectedRoute>
+              <AdminDashboard />
+            </AdminProtectedRoute>
+          }
+        />
 
-      <Route
-        path='/profile'
-        element={
-          <ProtectedRoute>
-            <UserProfilePage />
-          </ProtectedRoute>
-        }
-      />
-      
-      {/* Project member verification routes */}
-      <Route path='/projects/:projectId/members/verify-join' element={<ProjectMemberVerify />} />
-      <Route path='/project/:projectId/members/verify-join' element={<ProjectMemberVerify />} />
-      <Route path='/project/memberss/verify-join' element={<LegacyProjectMemberVerify />} />
-      
-      {/* Admin routes */}
-      <Route
-        path='/admin/terms'
-        element={
-          <AdminProtectedRoute>
-            <AdminTermPage />
-          </AdminProtectedRoute>
-        }
-      />
+        <Route
+          path='/profile'
+          element={
+            <ProtectedRoute>
+              <UserProfilePage />
+            </ProtectedRoute>
+          }
+        />
 
-      {/* Legacy redirects */}
-      <Route path='/project' element={<Navigate to='/projects/' />} />
-      
+        {/* Project member verification routes */}
+        <Route path='/projects/:projectId/members/verify-join' element={<ProjectMemberVerify />} />
+        <Route path='/project/:projectId/members/verify-join' element={<ProjectMemberVerify />} />
+        <Route path='/project/memberss/verify-join' element={<LegacyProjectMemberVerify />} />
 
-      
-      {/* Additional protected routes */}
-      <Route
-        path='/all-parts'
-        element={
-          <ProtectedRoute>
-            <AllProjectParts />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path='/code-quality-commits'
-        element={
-          <ProtectedRoute>
-            <CodeQualityCommits />
-          </ProtectedRoute>
-        }
-      />
-      
-      {/* 404 page route */}
-      <Route
-        path="/404"
-        element={<NotFoundPage />}
-      />
-      
-      {/* Catch all route - must be last */}
-      <Route
-        path="*"
-        element={<NotFoundPage />}
-      />
-            </Routes>
-        </>
+        {/* Admin routes */}
+        <Route
+          path='/admin/terms'
+          element={
+            <AdminProtectedRoute>
+              <AdminTermPage />
+            </AdminProtectedRoute>
+          }
+        />
+
+        {/* Legacy redirects */}
+        <Route path='/project' element={<Navigate to='/projects/' />} />
+
+        {/* Additional protected routes */}
+        <Route
+          path='/all-parts'
+          element={
+            <ProtectedRoute>
+              <AllProjectParts />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/code-quality-commits'
+          element={
+            <ProtectedRoute>
+              <CodeQualityCommits />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* 404 page route */}
+        <Route path='/404' element={<NotFoundPage />} />
+
+        {/* Catch all route - must be last */}
+        <Route path='*' element={<NotFoundPage />} />
+      </Routes>
+    </>
   )
 }
 
-export default AppContent 
+export default AppContent

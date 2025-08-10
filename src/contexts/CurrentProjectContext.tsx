@@ -3,6 +3,7 @@ import Cookies from 'js-cookie'
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import type { Project } from '@/types/project'
+import { useAuth } from '@/hooks/useAuth'
 
 type Ctx = {
   currentProject: Project | null
@@ -21,6 +22,7 @@ export const CurrentProjectProvider: React.FC<{ children: React.ReactNode }> = (
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const navigate = useNavigate()
   const location = useLocation()
+  const { isAuthenticated } = useAuth()
 
   // Extract projectId from URL path manually; useParams cannot be used reliably outside matched routes
   const activeProjectId = useMemo(() => {
@@ -78,7 +80,7 @@ export const CurrentProjectProvider: React.FC<{ children: React.ReactNode }> = (
 
     // If no project in URL, only auto-redirect on legacy project routes or home
     const legacyProjectRoutes = new Set([
-      '/',
+      // '/' is intentionally excluded so the landing page doesn't auto-redirect
       '/timeline',
       '/backlog',
       '/board',
@@ -90,7 +92,8 @@ export const CurrentProjectProvider: React.FC<{ children: React.ReactNode }> = (
       '/sprint-meetings'
     ])
 
-    if (legacyProjectRoutes.has(location.pathname)) {
+    // Only auto-redirect on legacy routes when user is authenticated
+    if (legacyProjectRoutes.has(location.pathname) && isAuthenticated) {
       const saved = Cookies.get(CURRENT_PROJECT_COOKIE) || localStorage.getItem(CURRENT_PROJECT_LOCAL) || undefined
       if (saved) {
         navigate(`/projects/${saved}/board`)
@@ -100,7 +103,7 @@ export const CurrentProjectProvider: React.FC<{ children: React.ReactNode }> = (
 
     // Nothing to do
     setIsLoading(false)
-  }, [activeProjectId, location.pathname, fetchProject, navigate])
+  }, [activeProjectId, location.pathname, fetchProject, navigate, isAuthenticated])
 
   const setCurrentProjectId = useCallback(
     (projectId: string) => {
