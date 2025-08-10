@@ -2,7 +2,7 @@ import { projectApi } from '@/api/projects'
 import { useGitHubStatus } from '@/contexts/GitHubStatusContext'
 import gsap from 'gsap'
 import { LucideLayoutDashboard } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   FiAlertCircle,
   FiBarChart2,
@@ -18,20 +18,16 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import GitHubSidebarItem from './github/GitHubSidebarItem'
 
 export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
-  const [activeTab, setActiveTab] = useState('board')
+  const navigate = useNavigate()
+  const location = useLocation()
   const [hoveredTab, setHoveredTab] = useState<string | null>(null)
   const highlightRef = useRef<HTMLDivElement>(null)
   const navRef = useRef<HTMLDivElement>(null)
   const lastHoveredTabRef = useRef<string | null>(null)
-  const navigate = useNavigate()
-  const location = useLocation()
+  const initializedRef = useRef(false)
 
   // Sử dụng hook để lấy trạng thái GitHub toàn cục
   const { connectionStatus, isLoading } = useGitHubStatus()
-
-  useEffect(() => {
-    updateHighlightPosition(activeTab)
-  }, [activeTab])
 
   // Extract project ID from URL to ensure we always have it when on project routes
   const currentPath = location.pathname
@@ -39,142 +35,149 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
   const urlProjectId = projectIdMatch ? projectIdMatch[1] : null
   const activeProjectId = projectId || urlProjectId
 
-  const navItems = [
-    {
-      id: 'timeline',
-      icon: <FiClock className='h-5 w-5' />,
-      label: 'Timeline',
-      section: 1,
-      path: activeProjectId ? `/projects/${activeProjectId}/timeline` : '/timeline'
-    },
-    {
-      id: 'board',
-      icon: <LucideLayoutDashboard className='h-5 w-5' />,
-      label: 'Board',
-      section: 1,
-      path: activeProjectId ? `/projects/${activeProjectId}/board` : '/board'
-    },
-    {
-      id: 'backlog',
-      icon: <FiLayers className='h-5 w-5' />,
-      label: 'Backlog',
-      section: 1,
-      path: activeProjectId ? `/projects/${activeProjectId}/backlog` : '/backlog'
-    },
-    {
-      id: 'members',
-      icon: <FiUsers className='h-5 w-5' />,
-      label: 'Members',
-      section: 1,
-      path: activeProjectId ? `/projects/${activeProjectId}/members` : '/members'
-    },
-    {
-      id: 'reports',
-      icon: <FiBarChart2 className='h-5 w-5' />,
-      label: 'Reports',
-      section: 1,
-      path: activeProjectId ? `/projects/${activeProjectId}/reports` : '/reports'
-    },
-    {
-      id: 'sprint-meetings',
-      icon: <FiCalendar className='h-5 w-5' />,
-      label: 'Sprint Meetings',
-      section: 1,
-      path: activeProjectId ? `/projects/${activeProjectId}/sprint-meetings` : '/projects'
-    },
-    // Section 2: GitHub, Commits, Issues
-    {
-      id: 'github',
-      icon: <FiGithub className='h-5 w-5' />,
-      label: 'GitHub',
-      section: 2,
-      path: activeProjectId ? `/projects/${activeProjectId}/github` : '/github'
-    },
-    {
-      id: 'commits',
-      icon: <FiGitBranch className='h-5 w-5' />,
-      label: 'Commits',
-      section: 2,
-      path: activeProjectId ? `/projects/${activeProjectId}/commits` : '/commits'
-    },
-    {
-      id: 'issues',
-      icon: <FiAlertCircle className='h-5 w-5' />,
-      label: 'Issues',
-      section: 2,
-      path: activeProjectId ? `/projects/${activeProjectId}/issues` : '/issues'
-    },
-    {
-      id: 'allparts',
-      icon: <FiLayers className='h-5 w-5' />,
-      label: 'All Parts',
-      section: 2,
-      path: '/all-parts'
-    },
-    {
-      id: 'codequality',
-      icon: <FiBarChart2 className='h-5 w-5' />,
-      label: 'Code Quality',
-      section: 2,
-      path: '/code-quality-commits'
-    },
-    { id: 'settings', icon: <FiSettings className='h-5 w-5' />, label: 'Settings', section: 3, path: '/settings' }
-  ]
+  const navItems = useMemo(
+    () => [
+      {
+        id: 'timeline',
+        icon: <FiClock className='h-5 w-5' />,
+        label: 'Timeline',
+        section: 1,
+        path: activeProjectId ? `/projects/${activeProjectId}/timeline` : '/timeline'
+      },
+      {
+        id: 'board',
+        icon: <LucideLayoutDashboard className='h-5 w-5' />,
+        label: 'Board',
+        section: 1,
+        path: activeProjectId ? `/projects/${activeProjectId}/board` : '/board'
+      },
+      {
+        id: 'backlog',
+        icon: <FiLayers className='h-5 w-5' />,
+        label: 'Backlog',
+        section: 1,
+        path: activeProjectId ? `/projects/${activeProjectId}/backlog` : '/backlog'
+      },
+      {
+        id: 'members',
+        icon: <FiUsers className='h-5 w-5' />,
+        label: 'Members',
+        section: 1,
+        path: activeProjectId ? `/projects/${activeProjectId}/members` : '/members'
+      },
+      {
+        id: 'reports',
+        icon: <FiBarChart2 className='h-5 w-5' />,
+        label: 'Reports',
+        section: 1,
+        path: activeProjectId ? `/projects/${activeProjectId}/reports` : '/reports'
+      },
+      {
+        id: 'sprint-meetings',
+        icon: <FiCalendar className='h-5 w-5' />,
+        label: 'Sprint Meetings',
+        section: 1,
+        path: activeProjectId ? `/projects/${activeProjectId}/sprint-meetings` : '/projects'
+      },
+      // Section 2: GitHub, Commits, Issues
+      {
+        id: 'github',
+        icon: <FiGithub className='h-5 w-5' />,
+        label: 'GitHub',
+        section: 2,
+        path: activeProjectId ? `/projects/${activeProjectId}/github` : '/github'
+      },
+      {
+        id: 'commits',
+        icon: <FiGitBranch className='h-5 w-5' />,
+        label: 'Commits',
+        section: 2,
+        path: activeProjectId ? `/projects/${activeProjectId}/commits` : '/commits'
+      },
+      {
+        id: 'issues',
+        icon: <FiAlertCircle className='h-5 w-5' />,
+        label: 'Issues',
+        section: 2,
+        path: activeProjectId ? `/projects/${activeProjectId}/issues` : '/issues'
+      },
+      {
+        id: 'allparts',
+        icon: <FiLayers className='h-5 w-5' />,
+        label: 'All Parts',
+        section: 2,
+        path: '/all-parts'
+      },
+      {
+        id: 'codequality',
+        icon: <FiBarChart2 className='h-5 w-5' />,
+        label: 'Code Quality',
+        section: 2,
+        path: '/code-quality-commits'
+      },
+      { id: 'settings', icon: <FiSettings className='h-5 w-5' />, label: 'Settings', section: 3, path: '/settings' }
+    ],
+    [activeProjectId]
+  )
 
-  useEffect(() => {
-    const currentPath = location.pathname
+  // Helper to derive active tab from current URL and navItems
+  const deriveActiveTabFromPath = (): string | null => {
+    const path = location.pathname
     const searchParams = new URLSearchParams(location.search)
     const viewParam = searchParams.get('view')
 
-    console.log('[SidebarLogic] useEffect - currentPath:', currentPath)
-    console.log('[SidebarLogic] useEffect - viewParam:', viewParam)
+    // Try exact path match first
+    let activeItem = navItems.find((item) => item.path === path)
 
-    // Find matching nav item based on current path
-    let activeItem = null
-
-    // First, try exact path match
-    activeItem = navItems.find((item) => item.path === currentPath)
-
-    // If no exact match and we're in a project context, match by route segment
-    if (!activeItem && currentPath.includes('/projects/')) {
-      const pathSegments = currentPath.split('/')
-      const lastSegment = pathSegments[pathSegments.length - 1]
-
-      // Find item that matches the last segment of the path
+    // If in project context, match by route segment
+    if (!activeItem && path.includes('/projects/')) {
+      const lastSegment = path.split('/').pop() || ''
       activeItem = navItems.find((item) => {
-        const itemSegments = item.path.split('/')
-        const itemLastSegment = itemSegments[itemSegments.length - 1]
+        const itemLastSegment = item.path.split('/').pop() || ''
         return itemLastSegment === lastSegment
       })
     }
 
-    // Handle special cases for root paths
+    // Special handling for /projects root
     if (!activeItem) {
-      if (currentPath === '/projects' && viewParam === 'sprint-meetings') {
+      if (path === '/projects' && viewParam === 'sprint-meetings') {
         activeItem = navItems.find((item) => item.id === 'sprint-meetings')
-      } else if (currentPath === '/projects' && !viewParam) {
-        // Don't set any active item for plain /projects page
-        return
-      } else {
-        // Try to match by path ending
-        const pathEnd = currentPath.split('/').pop() || ''
-        activeItem = navItems.find((item) => item.id === pathEnd)
+      } else if (path !== '/projects') {
+        // Try to match by id inferred from path ending
+        const pathEnd = path.split('/').pop() || ''
+        // Map special slugs to ids
+        const slugToId: Record<string, string> = {
+          'code-quality-commits': 'codequality',
+          'all-parts': 'allparts'
+        }
+        const candidateId = slugToId[pathEnd] ?? pathEnd
+        activeItem = navItems.find((item) => item.id === candidateId)
       }
     }
 
-    console.log('[SidebarLogic] useEffect - activeItem found:', activeItem)
+    return activeItem?.id ?? null
+  }
 
-    if (activeItem) {
-      console.log('[SidebarLogic] useEffect - setting activeTab to:', activeItem.id)
-      setActiveTab(activeItem.id)
-    } else {
-      console.log('[SidebarLogic] useEffect - no activeItem found, keeping current activeTab:', activeTab)
-      // Don't change activeTab if no match found, just update highlight
+  // Initialize active tab from current location to avoid a temporary jump to the default
+  const [activeTab, setActiveTab] = useState<string>(() => deriveActiveTabFromPath() ?? 'board')
+
+  // Position the highlight for the current active tab. On first layout pass, set instantly to avoid flicker.
+  useLayoutEffect(() => {
+    updateHighlightPosition(activeTab, { animate: initializedRef.current })
+    if (!initializedRef.current) initializedRef.current = true
+  }, [activeTab])
+
+  useEffect(() => {
+    const derived = deriveActiveTabFromPath()
+    if (derived && derived !== activeTab) {
+      setActiveTab(derived)
+    } else if (!derived) {
+      // Keep highlight in sync when no derivation possible (e.g., /projects root)
       updateHighlightPosition(activeTab)
     }
-  }, [location.pathname, location.search, navItems])
+  }, [location.pathname, location.search, activeProjectId, navItems])
 
-  const updateHighlightPosition = (tabId: string) => {
+  const updateHighlightPosition = (tabId: string, opts?: { animate?: boolean }) => {
     const highlight = highlightRef.current
     const navContainer = navRef.current
     if (!highlight || !navContainer) return
@@ -186,11 +189,18 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
     const targetRect = targetElement.getBoundingClientRect()
     const relativeTop = targetRect.top - navRect.top
 
-    gsap.to(highlight, {
-      y: relativeTop,
-      duration: 0.5,
-      ease: 'elastic.out(1,0.7)'
-    })
+    // Avoid conflicting tweens
+    gsap.killTweensOf(highlight)
+
+    if (opts?.animate ?? true) {
+      gsap.to(highlight, {
+        y: relativeTop,
+        duration: 0.5,
+        ease: 'elastic.out(1,0.7)'
+      })
+    } else {
+      gsap.set(highlight, { y: relativeTop })
+    }
   }
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -233,6 +243,7 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
 
     // Set active tab immediately for better UX
     setActiveTab(tabId)
+    setHoveredTab(null)
 
     const targetTab = navItems.find((item) => item.id === tabId)
     console.log('[SidebarLogic] targetTab found:', targetTab)
