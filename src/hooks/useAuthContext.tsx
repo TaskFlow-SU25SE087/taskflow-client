@@ -3,6 +3,7 @@ import axiosClient from '@/configs/axiosClient'
 import { User } from '@/types/auth'
 import { createContext, ReactNode, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import Cookies from 'js-cookie'
 
 interface AuthContextType {
   user: User | null
@@ -175,19 +176,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       console.log('Login successful, redirecting...')
       setTimeout(() => {
-        // Check if user is admin and redirect accordingly
-        if (
+        // Admins go to admin panel as before
+        const isAdmin =
           currentUser &&
           (currentUser.role === 0 ||
             currentUser.role === '0' ||
             currentUser.role === 'Admin' ||
             currentUser.role === 'admin')
-        ) {
+
+        if (isAdmin) {
           navigate('/admin/users', { replace: true })
+          return
+        }
+
+        // For regular users, prefer redirecting to previously selected project if available
+        const savedProjectId = Cookies.get('current_project_id') || localStorage.getItem('currentProjectId')
+        if (savedProjectId) {
+          navigate(`/projects/${savedProjectId}/board`, { replace: true })
         } else {
           navigate('/projects', { replace: true })
         }
-      }, 200) // Add a small delay for toast to appear
+      }, 200) // Small delay for any UI effects
     } catch (error: any) {
       console.error('Login error:', error)
       // Set a user-friendly error message
