@@ -212,7 +212,7 @@ export default function ProjectBoard() {
   const [lockedColumns, setLockedColumns] = useState<string[]>([])
   const [lockAll, setLockAll] = useState(false)
   const [movingTaskId, setMovingTaskId] = useState<string | null>(null)
-  const [showStatsCards, setShowStatsCards] = useState(true)
+  const [showStatsCards, setShowStatsCards] = useState(false)
 
   const { showToast } = useToastContext()
   const { leaveProject, loading: memberLoading, error: memberError } = useProjectMembers()
