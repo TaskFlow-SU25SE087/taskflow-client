@@ -7,7 +7,7 @@ import { useTasks } from './useTasks'
 export function useProjectTasksAndSprints() {
   useCurrentProject()
   const { tasks, refreshTasks, isTaskLoading } = useTasks()
-  const { sprints, isLoading: isSprintsLoading, refreshSprints } = useSprints()
+  const { sprints, isLoading: isSprintsLoading, refreshSprints, didInitialLoad } = useSprints()
   const [sprintTaskMap, setSprintTaskMap] = useState<Record<string, TaskP[]>>({})
   const [backlogTasks, setBacklogTasks] = useState<TaskP[]>([])
 
@@ -29,6 +29,7 @@ export function useProjectTasksAndSprints() {
     backlogTasks,
     isTaskLoading,
     isSprintsLoading,
+    didInitialLoad,
     refreshTasks,
     refreshSprints
   }

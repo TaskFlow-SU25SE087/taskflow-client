@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input'
 import { Loader } from '@/components/ui/loader'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
-import { useSprints } from '@/hooks/useSprints'
 import { useProjectTasksAndSprints } from '@/hooks/useProjectTasksAndSprints'
 import { cn } from '@/lib/utils'
 import { Sprint } from '@/types/sprint'
@@ -567,8 +566,14 @@ export default function ProjectTimeline() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const { currentProject, isLoading: projectLoading } = useCurrentProject()
   const [currentDate, setCurrentDate] = useState(new Date())
-  const { sprints, isLoading: sprintsLoading, didInitialLoad } = useSprints()
-  const { tasks, isTaskLoading } = useProjectTasksAndSprints()
+  const {
+    sprints,
+    tasks,
+    isTaskLoading,
+    isSprintsLoading: sprintsLoading,
+    didInitialLoad
+  } = useProjectTasksAndSprints()
+  const [isPageReady, setIsPageReady] = useState(false)
   const sprintsWithTasks: SprintWithTasks[] = useMemo(
     () => sprints.map((s) => ({ ...s, tasks: tasks.filter((t) => t.sprintId === s.id) })),
     [sprints, tasks]
@@ -625,8 +630,15 @@ export default function ProjectTimeline() {
     }
   }, [projectLoading, effectiveProjectId])
 
-  // Show loader until both sprints and tasks complete initial load, and we have a project id
-  if (!didInitialLoad || !effectiveProjectId || sprintsLoading || isTaskLoading || projectLoading) {
+  // Once the page becomes ready, don't regress back to global loader on later refetches
+  useEffect(() => {
+    if (!isPageReady && effectiveProjectId && didInitialLoad && !projectLoading && !sprintsLoading && !isTaskLoading) {
+      setIsPageReady(true)
+    }
+  }, [isPageReady, effectiveProjectId, didInitialLoad, projectLoading, sprintsLoading, isTaskLoading])
+
+  // Show global loader only before first meaningful paint
+  if (!isPageReady) {
     return (
       <div className='flex h-screen bg-gray-50'>
         <Sidebar
