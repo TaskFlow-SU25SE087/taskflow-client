@@ -4,8 +4,8 @@ import { TaskDetailMenu } from '@/components/tasks/TaskDetailMenu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjectTasksAndSprints } from '@/hooks/useProjectTasksAndSprints'
 import { cn } from '@/lib/utils'
@@ -24,8 +24,8 @@ import {
   TrendingUp,
   Users
 } from 'lucide-react'
-import { useEffect, useRef, useState, useMemo } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 
 interface SprintWithTasks extends Sprint {
   tasks: TaskP[]
@@ -586,6 +586,16 @@ export default function ProjectTimeline() {
   const { projectId: urlProjectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
 
+  // Cập nhật selectedTask khi tasks thay đổi để hiển thị màu sắc tags realtime
+  useEffect(() => {
+    if (selectedTask && tasks.length > 0) {
+      const updatedTask = tasks.find(t => t.id === selectedTask.id)
+      if (updatedTask) {
+        setSelectedTask(updatedTask)
+      }
+    }
+  }, [tasks, selectedTask])
+
   // Use URL projectId as a fallback so reloads on /projects/:id/timeline still work even if hook state is momentarily null
   const effectiveProjectId = currentProject?.id || urlProjectId
 
@@ -850,7 +860,9 @@ export default function ProjectTimeline() {
             task={selectedTask}
             isOpen={!!selectedTask}
             onClose={() => setSelectedTask(null)}
-            onTaskUpdated={() => {}}
+            onTaskUpdated={() => {
+              // Không cần làm gì vì useEffect đã tự động cập nhật selectedTask khi tasks thay đổi
+            }}
           />
         )}
       </div>

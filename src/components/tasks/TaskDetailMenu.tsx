@@ -17,24 +17,24 @@ import { ProjectMember, Tag } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { formatDistanceToNow } from 'date-fns'
 import {
-  Calendar,
-  ChevronDown,
-  ChevronsDown,
-  ChevronsUp,
-  ChevronUp,
-  Eye,
-  Filter,
-  Link,
-  ListTodo,
-  Loader2,
-  LogOut,
-  MessageCircle,
-  Paperclip,
-  Pencil,
-  Plus,
-  Settings,
-  UserPlus,
-  X
+    Calendar,
+    ChevronDown,
+    ChevronsDown,
+    ChevronsUp,
+    ChevronUp,
+    Eye,
+    Filter,
+    Link,
+    ListTodo,
+    Loader2,
+    LogOut,
+    MessageCircle,
+    Paperclip,
+    Pencil,
+    Plus,
+    Settings,
+    UserPlus,
+    X
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -280,20 +280,27 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
           const tasks = await taskApi.getTasksFromProject(currentProject?.id || '')
           const taskDetails = tasks?.find((t) => t.id === task.id)
-          if (taskDetails?.taskAssignees) {
-            const assigneeFromTask =
-              Array.isArray(taskDetails.taskAssignees) && taskDetails.taskAssignees.length > 0
-                ? taskDetails.taskAssignees[0]
-                : null
-            if (assigneeFromTask) {
-              setAssignee({
-                userId: assigneeFromTask.projectMemberId,
-                fullName: assigneeFromTask.executor,
-                avatar: assigneeFromTask.avatar,
-                role: assigneeFromTask.role
-              })
-            } else {
-              setAssignee(null)
+          if (taskDetails) {
+            // Cập nhật taskTags để hiển thị màu sắc realtime
+            if (taskDetails.tags) {
+              setTaskTags(taskDetails.tags)
+            }
+            
+            if (taskDetails.taskAssignees) {
+              const assigneeFromTask =
+                Array.isArray(taskDetails.taskAssignees) && taskDetails.taskAssignees.length > 0
+                  ? taskDetails.taskAssignees[0]
+                  : null
+              if (assigneeFromTask) {
+                setAssignee({
+                  userId: assigneeFromTask.projectMemberId,
+                  fullName: assigneeFromTask.executor,
+                  avatar: assigneeFromTask.avatar,
+                  role: assigneeFromTask.role
+                })
+              } else {
+                setAssignee(null)
+              }
             }
           }
           onTaskUpdated()
@@ -548,6 +555,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setEditDescription(task.description)
     setEditPriority(typeof task.priority === 'number' ? task.priority : parseInt(task.priority as string) || 1)
     setLocalTaskData(task)
+    // Cập nhật taskTags khi task thay đổi để hiển thị màu sắc realtime
+    setTaskTags(task.tags || [])
   }, [task])
 
   const handleUpdateTask = async () => {

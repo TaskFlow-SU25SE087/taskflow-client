@@ -7,14 +7,14 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/hooks/useAuth'
-import { Mail, Eye, EyeOff, CheckCircle, Code, Users, ArrowLeft } from 'lucide-react'
-import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
 import { gsap } from 'gsap'
+import { ArrowLeft, CheckCircle, Code, Eye, EyeOff, Mail, Users } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 export default function SignUpPage() {
-  const { register, error } = useAuth()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { error } = useAuth()
+
   const [email, setEmail] = useState('')
   const [fullName, setFullName] = useState('')
   const [password, setPassword] = useState('')
@@ -51,55 +51,11 @@ export default function SignUpPage() {
     return () => ctx.revert()
   }, [])
 
-  const validateForm = () => {
-    if (!email) {
-      setFormError('Email is required')
-      return false
-    }
-    if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-      setFormError('Invalid email address format')
-      return false
-    }
-    if (!fullName) {
-      setFormError('Full name is required')
-      return false
-    }
-    if (!password) {
-      setFormError('Password is required')
-      return false
-    }
-    if (password.length < 6 || password.length > 100) {
-      setFormError('Password must be between 6 and 100 characters')
-      return false
-    }
-    if (!confirmPassword) {
-      setFormError('Confirm password is required')
-      return false
-    }
-    if (password !== confirmPassword) {
-      setFormError('Passwords do not match')
-      return false
-    }
-    return true
-  }
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
-    setFormError(null)
-
-    if (!validateForm()) {
-      setIsSubmitting(false)
-      return
-    }
-
-    try {
-      await register(email, fullName, password, confirmPassword)
-    } catch (error: any) {
-      setFormError(error.message || 'Failed to register')
-    } finally {
-      setIsSubmitting(false)
-    }
+    setFormError('Registration is currently disabled')
   }
 
   const handleGmailSignUp = () => {
@@ -298,17 +254,10 @@ export default function SignUpPage() {
 
             <Button
               type='submit'
-              disabled={isSubmitting}
+              disabled={false}
               className='w-full bg-lavender-600 hover:bg-lavender-700 text-white font-semibold py-4 px-6 rounded-lg transition-all duration-200 transform hover:scale-[1.02]'
             >
-              {isSubmitting ? (
-                <div className='flex items-center justify-center gap-2'>
-                  <div className='w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin' />
-                  Creating Account...
-                </div>
-              ) : (
-                'Create Account'
-              )}
+              Create Account
             </Button>
           </form>
 
@@ -323,7 +272,7 @@ export default function SignUpPage() {
 
           <Button
             onClick={handleGmailSignUp}
-            disabled={isSubmitting}
+            disabled={false}
             className='w-full bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 font-medium py-4 px-6 rounded-lg transition-all duration-200 flex items-center justify-center transform hover:scale-[1.02]'
           >
             <Mail className='w-5 h-5 mr-2' />

@@ -1,9 +1,9 @@
 import { authApi } from '@/api/auth'
 import axiosClient from '@/configs/axiosClient'
 import { User } from '@/types/auth'
+import Cookies from 'js-cookie'
 import { createContext, ReactNode, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Cookies from 'js-cookie'
 
 interface AuthContextType {
   user: User | null
@@ -11,7 +11,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   authLoading: boolean
   login: (username: string, password: string) => Promise<void>
-  // register: (email: string, fullName: string, password: string, confirmPassword: string) => Promise<void>
+
   logout: () => void
   error: string | null
   resendVerificationEmail: () => Promise<void>
