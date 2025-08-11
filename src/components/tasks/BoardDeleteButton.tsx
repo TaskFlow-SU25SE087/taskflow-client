@@ -31,7 +31,7 @@ export function BoardDeleteButton({ projectId, boardId, onDeleted, trigger }: Bo
     try {
       const res = await boardApi.deleteBoard(projectId, boardId)
       if (res) {
-        showToast({ title: 'Success', description: 'Board deleted successfully', variant: 'default' })
+        showToast({ title: 'Success', description: 'Board deleted successfully', variant: 'success' })
       } else {
         showToast({ title: 'Error', description: 'Failed to delete board', variant: 'destructive' })
       }

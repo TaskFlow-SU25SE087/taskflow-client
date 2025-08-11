@@ -111,7 +111,7 @@ export default function TaskCreateMenuForBoard({
       formData.append('SprintId', selectedSprintId)
       selectedTagIds.forEach((tagId) => formData.append('TagIds', tagId))
       const res = await taskApi.createTask(projectId, formData)
-      showToast({ title: res.code === 200 ? 'Success' : 'Error', description: res.message || 'Task created successfully', variant: res.code === 200 ? 'default' : 'destructive' })
+              showToast({ title: res.code === 200 ? 'Success' : 'Error', description: res.message || 'Task created successfully', variant: res.code === 200 ? 'success' : 'destructive' })
       await refreshTasks()
       onTaskCreated()
       onOpenChange(false)

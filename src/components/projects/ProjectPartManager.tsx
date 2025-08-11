@@ -119,7 +119,7 @@ export default function ProjectPartManager({ projectId }: { projectId: string })
   const handleConnectRepo = async () => {
     try {
       const res = await connectRepo(projectId, partId, { repoUrl, accessToken })
-      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Repository connected successfully', variant: res?.code === 200 ? 'default' : 'destructive' })
+              showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Repository connected successfully', variant: res?.code === 200 ? 'success' : 'destructive' })
     } catch (err: any) {
       showToast({ title: 'Error', description: err.response?.data?.message || err.message || 'Failed to connect repository', variant: 'destructive' })
     }

@@ -48,7 +48,7 @@ export default function AdminTermPage() {
       setEndDate('')
       setPage(1)
       setReloadFlag((f) => f + 1)
-      showToast({ title: 'Success', description: 'Term created successfully!', variant: 'default' })
+              showToast({ title: 'Success', description: 'Term created successfully!', variant: 'success' })
     } catch (err: any) {
       setCreateError(err.message || 'Create term failed')
       showToast({ title: 'Error', description: 'Failed to create term!', variant: 'destructive' })
@@ -77,7 +77,7 @@ export default function AdminTermPage() {
       setEditingId(null)
       setPage(1)
       setReloadFlag((f) => f + 1)
-      showToast({ title: 'Success', description: 'Term updated successfully!', variant: 'default' })
+              showToast({ title: 'Success', description: 'Term updated successfully!', variant: 'success' })
     } catch (err: any) {
       showToast({ title: 'Error', description: 'Failed to update term!', variant: 'destructive' })
     } finally {
@@ -92,7 +92,7 @@ export default function AdminTermPage() {
       await adminApi.deleteTerm(id)
       setPage(1)
       setReloadFlag((f) => f + 1)
-      showToast({ title: 'Success', description: 'Term deleted successfully!', variant: 'default' })
+              showToast({ title: 'Success', description: 'Term deleted successfully!', variant: 'success' })
     } catch (err: any) {
       showToast({ title: 'Error', description: 'Failed to delete term!', variant: 'destructive' })
     }
@@ -105,7 +105,7 @@ export default function AdminTermPage() {
       await adminApi.lockTerm(id)
       setPage(1)
       setReloadFlag((f) => f + 1)
-      showToast({ title: 'Success', description: 'Term locked!', variant: 'default' })
+              showToast({ title: 'Success', description: 'Term locked!', variant: 'success' })
     } catch (err: any) {
       showToast({ title: 'Error', description: 'Failed to lock term!', variant: 'destructive' })
     }

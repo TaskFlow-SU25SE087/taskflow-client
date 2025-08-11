@@ -36,7 +36,7 @@ export function BoardEditMenu({
     try {
       const res = await boardApi.editBoard(projectId, boardId, name, description)
       if (res) {
-        showToast({ title: 'Success', description: 'Board updated successfully', variant: 'default' })
+        showToast({ title: 'Success', description: 'Board updated successfully', variant: 'success' })
       } else {
         showToast({ title: 'Error', description: 'Failed to update board', variant: 'destructive' })
       }

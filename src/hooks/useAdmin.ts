@@ -55,7 +55,7 @@ export const useAdmin = () => {
       showToast({
         title: 'Success',
         description: 'File uploaded successfully. Users will be imported.',
-        variant: 'default'
+        variant: 'success'
       })
       await fetchUsers(1)
       return result

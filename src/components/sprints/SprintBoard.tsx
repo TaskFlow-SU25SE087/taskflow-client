@@ -207,7 +207,7 @@ export function SprintBoard({
                           showToast({
                             title: r.code === 200 ? 'Success' : 'Error',
                             description: r.message || 'Deleted selected tasks!',
-                            variant: r.code === 200 ? 'default' : 'destructive'
+                            variant: r.code === 200 ? 'success' : 'destructive'
                           })
                         } else if (
                           lastRes &&

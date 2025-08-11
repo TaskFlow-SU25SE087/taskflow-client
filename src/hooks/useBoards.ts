@@ -40,12 +40,14 @@ export const useBoards = () => {
     // background refresh
     setIsRefreshing(true)
     try {
+      console.log('🔄 [useBoards] Refreshing boards...')
       const updatedBoards = await boardApi.getAllBoardsByProjectId(currentProject.id)
+      console.log('✅ [useBoards] Boards refreshed successfully:', updatedBoards.length, 'boards')
       setBoards(updatedBoards)
       setError(null)
     } catch (error) {
       setError(error as Error)
-      console.error('Failed to refresh boards:', error)
+      console.error('❌ [useBoards] Failed to refresh boards:', error)
     } finally {
       setIsRefreshing(false)
     }

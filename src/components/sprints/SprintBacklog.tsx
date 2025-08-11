@@ -132,7 +132,7 @@ export function SprintBacklog({
                         showToast({
                           title: r.code === 200 ? 'Success' : 'Error',
                           description: r.message || 'Tasks moved to sprint successfully!',
-                          variant: r.code === 200 ? 'default' : 'destructive'
+                          variant: r.code === 200 ? 'success' : 'destructive'
                         })
                       } else if (res && typeof res === 'object' && 'data' in res && res.data === true) {
                         showToast({ title: 'Success', description: 'Tasks moved to sprint successfully!', variant: 'success' })
@@ -172,7 +172,7 @@ export function SprintBacklog({
                       showToast({
                         title: r.code === 200 ? 'Success' : 'Error',
                         description: r.message || 'Deleted selected tasks!',
-                        variant: r.code === 200 ? 'default' : 'destructive'
+                        variant: r.code === 200 ? 'success' : 'destructive'
                       })
                     } else if (lastRes && typeof lastRes === 'object' && 'data' in lastRes && lastRes.data === true) {
                       showToast({ title: 'Success', description: 'Deleted selected tasks!' })

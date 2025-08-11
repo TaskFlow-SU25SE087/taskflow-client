@@ -33,7 +33,7 @@ export const useIssues = () => {
         showToast({
           title: 'Success',
           description: 'Issue created successfully',
-          variant: 'default'
+          variant: 'success'
         })
         return true
       } else {
@@ -80,7 +80,7 @@ export const useIssues = () => {
         showToast({
           title: 'Success',
           description: response.message || 'Issue created successfully',
-          variant: 'default'
+          variant: 'success'
         })
         return true
       } else {

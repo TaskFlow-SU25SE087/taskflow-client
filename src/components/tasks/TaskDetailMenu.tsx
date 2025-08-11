@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToastContext } from '@/components/ui/ToastContext'
 
 import { useAuth } from '@/hooks/useAuth'
+import { useBoards } from '@/hooks/useBoards'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useSignalRIntegration } from '@/hooks/useSignalRIntegration'
 import { useTags } from '@/hooks/useTags'
@@ -60,20 +61,23 @@ interface TaskDetailMenuProps {
 }
 
 export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDetailMenuProps) {
+  const { currentProject } = useCurrentProject()
+  const { user } = useAuth()
   const { showToast } = useToastContext()
+  const { boards, refreshBoards } = useBoards()
+  const navigate = useNavigate()
+  const { listenForTaskUpdates } = useSignalRIntegration()
+
   const [assignee, setAssignee] = useState<ProjectMember | null>(null)
   const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([])
   const [projectLeader, setProjectLeader] = useState<ProjectMember | null>(null)
-  const { currentProject } = useCurrentProject()
-  const { user } = useAuth()
-  const navigate = useNavigate()
   const { tags } = useTags()
-  const { listenForTaskUpdates } = useSignalRIntegration()
 
   const [isTagSelectOpen, setIsTagSelectOpen] = useState(false)
   const [isPrioritySelectOpen, setIsPrioritySelectOpen] = useState(false)
 
   const [completeLoading, setCompleteLoading] = useState(false)
+  const [isMovingTask, setIsMovingTask] = useState(false)
   const [comment, setComment] = useState('')
   const [commentFiles, setCommentFiles] = useState<File[]>([])
   const [isCommentLoading, setIsCommentLoading] = useState(false)
@@ -485,7 +489,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       showToast({
         title: 'Success',
         description: `Task assigned to ${member.fullName || member.email || member.userId || member.id}`,
-        variant: 'default'
+        variant: 'success'
       })
     } catch (error) {
       console.error('❌ Error in assign task:', error)
@@ -509,7 +513,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       showToast({
         title: 'Success',
         description: 'Tag added to task!',
-        variant: 'default'
+        variant: 'success'
       })
       // Inform parent so lists refresh immediately
       try {
@@ -539,7 +543,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setIsCommentLoading(true)
     try {
       await taskApi.addTaskComment(currentProject.id, task.id, comment, commentFiles)
-      showToast({ title: 'Success', description: 'Comment added!', variant: 'default' })
+      showToast({ title: 'Success', description: 'Comment added!', variant: 'success' })
       setComment('')
       setCommentFiles([])
       // TODO: reload comments/activity if needed
@@ -587,13 +591,13 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         showToast({
           title: res.code === 200 ? 'Success' : 'Error',
           description: res.message || 'Task updated!',
-          variant: res.code === 200 ? 'default' : 'destructive'
+          variant: res.code === 200 ? 'success' : 'destructive'
         })
       } else {
         showToast({
           title: res === true ? 'Success' : 'Error',
           description: res === true ? 'Task updated!' : 'Failed to update task',
-          variant: res === true ? 'default' : 'destructive'
+          variant: res === true ? 'success' : 'destructive'
         })
       }
       // Ask parent to refresh and reflect changes immediately
@@ -662,13 +666,67 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setCompleteLoading(true)
     try {
       const res = await taskApi.completeTaskWithUpload(currentProject.id, task.id, completeFiles)
-      showToast({
-        title: res ? 'Success' : 'Error',
-        description: res ? 'Task marked as complete!' : 'Failed to complete task',
-        variant: res ? 'default' : 'destructive'
-      })
+              showToast({
+          title: res ? 'Success' : 'Error',
+          description: res ? 'Task marked as complete!' : 'Failed to complete task',
+          variant: res ? 'success' : 'destructive'
+        })
 
       if (res) {
+        // Find the "complete" or "done" board to move the task to
+        const completeBoard = boards.find(board => 
+          board.name.toLowerCase().includes('complete') || 
+          board.name.toLowerCase().includes('done') ||
+          board.name.toLowerCase().includes('finished')
+        )
+
+        if (completeBoard && completeBoard.id !== task.boardId) {
+          try {
+            setIsMovingTask(true)
+            console.log(`🔄 Moving completed task to ${completeBoard.name} board...`)
+            await taskApi.moveTaskToBoard(currentProject.id, task.id, completeBoard.id)
+            console.log(`✅ Task successfully moved to ${completeBoard.name} board`)
+            
+            showToast({
+              title: 'Task Moved',
+              description: `Task has been moved to ${completeBoard.name} column`,
+              variant: 'success'
+            })
+            
+            // Thêm delay nhỏ để đảm bảo server xử lý xong
+            await new Promise(resolve => setTimeout(resolve, 100))
+            
+            // Notify parent component to refresh the board IMMEDIATELY after move
+            console.log('🔄 Notifying parent to refresh board after task move...')
+            onTaskUpdated()
+            
+            // Thêm delay nhỏ nữa để đảm bảo UI được cập nhật
+            await new Promise(resolve => setTimeout(resolve, 200))
+            
+            // Gọi lại onTaskUpdated một lần nữa để đảm bảo board được refresh hoàn toàn
+            console.log('🔄 Final board refresh after task move...')
+            onTaskUpdated()
+            
+            // Force refresh boards ngay lập tức để đảm bảo UI được cập nhật
+            console.log('🔄 Force refreshing boards immediately...')
+            await refreshBoards()
+            
+          } catch (moveError) {
+            console.error('❌ Failed to move task to complete board:', moveError)
+            showToast({
+              title: 'Warning',
+              description: 'Task completed but failed to move to complete column. You can move it manually.',
+              variant: 'warning'
+            })
+          } finally {
+            setIsMovingTask(false)
+          }
+        } else {
+          // Nếu không cần chuyển cột, vẫn notify parent để refresh
+          console.log('🔄 Task already in complete column, notifying parent to refresh...')
+          onTaskUpdated()
+        }
+
         // Refresh data immediately using the optimized function
         console.log('🔄 Refreshing data after complete task...')
         await fetchAssigneeAndMembers()
@@ -676,17 +734,19 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         // Refresh task data from server to show uploaded files
         await reloadDialogData()
         
-        // Notify parent component to refresh the board
-        onTaskUpdated()
-        
         // Clear the selected files
         setCompleteFiles([])
+        
+        // Final board refresh to ensure everything is updated
+        console.log('🔄 Final board refresh after all data updates...')
+        await new Promise(resolve => setTimeout(resolve, 300))
+        onTaskUpdated()
         
         // Show success message that task is completed but dialog remains open
         showToast({
           title: 'Task Completed!',
           description: 'Task has been marked as complete. You can continue viewing details or close when ready.',
-          variant: 'default'
+          variant: 'success'
         })
       }
     } catch (error: unknown) {
@@ -1283,10 +1343,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               disabled={completeLoading}
               className='flex items-center gap-2 px-3 py-1.5 text-green-700 border border-green-300 bg-green-50 hover:bg-green-100'
             >
-              {completeLoading ? (
+              {completeLoading || isMovingTask ? (
                 <>
                   <Loader2 className='h-4 w-4 animate-spin' />
-                  Completing...
+                  {completeLoading ? 'Completing...' : 'Moving to Complete Column...'}
                 </>
               ) : (
                 <>
@@ -1301,6 +1361,19 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             <IssueCreateMenu projectId={currentProject.id} taskId={task.id} onIssueCreated={onTaskUpdated} />
           )}
         </div>
+
+        {/* Realtime Update Status */}
+        {isMovingTask && (
+          <div className='mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg'>
+            <div className='flex items-center gap-2 text-blue-700'>
+              <Loader2 className='h-4 w-4 animate-spin' />
+              <span className='text-sm font-medium'>Updating board in real-time...</span>
+            </div>
+            <p className='text-xs text-blue-600 mt-1'>
+              Task is being moved to complete column. The board will update automatically.
+            </p>
+          </div>
+        )}
 
         {/* Selected Files Display */}
         {completeFiles.length > 0 && (

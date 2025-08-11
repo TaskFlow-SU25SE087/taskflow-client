@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   
   // Cấu hình cổng duy nhất cho development server
-  const devPort = parseInt(env.VITE_DEV_SERVER_PORT || '3000')
+  const devPort = parseInt(env.VITE_DEV_SERVER_PORT || '5173')
   
   // Cấu hình proxy cho API duy nhất
   const proxyConfig: Record<string, any> = {

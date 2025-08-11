@@ -217,6 +217,19 @@ export default function ProjectBoard() {
   const { showToast } = useToastContext()
   const { leaveProject, loading: memberLoading, error: memberError } = useProjectMembers()
 
+  // Function to refresh both boards and sprint tasks
+  const refreshBoardsAndSprintTasks = async () => {
+    if (!currentProject?.id) return
+    
+    // Refresh boards
+    await refreshBoards()
+    
+    // Also refresh sprint tasks to ensure consistency
+    if (selectedSprintId) {
+      await fetchCurrentSprintAndTasks(currentProject.id, setSelectedSprintId, setSprintTasks)
+    }
+  }
+
   useEffect(() => {
     if (movingTaskId) {
       console.log('[TIMING] 🎯 movingTaskId set to:', movingTaskId, 'at:', new Date().toISOString())
@@ -959,7 +972,7 @@ export default function ProjectBoard() {
                                 tasks={board.tasks}
                                 color={getBoardColor(board.name)}
                                 onTaskCreated={refreshBoards}
-                                onTaskUpdated={refreshBoards}
+                                onTaskUpdated={refreshBoardsAndSprintTasks}
                                 status={board.name}
                                 boardId={board.id}
                                 movingTaskId={movingTaskId}

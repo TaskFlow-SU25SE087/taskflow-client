@@ -82,6 +82,7 @@ export const TaskCard = ({
 }: TaskCardProps & { children?: React.ReactNode }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
+  const [wasTaskUpdated, setWasTaskUpdated] = useState(false)
   const { currentProject } = useCurrentProject()
   const navigate = useNavigate()
   const { notificationService } = useSignalR()
@@ -125,6 +126,7 @@ export const TaskCard = ({
   }, [task.id, notificationService, fetchTaskDetails])
 
   const handleTaskUpdated = useCallback(() => {
+    setWasTaskUpdated(true)
     fetchTaskDetails()
     onTaskUpdated?.()
   }, [fetchTaskDetails, onTaskUpdated])
@@ -272,7 +274,10 @@ export const TaskCard = ({
         className='relative group'
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
-        onClick={() => setIsDetailOpen(true)}
+        onClick={() => {
+          setIsDetailOpen(true)
+          setWasTaskUpdated(false) // Reset the flag when opening the dialog
+        }}
       >
         {/* Priority indicator bar */}
         <div
@@ -354,7 +359,14 @@ export const TaskCard = ({
       <TaskDetailMenu
         task={task}
         isOpen={isDetailOpen}
-        onClose={() => setIsDetailOpen(false)}
+        onClose={() => {
+          setIsDetailOpen(false)
+          // Only refresh the board if the task was actually updated during this session
+          if (wasTaskUpdated) {
+            onTaskUpdated?.()
+            setWasTaskUpdated(false) // Reset the flag
+          }
+        }}
         onTaskUpdated={handleTaskUpdated}
       />
     </>

@@ -396,7 +396,7 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
                       showToast({
                         title: r.code === 200 ? 'Success' : 'Error',
                         description: r.message || 'Task deleted!',
-                        variant: r.code === 200 ? 'default' : 'destructive'
+                        variant: r.code === 200 ? 'success' : 'destructive'
                       })
                     } else if (res && typeof res === 'object' && 'data' in res && res.data === true) {
                       showToast({ title: 'Success', description: 'Task deleted!' })
