@@ -5,7 +5,8 @@ import { useCurrentProject } from './useCurrentProject'
 
 export const useSprints = () => {
   const [sprints, setSprints] = useState<Sprint[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false) // initial page-level loading
+  const [isRefreshing, setIsRefreshing] = useState(false)
   // Tracks whether we've completed the very first load attempt for the current project
   const [didInitialLoad, setDidInitialLoad] = useState(false)
   const [error, setError] = useState<Error | null>(null)
@@ -15,7 +16,11 @@ export const useSprints = () => {
 
   const fetchSprints = async () => {
     if (!currentProject || !currentProject.id) return
-    setIsLoading(true)
+    if (!didInitialLoad) {
+      setIsLoading(true)
+    } else {
+      setIsRefreshing(true)
+    }
     try {
       const data = await sprintApi.getAllSprintsByProjectId(currentProject.id)
       setSprints(data)
@@ -25,6 +30,7 @@ export const useSprints = () => {
       setSprints([])
     } finally {
       setIsLoading(false)
+      setIsRefreshing(false)
       setDidInitialLoad(true)
     }
   }
@@ -132,7 +138,11 @@ export const useSprints = () => {
   const fetchSprintsPublic = async (projectId?: string) => {
     const pid = projectId || currentProject?.id
     if (!pid) return
-    setIsLoading(true)
+    if (!didInitialLoad) {
+      setIsLoading(true)
+    } else {
+      setIsRefreshing(true)
+    }
     try {
       const data = await sprintApi.getAllSprintsByProjectId(pid)
       setSprints(data)
@@ -142,6 +152,7 @@ export const useSprints = () => {
       setSprints([])
     } finally {
       setIsLoading(false)
+      setIsRefreshing(false)
       setDidInitialLoad(true)
     }
   }
@@ -149,6 +160,7 @@ export const useSprints = () => {
   return {
     sprints,
     isLoading,
+    isRefreshing,
     didInitialLoad,
     error,
     refreshSprints,

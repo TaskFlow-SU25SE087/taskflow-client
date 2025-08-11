@@ -5,14 +5,19 @@ import { useCurrentProject } from './useCurrentProject'
 
 export const useBoards = () => {
   const [boards, setBoards] = useState<Board[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true) // initial load only
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [didInitialLoad, setDidInitialLoad] = useState(false)
   const [error, setError] = useState<Error | null>(null)
   const { currentProject } = useCurrentProject()
 
   useEffect(() => {
-    console.log('useBoards useEffect: currentProject', currentProject)
     if (!currentProject?.id) return
-    setIsLoading(true)
+    if (!didInitialLoad) {
+      setIsLoading(true)
+    } else {
+      setIsRefreshing(true)
+    }
     boardApi
       .getAllBoardsByProjectId(currentProject.id)
       .then((fetchedBoards) => {
@@ -25,12 +30,15 @@ export const useBoards = () => {
       })
       .finally(() => {
         setIsLoading(false)
+        setIsRefreshing(false)
+        setDidInitialLoad(true)
       })
-  }, [currentProject?.id])
+  }, [currentProject?.id, didInitialLoad])
 
   const refreshBoards = async () => {
     if (!currentProject || !currentProject.id) return
-    setIsLoading(true)
+    // background refresh
+    setIsRefreshing(true)
     try {
       const updatedBoards = await boardApi.getAllBoardsByProjectId(currentProject.id)
       setBoards(updatedBoards)
@@ -39,15 +47,15 @@ export const useBoards = () => {
       setError(error as Error)
       console.error('Failed to refresh boards:', error)
     } finally {
-      setIsLoading(false)
+      setIsRefreshing(false)
     }
   }
-
-  console.log('Boards in useBoards hook:', boards)
 
   return {
     boards,
     isLoading,
+    isRefreshing,
+    didInitialLoad,
     error,
     refreshBoards,
     setBoards // thêm setBoards để cập nhật ngay trên FE

@@ -426,7 +426,11 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
           task={task}
           isOpen={isDetailOpen}
           onClose={() => setIsDetailOpen(false)}
-          onTaskUpdated={() => {}}
+          onTaskUpdated={() => {
+            if (typeof onTaskUpdate === 'function') {
+              onTaskUpdate()
+            }
+          }}
         />
       </>
     </TooltipProvider>

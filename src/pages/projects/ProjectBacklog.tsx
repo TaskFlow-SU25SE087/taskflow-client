@@ -21,7 +21,7 @@ const ProjectBacklog = () => {
   // Cleaned up noisy perf logs to keep UI logic focused
 
   const { showToast } = useToastContext()
-  const { tasks, isLoading: tasksLoading, refreshTasks, loadMore, hasMore } = useOptimizedTasks()
+  const { tasks, didInitialLoad: tasksDidInitialLoad, refreshTasks, loadMore, hasMore } = useOptimizedTasks()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [taskSearchQuery, setTaskSearchQuery] = useState('')
   const [sprintSearchQuery, setSprintSearchQuery] = useState('')
@@ -32,8 +32,9 @@ const ProjectBacklog = () => {
 
   const {
     sprints,
-    isLoading: sprintsLoading,
-    didInitialLoad,
+    // isLoading here can flip during mutations; don't use it for page skeleton after first load
+    isLoading: _sprintsLoading,
+    didInitialLoad: sprintsDidInitialLoad,
     createSprint,
     getSprintTasks,
     addTaskToSprint,
@@ -42,10 +43,11 @@ const ProjectBacklog = () => {
 
   const [sprintTasks, setSprintTasks] = useState<Record<string, TaskP[]>>({})
   const [loadingSprintIds, setLoadingSprintIds] = useState<string[]>([])
-  // Page-level prefetch flag so we wait for all sprint tasks before showing content (like Board)
-  const [isPrefetchingSprintTasks, setIsPrefetchingSprintTasks] = useState(true)
+  // Initial prefetch flag so we wait for sprint tasks only on first paint
+  const [isInitialSprintPrefetching, setIsInitialSprintPrefetching] = useState(true)
+  const [hasPrefetchedInitialSprintTasks, setHasPrefetchedInitialSprintTasks] = useState(false)
   // Load boards once (used by task status dropdowns); gate page on this to avoid late dropdown render
-  const { boards, isLoading: isBoardLoading, refreshBoards } = useBoards()
+  const { boards, didInitialLoad: boardsDidInitialLoad, refreshBoards } = useBoards()
 
   // Debounced search queries - phải khai báo trước useMemo
   const [debouncedTaskSearch, setDebouncedTaskSearch] = useState('')
@@ -102,20 +104,18 @@ const ProjectBacklog = () => {
   useEffect(() => {
     let isCancelled = false
     // Wait for project and sprints initial load to finish before prefetching tasks
-    if (!currentProject?.id || !didInitialLoad) return
+    if (!currentProject?.id || !sprintsDidInitialLoad) return
 
     const prefetchAllSprintTasks = async () => {
-      // If there are no sprints, we're effectively done prefetching
-      if (!sprints.length) {
-        if (!isCancelled) {
-          setSprintTasks({})
-          setIsPrefetchingSprintTasks(false)
-        }
-        return
-      }
+      // Only block initial paint once
+      const shouldBlock = !hasPrefetchedInitialSprintTasks
 
-      setIsPrefetchingSprintTasks(true)
+      if (shouldBlock) setIsInitialSprintPrefetching(true)
       try {
+        if (!sprints.length) {
+          if (!isCancelled) setSprintTasks({})
+          return
+        }
         const tasksMap: Record<string, TaskP[]> = {}
         await Promise.all(
           sprints.map(async (sprint) => {
@@ -125,7 +125,10 @@ const ProjectBacklog = () => {
         )
         if (!isCancelled) setSprintTasks(tasksMap)
       } finally {
-        if (!isCancelled) setIsPrefetchingSprintTasks(false)
+        if (shouldBlock && !isCancelled) {
+          setIsInitialSprintPrefetching(false)
+          setHasPrefetchedInitialSprintTasks(true)
+        }
       }
     }
 
@@ -133,7 +136,7 @@ const ProjectBacklog = () => {
     return () => {
       isCancelled = true
     }
-  }, [sprints, getSprintTasks, currentProject?.id, didInitialLoad])
+  }, [sprints, getSprintTasks, currentProject?.id, sprintsDidInitialLoad, hasPrefetchedInitialSprintTasks])
 
   useEffect(() => {
     if (contentRef.current) {
@@ -186,7 +189,20 @@ const ProjectBacklog = () => {
 
       try {
         await addTaskToSprint(sprintId, selectedTaskId)
+        // Refresh sprints and sprint tasks so the UI reflects the move immediately
         await fetchSprints()
+        try {
+          const tasksMap: Record<string, TaskP[]> = {}
+          await Promise.all(
+            sprints.map(async (s) => {
+              const t = await getSprintTasks(s.id, currentProject?.id)
+              tasksMap[s.id] = t
+            })
+          )
+          setSprintTasks(tasksMap)
+        } catch {
+          // ignore, best-effort refresh
+        }
         showToast({
           title: 'Success',
           description: 'Task moved to sprint successfully'
@@ -208,9 +224,23 @@ const ProjectBacklog = () => {
     if (contentRef.current) {
       setScrollPosition(contentRef.current.scrollTop)
     }
-    await fetchSprints()
+    // Refresh backlog tasks
     await refreshTasks()
-  }, [fetchSprints, refreshTasks])
+    // Also refresh sprints and sprint task lists so sprint sections stay in sync
+    await fetchSprints()
+    try {
+      const tasksMap: Record<string, TaskP[]> = {}
+      await Promise.all(
+        sprints.map(async (sprint) => {
+          const t = await getSprintTasks(sprint.id, currentProject?.id)
+          tasksMap[sprint.id] = t
+        })
+      )
+      setSprintTasks(tasksMap)
+    } catch {
+      // no-op
+    }
+  }, [fetchSprints, refreshTasks, sprints, getSprintTasks, currentProject?.id])
 
   const handleSprintUpdate = useCallback(async () => {
     if (contentRef.current) {
@@ -273,11 +303,11 @@ const ProjectBacklog = () => {
   const isPageLoading =
     isProjectLoading ||
     !currentProject ||
-    sprintsLoading ||
-    !didInitialLoad ||
-    tasksLoading ||
-    isPrefetchingSprintTasks ||
-    isBoardLoading
+    // Gate on initial completion of each dataset only; ignore background refresh/mutations
+    !sprintsDidInitialLoad ||
+    !tasksDidInitialLoad ||
+    !boardsDidInitialLoad ||
+    isInitialSprintPrefetching
 
   if (isPageLoading) {
     return (
@@ -395,7 +425,7 @@ const ProjectBacklog = () => {
               projectId={currentProject?.id || ''}
               onTaskCreated={handleTaskUpdate}
               onTaskUpdate={handleTaskUpdate}
-              isLoading={tasksLoading}
+              isLoading={!tasksDidInitialLoad}
               onLoadMore={loadMore}
               hasMore={hasMore}
               boards={boards}

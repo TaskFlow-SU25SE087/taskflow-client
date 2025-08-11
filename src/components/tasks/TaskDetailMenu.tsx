@@ -504,6 +504,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         description: 'Tag added to task!',
         variant: 'default'
       })
+      // Inform parent so lists refresh immediately
+      try {
+        onTaskUpdated && onTaskUpdated()
+      } catch {}
       setIsTagSelectOpen(false)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to add tag'
@@ -568,7 +572,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           variant: res === true ? 'default' : 'destructive'
         })
       }
-      onTaskUpdated()
+      // Ask parent to refresh and reflect changes immediately
+      onTaskUpdated && onTaskUpdated()
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update task'
       showToast({ title: 'Error', description: message, variant: 'destructive' })

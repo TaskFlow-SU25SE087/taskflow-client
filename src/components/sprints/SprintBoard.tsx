@@ -248,6 +248,7 @@ export function SprintBoard({
                       onCheck={handleCheck}
                       boards={boards}
                       refreshBoards={refreshBoards}
+                      onTaskUpdate={onTaskUpdate}
                     />
                   ))}
                 </div>
