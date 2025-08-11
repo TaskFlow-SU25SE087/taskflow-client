@@ -143,7 +143,7 @@ export function TaskColumn({ title, tasks, color, onTaskCreated, boardId, moving
           <EmptyState />
         ) : (
           <div className='px-6'>
-            <div className='space-y-4 pb-4'>
+            <div className='space-y-4 pt-4 pb-4'>
               {tasks.map((task) => (
                 <div key={task.id}>
                   <SortableTaskCard task={task} isMoving={movingTaskId === task.id} />
