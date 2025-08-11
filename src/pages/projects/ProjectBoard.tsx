@@ -15,8 +15,8 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { useBoards } from '@/hooks/useBoards'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
@@ -27,22 +27,22 @@ import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import {
-  arrayMove,
-  horizontalListSortingStrategy,
-  SortableContext,
-  verticalListSortingStrategy
+    arrayMove,
+    horizontalListSortingStrategy,
+    SortableContext,
+    verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import {
-  CheckCircle,
-  ChevronDown,
-  Clock,
-  Filter,
-  Link2,
-  Pencil,
-  Plus,
-  Search,
-  Settings,
-  TrendingUp
+    CheckCircle,
+    ChevronDown,
+    Clock,
+    Filter,
+    Link2,
+    Pencil,
+    Plus,
+    Search,
+    Settings,
+    TrendingUp
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -959,6 +959,7 @@ export default function ProjectBoard() {
                                 tasks={board.tasks}
                                 color={getBoardColor(board.name)}
                                 onTaskCreated={refreshBoards}
+                                onTaskUpdated={refreshBoards}
                                 status={board.name}
                                 boardId={board.id}
                                 movingTaskId={movingTaskId}

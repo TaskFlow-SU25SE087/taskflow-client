@@ -12,6 +12,7 @@ interface TaskColumnProps {
   tasks: TaskP[]
   color: string
   onTaskCreated: () => void
+  onTaskUpdated?: () => void
   status: string
   boardId: string
   movingTaskId?: string | null
@@ -36,7 +37,7 @@ const getBoardColor = (boardName: string, fallbackColor: string) => {
   return fallbackColor
 }
 
-export function TaskColumn({ title, tasks, color, onTaskCreated, boardId, movingTaskId }: TaskColumnProps) {
+export function TaskColumn({ title, tasks, color, onTaskCreated, onTaskUpdated, boardId, movingTaskId }: TaskColumnProps) {
   const [isAddingTask, setIsAddingTask] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const { currentProject } = useCurrentProject()
@@ -146,7 +147,7 @@ export function TaskColumn({ title, tasks, color, onTaskCreated, boardId, moving
             <div className='space-y-4 pt-4 pb-4'>
               {tasks.map((task) => (
                 <div key={task.id}>
-                  <SortableTaskCard task={task} isMoving={movingTaskId === task.id} />
+                  <SortableTaskCard task={task} isMoving={movingTaskId === task.id} onTaskUpdated={onTaskUpdated} />
                 </div>
               ))}
             </div>

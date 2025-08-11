@@ -4,15 +4,15 @@ import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { TaskP } from '@/types/task'
 import { format } from 'date-fns'
 import {
-  Calendar,
-  ChevronDown,
-  ChevronsDown,
-  ChevronsUp,
-  ChevronUp,
-  Clock,
-  FileText,
-  MessageSquare,
-  User
+    Calendar,
+    ChevronDown,
+    ChevronsDown,
+    ChevronsUp,
+    ChevronUp,
+    Clock,
+    FileText,
+    MessageSquare,
+    User
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -70,13 +70,15 @@ interface TaskCardProps {
   compact?: boolean
   children?: React.ReactNode
   isMoving?: boolean
+  onTaskUpdated?: () => void
 }
 
 export const TaskCard = ({
   task,
   compact = false,
   children,
-  isMoving = false
+  isMoving = false,
+  onTaskUpdated
 }: TaskCardProps & { children?: React.ReactNode }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
@@ -124,7 +126,8 @@ export const TaskCard = ({
 
   const handleTaskUpdated = useCallback(() => {
     fetchTaskDetails()
-  }, [fetchTaskDetails])
+    onTaskUpdated?.()
+  }, [fetchTaskDetails, onTaskUpdated])
 
   if (!currentProject) {
     return null

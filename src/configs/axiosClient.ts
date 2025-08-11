@@ -118,6 +118,20 @@ axiosClient.interceptors.response.use(
       console.error('📡 [axiosClient] Error response status:', status)
       console.error('📡 [axiosClient] Error response data:', data)
 
+      // Enhanced backend error logging
+      if (data && typeof data === 'object') {
+        const errorData = data as any
+        if (errorData.code) {
+          console.error(`🔢 [axiosClient] Backend error code: ${errorData.code}`)
+        }
+        if (errorData.message) {
+          console.error(`💬 [axiosClient] Backend error message: ${errorData.message}`)
+        }
+        if (errorData.errors) {
+          console.error(`❌ [axiosClient] Backend validation errors:`, errorData.errors)
+        }
+      }
+
       if (status === 401) {
         console.error('🔒 [axiosClient] Unauthorized - removing token')
 

@@ -18,11 +18,13 @@ import { TaskP } from '@/types/task'
 import { formatDistanceToNow } from 'date-fns'
 import {
   Calendar,
+  Check,
   ChevronDown,
   ChevronsDown,
   ChevronsUp,
   ChevronUp,
   Eye,
+  FileText,
   Filter,
   Link,
   ListTodo,
@@ -33,12 +35,14 @@ import {
   Pencil,
   Plus,
   Settings,
+  Upload,
   UserPlus,
   X
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { projectApi } from '../../api/projects'
+import { extractBackendErrorMessage, getErrorTitle, getErrorVariant } from '../../utils/errorHandler'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '../ui/dialog'
 interface ProjectListItem {
   id: string
@@ -541,8 +545,15 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       // TODO: reload comments/activity if needed
       await fetchComments()
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to add comment'
-      showToast({ title: 'Error', description: message, variant: 'destructive' })
+      const errorMessage = extractBackendErrorMessage(error)
+      const errorTitle = getErrorTitle(error)
+      const errorVariant = getErrorVariant(error)
+      
+      showToast({ 
+        title: errorTitle, 
+        description: errorMessage, 
+        variant: errorVariant 
+      })
     } finally {
       setIsCommentLoading(false)
     }
@@ -555,6 +566,13 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setLocalTaskData(task)
     // Task data updated
   }, [task])
+
+  // Update edit fields when localTaskData changes (for real-time updates)
+  useEffect(() => {
+    setEditTitle(localTaskData.title)
+    setEditDescription(localTaskData.description)
+    setEditPriority(typeof localTaskData.priority === 'number' ? localTaskData.priority : parseInt(localTaskData.priority as string) || 1)
+  }, [localTaskData])
 
   const handleUpdateTask = async () => {
     if (!currentProject) return
@@ -581,8 +599,15 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       // Ask parent to refresh and reflect changes immediately
       onTaskUpdated && onTaskUpdated()
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to update task'
-      showToast({ title: 'Error', description: message, variant: 'destructive' })
+      const errorMessage = extractBackendErrorMessage(error)
+      const errorTitle = getErrorTitle(error)
+      const errorVariant = getErrorVariant(error)
+      
+      showToast({ 
+        title: errorTitle, 
+        description: errorMessage, 
+        variant: errorVariant 
+      })
     } finally {
       setIsUpdating(false)
     }
@@ -615,12 +640,11 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     // eslint-disable-next-line
   }, [isOpen, task.id])
 
-  // Tổng hợp file đính kèm từ task và các comment
-  const allAttachmentUrls: string[] = [
-    ...(task.attachmentUrl ? [task.attachmentUrl] : []),
-    ...(Array.isArray(task.completionAttachmentUrls) ? task.completionAttachmentUrls : []),
-    ...(task.commnets || []).flatMap((c) => c.attachmentUrls || [])
-  ]
+         
+        const allAttachmentUrls: string[] = [
+          ...(localTaskData.attachmentUrl ? [localTaskData.attachmentUrl] : []),
+          ...(localTaskData.commnets || []).flatMap((c) => c.attachmentUrls || [])
+        ]
 
   const priorityDropdownRef = useRef<HTMLDivElement>(null)
   const tagDropdownRef = useRef<HTMLDivElement>(null)
@@ -644,24 +668,39 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         variant: res ? 'default' : 'destructive'
       })
 
-      // Refresh data immediately using the optimized function
-      console.log('🔄 Refreshing data after complete task...')
-      await fetchAssigneeAndMembers()
-      onTaskUpdated()
-
-      // Close modal after a short delay to ensure data is refreshed
-      setTimeout(() => {
-        onClose()
-      }, 300)
+      if (res) {
+        // Refresh data immediately using the optimized function
+        console.log('🔄 Refreshing data after complete task...')
+        await fetchAssigneeAndMembers()
+        
+        // Refresh task data from server to show uploaded files
+        await reloadDialogData()
+        
+        // Notify parent component to refresh the board
+        onTaskUpdated()
+        
+        // Clear the selected files
+        setCompleteFiles([])
+        
+        // Show success message that task is completed but dialog remains open
+        showToast({
+          title: 'Task Completed!',
+          description: 'Task has been marked as complete. You can continue viewing details or close when ready.',
+          variant: 'default'
+        })
+      }
     } catch (error: unknown) {
+      const errorMessage = extractBackendErrorMessage(error)
+      const errorTitle = getErrorTitle(error)
+      const errorVariant = getErrorVariant(error)
+      
       showToast({
-        title: 'Error',
-        description: (error as Error)?.message || 'Failed to complete task',
-        variant: 'destructive'
+        title: errorTitle,
+        description: errorMessage,
+        variant: errorVariant
       })
     } finally {
       setCompleteLoading(false)
-      setCompleteFiles([])
     }
   }
 
@@ -748,11 +787,14 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       // Force reload dialog data
       await reloadDialogData()
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to leave task'
+      const errorMessage = extractBackendErrorMessage(error)
+      const errorTitle = getErrorTitle(error)
+      const errorVariant = getErrorVariant(error)
+      
       showToast({
-        title: 'Error',
-        description: message,
-        variant: 'destructive'
+        title: errorTitle,
+        description: errorMessage,
+        variant: errorVariant
       })
     } finally {
       setLeaveLoadingMap((prev) => ({ ...prev, [projectMemberId]: false }))
@@ -764,11 +806,18 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   // Function chung để reload dialog data
   const reloadDialogData = async () => {
     try {
+      console.log('🔄 Reloading dialog data from server...')
+      
       // Refresh task data từ server
       const updatedTasks = await taskApi.getTasksFromProject(currentProject!.id)
       const updatedTask = updatedTasks?.find((t) => t.id === task.id)
 
       if (updatedTask) {
+        console.log('📋 Updated task data from server:', updatedTask)
+        
+        // Update local task data to reflect real-time changes
+        setLocalTaskData(updatedTask)
+        
         // Refresh assignee data
         if (updatedTask.taskAssignees) {
           const assigneeFromTask =
@@ -791,6 +840,18 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
         // Refresh comments
         setComments(updatedTask.commnets || [])
+        
+        // Log completion status and files
+        console.log('✅ Task completion status:', updatedTask.status)
+        console.log('📁 Task completion files:', updatedTask.completionAttachmentUrls)
+        console.log('📎 Task attachment URL:', updatedTask.attachmentUrl)
+        
+        // Show real-time update notification
+        if (updatedTask.status === 'done' || updatedTask.status === 'completed') {
+          console.log('🎉 Task is now completed!')
+        }
+      } else {
+        console.warn('⚠️ Task not found in updated data')
       }
 
       // Refresh members list
@@ -893,11 +954,14 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         onTaskUpdated()
       }, 1000)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to remove assignee'
+      const errorMessage = extractBackendErrorMessage(error)
+      const errorTitle = getErrorTitle(error)
+      const errorVariant = getErrorVariant(error)
+      
       showToast({
-        title: 'Error',
-        description: message,
-        variant: 'destructive'
+        title: errorTitle,
+        description: errorMessage,
+        variant: errorVariant
       })
     } finally {
       setRemoveLoadingMap((prev) => ({ ...prev, [projectMemberId]: false }))
@@ -929,11 +993,42 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           </button>
         </div>
 
+        {/* Completion Banner - Show when task is completed */}
+        {(localTaskData.status === 'done' || localTaskData.status === 'completed') && (
+          <div className='mb-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg shadow-sm'>
+            <div className='flex items-center gap-3'>
+              <div className='flex-shrink-0'>
+                <div className='w-10 h-10 bg-green-100 rounded-full flex items-center justify-center'>
+                  <Check className='h-6 w-6 text-green-600' />
+                </div>
+              </div>
+              <div className='flex-1'>
+                <h3 className='text-lg font-semibold text-green-800'>Task Completed Successfully!</h3>
+                <p className='text-green-700 text-sm'>
+                  This task has been marked as complete. You can continue viewing details or close the dialog when ready.
+                </p>
+              </div>
+              <div className='flex-shrink-0'>
+                <span className='inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800'>
+                  {localTaskData.status}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Task Name and Priority */}
         <div className='mb-4'>
           <div className='flex items-center gap-2 mb-1'>
             <span className='text-gray-500'>Board</span>
-            <span className='text-gray-900 cursor-pointer hover:underline font-medium'>{task.status}</span>
+            <span className='text-gray-900 cursor-pointer hover:underline font-medium'>{localTaskData.status}</span>
+            {/* Completion Status Indicator */}
+            {(localTaskData.status === 'done' || localTaskData.status === 'completed') && (
+              <div className='flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium'>
+                <Check className='h-3 w-3' />
+                Completed
+              </div>
+            )}
           </div>
           <div className='flex items-center gap-2'>
             <ListTodo className='h-5 w-5' />
@@ -997,7 +1092,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           <div className='flex items-center gap-2 mt-2'>
             <Calendar className='h-4 w-4 text-gray-400' />
             <span className='text-sm text-gray-600'>
-              Deadline: {task.deadline ? new Date(task.deadline).toLocaleDateString('vi-VN') : 'N/A'}
+              Deadline: {localTaskData.deadline ? new Date(localTaskData.deadline).toLocaleDateString('vi-VN') : 'N/A'}
             </span>
           </div>
           <div className='mt-2 text-gray-600'>
@@ -1098,6 +1193,57 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           </div>
         )}
 
+        {/* Completion Files - Special section for files uploaded when completing task */}
+        {Array.isArray(localTaskData.completionAttachmentUrls) && localTaskData.completionAttachmentUrls.length > 0 && (
+          <div className='mt-4 p-4 bg-green-50 border border-green-200 rounded-lg'>
+            <div className='flex items-center gap-2 mb-3'>
+              <Check className='h-5 w-5 text-green-600' />
+              <span className='font-semibold text-green-800'>Completion Files</span>
+              <span className='text-sm text-green-600'>Files uploaded when completing this task</span>
+            </div>
+            <div className='flex flex-wrap gap-3'>
+              {localTaskData.completionAttachmentUrls.map((url: string, idx: number) => {
+                if (url.match(/\.(jpg|jpeg|png|gif)$/i)) {
+                  // Image
+                  return (
+                    <a key={url || idx} href={url} target='_blank' rel='noopener noreferrer'>
+                      <img src={url} alt={`completion-file-${idx}`} className='w-24 h-24 object-cover rounded border border-green-300' />
+                    </a>
+                  )
+                } else if (url.match(/\.pdf$/i)) {
+                  // PDF
+                  return (
+                    <div key={url || idx} className='w-48 h-64 border border-green-300 rounded overflow-hidden'>
+                      <iframe src={url} title={`completion-pdf-${idx}`} className='w-full h-full' />
+                      <a
+                        href={url}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                        className='block text-green-600 underline text-center mt-1 font-medium'
+                      >
+                        View PDF
+                      </a>
+                    </div>
+                  )
+                } else {
+                  // Other file
+                  return (
+                    <a
+                      key={url || idx}
+                      href={url}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='text-green-600 underline flex items-center gap-1 font-medium'
+                    >
+                      📎 Completion File {idx + 1}
+                    </a>
+                  )
+                }
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className='flex gap-2 mb-6'>
           <button
@@ -1107,6 +1253,16 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             <Paperclip className='h-4 w-4' />
             <span>Attach</span>
           </button>
+          
+          {/* File Selection for Task Completion */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className='flex items-center gap-2 px-3 py-1.5 text-blue-600 rounded-lg border border-blue-300 bg-blue-50 hover:bg-blue-100'
+          >
+            <Upload className='h-4 w-4' />
+            <span>Select Files</span>
+          </button>
+          
           <input
             type='file'
             multiple
@@ -1115,22 +1271,69 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             onChange={(e) => {
               if (e.target.files) {
                 setCompleteFiles(Array.from(e.target.files))
-                // After selecting files, call handleCompleteTask
-                setTimeout(() => handleCompleteTask(), 0)
+                // Don't auto-complete, let user review files first
               }
             }}
           />
-          <Button
-            onClick={handleCompleteTask}
-            disabled={completeLoading}
-            className='flex items-center gap-2 px-3 py-1.5 text-green-700 border border-green-300 bg-green-50 hover:bg-green-100'
-          >
-            {completeLoading ? 'Completing...' : 'Complete'}
-          </Button>
+          
+          {/* Complete Button - Only show when files are selected */}
+          {completeFiles.length > 0 && (
+            <Button
+              onClick={handleCompleteTask}
+              disabled={completeLoading}
+              className='flex items-center gap-2 px-3 py-1.5 text-green-700 border border-green-300 bg-green-50 hover:bg-green-100'
+            >
+              {completeLoading ? (
+                <>
+                  <Loader2 className='h-4 w-4 animate-spin' />
+                  Completing...
+                </>
+              ) : (
+                <>
+                  <Check className='h-4 w-4' />
+                  Complete Task
+                </>
+              )}
+            </Button>
+          )}
+          
           {currentProject && (
             <IssueCreateMenu projectId={currentProject.id} taskId={task.id} onIssueCreated={onTaskUpdated} />
           )}
         </div>
+
+        {/* Selected Files Display */}
+        {completeFiles.length > 0 && (
+          <div className='mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg'>
+            <h3 className='text-sm font-medium text-blue-800 mb-2 flex items-center gap-2'>
+              <FileText className='h-4 w-4' />
+              Files Selected for Completion ({completeFiles.length})
+            </h3>
+            <div className='space-y-2'>
+              {completeFiles.map((file, index) => (
+                <div key={index} className='flex items-center justify-between p-2 bg-white rounded border'>
+                  <div className='flex items-center gap-2'>
+                    <FileText className='h-4 w-4 text-blue-600' />
+                    <span className='text-sm text-gray-700'>{file.name}</span>
+                    <span className='text-xs text-gray-500'>({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setCompleteFiles(completeFiles.filter((_, i) => i !== index))
+                    }}
+                    className='p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded'
+                    title='Remove file'
+                  >
+                    <X className='h-4 w-4' />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className='mt-3 text-xs text-blue-600'>
+              Click "Complete Task" above to finish the task with these files.
+            </div>
+          </div>
+        )}
 
         {/* Assignee and Tags - Layout 2 cột */}
         <div className='grid grid-cols-2 gap-6 mb-6'>

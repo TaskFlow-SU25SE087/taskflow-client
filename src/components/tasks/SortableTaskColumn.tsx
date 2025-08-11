@@ -11,6 +11,7 @@ interface SortableTaskColumnProps {
   tasks: TaskP[]
   color: string
   onTaskCreated: () => void
+  onTaskUpdated?: () => void
   status: string
   boardId: string
   movingTaskId?: string | null
