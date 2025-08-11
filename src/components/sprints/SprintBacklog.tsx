@@ -5,6 +5,7 @@ import { useToastContext } from '@/components/ui/ToastContext'
 import { SprintStatusMap } from '@/constants/sprintStatus'
 import { useSprints } from '@/hooks/useSprints'
 import { TaskP } from '@/types/task'
+import { Board } from '@/types/board'
 import { ChevronDown, ChevronRight, Plus } from 'lucide-react'
 import { useState } from 'react'
 import TaskCreateMenu from '../tasks/TaskCreateMenu'
@@ -22,6 +23,8 @@ interface SprintBacklogProps {
   isLoading?: boolean
   onLoadMore?: () => void
   hasMore?: boolean
+  boards: Board[]
+  refreshBoards: () => Promise<void>
 }
 
 export function SprintBacklog({
@@ -32,7 +35,9 @@ export function SprintBacklog({
   sprint,
   isLoading = false,
   onLoadMore,
-  hasMore
+  hasMore,
+  boards,
+  refreshBoards
 }: SprintBacklogProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
@@ -207,6 +212,8 @@ export function SprintBacklog({
                 selectedTaskIds={selectedTaskIds}
                 onCheck={handleCheck}
                 onTaskUpdate={onTaskUpdate}
+                boards={boards}
+                refreshBoards={refreshBoards}
                 height={Math.min(tasks.length * 44, 400)} // Dynamic height based on task count
                 onLoadMore={onLoadMore}
                 hasMore={hasMore}

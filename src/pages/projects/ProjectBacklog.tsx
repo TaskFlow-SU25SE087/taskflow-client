@@ -5,6 +5,7 @@ import { SprintBacklog } from '@/components/sprints/SprintBacklog'
 import { SprintBoard } from '@/components/sprints/SprintBoard'
 import { SprintCreateMenu } from '@/components/sprints/SprintCreateMenu'
 import { SprintSelector } from '@/components/sprints/SprintSelector'
+import { useBoards } from '@/hooks/useBoards'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -25,13 +26,14 @@ const ProjectBacklog = () => {
   const [taskSearchQuery, setTaskSearchQuery] = useState('')
   const [sprintSearchQuery, setSprintSearchQuery] = useState('')
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
-  const { currentProject } = useCurrentProject()
+  const { currentProject, isLoading: isProjectLoading } = useCurrentProject()
   const [scrollPosition, setScrollPosition] = useState(0)
   const contentRef = useRef<HTMLDivElement>(null)
 
   const {
     sprints,
     isLoading: sprintsLoading,
+    didInitialLoad,
     createSprint,
     getSprintTasks,
     addTaskToSprint,
@@ -40,6 +42,10 @@ const ProjectBacklog = () => {
 
   const [sprintTasks, setSprintTasks] = useState<Record<string, TaskP[]>>({})
   const [loadingSprintIds, setLoadingSprintIds] = useState<string[]>([])
+  // Page-level prefetch flag so we wait for all sprint tasks before showing content (like Board)
+  const [isPrefetchingSprintTasks, setIsPrefetchingSprintTasks] = useState(true)
+  // Load boards once (used by task status dropdowns); gate page on this to avoid late dropdown render
+  const { boards, isLoading: isBoardLoading, refreshBoards } = useBoards()
 
   // Debounced search queries - phải khai báo trước useMemo
   const [debouncedTaskSearch, setDebouncedTaskSearch] = useState('')
@@ -94,22 +100,40 @@ const ProjectBacklog = () => {
   }, [tasks, debouncedTaskSearch])
 
   useEffect(() => {
-    if (!sprints.length || !currentProject?.id) return
+    let isCancelled = false
+    // Wait for project and sprints initial load to finish before prefetching tasks
+    if (!currentProject?.id || !didInitialLoad) return
 
-    const loadSprintTasks = async () => {
-      const tasksMap: Record<string, TaskP[]> = {}
-      await Promise.all(
-        sprints.map(async (sprint) => {
-          const tasks = await getSprintTasks(sprint.id, currentProject.id)
-          tasksMap[sprint.id] = tasks
-        })
-      )
+    const prefetchAllSprintTasks = async () => {
+      // If there are no sprints, we're effectively done prefetching
+      if (!sprints.length) {
+        if (!isCancelled) {
+          setSprintTasks({})
+          setIsPrefetchingSprintTasks(false)
+        }
+        return
+      }
 
-      setSprintTasks(tasksMap)
+      setIsPrefetchingSprintTasks(true)
+      try {
+        const tasksMap: Record<string, TaskP[]> = {}
+        await Promise.all(
+          sprints.map(async (sprint) => {
+            const tasks = await getSprintTasks(sprint.id, currentProject.id)
+            tasksMap[sprint.id] = tasks
+          })
+        )
+        if (!isCancelled) setSprintTasks(tasksMap)
+      } finally {
+        if (!isCancelled) setIsPrefetchingSprintTasks(false)
+      }
     }
 
-    loadSprintTasks()
-  }, [sprints, getSprintTasks, currentProject?.id])
+    prefetchAllSprintTasks()
+    return () => {
+      isCancelled = true
+    }
+  }, [sprints, getSprintTasks, currentProject?.id, didInitialLoad])
 
   useEffect(() => {
     if (contentRef.current) {
@@ -245,7 +269,17 @@ const ProjectBacklog = () => {
 
   // Keep render lightweight – no debug logs
 
-  if (sprintsLoading || tasksLoading) {
+  // Hold skeleton until project, boards/sprints, tasks, and prefetch done
+  const isPageLoading =
+    isProjectLoading ||
+    !currentProject ||
+    sprintsLoading ||
+    !didInitialLoad ||
+    tasksLoading ||
+    isPrefetchingSprintTasks ||
+    isBoardLoading
+
+  if (isPageLoading) {
     return (
       <div className='flex h-screen bg-gray-50'>
         <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} />
@@ -351,6 +385,8 @@ const ProjectBacklog = () => {
                 onLoadTasks={() => handleLoadSprintTasks(sprint.id)}
                 loadingTasks={loadingSprintIds.includes(sprint.id)}
                 hasLoadedTasks={!!sprintTasks[sprint.id]}
+                boards={boards}
+                refreshBoards={refreshBoards}
               />
             ))}
             <SprintBacklog
@@ -362,6 +398,8 @@ const ProjectBacklog = () => {
               isLoading={tasksLoading}
               onLoadMore={loadMore}
               hasMore={hasMore}
+              boards={boards}
+              refreshBoards={refreshBoards}
             />
           </div>
         </div>

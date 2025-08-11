@@ -1,9 +1,9 @@
 import { taskApi } from '@/api/tasks'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { useBoards } from '@/hooks/useBoards'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { TaskP } from '@/types/task'
+import { Board } from '@/types/board'
 import {
   AlertCircle,
   Calendar,
@@ -26,15 +26,13 @@ interface BacklogTaskRowProps {
   checked?: boolean
   onCheck?: (taskId: string, checked: boolean) => void
   onTaskUpdate?: () => void
+  boards: Board[]
+  refreshBoards: () => Promise<void> | (() => Promise<any>) | any
 }
 
 // Note: statusColorMap removed in favor of unified getBoardColor-based theming
 
-interface Board {
-  id?: string
-  color?: string
-  name?: string
-}
+// (Board type imported from '@/types/board')
 
 // Unified color palette for boards/statuses (consistent across pages)
 const boardColors: Record<string, string> = {
@@ -58,7 +56,7 @@ const getBoardColor = (statusOrBoard?: string | Board): string => {
     return boardColors[statusOrBoard.toLowerCase()] || '#5030E5'
   }
   const key = (statusOrBoard.name || '').toLowerCase()
-  return statusOrBoard.color || boardColors[key] || '#5030E5'
+  return boardColors[key] || '#5030E5'
 }
 
 const getStatusIcon = (status: string) => {
@@ -160,11 +158,12 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
   showMeta = true,
   checked = false,
   onCheck,
-  onTaskUpdate
+  onTaskUpdate,
+  boards,
+  refreshBoards
 }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [statusLoading, setStatusLoading] = useState(false)
-  const { boards, refreshBoards } = useBoards()
   const { currentProject } = useCurrentProject()
   const { showToast } = useToastContext()
 
@@ -251,7 +250,7 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
 
           {/* Status (dropdown) */}
           <div className='min-w-[140px] max-w-[140px]'>
-            {task.status && boards.length > 0 ? (
+            {task.status && boards && boards.length > 0 ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -259,7 +258,9 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
                       statusLoading ? 'opacity-60' : ''
                     }`}
                     style={{
-                      backgroundColor: `${getBoardColor(boards.find((b) => b.id === task.boardId) || task.status)}20`
+                      backgroundColor: `${getBoardColor(
+                        (boards.find((b: Board) => b.id === (task as any).boardId) as Board) || task.status
+                      )}20`
                     }}
                     disabled={statusLoading}
                   >
@@ -271,7 +272,7 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align='start' className='w-[200px] p-1.5 border-none shadow-lg'>
-                  {boards.map((board, idx) => (
+                  {boards.map((board: Board, idx: number) => (
                     <DropdownMenuItem
                       key={board.id || idx}
                       className='gap-2 rounded-md px-2.5 py-2 cursor-pointer transition-colors focus:ring-0 focus:ring-offset-0'

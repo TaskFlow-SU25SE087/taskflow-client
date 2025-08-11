@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { useSprints } from '@/hooks/useSprints'
 import { Sprint } from '@/types/sprint'
+import { Board } from '@/types/board'
 import { TaskP } from '@/types/task'
 import { format } from 'date-fns'
 import { ChevronDown, ChevronRight, PlayCircle, Plus } from 'lucide-react'
@@ -24,6 +25,8 @@ interface SprintBoardProps {
   onLoadTasks: () => void
   loadingTasks: boolean
   hasLoadedTasks: boolean
+  boards: Board[]
+  refreshBoards: () => Promise<void>
 }
 
 export function SprintBoard({
@@ -35,7 +38,9 @@ export function SprintBoard({
   onSprintUpdate,
   onLoadTasks,
   loadingTasks,
-  hasLoadedTasks
+  hasLoadedTasks,
+  boards,
+  refreshBoards
 }: SprintBoardProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
@@ -241,6 +246,8 @@ export function SprintBoard({
                       showMeta={true}
                       checked={selectedTaskIds.includes(task.id)}
                       onCheck={handleCheck}
+                      boards={boards}
+                      refreshBoards={refreshBoards}
                     />
                   ))}
                 </div>
