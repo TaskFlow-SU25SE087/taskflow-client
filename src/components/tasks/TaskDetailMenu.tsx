@@ -13,28 +13,28 @@ import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useSignalRIntegration } from '@/hooks/useSignalRIntegration'
 import { useTags } from '@/hooks/useTags'
 import { cn } from '@/lib/utils'
-import { ProjectMember, Tag } from '@/types/project'
+import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { formatDistanceToNow } from 'date-fns'
 import {
-    Calendar,
-    ChevronDown,
-    ChevronsDown,
-    ChevronsUp,
-    ChevronUp,
-    Eye,
-    Filter,
-    Link,
-    ListTodo,
-    Loader2,
-    LogOut,
-    MessageCircle,
-    Paperclip,
-    Pencil,
-    Plus,
-    Settings,
-    UserPlus,
-    X
+  Calendar,
+  ChevronDown,
+  ChevronsDown,
+  ChevronsUp,
+  ChevronUp,
+  Eye,
+  Filter,
+  Link,
+  ListTodo,
+  Loader2,
+  LogOut,
+  MessageCircle,
+  Paperclip,
+  Pencil,
+  Plus,
+  Settings,
+  UserPlus,
+  X
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -68,7 +68,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
   const [isTagSelectOpen, setIsTagSelectOpen] = useState(false)
   const [isPrioritySelectOpen, setIsPrioritySelectOpen] = useState(false)
-  const [taskTags, setTaskTags] = useState<Tag[]>(task.tags || [])
+
   const [completeLoading, setCompleteLoading] = useState(false)
   const [comment, setComment] = useState('')
   const [commentFiles, setCommentFiles] = useState<File[]>([])
@@ -281,10 +281,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           const tasks = await taskApi.getTasksFromProject(currentProject?.id || '')
           const taskDetails = tasks?.find((t) => t.id === task.id)
           if (taskDetails) {
-            // Cập nhật taskTags để hiển thị màu sắc realtime
-            if (taskDetails.tags) {
-              setTaskTags(taskDetails.tags)
-            }
+                // Cập nhật task tags để hiển thị màu sắc realtime
             
             if (taskDetails.taskAssignees) {
               const assigneeFromTask =
@@ -505,7 +502,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     try {
       await taskApi.addTagToTask(currentProject.id, task.id, tagId)
       const tag = tags.find((t) => t.id === tagId)
-      if (tag) setTaskTags([...taskTags, tag])
+      // Tag added successfully
       showToast({
         title: 'Success',
         description: 'Tag added to task!',
@@ -525,6 +522,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       })
     }
   }
+
+
 
   const handleCommentFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -555,8 +554,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setEditDescription(task.description)
     setEditPriority(typeof task.priority === 'number' ? task.priority : parseInt(task.priority as string) || 1)
     setLocalTaskData(task)
-    // Cập nhật taskTags khi task thay đổi để hiển thị màu sắc realtime
-    setTaskTags(task.tags || [])
+    // Task data updated
   }, [task])
 
   const handleUpdateTask = async () => {
@@ -1321,7 +1319,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             </h1>
             <div className='p-4 bg-white rounded-lg shadow-sm border'>
               <div className='flex items-center gap-2 flex-wrap'>
-                {taskTags.map((tag, idx) => (
+                {(task.tags || []).map((tag, idx) => (
                   <span
                     key={tag.id || idx}
                     style={{
@@ -1331,7 +1329,9 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                       padding: '6px 16px',
                       fontWeight: 500,
                       fontSize: '1em',
-                      display: 'inline-block'
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px'
                     }}
                   >
                     {tag.name}
@@ -1359,23 +1359,28 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                   <span className='font-medium text-lavender-500 group-hover:text-lavender-800 transition-colors duration-150'>
                     Add
                   </span>
-                  {isTagSelectOpen && (
-                    <div className='absolute left-0 top-8 z-50 bg-white border rounded shadow-lg min-w-[160px] max-h-60 overflow-y-auto'>
-                      {tags.filter((t) => !taskTags.some((tag) => tag.id === t.id)).length === 0 ? (
+                                       {isTagSelectOpen && (
+                     <div className='absolute left-0 top-12 z-50 bg-white border rounded shadow-lg min-w-[200px] max-h-60 overflow-y-auto'>
+                                              {tags.filter((t) => !(task.tags || []).some((tag) => tag.id === t.id || tag.name === t.name)).length === 0 ? (
                         <div className='px-4 py-2 text-gray-400 text-sm'>No tags available</div>
                       ) : (
                         tags
-                          .filter((t) => !taskTags.some((tag) => tag.id === t.id))
+                          .filter((t) => !(task.tags || []).some((tag) => tag.id === t.id || tag.name === t.name))
                           .map((tag) => (
                             <button
                               key={tag.id}
-                              className='w-full text-left px-4 py-2 hover:bg-lavender-50 text-sm text-gray-700 font-medium'
+                              className='w-full text-left px-4 py-2 hover:bg-lavender-50 text-sm font-medium flex items-center gap-2'
                               onClick={async () => {
                                 await handleTagSelect(tag.id)
                                 setIsTagSelectOpen(false)
                               }}
                             >
-                              {tag.name}
+                              <span
+                                className='px-3 py-1 rounded-full text-white font-medium text-sm'
+                                style={{ backgroundColor: tag.color || '#eee' }}
+                              >
+                                {tag.name}
+                              </span>
                             </button>
                           ))
                       )}
@@ -1384,7 +1389,23 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                 </div>
               </div>
             </div>
-            <ProjectTagManager isOpen={isTagManagerOpen} onClose={() => setIsTagManagerOpen(false)} />
+            <ProjectTagManager 
+          isOpen={isTagManagerOpen} 
+          onClose={() => setIsTagManagerOpen(false)} 
+          onTagUpdated={() => {
+            // Khi tag được cập nhật, refresh task data để hiển thị tên tag mới
+            if (currentProject) {
+              taskApi.getTasksFromProject(currentProject.id).then(tasks => {
+                const updatedTask = tasks.find(t => t.id === task.id)
+                if (updatedTask) {
+                  // Task tags updated
+                  // Thông báo cho component cha biết task đã được cập nhật
+                  onTaskUpdated && onTaskUpdated()
+                }
+              })
+            }
+          }}
+        />
           </div>
         </div>
 

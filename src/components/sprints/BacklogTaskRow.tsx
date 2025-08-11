@@ -2,23 +2,23 @@ import { taskApi } from '@/api/tasks'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
-import { TaskP } from '@/types/task'
 import { Board } from '@/types/board'
+import { TaskP } from '@/types/task'
 import {
-  AlertCircle,
-  Calendar,
-  FileText,
-  MessageSquare,
-  Circle,
-  PlayCircle,
-  CheckCircle,
-  ChevronDown
+    AlertCircle,
+    Calendar,
+    CheckCircle,
+    ChevronDown,
+    Circle,
+    FileText,
+    MessageSquare,
+    PlayCircle
 } from 'lucide-react'
 import React, { useState } from 'react'
 import { TaskDetailMenu } from '../tasks/TaskDetailMenu'
 import { AvatarFallback, AvatarImage, Avatar as UIAvatar } from '../ui/avatar'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu'
 import { Checkbox } from '../ui/checkbox'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu'
 
 interface BacklogTaskRowProps {
   task: TaskP
