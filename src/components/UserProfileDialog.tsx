@@ -1,52 +1,70 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useUserProfile } from '../hooks/useUserProfile'
 
 interface Props {
   userId: string
   onClose: () => void
+  open?: boolean
 }
 
-export default function UserProfileDialog({ userId, onClose }: Props) {
-  console.log('UserProfileDialog opened with userId:', userId)
+export default function UserProfileDialog({ userId, onClose, open = true }: Props) {
   const { profile, loading } = useUserProfile(userId)
-
   if (!userId) return null
 
   return (
-    <div className='fixed inset-0 bg-black/40 flex items-center justify-center z-50'>
-      <div className='bg-white p-6 rounded shadow-lg min-w-[320px] relative'>
-        <button onClick={onClose} className='absolute top-2 right-2 text-xl'>
-          ✕
-        </button>
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className='sm:max-w-md'>
+        <DialogHeader>
+          <DialogTitle>User Profile</DialogTitle>
+        </DialogHeader>
         {loading ? (
-          <div>Loading...</div>
+          <div className='flex items-center gap-4'>
+            <Skeleton className='h-16 w-16 rounded-full' />
+            <div className='space-y-2 w-full'>
+              <Skeleton className='h-5 w-40' />
+              <Skeleton className='h-4 w-56' />
+            </div>
+          </div>
         ) : profile ? (
-          <div className='text-center'>
-            <img src={profile.avatar} alt='avatar' className='w-20 h-20 rounded-full mx-auto mb-3 object-cover' />
-            <div className='font-bold text-lg mb-1'>{profile.fullName}</div>
-            <div className='text-gray-600 mb-2'>{profile.role}</div>
-            <div className='mb-1'>
-              <b>Email:</b> {profile.email}
-            </div>
-            <div className='mb-1'>
-              <b>Phone:</b> {profile.phoneNumber}
-            </div>
-            <div className='mb-1'>
-              <b>Student ID:</b> {profile.studentId}
-            </div>
-            <div className='mb-1'>
-              <b>Term Season:</b> {profile.termSeason}
-            </div>
-            <div className='mb-1'>
-              <b>Term Year:</b> {profile.termYear}
-            </div>
-            <div className='mb-1'>
-              <b>Past Terms:</b> {profile.pastTerms}
+          <div className='flex items-center gap-4'>
+            <Avatar className='h-16 w-16'>
+              {profile.avatar ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={profile.avatar} alt='avatar' className='h-16 w-16 rounded-full object-cover' />
+              ) : (
+                <AvatarFallback className='text-lg font-semibold'>
+                  {profile.fullName?.[0]?.toUpperCase() || '?'}
+                </AvatarFallback>
+              )}
+            </Avatar>
+            <div className='flex-1 min-w-0'>
+              <div className='font-semibold text-lg truncate'>{profile.fullName}</div>
+              <div className='text-sm text-gray-600 truncate'>{profile.email}</div>
+              <div className='grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 mt-3 text-sm'>
+                <div>
+                  <span className='text-gray-500'>Role:</span> {profile.role || '—'}
+                </div>
+                <div>
+                  <span className='text-gray-500'>Phone:</span> {profile.phoneNumber || '—'}
+                </div>
+                <div>
+                  <span className='text-gray-500'>Student ID:</span> {profile.studentId || '—'}
+                </div>
+                <div>
+                  <span className='text-gray-500'>Term:</span> {profile.termSeason || '—'} {profile.termYear || ''}
+                </div>
+                <div className='sm:col-span-2'>
+                  <span className='text-gray-500'>Past Terms:</span> {profile.pastTerms || '—'}
+                </div>
+              </div>
             </div>
           </div>
         ) : (
-          <div>User not found.</div>
+          <div className='text-sm text-gray-600'>User not found.</div>
         )}
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }
