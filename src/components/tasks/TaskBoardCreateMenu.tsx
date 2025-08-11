@@ -41,7 +41,7 @@ export default function TaskBoardCreateMenu({
     try {
       const res = await boardApi.createBoard(projectId, status.trim(), description.trim())
       if (res) {
-        showToast({ title: 'Success', description: 'Board created successfully', variant: 'default' })
+        showToast({ title: 'Success', description: 'Board created successfully', variant: 'success' })
       } else {
         showToast({ title: 'Error', description: 'Failed to create board', variant: 'destructive' })
       }

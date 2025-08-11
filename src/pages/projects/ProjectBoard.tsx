@@ -427,7 +427,7 @@ export default function ProjectBoard() {
         showToast({
           title: 'Task moved successfully',
           description: `Task moved to ${boardObj?.name || 'new board'}`,
-          variant: 'default'
+          variant: 'success'
         })
 
         const totalTaskMoveTime = performance.now() - taskMoveStartTime

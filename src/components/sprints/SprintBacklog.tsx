@@ -135,7 +135,7 @@ export function SprintBacklog({
                           variant: r.code === 200 ? 'default' : 'destructive'
                         })
                       } else if (res && typeof res === 'object' && 'data' in res && res.data === true) {
-                        showToast({ title: 'Success', description: 'Tasks moved to sprint successfully!' })
+                        showToast({ title: 'Success', description: 'Tasks moved to sprint successfully!', variant: 'success' })
                       } else {
                         showToast({ title: 'Error', description: 'Failed to move tasks', variant: 'destructive' })
                       }

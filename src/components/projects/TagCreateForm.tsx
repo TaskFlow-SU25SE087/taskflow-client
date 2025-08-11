@@ -16,7 +16,7 @@ export default function TagCreateForm() {
       if (res && typeof res === 'object' && 'code' in res && 'message' in res) {
         showToast({ title: res.code === 200 ? 'Success' : 'Error', description: String(res.message) || 'Tag created successfully' })
       } else {
-        showToast({ title: 'Success', description: 'Tag created successfully' })
+        showToast({ title: 'Success', description: 'Tag created successfully', variant: 'success' })
       }
     } catch (error) {
       const err = error as any

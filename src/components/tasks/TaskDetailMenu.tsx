@@ -501,7 +501,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     if (!currentProject) return
     try {
       await taskApi.addTagToTask(currentProject.id, task.id, tagId)
-      const tag = tags.find((t) => t.id === tagId)
       // Tag added successfully
       showToast({
         title: 'Success',

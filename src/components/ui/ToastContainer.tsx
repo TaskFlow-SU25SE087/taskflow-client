@@ -30,6 +30,7 @@ export const ToastContainer = () => {
         let variant = typeof toast.variant === 'string' ? toast.variant : 'info';
         if (variant === 'default') variant = 'info';
         if (variant === 'destructive') variant = 'error';
+        if (variant === 'success') variant = 'success';
         const style = variantStyles[variant as VariantKey] || variantStyles.info;
         return (
           <div

@@ -4,7 +4,7 @@ type ToastType = {
   id: string
   title?: React.ReactNode
   description?: React.ReactNode
-  variant?: 'default' | 'destructive'
+  variant?: 'default' | 'destructive' | 'success' | 'warning'
 }
 
 type ToastContextType = {

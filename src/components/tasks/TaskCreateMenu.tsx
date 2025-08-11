@@ -89,7 +89,7 @@ export default function TaskCreateMenu({
       selectedTagIds.forEach((tagId) => formData.append('TagIds', tagId))
       const res = await taskApi.createTask(projectId, formData)
       if (res.code === 200) {
-        showToast({ title: 'Success', description: 'Task created successfully', variant: 'default' })
+        showToast({ title: 'Success', description: 'Task created successfully', variant: 'success' })
       } else {
         showToast({ title: 'Error', description: 'Failed to create task', variant: 'destructive' })
       }
@@ -101,7 +101,7 @@ export default function TaskCreateMenu({
           await taskApi.addTagToTask(projectId, createdTask.id, tagId)
         }
       } else {
-        showToast({ title: 'Warning', description: 'Task created but not found for tag/assignee.', variant: 'default' })
+        showToast({ title: 'Warning', description: 'Task created but not found for tag/assignee.', variant: 'warning' })
       }
       await refreshTasks()
       onTaskCreated()

@@ -42,7 +42,7 @@ export function SprintCreateMenu({ onCreateSprint }: SprintCreateMenuProps) {
       
       // Chỉ hiển thị toast nếu tạo thành công
       if (res) {
-        showToast({ title: 'Success', description: 'Sprint created successfully' })
+        showToast({ title: 'Success', description: 'Sprint created successfully', variant: 'success' })
         setIsOpen(false)
         setName('')
         setDescription('')
