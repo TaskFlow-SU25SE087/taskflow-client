@@ -18,27 +18,27 @@ import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { formatDistanceToNow } from 'date-fns'
 import {
-  Calendar,
-  Check,
-  ChevronDown,
-  ChevronsDown,
-  ChevronsUp,
-  ChevronUp,
-  Eye,
-  FileText,
-  Filter,
-  Link,
-  ListTodo,
-  Loader2,
-  LogOut,
-  MessageCircle,
-  Paperclip,
-  Pencil,
-  Plus,
-  Settings,
-  Upload,
-  UserPlus,
-  X
+    Calendar,
+    Check,
+    ChevronDown,
+    ChevronsDown,
+    ChevronsUp,
+    ChevronUp,
+    Eye,
+    FileText,
+    Filter,
+    Link,
+    ListTodo,
+    Loader2,
+    LogOut,
+    MessageCircle,
+    Paperclip,
+    Pencil,
+    Plus,
+    Settings,
+    Upload,
+    UserPlus,
+    X
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -1550,7 +1550,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                       </SelectValue>
                     </SelectTrigger>
                     {user?.id && (
-                      <SelectContent className='p-0'>
+                      <SelectContent className='p-0' position="popper">
                         {projectMembers.map((member) => {
                           const memberId = ('id' in member ? member.id : member.userId) || ''
                           const displayName =

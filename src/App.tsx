@@ -1,8 +1,8 @@
 import { ToastContainer } from '@/components/ui/ToastContainer'
 import { ToastProvider } from '@/components/ui/ToastContext'
 import { updateAxiosBaseURL } from '@/configs/axiosClient'
-import { GitHubStatusProvider } from '@/contexts/GitHubStatusContext'
 import { CurrentProjectProvider } from '@/contexts/CurrentProjectContext'
+import { GitHubStatusProvider } from '@/contexts/GitHubStatusContext'
 import { SignalRProvider } from '@/contexts/SignalRContext'
 import { AuthProvider } from '@/hooks/useAuthContext.tsx'
 import UrlManager from '@/services/urlManager'
@@ -31,7 +31,6 @@ function App() {
   return (
     <BrowserRouter>
       <ToastProvider>
-        <ToastContainer />
         <AuthProvider>
           <SignalRProvider>
             <GitHubStatusProvider>
@@ -39,6 +38,7 @@ function App() {
                 <ErrorBoundary>
                   <AppContent />
                   <ConnectionStatus />
+                  <ToastContainer />
                 </ErrorBoundary>
               </CurrentProjectProvider>
             </GitHubStatusProvider>

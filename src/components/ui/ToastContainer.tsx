@@ -50,8 +50,9 @@ type VariantKey = 'success' | 'error' | 'info' | 'warning' | 'default' | 'destru
 
 export const ToastContainer = () => {
   const { toasts, removeToast } = useToastContext()
+  
   return (
-    <div className="fixed z-[9999] top-6 right-6 flex flex-col items-end gap-4 max-w-sm">
+    <div className="fixed z-[10002] top-6 right-6 flex flex-col items-end gap-4 max-w-sm">
       {toasts.map((toast) => {
         // Map variant names to the correct style
         let variant: VariantKey = 'default';

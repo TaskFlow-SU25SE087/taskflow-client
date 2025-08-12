@@ -1,6 +1,6 @@
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
-import { ProjectIssueCreateMenu } from '@/components/tasks/ProjectIssueCreateMenu'
+
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -10,34 +10,42 @@ import { Separator } from '@/components/ui/separator'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useIssues } from '@/hooks/useIssues'
 import { Issue, IssuePriority, IssueStatus, IssueType } from '@/types/issue'
-import { AlertCircle, Bug, ChevronDown, ChevronUp, FileText, GitBranch, Lightbulb, MessageSquare, Plus, RefreshCw } from 'lucide-react'
+import { AlertCircle, Bug, ChevronDown, ChevronUp, ExternalLink, FileText, GitBranch, Lightbulb, MessageSquare, RefreshCw, Share2 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 const priorityOptions = [
-  { value: IssuePriority.Low, label: 'Low', color: 'bg-blue-100 text-blue-800', stringValue: 'Low' },
-  { value: IssuePriority.Medium, label: 'Medium', color: 'bg-orange-100 text-orange-800', stringValue: 'Medium' },
-  { value: IssuePriority.High, label: 'High', color: 'bg-red-100 text-red-800', stringValue: 'High' },
-  { value: IssuePriority.Urgent, label: 'Urgent', color: 'bg-red-200 text-red-900', stringValue: 'Urgent' }
+  { value: 0, label: 'Low', color: 'bg-blue-100 text-blue-800', stringValue: 'Low' },
+  { value: 10000, label: 'Medium', color: 'bg-orange-100 text-orange-800', stringValue: 'Medium' },
+  { value: 20000, label: 'High', color: 'bg-red-100 text-red-800', stringValue: 'High' },
+  { value: 30000, label: 'Urgent', color: 'bg-red-200 text-red-900', stringValue: 'Urgent' }
+]
+
+// BoardType mapping for priorityTask
+const boardTypeOptions = [
+  { value: 0, label: 'Todo', color: 'bg-blue-100 text-blue-800', stringValue: 'Todo' },
+  { value: 1, label: 'InProgress ', color: 'bg-orange-100 text-orange-800', stringValue: 'InProgress' },
+  { value: 2, label: 'Done ', color: 'bg-green-100 text-green-800', stringValue: 'Done' },
+  { value: 3, label: 'Custom ', color: 'bg-purple-100 text-purple-800', stringValue: 'Custom' }
 ]
 
 const typeOptions = [
   { value: IssueType.Bug, label: 'Bug', icon: Bug, color: 'bg-red-100 text-red-800', stringValue: 'Bug' },
-  { value: IssueType.FeatureRequest, label: 'Feature Request', icon: Plus, color: 'bg-green-100 text-green-800', stringValue: 'FeatureRequest' },
-  { value: IssueType.Improvement, label: 'Improvement', icon: Lightbulb, color: 'bg-blue-100 text-blue-800', stringValue: 'Improvement' },
+  { value: IssueType.FeatureRequest, label: 'Feature Request', icon: Lightbulb, color: 'bg-green-100 text-green-800', stringValue: 'FeatureRequest' },
+  { value: IssueType.Improvement, label: 'Improvement', icon: FileText, color: 'bg-blue-100 text-blue-800', stringValue: 'Improvement' },
   { value: IssueType.Task, label: 'Task', icon: MessageSquare, color: 'bg-purple-100 text-purple-800', stringValue: 'Task' },
-  { value: IssueType.Documentation, label: 'Documentation', icon: FileText, color: 'bg-purple-100 text-purple-800', stringValue: 'Documentation' },
-  { value: IssueType.Other, label: 'Other', icon: AlertCircle, color: 'bg-gray-100 text-gray-800', stringValue: 'Other' }
+  { value: IssueType.Documentation, label: 'Documentation', icon: AlertCircle, color: 'bg-purple-100 text-purple-800', stringValue: 'Documentation' },
+  { value: IssueType.Other, label: 'Other', icon: Bug, color: 'bg-gray-100 text-gray-800', stringValue: 'Other' }
 ]
 
 const statusOptions = [
-  { value: IssueStatus.Open, label: 'Open', color: 'bg-green-100 text-green-800', stringValue: 'Open' },
-  { value: IssueStatus.InProgress, label: 'In Progress', color: 'bg-blue-100 text-blue-800', stringValue: 'InProgress' },
-  { value: IssueStatus.Resolved, label: 'Resolved', color: 'bg-purple-100 text-purple-800', stringValue: 'Resolved' },
-  { value: IssueStatus.Closed, label: 'Closed', color: 'bg-gray-100 text-gray-800', stringValue: 'Closed' },
-  { value: IssueStatus.Reopened, label: 'Reopened', color: 'bg-orange-100 text-orange-800', stringValue: 'Reopened' },
-  { value: IssueStatus.OnHold, label: 'On Hold', color: 'bg-yellow-100 text-yellow-800', stringValue: 'OnHold' },
-  { value: IssueStatus.Cancelled, label: 'Cancelled', color: 'bg-red-100 text-red-800', stringValue: 'Cancelled' }
+  { value: 0, label: 'Open', color: 'bg-green-100 text-green-800', stringValue: 'Open' },
+  { value: 10000, label: 'In Progress', color: 'bg-blue-100 text-blue-800', stringValue: 'InProgress' },
+  { value: 20000, label: 'Resolved', color: 'bg-purple-100 text-purple-800', stringValue: 'Resolved' },
+  { value: 30000, label: 'Closed', color: 'bg-gray-100 text-gray-800', stringValue: 'Closed' },
+  { value: 40000, label: 'Reopened', color: 'bg-orange-100 text-orange-800', stringValue: 'Reopened' },
+  { value: 50000, label: 'On Hold', color: 'bg-yellow-100 text-yellow-800', stringValue: 'OnHold' },
+  { value: 60000, label: 'Cancelled', color: 'bg-red-100 text-red-800', stringValue: 'Cancelled' }
 ]
 
 export const ProjectIssues: React.FC = () => {
@@ -51,8 +59,14 @@ export const ProjectIssues: React.FC = () => {
   const [search, setSearch] = useState('')
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [openIndexes, setOpenIndexes] = useState<{ [key: string]: boolean }>({})
-  const [showCreateMenu, setShowCreateMenu] = useState(false)
+  
+  // URL parameters handling
+  const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const issueIdFromUrl = searchParams.get('issue')
+
   const [loadingTimeout, setLoadingTimeout] = useState(false)
+  const [selectedImage, setSelectedImage] = useState<{ url: string; fileName: string } | null>(null)
   const toggleOpen = (id: string) => {
     setOpenIndexes(prev => ({ ...prev, [id]: !prev[id] }))
   }
@@ -64,6 +78,56 @@ export const ProjectIssues: React.FC = () => {
       loadIssues()
     }
   }, [projectId])
+
+  // Auto-expand issue when URL parameter is present
+  useEffect(() => {
+    if (issueIdFromUrl && issues.length > 0) {
+      const issue = issues.find(i => i.id === issueIdFromUrl)
+      if (issue) {
+        setOpenIndexes(prev => ({ ...prev, [issueIdFromUrl]: true }))
+        // Scroll to issue
+        setTimeout(() => {
+          const element = document.getElementById(`issue-${issueIdFromUrl}`)
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          }
+        }, 500)
+      }
+    }
+  }, [issueIdFromUrl, issues])
+
+  // Keyboard support for image modal
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && selectedImage) {
+        setSelectedImage(null)
+      }
+    }
+
+    if (selectedImage) {
+      document.addEventListener('keydown', handleKeyDown)
+      return () => document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [selectedImage])
+
+  // Generate shareable link for issue
+  const generateIssueLink = (issueId: string) => {
+    const currentUrl = new URL(window.location.href)
+    currentUrl.searchParams.set('issue', issueId)
+    return currentUrl.toString()
+  }
+
+  // Copy issue link to clipboard
+  const copyIssueLink = async (issueId: string) => {
+    try {
+      const link = generateIssueLink(issueId)
+      await navigator.clipboard.writeText(link)
+      // Show success message (you can add toast here)
+      console.log('Issue link copied to clipboard:', link)
+    } catch (error) {
+      console.error('Failed to copy link:', error)
+    }
+  }
 
   const loadIssues = async (forceRefresh = false) => {
     if (!projectId) return
@@ -140,8 +204,8 @@ export const ProjectIssues: React.FC = () => {
     return statusOptions.find((s) => s.value === status) || statusOptions[0]
   }
 
-  const handleIssueCreated = () => {
-    loadIssues(true) // Force refresh when new issue is created
+  const getBoardTypeInfo = (priorityTask: number) => {
+    return boardTypeOptions.find((b) => b.value === priorityTask) || boardTypeOptions[0] // Default to Todo
   }
 
   if (!currentProject) {
@@ -165,16 +229,39 @@ export const ProjectIssues: React.FC = () => {
     const issueAny = issue as any
     return (
       <div
+        id={`issue-${issue.id}`}
         className={`rounded-2xl border border-gray-200 bg-white shadow-lg overflow-hidden transition-transform duration-200 hover:scale-[1.015] hover:shadow-2xl group ${isOpen ? 'ring-2 ring-lavender-400' : ''}`}
         style={{ transition: 'box-shadow 0.2s, transform 0.2s' }}
       >
-        {/* File name */}
+        {/* Task name instead of file name */}
         <div className='flex items-center gap-2 px-6 pt-6'>
-          <span className='text-base font-semibold text-indigo-700'>{issueAny.fileName || 'Unknown file'}</span>
+          <span className='text-base font-semibold text-indigo-700'>{issueAny.titleTask || 'No Task'}</span>
           <Separator className='flex-1 mx-2' />
-          <Button variant='ghost' size='icon' onClick={onToggle} className='transition-transform duration-200 group-hover:rotate-180'>
-            {isOpen ? <ChevronUp className='w-5 h-5' /> : <ChevronDown className='w-5 h-5' />}
-          </Button>
+          <div className='flex items-center gap-2'>
+            {/* Share button */}
+            <Button 
+              variant='ghost' 
+              size='icon' 
+              onClick={() => copyIssueLink(issue.id)} 
+              className='transition-all duration-200 hover:bg-blue-50 hover:text-blue-600'
+              title='Copy issue link'
+            >
+              <Share2 className='w-4 h-4' />
+            </Button>
+            {/* External link button */}
+            <Button 
+              variant='ghost' 
+              size='icon' 
+              onClick={() => window.open(generateIssueLink(issue.id), '_blank')}
+              className='transition-all duration-200 hover:bg-green-50 hover:text-green-600'
+              title='Open in new tab'
+            >
+              <ExternalLink className='w-4 h-4' />
+            </Button>
+            <Button variant='ghost' size='icon' onClick={onToggle} className='transition-transform duration-200 group-hover:rotate-180'>
+              {isOpen ? <ChevronUp className='w-5 h-5' /> : <ChevronDown className='w-5 h-5' />}
+            </Button>
+          </div>
         </div>
         {/* Title */}
         <div className='px-6 pt-2 pb-1'>
@@ -190,6 +277,45 @@ export const ProjectIssues: React.FC = () => {
                 <GitBranch className='w-3 h-3' />
                 Task: {issueAny.titleTask}
               </Badge>
+              {/* Hiển thị priority task number */}
+              {issueAny.priorityTask !== undefined && (
+                <Badge 
+                  variant='outline' 
+                  className={`text-xs border-2 flex items-center gap-1 w-fit ml-2 ${getBoardTypeInfo(issueAny.priorityTask).color}`}
+                >
+                  <GitBranch className='w-3 h-3' />
+                  {getBoardTypeInfo(issueAny.priorityTask).label}
+                </Badge>
+              )}
+            </div>
+          )}
+          
+          {/* Task Information Section */}
+          {(issueAny.titleTask || issueAny.priorityTask !== undefined) && (
+            <div className='mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200'>
+              <h4 className='text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2'>
+                <GitBranch className='w-4 h-4' />
+                Task Information
+              </h4>
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-2 text-sm'>
+                {issueAny.titleTask && (
+                  <div className='flex items-center gap-2'>
+                    <span className='text-blue-700 font-medium'>Task Name:</span>
+                    <span className='text-blue-900'>{issueAny.titleTask}</span>
+                  </div>
+                )}
+                {issueAny.priorityTask !== undefined && (
+                  <div className='flex items-center gap-2'>
+                    <span className='text-blue-700 font-medium'>Task Status:</span>
+                    <Badge 
+                      variant='outline' 
+                      className={`text-xs ${getBoardTypeInfo(issueAny.priorityTask).color}`}
+                    >
+                      {getBoardTypeInfo(issueAny.priorityTask).label}
+                    </Badge>
+                  </div>
+                )}
+              </div>
             </div>
           )}
           
@@ -202,12 +328,27 @@ export const ProjectIssues: React.FC = () => {
           )}
           <span className='font-medium text-gray-800'>{issueAny.nameCreate}</span>
           {issueAny.roleCreate && <span className='text-xs text-gray-500'>({issueAny.roleCreate})</span>}
+          {/* Hiển thị createdBy UUID */}
+          {issueAny.createdBy && (
+            <span className='text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded'>ID: {issueAny.createdBy.slice(0, 8)}...</span>
+          )}
           <span>• {issueAny.createdAt ? new Date(issueAny.createdAt).toLocaleDateString() : ''}</span>
           {issueAny.reportedBy && <span className='bg-gray-100 rounded px-2 py-0.5 ml-2'>Reported by {issueAny.reportedBy}</span>}
           {issueAny.timeToFix && <span className='bg-gray-100 rounded px-2 py-0.5'>Time to fix: {issueAny.timeToFix}</span>}
-          <Badge className={`${priorityInfo.color} font-bold shadow-sm border border-white`}>{priorityInfo.label}</Badge>
-          <Badge className={`${typeInfo.color} font-bold shadow-sm border border-white flex items-center gap-1`}><TypeIcon className='w-4 h-4' />{typeInfo.label}</Badge>
-          <Badge className={`${statusInfo.color} font-bold shadow-sm border border-white`}>{statusInfo.label}</Badge>
+          
+          {/* Priority và Status badges với visual hierarchy rõ ràng */}
+          <div className='flex items-center gap-2 ml-2'>
+            <Badge className={`${priorityInfo.color} font-bold shadow-sm border border-white`}>
+              Priority: {priorityInfo.label}
+            </Badge>
+            <Badge className={`${typeInfo.color} font-bold shadow-sm border border-white flex items-center gap-1`}>
+              <TypeIcon className='w-4 h-4' />
+              {typeInfo.label}
+            </Badge>
+            <Badge className={`${statusInfo.color} font-bold shadow-sm border border-white`}>
+              {statusInfo.label}
+            </Badge>
+          </div>
         </div>
         {/* Collapse content */}
         <div
@@ -244,15 +385,94 @@ export const ProjectIssues: React.FC = () => {
               {issueAny.issueAttachmentUrls && issueAny.issueAttachmentUrls.length > 0 && (
                 <div className='mb-2'>
                   <h4 className='font-semibold text-gray-900 mb-1'>Attachments</h4>
-                  <ul className='list-disc list-inside'>
-                    {issueAny.issueAttachmentUrls.map((url: string, idx: number) => (
-                      <li key={idx}>
-                        <a href={url} target='_blank' rel='noopener noreferrer' className='text-blue-600 underline'>
-                          {url}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+                    {issueAny.issueAttachmentUrls.map((url: string, idx: number) => {
+                      const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url)
+                      const isVideo = /\.(mp4|webm|ogg|mov)$/i.test(url)
+                      const isAudio = /\.(mp3|wav|ogg|m4a)$/i.test(url)
+                      const isPdf = /\.pdf$/i.test(url)
+                      const fileName = url.split('/').pop() || `File ${idx + 1}`
+                      
+                      return (
+                        <div key={idx} className='border border-gray-200 rounded-lg overflow-hidden bg-gray-50 hover:shadow-md transition-shadow'>
+                          {isImage ? (
+                            <div className='relative group'>
+                              <img 
+                                src={url} 
+                                alt={fileName}
+                                className='w-full h-32 object-cover cursor-pointer hover:scale-105 transition-transform'
+                                onClick={() => setSelectedImage({ url, fileName })}
+                                title='Click to view full size'
+                              />
+                              <div className='absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center'>
+                                <span className='text-white opacity-0 group-hover:opacity-100 text-xs font-medium'>Click to enlarge</span>
+                              </div>
+                            </div>
+                          ) : isVideo ? (
+                            <div className='relative'>
+                              <video 
+                                src={url} 
+                                className='w-full h-32 object-cover'
+                                controls
+                                preload='metadata'
+                              />
+                            </div>
+                          ) : isAudio ? (
+                            <div className='p-4'>
+                              <audio 
+                                src={url} 
+                                controls
+                                className='w-full'
+                                preload='metadata'
+                              />
+                            </div>
+                          ) : isPdf ? (
+                            <div className='p-4 text-center'>
+                              <div className='w-16 h-16 mx-auto mb-2 bg-red-100 rounded-lg flex items-center justify-center'>
+                                <FileText className='w-8 h-8 text-red-600' />
+                              </div>
+                              <span className='text-xs text-gray-600 block truncate'>{fileName}</span>
+                            </div>
+                          ) : (
+                            <div className='p-4 text-center'>
+                              <div className='w-16 h-16 mx-auto mb-2 bg-gray-100 rounded-lg flex items-center justify-center'>
+                                <FileText className='w-8 h-8 text-gray-600' />
+                              </div>
+                              <span className='text-xs text-gray-600 block truncate'>{fileName}</span>
+                            </div>
+                          )}
+                          
+                          <div className='p-3 bg-white'>
+                            <div className='flex items-center justify-between gap-2'>
+                              <span className='text-xs text-gray-600 truncate flex-1' title={fileName}>
+                                {fileName}
+                              </span>
+                              <div className='flex gap-1'>
+                                <Button
+                                  variant='ghost'
+                                  size='sm'
+                                  className='h-6 px-2 text-xs'
+                                  onClick={() => window.open(url, '_blank')}
+                                  title='Open in new tab'
+                                >
+                                  <ExternalLink className='w-3 h-3' />
+                                </Button>
+                                <Button
+                                  variant='ghost'
+                                  size='sm'
+                                  className='h-6 px-2 text-xs'
+                                  onClick={() => navigator.clipboard.writeText(url)}
+                                  title='Copy URL'
+                                >
+                                  <Share2 className='w-3 h-3' />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
               {/* Danh sách assignees */}
@@ -300,12 +520,6 @@ export const ProjectIssues: React.FC = () => {
                  >
                    <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
                    Refresh
-                 </Button>
-                 <Button
-                   className='bg-lavender-600 hover:bg-lavender-700 text-white font-semibold rounded-lg px-5 py-2 text-base shadow flex items-center gap-2'
-                   onClick={() => setShowCreateMenu(true)}
-                 >
-                   <Plus className='w-5 h-5' /> New Issue
                  </Button>
                </div>
              </div>
@@ -363,15 +577,7 @@ export const ProjectIssues: React.FC = () => {
               />
             </div>
           </div>
-          {showCreateMenu && currentProject && (
-            <ProjectIssueCreateMenu
-              projectId={currentProject.id}
-                             onIssueCreated={() => {
-                 setShowCreateMenu(false)
-                 loadIssues(true) // Force refresh when new issue is created
-               }}
-            />
-          )}
+
           <div className='flex-1 flex flex-col gap-6 p-8'>
                          {isLoading ? (
                <div className='flex items-center justify-center h-64'>
@@ -407,12 +613,7 @@ export const ProjectIssues: React.FC = () => {
                     <AlertCircle className='h-12 w-12 text-gray-400 mx-auto mb-4' />
                     <h3 className='text-lg font-medium text-gray-900 mb-2'>No Issues Found</h3>
                     <p className='text-gray-500 mb-4'>There are no issues reported for this project yet.</p>
-                    {currentProject && (
-                      <ProjectIssueCreateMenu
-                        projectId={currentProject.id}
-                        onIssueCreated={handleIssueCreated}
-                      />
-                    )}
+
                   </div>
                 </CardContent>
               </Card>
@@ -440,6 +641,57 @@ export const ProjectIssues: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Image Modal */}
+      {selectedImage && (
+        <div 
+          className='fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[10003] p-4'
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className='relative max-w-4xl max-h-full' onClick={(e) => e.stopPropagation()}>
+            <div className='bg-white rounded-lg shadow-2xl overflow-hidden'>
+              <div className='flex items-center justify-between p-4 border-b border-gray-200'>
+                <h3 className='text-lg font-semibold text-gray-900 truncate'>{selectedImage.fileName}</h3>
+                <div className='flex gap-2'>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={() => window.open(selectedImage.url, '_blank')}
+                    className='flex items-center gap-2'
+                  >
+                    <ExternalLink className='w-4 h-4' />
+                    Open in new tab
+                  </Button>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={() => navigator.clipboard.writeText(selectedImage.url)}
+                    className='flex items-center gap-2'
+                  >
+                    <Share2 className='w-4 h-4' />
+                    Copy URL
+                  </Button>
+                  <Button
+                    variant='ghost'
+                    size='sm'
+                    onClick={() => setSelectedImage(null)}
+                    className='text-gray-500 hover:text-gray-700'
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </div>
+              <div className='p-4'>
+                <img
+                  src={selectedImage.url}
+                  alt={selectedImage.fileName}
+                  className='max-w-full max-h-[70vh] object-contain mx-auto'
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

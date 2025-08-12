@@ -213,7 +213,7 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
                 <SelectTrigger className="w-full bg-lavender-50 border-0 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300">
                   <SelectValue placeholder="-- Select a repository --" />
                 </SelectTrigger>
-                <SelectContent className="bg-white rounded-xl shadow-lg">
+                <SelectContent className="bg-white rounded-xl shadow-lg" position="popper">
                   {repositories.map((repo) => (
                     <SelectItem key={repo.htmlUrl} value={repo.htmlUrl} className="hover:bg-blue-50 text-blue-700 font-semibold">
                       <Github className="inline-block mr-2 text-lavender-400" />
@@ -229,7 +229,7 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
                 <SelectTrigger className="w-full bg-lavender-50 border-0 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300">
                   <SelectValue placeholder="-- Select a part --" />
                 </SelectTrigger>
-                <SelectContent className="bg-white rounded-xl shadow-lg">
+                <SelectContent className="bg-white rounded-xl shadow-lg" position="popper">
                   {mappedProjectParts.map((part) => (
                     <SelectItem key={part.id} value={part.id} className="hover:bg-purple-50 text-purple-700 font-semibold">
                       <BarChart3 className="inline-block mr-2 text-blue-400" />
@@ -279,7 +279,7 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
                 <SelectTrigger className="w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400">
                   <SelectValue placeholder="Select programming language" />
                 </SelectTrigger>
-                <SelectContent className="bg-white rounded-xl shadow-lg">
+                <SelectContent className="bg-white rounded-xl shadow-lg" position="popper">
                   <SelectItem value="">None</SelectItem>
                   <SelectItem value="Java">
                     <div className='flex items-center gap-2'>
@@ -332,7 +332,7 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
                 <SelectTrigger className="w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400">
                   <SelectValue placeholder="Select framework" />
                 </SelectTrigger>
-                <SelectContent className="bg-white rounded-xl shadow-lg">
+                <SelectContent className="bg-white rounded-xl shadow-lg" position="popper">
                   <SelectItem value="">None</SelectItem>
                   <SelectItem value="React">
                     <div className='flex items-center gap-2'>

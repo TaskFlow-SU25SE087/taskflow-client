@@ -1,6 +1,5 @@
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
-import IssueCreateDialog from '@/components/tasks/IssueCreateDialog'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,7 +10,7 @@ import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useIssues } from '@/hooks/useIssues'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
-import { AlertCircle, ArrowRight, Bug, Calendar, ChevronDown, Clock, FileText, Filter, GitBranch, GitCommit, GitPullRequest, Lightbulb, MessageSquare, Plus, RefreshCw, Search, Tag, User, Users } from 'lucide-react'
+import { AlertCircle, ArrowRight, Bug, Calendar, ChevronDown, Clock, FileText, Filter, GitBranch, GitCommit, GitPullRequest, Lightbulb, MessageSquare, RefreshCw, Search, Tag, User, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
@@ -81,15 +80,15 @@ function IssueCard({ issue }: IssueCardProps) {
         return <Bug className='w-4 h-4' />
       case 'featurerequest':
       case 'feature request':
-        return <Plus className='w-4 h-4' />
-      case 'improvement':
         return <Lightbulb className='w-4 h-4' />
+      case 'improvement':
+        return <FileText className='w-4 h-4' />
       case 'task':
         return <MessageSquare className='w-4 h-4' />
       case 'documentation':
-        return <FileText className='w-4 h-4' />
-      default:
         return <AlertCircle className='w-4 h-4' />
+      default:
+        return <Bug className='w-4 h-4' />
     }
   }
 
@@ -108,22 +107,22 @@ function IssueCard({ issue }: IssueCardProps) {
         </div>
 
         <div className='flex-1 min-w-0'>
-                     <div className='flex items-center gap-2 mb-2'>
-             <Badge className={cn('text-xs', getStateColor(issue.state || issue.status))}>
-               {issue.state === 'open' || issue.status === 'Open' ? 'Open' : 'Closed'}
-             </Badge>
-             <span className='text-gray-500 text-sm'>#{issue.number || issue.id}</span>
-             <span className='text-gray-500'>•</span>
-             <span className='text-sm text-gray-500 flex items-center gap-1'>
-               <Clock className='w-3 h-3' />
-               {issue.updatedAt ? format(new Date(issue.updatedAt), 'MMM d, yyyy') : 'Unknown date'}
-             </span>
-           </div>
+          <div className='flex items-center gap-2 mb-2'>
+            <Badge className={cn('text-xs', getStateColor(issue.state || issue.status))}>
+              {issue.state === 'open' || issue.status === 'Open' ? 'Open' : 'Closed'}
+            </Badge>
+            <span className='text-gray-500 text-sm'>#{issue.number || issue.id}</span>
+            <span className='text-gray-500'>•</span>
+            <span className='text-sm text-gray-500 flex items-center gap-1'>
+              <Clock className='w-3 h-3' />
+              {issue.updatedAt ? format(new Date(issue.updatedAt), 'MMM d, yyyy') : 'Unknown date'}
+            </span>
+          </div>
 
-                     <h3 className='text-gray-900 font-medium mb-2 hover:text-lavender-700 cursor-pointer flex items-center gap-2'>
-             {getIssueTypeIcon(issue.type)}
-             {issue.title}
-           </h3>
+          <h3 className='text-gray-900 font-medium mb-2 hover:text-lavender-700 cursor-pointer flex items-center gap-2'>
+            {getIssueTypeIcon(issue.type)}
+            {issue.title}
+          </h3>
 
           {/* Hiển thị tên task nếu có */}
           {issue.titleTask && (
@@ -139,45 +138,45 @@ function IssueCard({ issue }: IssueCardProps) {
             {issue.description || issue.explanation || 'No description available'}
           </p>
 
-                     <div className='flex items-center gap-4 text-sm'>
-             <div className='flex items-center gap-2'>
-               <User className='h-4 w-4 text-gray-400' />
-               <span className='text-gray-500'>by</span>
-               <span className='font-medium text-gray-900'>{authorName}</span>
-             </div>
+          <div className='flex items-center gap-4 text-sm'>
+            <div className='flex items-center gap-2'>
+              <User className='h-4 w-4 text-gray-400' />
+              <span className='text-gray-500'>by</span>
+              <span className='font-medium text-gray-900'>{authorName}</span>
+            </div>
 
-             {issue.assignee && (
-               <>
-                 <span className='text-gray-500'>•</span>
-                 <div className='flex items-center gap-2'>
-                   <Users className='h-4 w-4 text-gray-400' />
-                   <span className='text-gray-500'>assigned to</span>
-                   <span className='font-medium text-gray-900'>{assigneeName}</span>
-                 </div>
-               </>
-             )}
+            {issue.assignee && (
+              <>
+                <span className='text-gray-500'>•</span>
+                <div className='flex items-center gap-2'>
+                  <Users className='h-4 w-4 text-gray-400' />
+                  <span className='text-gray-500'>assigned to</span>
+                  <span className='font-medium text-gray-900'>{assigneeName}</span>
+                </div>
+              </>
+            )}
 
-             <span className='text-gray-500'>•</span>
-             <div className='flex items-center gap-1 text-gray-500'>
-               <AlertCircle className='h-4 w-4' />
-               <span>{issue.comments || 0}</span>
-             </div>
-           </div>
+            <span className='text-gray-500'>•</span>
+            <div className='flex items-center gap-1 text-gray-500'>
+              <AlertCircle className='h-4 w-4' />
+              <span>{issue.comments || 0}</span>
+            </div>
+          </div>
 
-                     <div className='flex items-center gap-2 mt-3'>
-             {issue.labels && issue.labels.map((label) => (
-               <Badge key={label} variant='secondary' className='text-xs flex items-center gap-1'>
-                 <Tag className='h-3 w-3' />
-                 {label}
-               </Badge>
-             ))}
-             {issue.milestone && (
-               <Badge variant='outline' className='text-xs flex items-center gap-1'>
-                 <Clock className='h-3 w-3' />
-                 {issue.milestone}
-               </Badge>
-             )}
-           </div>
+          <div className='flex items-center gap-2 mt-3'>
+            {issue.labels && issue.labels.map((label) => (
+              <Badge key={label} variant='secondary' className='text-xs flex items-center gap-1'>
+                <Tag className='h-3 w-3' />
+                {label}
+              </Badge>
+            ))}
+            {issue.milestone && (
+              <Badge variant='outline' className='text-xs flex items-center gap-1'>
+                <Clock className='h-3 w-3' />
+                {issue.milestone}
+              </Badge>
+            )}
+          </div>
         </div>
 
         <Button variant='ghost' size='icon' className='h-8 w-8 rounded-lg hover:bg-gray-100'>
@@ -197,7 +196,6 @@ export default function GitIssues() {
   const [issues, setIssues] = useState<GitHubIssue[]>([])
   const [filteredIssues, setFilteredIssues] = useState<GitHubIssue[]>([])
   const [loadingTimeout, setLoadingTimeout] = useState(false)
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen)
@@ -218,15 +216,6 @@ export default function GitIssues() {
         setFilteredIssues([])
       }
     }
-  }
-
-  const handleCreateIssue = () => {
-    setIsCreateDialogOpen(true)
-  }
-
-  const handleIssueCreated = () => {
-    // Refresh the issues list after creating a new issue
-    handleRefresh()
   }
 
   // Load issues when component mounts
@@ -294,24 +283,17 @@ export default function GitIssues() {
 
         <div className='flex flex-col h-full p-8'>
           <div className='flex-none w-full flex items-center justify-between pb-8 border-b-2 border-lavender-200 mb-6 shadow-sm'>
-                       <div className='flex items-center gap-3'>
-             <div className='w-10 h-10 rounded-full bg-lavender-100 p-2 flex items-center justify-center'>
-               <GitPullRequest className='w-6 h-6 text-lavender-700' />
-             </div>
-             <h1 className='text-4xl font-extrabold text-lavender-700 drop-shadow'>Issues</h1>
-             <div className='flex items-center gap-2 ml-4'>
-               <GitBranch className='w-5 h-5 text-blue-600' />
-               <span className='text-base text-blue-700 font-semibold'>Repository:</span>
-               <span className='font-bold text-purple-700'>{currentProject.title}</span>
-             </div>
-           </div>
-                                       <Button 
-                className='bg-gradient-to-r from-lavender-500 to-blue-400 hover:from-lavender-600 hover:to-blue-500 text-white font-bold shadow-lg rounded-xl px-6 py-2 flex items-center gap-2'
-                onClick={handleCreateIssue}
-              >
-                <Plus className='h-5 w-5 flex-shrink-0' />
-                New Issue
-              </Button>
+            <div className='flex items-center gap-3'>
+              <div className='w-10 h-10 rounded-full bg-lavender-100 p-2 flex items-center justify-center'>
+                <GitPullRequest className='w-6 h-6 text-lavender-700' />
+              </div>
+              <h1 className='text-4xl font-extrabold text-lavender-700 drop-shadow'>Issues</h1>
+              <div className='flex items-center gap-2 ml-4'>
+                <GitBranch className='w-5 h-5 text-blue-600' />
+                <span className='text-base text-blue-700 font-semibold'>Repository:</span>
+                <span className='font-bold text-purple-700'>{currentProject.title}</span>
+              </div>
+            </div>
           </div>
 
           <div className='pb-8 flex items-center justify-between'>
@@ -376,27 +358,17 @@ export default function GitIssues() {
               filteredIssues.map((issue: GitHubIssue) => (
                 <IssueCard key={issue.id} issue={issue} />
               ))
-                         ) : (
-               <div className='text-center py-12 text-lavender-400 text-xl font-semibold flex flex-col items-center'>
-                 <div className='w-16 h-16 mb-4 opacity-60 flex items-center justify-center'>
-                   <GitCommit className='w-12 h-12 text-lavender-400' />
-                 </div>
-                 {searchQuery ? 'No issues found matching your search' : 'No issues found'}
-               </div>
-             )}
-                     </div>
-         </div>
-       </div>
-
-       {/* Issue Create Dialog */}
-       {projectId && (
-         <IssueCreateDialog
-           isOpen={isCreateDialogOpen}
-           onClose={() => setIsCreateDialogOpen(false)}
-           projectId={projectId}
-           onIssueCreated={handleIssueCreated}
-         />
-       )}
-     </div>
-   )
- }
+            ) : (
+              <div className='text-center py-12 text-lavender-400 text-xl font-semibold flex flex-col items-center'>
+                <div className='w-16 h-16 mb-4 opacity-60 flex items-center justify-center'>
+                  <GitCommit className='w-12 h-12 text-lavender-400' />
+                </div>
+                {searchQuery ? 'No issues found matching your search' : 'No issues found'}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
