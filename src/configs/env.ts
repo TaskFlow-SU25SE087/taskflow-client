@@ -44,6 +44,16 @@ export const ENV_CONFIG = {
   IS_PRODUCTION: import.meta.env.PROD
 }
 
+// Log the configuration for debugging
+console.log('[ENV_CONFIG] Environment configuration loaded:', {
+  API_BASE_URL: ENV_CONFIG.API_BASE_URL,
+  SIGNALR_HUB_URL: ENV_CONFIG.SIGNALR_HUB_URL,
+  DEV_SERVER_PORT: ENV_CONFIG.DEV_SERVER_PORT,
+  IS_DEVELOPMENT: ENV_CONFIG.IS_DEVELOPMENT,
+  ENABLE_DEBUG_LOGS: ENV_CONFIG.ENABLE_DEBUG_LOGS,
+  ENABLE_SIGNALR: ENV_CONFIG.ENABLE_SIGNALR
+});
+
 // Helper functions
 export const isDevelopment = () => ENV_CONFIG.IS_DEVELOPMENT
 export const isProduction = () => ENV_CONFIG.IS_PRODUCTION

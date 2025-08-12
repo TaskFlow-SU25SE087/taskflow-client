@@ -104,18 +104,24 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({ child
           console.log(`[SignalR] Connection state updated to: ${state}`)
         })
 
-        // Initialize notification service only if SignalR is connected
+        // Initialize notification service regardless of SignalR connection status
+        try {
+          console.log('[SignalR] Initializing notification service...');
+          await notificationService.initialize();
+          const noti = notificationService.getNotifications();
+          console.log('[DEBUG] Notifications after fetch:', noti);
+          setNotifications(noti);
+        } catch (notificationError) {
+          console.warn('[SignalR] Failed to initialize notification service:', notificationError)
+          // Even if notification service fails, we can still show empty notifications
+          setNotifications([]);
+        }
+
+        // Only set up SignalR-specific features if connected
         if (signalRService.isConnected()) {
-          try {
-            await notificationService.initialize();
-            const noti = notificationService.getNotifications();
-            console.log('[DEBUG] Notifications after fetch:', noti);
-            setNotifications(noti);
-          } catch (notificationError) {
-            console.warn('[SignalR] Failed to initialize notification service:', notificationError)
-          }
+          console.log('[SignalR] SignalR connected, setting up additional features...');
         } else {
-          console.log('[SignalR] Skipping notification service initialization - SignalR not connected')
+          console.log('[SignalR] SignalR not connected, but notification service initialized');
         }
 
         // Listen for notification count updates

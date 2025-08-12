@@ -61,7 +61,7 @@ export function TaskColumn({ title, tasks, color, onTaskCreated, onTaskUpdated, 
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Header */}
-      <div className='flex-none sticky top-px -mt-px border-t border-t-gray-200 border-b-gray-200 z-40 bg-white shadow-sm border-b border-gray-200'>
+      <div className='flex-none sticky top-px -mt-px border-t border-t-gray-200 border-b-gray-200 z-[9992] bg-white shadow-sm border-b border-gray-200'>
         <div className='flex items-center justify-between px-4 pt-3 pb-2'>
           <div className='flex items-center gap-2'>
             <div style={{ backgroundColor: dynamicColor }} className='w-2 h-2 rounded-full' />

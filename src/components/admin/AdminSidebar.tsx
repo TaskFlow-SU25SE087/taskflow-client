@@ -16,7 +16,7 @@ export default function AdminSidebar({ isOpen = true, onClose }: AdminSidebarPro
       <div
         className={`
         w-64 h-full bg-white border-r border-gray-200 flex flex-col py-4 sm:py-6
-        fixed lg:relative z-30 lg:z-auto transition-transform duration-300 ease-in-out
+        fixed lg:relative z-[9990] lg:z-auto transition-transform duration-300 ease-in-out
         ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}
       >

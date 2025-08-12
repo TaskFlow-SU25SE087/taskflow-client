@@ -12,33 +12,58 @@ const NotificationCenter: React.FC = () => {
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
+    console.log('[NotificationCenter] Component mounted, current state:', {
+      notificationsCount: notifications.length,
+      isConnected,
+      unreadCount: notificationService.getUnreadCount()
+    });
+
     const handleCountUpdate = (event: CustomEvent) => {
+      console.log('[NotificationCenter] Notification count update event:', event.detail);
       setUnreadCount(event.detail.count)
     }
 
     document.addEventListener('notificationCountUpdate', handleCountUpdate as EventListener)
 
     // Initialize unread count
-    setUnreadCount(notificationService.getUnreadCount())
+    const initialCount = notificationService.getUnreadCount();
+    console.log('[NotificationCenter] Initial unread count:', initialCount);
+    setUnreadCount(initialCount)
 
     return () => {
       document.removeEventListener('notificationCountUpdate', handleCountUpdate as EventListener)
     }
-  }, [notificationService])
+  }, [notificationService, notifications, isConnected])
+
+  // Debug effect to log changes
+  useEffect(() => {
+    console.log('[NotificationCenter] Notifications or connection state changed:', {
+      notificationsCount: notifications.length,
+      isConnected,
+      unreadCount
+    });
+  }, [notifications, isConnected, unreadCount]);
 
   const handleMarkAsRead = async (notificationId: string) => {
+    console.log('[NotificationCenter] Marking notification as read:', notificationId);
     await notificationService.markAsRead(notificationId)
-    setUnreadCount(notificationService.getUnreadCount())
+    const newCount = notificationService.getUnreadCount();
+    console.log('[NotificationCenter] New unread count after mark as read:', newCount);
+    setUnreadCount(newCount)
   }
 
   const handleMarkAllAsRead = async () => {
+    console.log('[NotificationCenter] Marking all notifications as read');
     await notificationService.markAllAsRead()
     setUnreadCount(0)
   }
 
   const handleDeleteReadNotifications = async () => {
+    console.log('[NotificationCenter] Deleting read notifications');
     await notificationService.deleteReadNotifications();
-    setUnreadCount(notificationService.getUnreadCount());
+    const newCount = notificationService.getUnreadCount();
+    console.log('[NotificationCenter] New unread count after delete:', newCount);
+    setUnreadCount(newCount);
   };
 
   const formatTime = (dateString: string) => {
@@ -67,14 +92,9 @@ const NotificationCenter: React.FC = () => {
         )}
       </Button>
 
-      {/* Connection Status Indicator */}
-      {!isConnected && (
-        <div className='absolute -bottom-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white' />
-      )}
-
       {/* Notification Dropdown */}
       {isOpen && (
-        <div className='absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-50'>
+        <div className='absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-[9991]'>
           {/* Header */}
           <div className='flex items-center justify-between p-4 border-b border-gray-100'>
             <h3 className='font-semibold text-gray-900'>Notifications</h3>

@@ -44,7 +44,7 @@ export default function GitHubStatusFooter() {
   }
 
   return (
-    <div className='fixed bottom-4 right-4 bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 z-50'>
+          <div className='fixed bottom-4 right-4 bg-white border border-gray-200 rounded-lg shadow-lg px-3 py-2 z-[9995]'>
       {getStatusDisplay()}
     </div>
   )

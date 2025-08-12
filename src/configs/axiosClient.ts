@@ -1,5 +1,5 @@
-import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
-import { ENV_CONFIG } from './env'
+import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import { ENV_CONFIG } from './env';
 
 const axiosClient = axios.create({
   // Set immediately from env to avoid race conditions on first requests
@@ -10,6 +10,13 @@ const axiosClient = axios.create({
   },
   withCredentials: false
 })
+
+// Log the initial configuration
+console.log('[AXIOS] Initial configuration:', {
+  baseURL: ENV_CONFIG.API_BASE_URL,
+  timeout: ENV_CONFIG.API_TIMEOUT,
+  isDevelopment: ENV_CONFIG.IS_DEVELOPMENT
+});
 
 // Function to update baseURL after URL Manager is initialized
 export const updateAxiosBaseURL = () => {

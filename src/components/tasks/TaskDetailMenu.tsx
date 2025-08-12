@@ -98,7 +98,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     1: 'Low',
     2: 'Medium',
     3: 'High',
-    4: 'Critical'
+    4: 'Urgent'
   }
 
   // State for each assignee
@@ -1037,18 +1037,18 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogDescription className='hidden'>Description</DialogDescription>
-      <DialogContent className='max-w-[45vw] w-full max-h-[85vh] overflow-y-auto [&>button]:hidden scrollbar-transparent'>
+      <DialogContent className='max-w-[95vw] sm:max-w-[90vw] md:max-w-[80vw] lg:max-w-[70vw] xl:max-w-[60vw] 2xl:max-w-[50vw] w-full max-h-[90vh] sm:max-h-[85vh] overflow-y-auto [&>button]:hidden scrollbar-transparent mx-2 sm:mx-4'>
         <DialogTitle className='hidden'>Title</DialogTitle>
 
         {/* Header */}
-        <div className='flex items-center justify-between mb-3'>
+        <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-3'>
           <div className='flex items-center gap-2'>
             <span className='text-lg font-semibold'>Task Details</span>
             <button className='p-1 rounded-lg bg-lavender-200 text-lavender-500 hover:bg-lavender-300/60 hover:text-lavender-800'>
               <Link className='h-4 w-4' />
             </button>
           </div>
-          <button onClick={onClose} className='text-gray-400 hover:text-gray-600'>
+          <button onClick={onClose} className='text-gray-400 hover:text-gray-600 self-end sm:self-auto'>
             <X className='h-4 w-4' />
           </button>
         </div>
@@ -1056,19 +1056,19 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         {/* Completion Banner - Show when task is completed */}
         {(localTaskData.status === 'done' || localTaskData.status === 'completed') && (
           <div className='mb-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg shadow-sm'>
-            <div className='flex items-center gap-2'>
-              <div className='flex-shrink-0'>
+            <div className='flex flex-col sm:flex-row sm:items-center gap-2'>
+              <div className='flex items-center gap-2 flex-shrink-0'>
                 <div className='w-8 h-8 bg-green-100 rounded-full flex items-center justify-center'>
                   <Check className='h-5 w-5 text-green-600' />
                 </div>
+                <div className='flex-1'>
+                  <h3 className='text-base font-semibold text-green-800'>Task Completed Successfully!</h3>
+                  <p className='text-green-700 text-xs'>
+                    This task has been marked as complete. You can continue viewing details or close the dialog when ready.
+                  </p>
+                </div>
               </div>
-              <div className='flex-1'>
-                <h3 className='text-base font-semibold text-green-800'>Task Completed Successfully!</h3>
-                <p className='text-green-700 text-xs'>
-                  This task has been marked as complete. You can continue viewing details or close the dialog when ready.
-                </p>
-              </div>
-              <div className='flex-shrink-0'>
+              <div className='flex-shrink-0 self-start sm:self-auto'>
                 <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800'>
                   {localTaskData.status}
                 </span>
@@ -1086,50 +1086,53 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             {(localTaskData.status === 'done' || localTaskData.status === 'completed') && (
               <div className='flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium'>
                 <Check className='h-3 w-3' />
-                Completed
+                <span className='hidden sm:inline'>Completed</span>
+                <span className='sm:hidden'>Done</span>
               </div>
             )}
           </div>
-          <div className='flex items-center gap-2'>
-            <ListTodo className='h-4 w-4' />
-            <div className='relative flex-grow'>
-              {isEditingTitle ? (
-                <Input
-                  className='text-xl font-semibold pr-10 w-full'
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  onBlur={() => setIsEditingTitle(false)}
-                  autoFocus
-                  disabled={isUpdating}
-                />
-              ) : (
-                <div
-                  className='text-xl font-semibold pr-10 w-full flex items-center group cursor-pointer rounded hover:bg-gray-50 transition'
-                  onClick={() => setIsEditingTitle(true)}
-                >
-                  <span className='flex-1 truncate'>{editTitle}</span>
-                  <Pencil className='h-4 w-4 ml-2 text-gray-400 opacity-0 group-hover:opacity-100 transition' />
-                </div>
-              )}
+          <div className='flex flex-col sm:flex-row sm:items-center gap-2'>
+            <div className='flex items-center gap-2 flex-1'>
+              <ListTodo className='h-4 w-4 flex-shrink-0' />
+              <div className='relative flex-grow'>
+                {isEditingTitle ? (
+                  <Input
+                    className='text-lg sm:text-xl font-semibold pr-10 w-full'
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    onBlur={() => setIsEditingTitle(false)}
+                    autoFocus
+                    disabled={isUpdating}
+                  />
+                ) : (
+                  <div
+                    className='text-lg sm:text-xl font-semibold pr-10 w-full flex items-center group cursor-pointer rounded hover:bg-gray-50 transition'
+                    onClick={() => setIsEditingTitle(true)}
+                  >
+                    <span className='flex-1 truncate'>{editTitle}</span>
+                    <Pencil className='h-4 w-4 ml-2 text-gray-400 opacity-0 group-hover:opacity-100 transition' />
+                  </div>
+                )}
+              </div>
             </div>
-            <div className='flex items-center gap-2'>
+            <div className='flex items-center gap-2 flex-shrink-0'>
               <div className='relative' ref={priorityDropdownRef}>
                 <button
                   type='button'
-                  className={`w-32 flex items-center justify-between border rounded px-2 py-1 text-center bg-lavender-50 font-medium text-lavender-700 hover:bg-lavender-100 transition-colors duration-150 shadow-sm focus:outline-none focus:ring-2 focus:ring-lavender-300 ${isUpdating ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  className={`w-28 sm:w-32 flex items-center justify-between border rounded px-2 py-1 text-center bg-lavender-50 font-medium text-lavender-700 hover:bg-lavender-100 transition-colors duration-150 shadow-sm focus:outline-none focus:ring-2 focus:ring-lavender-300 ${isUpdating ? 'opacity-60 cursor-not-allowed' : ''}`}
                   onClick={() => setIsPrioritySelectOpen((v) => !v)}
                   disabled={isUpdating}
                   aria-label='Priority'
-                  style={{ marginRight: '0.5rem' }}
                 >
-                  <span className='flex items-center gap-1 whitespace-nowrap text-sm'>
+                  <span className='flex items-center gap-1 whitespace-nowrap text-xs sm:text-sm'>
                     {getPriorityChevron(editPriority as number)}
-                    {PRIORITY_MAP[editPriority as number] || 'Set Priority'}
+                    <span className='hidden sm:inline'>{PRIORITY_MAP[editPriority as number] || 'Set Priority'}</span>
+                    <span className='sm:hidden'>{PRIORITY_MAP[editPriority as number]?.slice(0, 3) || 'Set'}</span>
                   </span>
                   <ChevronDown className='h-3 w-3 ml-1 text-lavender-400' />
                 </button>
                 {isPrioritySelectOpen && (
-                  <div className='absolute left-0 top-10 z-50 bg-white border rounded shadow-lg min-w-[140px] max-h-48 overflow-y-auto animate-fade-in'>
+                  <div className='absolute left-0 top-10 z-[9993] bg-white border rounded shadow-lg min-w-[140px] max-h-48 overflow-y-auto animate-fade-in'>
                     {[1, 2, 3, 4].map((priority) => (
                       <button
                         key={priority}
@@ -1141,7 +1144,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                         disabled={isUpdating}
                       >
                         {getPriorityChevron(priority)}
-                        {PRIORITY_MAP[priority]}
+                        <span className='hidden sm:inline'>{PRIORITY_MAP[priority]}</span>
+                        <span className='sm:hidden'>{PRIORITY_MAP[priority]?.slice(0, 3)}</span>
                       </button>
                     ))}
                   </div>
@@ -1210,19 +1214,19 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         {allAttachmentUrls.length > 0 && (
           <div className='mt-3'>
             <div className='font-semibold mb-2 text-sm'>Attachments:</div>
-            <div className='flex flex-wrap gap-2'>
+            <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2'>
               {allAttachmentUrls.map((url: string, idx: number) => {
                 if (url.match(/\.(jpg|jpeg|png|gif)$/i)) {
                   // Image
                   return (
                     <a key={url || idx} href={url} target='_blank' rel='noopener noreferrer'>
-                      <img src={url} alt={`attachment-${idx}`} className='w-20 h-20 object-cover rounded border' />
+                      <img src={url} alt={`attachment-${idx}`} className='w-full h-16 sm:h-20 object-cover rounded border' />
                     </a>
                   )
                 } else if (url.match(/\.pdf$/i)) {
                   // PDF
                   return (
-                    <div key={url || idx} className='w-40 h-56 border rounded overflow-hidden'>
+                    <div key={url || idx} className='w-full h-32 sm:h-40 md:h-56 border rounded overflow-hidden'>
                       <iframe src={url} title={`pdf-${idx}`} className='w-full h-full' />
                       <a
                         href={url}
@@ -1242,7 +1246,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                       href={url}
                       target='_blank'
                       rel='noopener noreferrer'
-                      className='text-blue-600 underline flex items-center gap-1 font-medium text-sm'
+                      className='text-blue-600 underline flex items-center gap-1 font-medium text-sm p-2 border rounded hover:bg-gray-50'
                     >
                       📎 File {idx + 1}
                     </a>
@@ -1256,24 +1260,26 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         {/* Completion Files - Special section for files uploaded when completing task */}
         {Array.isArray(localTaskData.completionAttachmentUrls) && localTaskData.completionAttachmentUrls.length > 0 && (
           <div className='mt-3 p-3 bg-green-50 border border-green-200 rounded-lg'>
-            <div className='flex items-center gap-2 mb-2'>
-              <Check className='h-4 w-4 text-green-600' />
-              <span className='font-semibold text-green-800 text-sm'>Completion Files</span>
+            <div className='flex flex-col sm:flex-row sm:items-center gap-2 mb-2'>
+              <div className='flex items-center gap-2'>
+                <Check className='h-4 w-4 text-green-600' />
+                <span className='font-semibold text-green-800 text-sm'>Completion Files</span>
+              </div>
               <span className='text-xs text-green-600'>Files uploaded when completing this task</span>
             </div>
-            <div className='flex flex-wrap gap-2'>
+            <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2'>
               {localTaskData.completionAttachmentUrls.map((url: string, idx: number) => {
                 if (url.match(/\.(jpg|jpeg|png|gif)$/i)) {
                   // Image
                   return (
                     <a key={url || idx} href={url} target='_blank' rel='noopener noreferrer'>
-                      <img src={url} alt={`completion-file-${idx}`} className='w-20 h-20 object-cover rounded border border-green-300' />
+                      <img src={url} alt={`completion-file-${idx}`} className='w-full h-16 sm:h-20 object-cover rounded border border-green-300' />
                     </a>
                   )
                 } else if (url.match(/\.pdf$/i)) {
                   // PDF
                   return (
-                    <div key={url || idx} className='w-40 h-56 border border-green-300 rounded overflow-hidden'>
+                    <div key={url || idx} className='w-full h-32 sm:h-40 md:h-56 border border-green-300 rounded overflow-hidden'>
                       <iframe src={url} title={`completion-pdf-${idx}`} className='w-full h-full' />
                       <a
                         href={url}
@@ -1293,7 +1299,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                       href={url}
                       target='_blank'
                       rel='noopener noreferrer'
-                      className='text-green-600 underline flex items-center gap-1 font-medium text-sm'
+                      className='text-green-600 underline flex items-center gap-1 font-medium text-sm p-2 border border-green-300 rounded hover:bg-green-100'
                     >
                       📎 Completion File {idx + 1}
                     </a>
@@ -1305,7 +1311,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         )}
 
         {/* Action Buttons */}
-        <div className='flex gap-2 mb-4'>
+        <div className='flex flex-wrap gap-2 mb-4'>
           <button
             onClick={handleAttach}
             className='flex items-center gap-1 px-2 py-1 text-gray-600 rounded-lg border hover:bg-gray-50 text-sm'
@@ -1346,12 +1352,14 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               {completeLoading || isMovingTask ? (
                 <>
                   <Loader2 className='h-3 w-3 animate-spin' />
-                  {completeLoading ? 'Completing...' : 'Moving to Complete Column...'}
+                  <span className='hidden sm:inline'>{completeLoading ? 'Completing...' : 'Moving to Complete Column...'}</span>
+                  <span className='sm:hidden'>{completeLoading ? 'Completing...' : 'Moving...'}</span>
                 </>
               ) : (
                 <>
                   <Check className='h-3 w-3' />
-                  Complete Task
+                  <span className='hidden sm:inline'>Complete Task</span>
+                  <span className='sm:hidden'>Complete</span>
                 </>
               )}
             </Button>
@@ -1409,7 +1417,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         )}
 
         {/* Assignee and Tags - Layout responsive */}
-        <div className='grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 mb-4'>
+        <div className='grid grid-cols-1 xl:grid-cols-2 gap-3 lg:gap-4 mb-4'>
           {/* Assignee Section - Cột trái */}
           <div>
             <h1 className='text-sm font-semibold mb-2 flex items-center gap-2'>Assignee</h1>
@@ -1440,12 +1448,12 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                       key={a.projectMemberId || idx}
                       className='flex flex-col sm:flex-row sm:items-center justify-between p-2 border-b last:border-b-0 bg-gray-50 rounded-lg gap-2'
                     >
-                      <div className='flex items-center gap-2'>
+                      <div className='flex items-center gap-2 min-w-0 flex-1'>
                         <Avatar className='w-8 h-8 lg:w-10 lg:h-10 border border-gray-200 shadow flex-shrink-0'>
                           <AvatarImage src={a.avatar} alt={a.executor} />
                           <AvatarFallback>{a.executor?.[0] || '?'}</AvatarFallback>
                         </Avatar>
-                        <div className='flex flex-col min-w-0'>
+                        <div className='flex flex-col min-w-0 flex-1'>
                           <span className='font-semibold text-gray-800 text-xs lg:text-sm truncate'>{a.executor}</span>
                           <span className='text-xs text-gray-500 truncate'>{a.role}</span>
                         </div>
@@ -1635,7 +1643,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     Add
                   </span>
                                        {isTagSelectOpen && (
-                     <div className='absolute left-0 top-10 z-50 bg-white border rounded shadow-lg min-w-[180px] max-h-48 overflow-y-auto'>
+                     <div className='absolute left-0 top-10 z-[9993] bg-white border rounded shadow-lg min-w-[180px] max-h-48 overflow-y-auto'>
                                               {tags.filter((t) => !(task.tags || []).some((tag) => tag.id === t.id || tag.name === t.name)).length === 0 ? (
                         <div className='px-3 py-1.5 text-gray-400 text-xs'>No tags available</div>
                       ) : (
@@ -1686,66 +1694,70 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
         {/* Activity Section */}
         <div>
-          <div className='flex items-center justify-between mb-4'>
+          <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4'>
             <div className='flex items-center gap-2'>
               <MessageCircle className='h-5 w-5' />
-              <h1 className='text-2xl font-semibold'>Activity</h1>
+              <h1 className='text-xl sm:text-2xl font-semibold'>Activity</h1>
             </div>
-            <div className='flex items-center gap-2'>
+            <div className='flex flex-wrap items-center gap-2'>
               <div className='flex items-center gap-2'>
-                <span className='text-gray-500'>Show:</span>
-                <button className='flex items-center gap-2 px-3 py-1.5 text-gray-600 rounded-lg border hover:bg-gray-50 font-medium'>
+                <span className='text-gray-500 text-sm'>Show:</span>
+                <button className='flex items-center gap-2 px-2 sm:px-3 py-1.5 text-gray-600 rounded-lg border hover:bg-gray-50 font-medium text-sm'>
                   <Filter className='h-4 w-4' />
-                  <span>All</span>
+                  <span className='hidden sm:inline'>All</span>
                 </button>
               </div>
-              <button className='flex items-center gap-2 px-3 py-1.5 text-gray-600 rounded-lg border hover:bg-gray-50 font-medium'>
+              <button className='flex items-center gap-2 px-2 sm:px-3 py-1.5 text-gray-600 rounded-lg border hover:bg-gray-50 font-medium text-sm'>
                 <Eye className='h-4 w-4' />
-                <span>Hide Details</span>
+                <span className='hidden sm:inline'>Hide Details</span>
               </button>
-              <button className='flex items-center gap-2 px-3 py-1.5 text-gray-600 rounded-lg border hover:bg-gray-50 font-medium'>
+              <button className='flex items-center gap-2 px-2 sm:px-3 py-1.5 text-gray-600 rounded-lg border hover:bg-gray-50 font-medium text-sm'>
                 <Calendar className='h-4 w-4' />
-                <span>Today</span>
+                <span className='hidden sm:inline'>Today</span>
               </button>
             </div>
           </div>
 
           {/* Comment Input */}
-          <div className='flex gap-3 mb-6 items-center'>
-            <Avatar>
-              <AvatarImage
-                src={user?.avatar}
-                alt={user?.fullName || user?.username || user?.email || user?.id || 'Unknown'}
+          <div className='flex flex-col sm:flex-row gap-3 mb-6'>
+            <div className='flex items-center gap-3'>
+              <Avatar>
+                <AvatarImage
+                  src={user?.avatar}
+                  alt={user?.fullName || user?.username || user?.email || user?.id || 'Unknown'}
+                />
+                <AvatarFallback>
+                  {(user?.fullName?.[0] || user?.username?.[0] || user?.email?.[0] || user?.id?.[0] || '?').toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <input
+                type='text'
+                placeholder='Write a comment...'
+                className='flex-1 px-3 sm:px-4 py-2 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none rounded-lg border border-gray-200 font-medium text-sm'
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                disabled={isCommentLoading}
               />
-              <AvatarFallback>
-                {(user?.fullName?.[0] || user?.username?.[0] || user?.email?.[0] || user?.id?.[0] || '?').toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <input
-              type='text'
-              placeholder='Write a comment...'
-              className='flex-1 px-4 py-2 focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none rounded-lg border border-gray-200 font-medium'
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              disabled={isCommentLoading}
-            />
-            <input
-              type='file'
-              multiple
-              onChange={handleCommentFileChange}
-              className='block text-sm text-gray-500 font-medium file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-lavender-100 file:text-lavender-700 hover:file:bg-lavender-200 file:transition-colors file:duration-150 file:cursor-pointer'
-              disabled={isCommentLoading}
-            />
-            <Button
-              onClick={async () => {
-                await handleAddComment()
-                await fetchComments()
-              }}
-              disabled={isCommentLoading || !comment.trim()}
-              className='ml-2 px-4 py-2 bg-lavender-500 text-white hover:bg-lavender-700 font-semibold'
-            >
-              {isCommentLoading ? 'Sending...' : 'Send'}
-            </Button>
+            </div>
+            <div className='flex flex-col sm:flex-row gap-2 sm:gap-3'>
+              <input
+                type='file'
+                multiple
+                onChange={handleCommentFileChange}
+                className='block text-sm text-gray-500 font-medium file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-lavender-100 file:text-lavender-700 hover:file:bg-lavender-200 file:transition-colors file:duration-150 file:cursor-pointer'
+                disabled={isCommentLoading}
+              />
+              <Button
+                onClick={async () => {
+                  await handleAddComment()
+                  await fetchComments()
+                }}
+                disabled={isCommentLoading || !comment.trim()}
+                className='px-4 py-2 bg-lavender-500 text-white hover:bg-lavender-700 font-semibold text-sm'
+              >
+                {isCommentLoading ? 'Sending...' : 'Send'}
+              </Button>
+            </div>
           </div>
 
           {/* Comments List */}

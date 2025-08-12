@@ -4,15 +4,15 @@ import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { TaskP } from '@/types/task'
 import { format } from 'date-fns'
 import {
-    Calendar,
-    ChevronDown,
-    ChevronsDown,
-    ChevronsUp,
-    ChevronUp,
-    Clock,
-    FileText,
-    MessageSquare,
-    User
+  Calendar,
+  ChevronDown,
+  ChevronsDown,
+  ChevronsUp,
+  ChevronUp,
+  Clock,
+  FileText,
+  MessageSquare,
+  User
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -21,46 +21,63 @@ import { Card } from '../ui/card'
 import { TaskDetailMenu } from './TaskDetailMenu'
 
 const getPriorityConfig = (priority: number) => {
+  // Handle edge cases
+  if (!priority || priority === 0) {
+    return {
+      icon: <ChevronDown className='h-4 w-4' />,
+      text: 'Low',
+      color: 'text-blue-500',
+      bg: 'bg-blue-50',
+      border: 'border-blue-200',
+      leftBorder: 'bg-blue-400'
+    }
+  }
+  
   switch (priority) {
     case 1:
       return {
         icon: <ChevronDown className='h-4 w-4' />,
         text: 'Low',
-        color: 'text-priority-low',
-        bg: 'bg-cyan-50',
-        border: 'border-cyan-200'
+        color: 'text-blue-500',
+        bg: 'bg-blue-50',
+        border: 'border-blue-200',
+        leftBorder: 'bg-blue-400'
       }
     case 2:
       return {
         icon: <ChevronsDown className='h-4 w-4' />,
         text: 'Medium',
-        color: 'text-priority-medium',
-        bg: 'bg-amber-50',
-        border: 'border-amber-200'
+        color: 'text-orange-500',
+        bg: 'bg-orange-50',
+        border: 'border-orange-200',
+        leftBorder: 'bg-orange-400'
       }
     case 3:
       return {
         icon: <ChevronUp className='h-4 w-4' />,
         text: 'High',
-        color: 'text-priority-high',
+        color: 'text-red-500',
         bg: 'bg-red-50',
-        border: 'border-red-200'
+        border: 'border-red-200',
+        leftBorder: 'bg-red-400'
       }
     case 4:
       return {
         icon: <ChevronsUp className='h-4 w-4' />,
         text: 'Urgent',
-        color: 'text-priority-urgent',
+        color: 'text-red-600',
         bg: 'bg-red-100',
-        border: 'border-red-300'
+        border: 'border-red-300',
+        leftBorder: 'bg-red-500'
       }
     default:
       return {
         icon: <ChevronDown className='h-4 w-4' />,
         text: 'Low',
-        color: 'text-gray-400',
-        bg: 'bg-gray-50',
-        border: 'border-gray-200'
+        color: 'text-blue-500',
+        bg: 'bg-blue-50',
+        border: 'border-blue-200',
+        leftBorder: 'bg-blue-400'
       }
   }
 }
@@ -144,6 +161,9 @@ export const TaskCard = ({
   const assignees = Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0 ? task.taskAssignees : []
 
   const priorityConfig = getPriorityConfig(Number(task.priority))
+  
+  // Debug priority
+  console.log('Task priority:', task.priority, 'Number priority:', Number(task.priority), 'Priority config:', priorityConfig)
 
   // Enhanced avatar colors with gradients
   const avatarColors = [
@@ -221,7 +241,7 @@ export const TaskCard = ({
     return (
       <div className='group flex items-center gap-3 border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 min-h-[44px] shadow-sm hover:shadow-md'>
         {/* Priority indicator */}
-        <div className={`w-1 h-8 rounded-full ${priorityConfig.color.replace('text-', 'bg-')}`} />
+        <div className={`w-1 h-8 rounded-full ${priorityConfig.leftBorder}`} />
 
         {/* Tags */}
         {task.tags && task.tags.length > 0 && (
@@ -281,7 +301,7 @@ export const TaskCard = ({
       >
         {/* Priority indicator bar */}
         <div
-          className={`absolute left-0 top-4 bottom-4 w-1 rounded-full ${priorityConfig.color.replace('text-', 'bg-')} shadow-sm transition-all duration-200`}
+          className={`absolute left-0 top-4 bottom-4 w-1 rounded-full ${priorityConfig.leftBorder} shadow-sm transition-all duration-200`}
         />
 
         <Card
@@ -289,7 +309,7 @@ export const TaskCard = ({
           w-full border-none shadow-none cursor-pointer transition-all duration-150 ml-2 
           ${isHovered ? 'hover:shadow-lg transform hover:-translate-y-1' : ''}
           ${isMoving ? 'opacity-90 border-2 border-blue-400' : ''}
-          ${priorityConfig.bg} backdrop-blur-sm
+          bg-white backdrop-blur-sm
           hover:animate-task-hover
         `}
         >

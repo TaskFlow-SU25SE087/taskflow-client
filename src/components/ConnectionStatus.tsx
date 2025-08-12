@@ -82,7 +82,7 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({ className = 
   if (!showAlert) return null
 
   return (
-    <div className={`fixed top-4 right-4 z-50 max-w-sm ${className}`}>
+          <div className={`fixed top-4 right-4 z-[9981] max-w-sm ${className}`}>
       <Alert className={`border-l-4 ${isOnline ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'}`}>
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0">

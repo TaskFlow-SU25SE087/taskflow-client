@@ -1,27 +1,27 @@
 import { Button } from '@/components/ui/button'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { useAuth } from '@/hooks/useAuth'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjects } from '@/hooks/useProjects'
 import Avatar from 'boring-avatars'
 import {
-    ChevronDown,
-    FolderKanban,
-    HelpCircle,
-    Layout,
-    LogOut,
-    Plus,
-    Settings,
-    Shield,
-    User
+  ChevronDown,
+  FolderKanban,
+  HelpCircle,
+  Layout,
+  LogOut,
+  Plus,
+  Settings,
+  Shield,
+  User
 } from 'lucide-react'
 import { useState } from 'react'
 import { FiMenu, FiX } from 'react-icons/fi'
@@ -57,7 +57,7 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
   }
 
   return (
-    <div className='sticky top-0 z-10 w-full bg-white border-b border-gray-300'>
+    <div className='sticky top-0 z-[9990] w-full bg-white border-b border-gray-300'>
       <div className='px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between'>
         <div className='flex items-center gap-1 sm:gap-2 flex-1'>
           <Button

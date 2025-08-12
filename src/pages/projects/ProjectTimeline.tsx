@@ -13,16 +13,16 @@ import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
 import { addMonths, eachDayOfInterval, endOfMonth, format, startOfMonth } from 'date-fns'
 import {
-  Calendar,
-  CheckCircle,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  PlayCircle,
-  Search,
-  Target,
-  TrendingUp,
-  Users
+    Calendar,
+    CheckCircle,
+    ChevronLeft,
+    ChevronRight,
+    Clock,
+    PlayCircle,
+    Search,
+    Target,
+    TrendingUp,
+    Users
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -177,7 +177,7 @@ function TimelineHeader({
   }
 
   return (
-    <div className='sticky top-0 z-20 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200'>
+    <div className='sticky top-0 z-10 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200'>
       <div className='flex items-center justify-between px-6 py-4'>
         <div className='flex items-center gap-4'>
           <div className='flex items-center gap-2'>
@@ -266,13 +266,13 @@ function CurrentTimeIndicator({ currentDate }: { currentDate: Date }) {
 
   return (
     <div
-      className='absolute top-0 bottom-0 w-1 bg-gradient-to-b from-lavender-400 to-lavender-600 shadow-lg shadow-lavender-400/40 z-30 rounded-full animate-pulse'
+      className='absolute top-0 bottom-0 w-1 bg-gradient-to-b from-lavender-400 to-lavender-600 shadow-lg shadow-lavender-400/40 z-20 rounded-full animate-pulse'
       style={{
         left: `calc(240px + (100% - 240px) * ${percentage / 100})`
       }}
     >
       <div className='w-4 h-4 rounded-full bg-lavender-500 border-2 border-white -translate-x-1/2 shadow-lg shadow-lavender-400/40 animate-bounce-subtle' />
-      <div className='absolute -top-8 left-1/2 -translate-x-1/2 bg-lavender-600 text-white px-2 py-1 rounded-lg text-xs font-medium shadow-lg'>
+      <div className='absolute -top-8 left-1/2 -translate-x-1/2 bg-lavender-600 text-white px-2 py-1 rounded-lg text-xs font-medium shadow-lg z-20'>
         Now
       </div>
     </div>
@@ -702,7 +702,7 @@ export default function ProjectTimeline() {
             <div className='flex-1 overflow-hidden bg-white rounded-t-lg shadow-sm border border-gray-200'>
               <div className='min-w-[1200px] relative h-full'>
                 {/* Header strip skeleton */}
-                <div className='sticky top-0 z-20 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200'>
+                <div className='sticky top-0 z-10 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200'>
                   <div className='flex items-center justify-between px-6 py-4'>
                     <div className='flex items-center gap-4'>
                       <div className='space-y-2'>
@@ -797,7 +797,7 @@ export default function ProjectTimeline() {
 
               <div className='flex items-center gap-3'>
                 <div className='relative'>
-                  <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
+                  <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400 z-10' />
                   <Input placeholder='Search sprints and tasks...' className='w-[300px] pl-10 border-gray-300' />
                 </div>
                 <Select defaultValue='month'>

@@ -168,7 +168,7 @@ export function GlobalSearch() {
 
       {/* Search Results Dropdown */}
       {open && (searchQuery.trim() || results.length > 0) && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-[9983]">
           <Command>
             <CommandList className="max-h-[300px] overflow-y-auto">
             {isLoading && (
