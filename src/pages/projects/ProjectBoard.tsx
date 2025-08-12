@@ -27,22 +27,22 @@ import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import {
-    arrayMove,
-    horizontalListSortingStrategy,
-    SortableContext,
-    verticalListSortingStrategy
+  arrayMove,
+  horizontalListSortingStrategy,
+  SortableContext,
+  verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import {
-    CheckCircle,
-    ChevronDown,
-    Clock,
-    Filter,
-    Link2,
-    Pencil,
-    Plus,
-    Search,
-    Settings,
-    TrendingUp
+  CheckCircle,
+  ChevronDown,
+  Clock,
+  Filter,
+  Link2,
+  Pencil,
+  Plus,
+  Search,
+  Settings,
+  TrendingUp
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
