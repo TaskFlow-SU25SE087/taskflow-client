@@ -1,4 +1,6 @@
 import { authApi } from '@/api/auth'
+import { projectApi } from '@/api/projects'
+import { clearLastProjectForUser, getLastProjectIdForUser } from '@/lib/utils'
 import axiosClient from '@/configs/axiosClient'
 import { User } from '@/types/auth'
 import { createContext, ReactNode, useEffect, useState } from 'react'
@@ -105,18 +107,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.removeItem('accessToken')
         }
       } else if (storedUser) {
-        // Fall back to any previously stored user for UI continuity
-        try {
-          const parsedUser = JSON.parse(storedUser)
-          if (cancelled) return
-          setUser(parsedUser)
-          setIsOtpVerified(storedOtpStatus === 'true')
-          // Optionally backfill missing profile fields
-        } catch (error) {
-          console.error('Error parsing stored user:', error)
-          sessionStorage.removeItem('auth_user')
-          sessionStorage.removeItem('otp_verified')
-        }
+        // If there's a stored user but no access token, treat as logged out to avoid ghost sessions
+        console.warn('[AuthProvider] Stored user found without access token. Clearing stale auth state.')
+        sessionStorage.removeItem('auth_user')
+        sessionStorage.removeItem('otp_verified')
+        setUser(null)
+        setIsOtpVerified(false)
       }
 
       if (!cancelled) setAuthLoading(false)
@@ -178,7 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       console.log('Login successful, redirecting...')
-      setTimeout(() => {
+      setTimeout(async () => {
         // Admins go to admin panel as before
         const isAdmin =
           currentUser &&
@@ -192,10 +188,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return
         }
 
-        // For regular users, prefer redirecting to previously selected project if available
-        const savedProjectId = Cookies.get('current_project_id') || localStorage.getItem('currentProjectId')
+        // For regular users, prefer the per-user last project if present; fall back to cookie/local
+        const savedProjectId =
+          getLastProjectIdForUser(currentUser?.id) ||
+          Cookies.get('current_project_id') ||
+          localStorage.getItem('currentProjectId')
         if (savedProjectId) {
-          navigate(`/projects/${savedProjectId}/board`, { replace: true })
+          try {
+            // Verify access; if unauthorized or not found, this will throw
+            await projectApi.getProjectById(savedProjectId)
+            navigate(`/projects/${savedProjectId}/board`, { replace: true })
+          } catch (e: any) {
+            // Clear stale project selection and go to projects list
+            Cookies.remove('current_project_id')
+            localStorage.removeItem('currentProjectId')
+            clearLastProjectForUser(currentUser?.id)
+            navigate('/projects', { replace: true })
+          }
         } else {
           navigate('/projects', { replace: true })
         }
@@ -248,7 +257,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem('otp_verified')
     sessionStorage.removeItem('accessToken')
     localStorage.removeItem('accessToken')
+    localStorage.removeItem('refreshToken')
     localStorage.removeItem('rememberMe')
+    // Do not clear per-user last project so it works when the same user returns.
+    // Still clear global fallback to avoid cross-account leakage.
+    Cookies.remove('current_project_id')
+    localStorage.removeItem('currentProjectId')
     navigate('/login', { replace: true })
   }
 

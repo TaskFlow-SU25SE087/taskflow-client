@@ -11,6 +11,9 @@ const axiosClient = axios.create({
   withCredentials: false
 })
 
+// Prevent multiple simultaneous 401 redirects causing reload loops
+let isHandlingUnauthorized = false
+
 // Function to update baseURL after URL Manager is initialized
 export const updateAxiosBaseURL = () => {
   const newBaseURL = ENV_CONFIG.API_BASE_URL
@@ -113,26 +116,54 @@ axiosClient.interceptors.response.use(
     }
 
     if (error.response) {
-      const { status, data } = error.response
+      const { status, data } = error.response as any
       console.error('📡 [axiosClient] Error response status:', status)
       console.error('📡 [axiosClient] Error response data:', data)
 
       if (status === 401) {
-        console.error('🔒 [axiosClient] Unauthorized - removing token')
+        const url = error.config?.url || ''
+        const apiCode = data?.code
+        const message: string = (data?.message || '').toString().toLowerCase()
 
-        // Check if this is a login request - don't redirect for login attempts
-        const isLoginRequest = error.config?.url?.includes('/auth/login')
+        const isLoginRequest = url.includes('/auth/login')
+        const isAuthMe = url.includes('/auth/me')
+        const isTokenRefresh = url.includes('/auth/token/refresh')
 
-        if (!isLoginRequest) {
-          // Only remove tokens and redirect if this is NOT a login attempt
-          localStorage.removeItem('accessToken')
-          sessionStorage.removeItem('accessToken')
-          // Redirect to login if in browser
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login'
+        // Heuristic: backend returns code 9002 and message 'Unauthorized access' for resource-level auth
+        const looksLikeResourceUnauthorized = apiCode === 9002 || message.includes('unauthorized access')
+
+        if (looksLikeResourceUnauthorized || isLoginRequest) {
+          // Do not nuke tokens or redirect; let the caller handle (e.g., show empty state)
+          if (ENV_CONFIG.IS_DEVELOPMENT) {
+            console.warn('🔐 [axiosClient] 401 treated as resource-level unauthorized; no redirect.')
+          }
+        } else if (isAuthMe || isTokenRefresh) {
+          // Token invalid/expired or refresh failed: clear and soft-redirect
+          if (!isHandlingUnauthorized) {
+            isHandlingUnauthorized = true
+            try {
+              delete axiosClient.defaults.headers.common['Authorization']
+            } catch {}
+            localStorage.removeItem('accessToken')
+            localStorage.removeItem('refreshToken')
+            localStorage.removeItem('currentProjectId')
+            sessionStorage.removeItem('accessToken')
+            sessionStorage.removeItem('auth_user')
+            sessionStorage.removeItem('otp_verified')
+            if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+              window.location.replace('/login')
+            }
+            // allow future 401s to be handled again after navigation settles
+            setTimeout(() => {
+              isHandlingUnauthorized = false
+            }, 1500)
+          }
+        } else {
+          // Generic 401 from other endpoints: do not redirect; surface error only
+          if (ENV_CONFIG.IS_DEVELOPMENT) {
+            console.warn('🔐 [axiosClient] Generic 401 on', url, '- passing error through without redirect.')
           }
         }
-        // For login requests, just pass the error through without redirecting
       } else if (status === 403) {
         console.error('🚫 [axiosClient] Forbidden - You do not have permission to perform this action.')
       } else if (status === 500) {
