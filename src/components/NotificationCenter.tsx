@@ -3,67 +3,173 @@ import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useSignalR } from '@/contexts/SignalRContext'
 import { cn } from '@/lib/utils'
-import { Bell, Check, Trash, X } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import { Bell, Check, RefreshCw, Trash, X } from 'lucide-react'
+import React, { useCallback, useEffect, useState } from 'react'
 
 const NotificationCenter: React.FC = () => {
-  const { notificationService, notifications, isConnected } = useSignalR()
+  const { notificationService, notifications, isConnected, connectionState } = useSignalR()
   const [isOpen, setIsOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    console.log('[NotificationCenter] Component mounted, current state:', {
-      notificationsCount: notifications.length,
-      isConnected,
-      unreadCount: notificationService.getUnreadCount()
-    });
-
     const handleCountUpdate = (event: CustomEvent) => {
-      console.log('[NotificationCenter] Notification count update event:', event.detail);
       setUnreadCount(event.detail.count)
     }
 
+    const handleNotificationsUpdated = (event: CustomEvent) => {
+      const newNotifications = notificationService.getNotifications();
+      const newUnreadCount = notificationService.getUnreadCount();
+      setUnreadCount(newUnreadCount);
+    }
+
+    const handleForceNotificationUpdate = (event: CustomEvent) => {
+      const { count, unreadCount } = event.detail;
+      setUnreadCount(unreadCount);
+    }
+
+    const handleNotificationsDeleted = (event: CustomEvent) => {
+      // Refresh notifications list after deletion
+      setTimeout(() => {
+        fetchNotificationsFromAPI();
+      }, 100);
+    }
+
+    const handleNotificationMarkedAsRead = (event: CustomEvent) => {
+      // Update unread count after marking as read
+      const newCount = notificationService.getUnreadCount();
+      setUnreadCount(newCount);
+    }
+
+    const handleAllNotificationsMarkedAsRead = (event: CustomEvent) => {
+      // Update unread count after marking all as read
+      setUnreadCount(0);
+    }
+
     document.addEventListener('notificationCountUpdate', handleCountUpdate as EventListener)
+    document.addEventListener('notificationsUpdated', handleNotificationsUpdated as EventListener)
+    document.addEventListener('forceNotificationUpdate', handleForceNotificationUpdate as EventListener)
+    document.addEventListener('notificationsDeleted', handleNotificationsDeleted as EventListener)
+    document.addEventListener('notificationMarkedAsRead', handleNotificationMarkedAsRead as EventListener)
+    document.addEventListener('allNotificationsMarkedAsRead', handleAllNotificationsMarkedAsRead as EventListener)
 
     // Initialize unread count
     const initialCount = notificationService.getUnreadCount();
-    console.log('[NotificationCenter] Initial unread count:', initialCount);
     setUnreadCount(initialCount)
+
+    // Force fetch notifications from API when component mounts
+    setTimeout(() => {
+      fetchNotificationsFromAPI();
+    }, 100);
 
     return () => {
       document.removeEventListener('notificationCountUpdate', handleCountUpdate as EventListener)
+      document.removeEventListener('notificationsUpdated', handleNotificationsUpdated as EventListener)
+      document.removeEventListener('forceNotificationUpdate', handleForceNotificationUpdate as EventListener)
+      document.removeEventListener('notificationsDeleted', handleNotificationsDeleted as EventListener)
+      document.removeEventListener('notificationMarkedAsRead', handleNotificationMarkedAsRead as EventListener)
+      document.removeEventListener('allNotificationsMarkedAsRead', handleAllNotificationsMarkedAsRead as EventListener)
     }
-  }, [notificationService, notifications, isConnected])
+  }, [])
 
-  // Debug effect to log changes
+  // Separate effect for notifications changes
   useEffect(() => {
-    console.log('[NotificationCenter] Notifications or connection state changed:', {
-      notificationsCount: notifications.length,
-      isConnected,
-      unreadCount
-    });
-  }, [notifications, isConnected, unreadCount]);
+    // If we have notifications but unread count is 0, update it
+    if (notifications.length > 0 && unreadCount === 0) {
+      const actualUnreadCount = notificationService.getUnreadCount();
+      setUnreadCount(actualUnreadCount);
+    }
+  }, [notifications.length, unreadCount])
+
+  const fetchNotificationsFromAPI = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      await notificationService.fetchAllNotifications();
+      
+      // Force update unread count after successful fetch
+      const newUnreadCount = notificationService.getUnreadCount();
+      setUnreadCount(newUnreadCount);
+      
+    } catch (error) {
+      console.error('[NotificationCenter] Error fetching notifications:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [notificationService]);
+
+
 
   const handleMarkAsRead = async (notificationId: string) => {
-    console.log('[NotificationCenter] Marking notification as read:', notificationId);
-    await notificationService.markAsRead(notificationId)
-    const newCount = notificationService.getUnreadCount();
-    console.log('[NotificationCenter] New unread count after mark as read:', newCount);
-    setUnreadCount(newCount)
+    try {
+      await notificationService.markAsRead(notificationId);
+      
+      // Update unread count immediately
+      const newCount = notificationService.getUnreadCount();
+      setUnreadCount(newCount);
+      
+      // Trigger a custom event to notify other components
+      const markReadEvent = new CustomEvent('notificationMarkedAsRead', {
+        detail: { 
+          notificationId,
+          action: 'markAsRead',
+          timestamp: new Date().toISOString()
+        }
+      });
+      document.dispatchEvent(markReadEvent);
+      
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   }
 
   const handleMarkAllAsRead = async () => {
-    console.log('[NotificationCenter] Marking all notifications as read');
-    await notificationService.markAllAsRead()
-    setUnreadCount(0)
+    try {
+      await notificationService.markAllAsRead();
+      
+      // Update unread count immediately
+      setUnreadCount(0);
+      
+      // Force refresh notifications to update UI
+      await notificationService.fetchAllNotifications();
+      
+      // Trigger a custom event to notify other components
+      const markAllReadEvent = new CustomEvent('allNotificationsMarkedAsRead', {
+        detail: { 
+          action: 'markAllAsRead',
+          timestamp: new Date().toISOString()
+        }
+      });
+      document.dispatchEvent(markAllReadEvent);
+      
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
   }
 
   const handleDeleteReadNotifications = async () => {
-    console.log('[NotificationCenter] Deleting read notifications');
-    await notificationService.deleteReadNotifications();
-    const newCount = notificationService.getUnreadCount();
-    console.log('[NotificationCenter] New unread count after delete:', newCount);
-    setUnreadCount(newCount);
+    try {
+      // Delete read notifications
+      await notificationService.deleteReadNotifications();
+      
+      // Force refresh notifications from API to get updated list
+      await notificationService.fetchAllNotifications();
+      
+      // Update unread count
+      const newCount = notificationService.getUnreadCount();
+      setUnreadCount(newCount);
+      
+      // Trigger a custom event to notify other components
+      const deleteEvent = new CustomEvent('notificationsDeleted', {
+        detail: { 
+          action: 'deleteRead',
+          timestamp: new Date().toISOString()
+        }
+      });
+      document.dispatchEvent(deleteEvent);
+      
+    } catch (error) {
+      console.error('Error deleting read notifications:', error);
+    }
   };
 
   const formatTime = (dateString: string) => {
@@ -97,8 +203,21 @@ const NotificationCenter: React.FC = () => {
         <div className='absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-lg shadow-lg z-[9991]'>
           {/* Header */}
           <div className='flex items-center justify-between p-4 border-b border-gray-100'>
-            <h3 className='font-semibold text-gray-900'>Notifications</h3>
+            <div className='flex-1'>
+              <h3 className='font-semibold text-gray-900'>Notifications</h3>
+            </div>
             <div className='flex items-center gap-2'>
+              {/* Refresh button */}
+              <Button
+                variant='ghost'
+                size='icon'
+                onClick={fetchNotificationsFromAPI}
+                disabled={isLoading}
+                className='text-blue-600 hover:text-blue-700'
+                title='Refresh notifications'
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+              </Button>
               {unreadCount > 0 && (
                 <Button
                   variant='ghost'
@@ -127,10 +246,23 @@ const NotificationCenter: React.FC = () => {
 
           {/* Notifications List */}
           <ScrollArea className='max-h-96'>
-            {notifications.length === 0 ? (
+            {isLoading ? (
+              <div className='p-8 text-center text-gray-500'>
+                <RefreshCw className='h-8 w-8 mx-auto mb-2 text-gray-300 animate-spin' />
+                <p>Loading notifications...</p>
+              </div>
+            ) : notifications.length === 0 ? (
               <div className='p-8 text-center text-gray-500'>
                 <Bell className='h-8 w-8 mx-auto mb-2 text-gray-300' />
                 <p>No notifications</p>
+                <Button
+                  variant='ghost'
+                  size='sm'
+                  onClick={fetchNotificationsFromAPI}
+                  className='mt-2 text-blue-600 hover:text-blue-700'
+                >
+                  Refresh
+                </Button>
               </div>
             ) : (
               <div className='divide-y divide-gray-100 max-h-96 overflow-y-auto'>

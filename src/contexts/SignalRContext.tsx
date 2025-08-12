@@ -2,7 +2,7 @@ import { useToastContext } from '@/components/ui/ToastContext'
 import { NotificationData, SignalRService } from '@/configs/signalr'
 import { AuthContext } from '@/hooks/useAuthContext'
 import { NotificationService } from '@/services/notificationService'
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react'
 
 interface SignalRContextType {
   signalRService: SignalRService
@@ -10,6 +10,7 @@ interface SignalRContextType {
   isConnected: boolean
   notifications: NotificationData[]
   connectionState: string
+  forceSyncNotifications: () => void
 }
 
 const SignalRContext = createContext<SignalRContextType | null>(null)
@@ -25,153 +26,64 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [connectionState, setConnectionState] = useState('Disconnected')
 
   useEffect(() => {
-    const initializeSignalR = async () => {
-      try {
-        // Wait for auth to finish loading
-        if (authLoading) {
-          console.log('[SignalR] Waiting for auth to finish loading...')
-          return
-        }
-
-        // If user is not authenticated, disconnect if connected
-        if (!isAuthenticated) {
-          console.log('[SignalR] User not authenticated, disconnecting SignalR if connected')
-          if (signalRService.isConnected()) {
-            await signalRService.disconnect()
-          }
-          setIsConnected(false)
-          setConnectionState('NotAuthenticated')
-          return
-        }
-
-        console.log('[SignalR] User authenticated, bắt đầu kết nối...')
-        
-        // Check if SignalR is enabled before attempting connection
-        if (!signalRService.isEnabled()) {
-          console.log('[SignalR] SignalR is disabled, skipping connection')
-          setConnectionState('Disabled')
-          return
-        }
-
-        // Double-check authentication at SignalR service level
-        if (!signalRService.isAuthenticated()) {
-          console.log('[SignalR] SignalR service reports user not authenticated, skipping connection')
-          setConnectionState('NotAuthenticated')
-          return
-        }
-
-        // Connect to primary SignalR hub
-        await signalRService.connect()
-        
-        // Check if connection was successful
-        if (signalRService.isConnected()) {
-          console.log('[SignalR] Kết nối thành công!')
-          setIsConnected(true)
-          setConnectionState('Connected')
-        } else {
-          console.log('[SignalR] Connection failed, SignalR may be disabled')
-          setConnectionState('Failed')
-        }
-
-        // Set up connection state listeners for primary
-        signalRService.on('close', () => {
-          setIsConnected(false)
-          setConnectionState('Disconnected')
-          console.log('🔌 SignalR disconnected')
-        })
-
-        signalRService.on('reconnected', () => {
-          setIsConnected(true)
-          setConnectionState('Connected')
-          console.log('🔄 SignalR reconnected')
-        })
-
-        signalRService.on('reconnecting', () => {
-          setIsConnected(false)
-          setConnectionState('Reconnecting')
-          console.log('🔄 SignalR reconnecting...')
-        })
-
-        // Set up connection state listeners for connection state changes
-        signalRService.on('connectionStateChanged', (state: string) => {
-          setConnectionState(state)
-          console.log(`[SignalR] Connection state changed to: ${state}`)
-        })
-
-        // Set up connection state listeners for connection state updates
-        signalRService.on('connectionStateUpdate', (state: string) => {
-          setConnectionState(state)
-          console.log(`[SignalR] Connection state updated to: ${state}`)
-        })
-
-        // Initialize notification service regardless of SignalR connection status
+    const initializeServices = async () => {
+      if (isAuthenticated && !authLoading) {
         try {
-          console.log('[SignalR] Initializing notification service...');
-          await notificationService.initialize();
-          const noti = notificationService.getNotifications();
-          console.log('[DEBUG] Notifications after fetch:', noti);
-          setNotifications(noti);
-        } catch (notificationError) {
-          console.warn('[SignalR] Failed to initialize notification service:', notificationError)
-          // Even if notification service fails, we can still show empty notifications
-          setNotifications([]);
-        }
-
-        // Only set up SignalR-specific features if connected
-        if (signalRService.isConnected()) {
-          console.log('[SignalR] SignalR connected, setting up additional features...');
-        } else {
-          console.log('[SignalR] SignalR not connected, but notification service initialized');
-        }
-
-        // Listen for notification count updates
-        const handleCountUpdate = () => {
-          // Update notifications list if needed
-          setNotifications(notificationService.getNotifications())
-        }
-
-        document.addEventListener('notificationCountUpdate', handleCountUpdate)
-
-        return () => {
-          document.removeEventListener('notificationCountUpdate', handleCountUpdate)
-        }
-      } catch (error) {
-        console.error('[SignalR] Lỗi khởi tạo:', error)
-        setConnectionState('Error')
-        
-        // Handle specific error types
-        if (error instanceof Error) {
-          if (error.message?.includes('401')) {
-            console.error('[SignalR] Authentication failed. User may need to re-login.')
-            setConnectionState('AuthFailed')
-          } else if (error.message?.includes('timeout')) {
-            console.error('[SignalR] Connection timeout. Server may be down or slow.')
-            setConnectionState('Timeout')
-          } else if (error.message?.includes('WebSocket failed to connect')) {
-            console.error('[SignalR] WebSocket connection failed. Server may not support WebSockets or is down.')
-            setConnectionState('WebSocketFailed')
+          console.log('[SignalR] Starting SignalR connection...')
+          await signalRService.connect()
+          
+          try {
+            console.log('[SignalR] Initializing notification service...');
+            await notificationService.initialize();
+            const noti = notificationService.getNotifications();
+            console.log('[DEBUG] Notifications after fetch:', noti);
+            setNotifications(noti);
+            
+            // Force update notifications state after initialization
+            setTimeout(() => {
+              const currentNotifications = notificationService.getNotifications();
+              console.log('[SignalR] Force updating notifications state:', currentNotifications.length);
+              setNotifications(currentNotifications);
+            }, 100);
+            
+          } catch (notificationError) {
+            console.warn('[SignalR] Failed to initialize notification service:', notificationError)
+            setNotifications([]);
           }
+        } catch (error) {
+          console.error('[SignalR] Failed to connect:', error)
         }
       }
     }
 
-    initializeSignalR()
-
-    // Cleanup function to disconnect when component unmounts or auth changes
-    return () => {
-      if (signalRService.isConnected()) {
-        console.log('[SignalR] Cleaning up SignalR connection')
-        signalRService.disconnect()
-      }
-      
-      // Remove event listeners
-      signalRService.off('close', () => {})
-      signalRService.off('reconnected', () => {})
-      signalRService.off('reconnecting', () => {})
-      signalRService.off('connectionStateChanged', () => {})
-      signalRService.off('connectionStateUpdate', () => {})
-    }
+    initializeServices()
   }, [signalRService, notificationService, isAuthenticated, authLoading])
+
+  // Add event listeners for notifications updates
+  useEffect(() => {
+    const handleNotificationsUpdated = (event: CustomEvent) => {
+      console.log('[SignalR] Notifications updated event received:', event.detail);
+      const currentNotifications = notificationService.getNotifications();
+      console.log('[SignalR] Updating notifications state with:', currentNotifications.length);
+      setNotifications(currentNotifications);
+    }
+
+    const handleForceNotificationUpdate = (event: CustomEvent) => {
+      console.log('[SignalR] Force notification update event received:', event.detail);
+      const { notifications: newNotifications } = event.detail;
+      console.log('[SignalR] Force updating notifications state with:', newNotifications.length);
+      setNotifications(newNotifications);
+    }
+
+    // Listen for notification updates
+    document.addEventListener('notificationsUpdated', handleNotificationsUpdated as EventListener);
+    document.addEventListener('forceNotificationUpdate', handleForceNotificationUpdate as EventListener);
+
+    return () => {
+      document.removeEventListener('notificationsUpdated', handleNotificationsUpdated as EventListener);
+      document.removeEventListener('forceNotificationUpdate', handleForceNotificationUpdate as EventListener);
+    }
+  }, []) // Empty dependency array - only run once
 
   // Handle logout - disconnect SignalR when user logs out
   useEffect(() => {
@@ -225,12 +137,20 @@ export const SignalRProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [isAuthenticated, authLoading, signalRService])
 
+  const forceSyncNotifications = useCallback(() => {
+    console.log('[SignalR] Force syncing notifications...');
+    const currentNotifications = notificationService.getNotifications();
+    console.log('[SignalR] Current notifications in service:', currentNotifications.length);
+    setNotifications(currentNotifications);
+  }, [notificationService])
+
   const value: SignalRContextType = {
     signalRService,
     notificationService,
     isConnected,
     notifications,
-    connectionState
+    connectionState,
+    forceSyncNotifications
   }
 
   // Debug logging for connection state changes
