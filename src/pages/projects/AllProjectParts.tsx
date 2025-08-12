@@ -282,7 +282,15 @@ export default function AllProjectParts() {
                       {part.repoUrl && (
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <Github className="h-4 w-4" />
-                          <span className="truncate">{part.repoUrl}</span>
+                          <a 
+                            href={part.repoUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="truncate text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                            title={part.repoUrl}
+                          >
+                            {part.repoUrl}
+                          </a>
                         </div>
                       )}
                     </div>
