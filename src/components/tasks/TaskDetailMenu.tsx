@@ -1037,39 +1037,39 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogDescription className='hidden'>Description</DialogDescription>
-      <DialogContent className='max-w-4xl w-full [&>button]:hidden'>
+      <DialogContent className='max-w-[45vw] w-full max-h-[85vh] overflow-y-auto [&>button]:hidden scrollbar-transparent'>
         <DialogTitle className='hidden'>Title</DialogTitle>
 
         {/* Header */}
-        <div className='flex items-center justify-between mb-4'>
+        <div className='flex items-center justify-between mb-3'>
           <div className='flex items-center gap-2'>
-            <span className='text-xl font-semibold'>Task Details</span>
+            <span className='text-lg font-semibold'>Task Details</span>
             <button className='p-1 rounded-lg bg-lavender-200 text-lavender-500 hover:bg-lavender-300/60 hover:text-lavender-800'>
               <Link className='h-4 w-4' />
             </button>
           </div>
           <button onClick={onClose} className='text-gray-400 hover:text-gray-600'>
-            <X className='h-5 w-5' />
+            <X className='h-4 w-4' />
           </button>
         </div>
 
         {/* Completion Banner - Show when task is completed */}
         {(localTaskData.status === 'done' || localTaskData.status === 'completed') && (
-          <div className='mb-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg shadow-sm'>
-            <div className='flex items-center gap-3'>
+          <div className='mb-3 p-3 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg shadow-sm'>
+            <div className='flex items-center gap-2'>
               <div className='flex-shrink-0'>
-                <div className='w-10 h-10 bg-green-100 rounded-full flex items-center justify-center'>
-                  <Check className='h-6 w-6 text-green-600' />
+                <div className='w-8 h-8 bg-green-100 rounded-full flex items-center justify-center'>
+                  <Check className='h-5 w-5 text-green-600' />
                 </div>
               </div>
               <div className='flex-1'>
-                <h3 className='text-lg font-semibold text-green-800'>Task Completed Successfully!</h3>
-                <p className='text-green-700 text-sm'>
+                <h3 className='text-base font-semibold text-green-800'>Task Completed Successfully!</h3>
+                <p className='text-green-700 text-xs'>
                   This task has been marked as complete. You can continue viewing details or close the dialog when ready.
                 </p>
               </div>
               <div className='flex-shrink-0'>
-                <span className='inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800'>
+                <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800'>
                   {localTaskData.status}
                 </span>
               </div>
@@ -1078,9 +1078,9 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         )}
 
         {/* Task Name and Priority */}
-        <div className='mb-4'>
+        <div className='mb-3'>
           <div className='flex items-center gap-2 mb-1'>
-            <span className='text-gray-500'>Board</span>
+            <span className='text-sm text-gray-500'>Board</span>
             <span className='text-gray-900 cursor-pointer hover:underline font-medium'>{localTaskData.status}</span>
             {/* Completion Status Indicator */}
             {(localTaskData.status === 'done' || localTaskData.status === 'completed') && (
@@ -1091,11 +1091,11 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             )}
           </div>
           <div className='flex items-center gap-2'>
-            <ListTodo className='h-5 w-5' />
+            <ListTodo className='h-4 w-4' />
             <div className='relative flex-grow'>
               {isEditingTitle ? (
                 <Input
-                  className='text-2xl font-semibold pr-10 w-full'
+                  className='text-xl font-semibold pr-10 w-full'
                   value={editTitle}
                   onChange={(e) => setEditTitle(e.target.value)}
                   onBlur={() => setIsEditingTitle(false)}
@@ -1104,11 +1104,11 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                 />
               ) : (
                 <div
-                  className='text-2xl font-semibold pr-10 w-full flex items-center group cursor-pointer rounded hover:bg-gray-50 transition'
+                  className='text-xl font-semibold pr-10 w-full flex items-center group cursor-pointer rounded hover:bg-gray-50 transition'
                   onClick={() => setIsEditingTitle(true)}
                 >
                   <span className='flex-1 truncate'>{editTitle}</span>
-                  <Pencil className='h-5 w-5 ml-2 text-gray-400 opacity-0 group-hover:opacity-100 transition' />
+                  <Pencil className='h-4 w-4 ml-2 text-gray-400 opacity-0 group-hover:opacity-100 transition' />
                 </div>
               )}
             </div>
@@ -1116,24 +1116,24 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               <div className='relative' ref={priorityDropdownRef}>
                 <button
                   type='button'
-                  className={`w-40 flex items-center justify-between border rounded px-3 py-1.5 text-center bg-lavender-50 font-medium text-lavender-700 hover:bg-lavender-100 transition-colors duration-150 shadow-sm focus:outline-none focus:ring-2 focus:ring-lavender-300 ${isUpdating ? 'opacity-60 cursor-not-allowed' : ''}`}
+                  className={`w-32 flex items-center justify-between border rounded px-2 py-1 text-center bg-lavender-50 font-medium text-lavender-700 hover:bg-lavender-100 transition-colors duration-150 shadow-sm focus:outline-none focus:ring-2 focus:ring-lavender-300 ${isUpdating ? 'opacity-60 cursor-not-allowed' : ''}`}
                   onClick={() => setIsPrioritySelectOpen((v) => !v)}
                   disabled={isUpdating}
                   aria-label='Priority'
                   style={{ marginRight: '0.5rem' }}
                 >
-                  <span className='flex items-center gap-2 whitespace-nowrap'>
+                  <span className='flex items-center gap-1 whitespace-nowrap text-sm'>
                     {getPriorityChevron(editPriority as number)}
                     {PRIORITY_MAP[editPriority as number] || 'Set Priority'}
                   </span>
-                  <ChevronDown className='h-4 w-4 ml-2 text-lavender-400' />
+                  <ChevronDown className='h-3 w-3 ml-1 text-lavender-400' />
                 </button>
                 {isPrioritySelectOpen && (
-                  <div className='absolute left-0 top-12 z-50 bg-white border rounded shadow-lg min-w-[160px] max-h-60 overflow-y-auto animate-fade-in'>
+                  <div className='absolute left-0 top-10 z-50 bg-white border rounded shadow-lg min-w-[140px] max-h-48 overflow-y-auto animate-fade-in'>
                     {[1, 2, 3, 4].map((priority) => (
                       <button
                         key={priority}
-                        className={`w-full flex items-center gap-2 px-4 py-2 text-left text-sm font-medium hover:bg-lavender-50 transition-colors duration-100 ${editPriority === priority ? 'bg-lavender-100 text-lavender-700' : 'text-gray-700'}`}
+                        className={`w-full flex items-center gap-2 px-3 py-1.5 text-left text-xs font-medium hover:bg-lavender-50 transition-colors duration-100 ${editPriority === priority ? 'bg-lavender-100 text-lavender-700' : 'text-gray-700'}`}
                         onClick={() => {
                           setEditPriority(priority)
                           setIsPrioritySelectOpen(false)
@@ -1149,9 +1149,9 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               </div>
             </div>
           </div>
-          <div className='flex items-center gap-2 mt-2'>
-            <Calendar className='h-4 w-4 text-gray-400' />
-            <span className='text-sm text-gray-600'>
+          <div className='flex items-center gap-2 mt-1'>
+            <Calendar className='h-3 w-3 text-gray-400' />
+            <span className='text-xs text-gray-600'>
               Deadline: {localTaskData.deadline ? new Date(localTaskData.deadline).toLocaleDateString('vi-VN') : 'N/A'}
             </span>
           </div>
@@ -1159,7 +1159,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             <div className='relative'>
               {isEditingDescription ? (
                 <textarea
-                  className='w-full border rounded p-2 pr-10 font-medium'
+                  className='w-full border rounded p-2 pr-10 font-medium text-sm'
                   value={editDescription}
                   onChange={(e) => setEditDescription(e.target.value)}
                   onBlur={() => setIsEditingDescription(false)}
@@ -1167,17 +1167,17 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                   disabled={isUpdating}
                 />
               ) : (
-                <div className='w-full min-h-[48px] flex items-center rounded px-2 py-2 bg-gray-50'>
-                  <span className={`flex-1 ${!editDescription ? 'text-gray-400 italic' : ''} font-medium`}>
+                <div className='w-full min-h-[40px] flex items-center rounded px-2 py-1.5 bg-gray-50'>
+                  <span className={`flex-1 text-sm ${!editDescription ? 'text-gray-400 italic' : ''} font-medium`}>
                     {editDescription || 'No detailed description for this task.'}
                   </span>
                   <Button
                     variant='ghost'
                     size='icon'
-                    className='ml-2 text-gray-400 hover:text-blue-500'
+                    className='ml-2 text-gray-400 hover:text-blue-500 h-6 w-6'
                     onClick={() => setIsEditingDescription(true)}
                   >
-                    <Pencil className='h-4 w-4' />
+                    <Pencil className='h-3 w-3' />
                   </Button>
                 </div>
               )}
@@ -1191,12 +1191,12 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                 !editTitle.trim() ||
                 (editTitle === task.title && editDescription === task.description && editPriority === task.priority)
               }
-              className='px-6 bg-lavender-500 hover:bg-lavender-700 text-white font-semibold border-0'
+              className='px-4 py-1.5 bg-lavender-500 hover:bg-lavender-700 text-white font-semibold border-0 text-sm'
               style={{ boxShadow: 'none' }}
             >
               {isUpdating ? (
                 <>
-                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  <Loader2 className='mr-1 h-3 w-3 animate-spin' />
                   Saving...
                 </>
               ) : (
@@ -1208,27 +1208,27 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
         {/* Attachments */}
         {allAttachmentUrls.length > 0 && (
-          <div className='mt-4'>
-            <div className='font-semibold mb-2'>Attachments:</div>
-            <div className='flex flex-wrap gap-3'>
+          <div className='mt-3'>
+            <div className='font-semibold mb-2 text-sm'>Attachments:</div>
+            <div className='flex flex-wrap gap-2'>
               {allAttachmentUrls.map((url: string, idx: number) => {
                 if (url.match(/\.(jpg|jpeg|png|gif)$/i)) {
                   // Image
                   return (
                     <a key={url || idx} href={url} target='_blank' rel='noopener noreferrer'>
-                      <img src={url} alt={`attachment-${idx}`} className='w-24 h-24 object-cover rounded border' />
+                      <img src={url} alt={`attachment-${idx}`} className='w-20 h-20 object-cover rounded border' />
                     </a>
                   )
                 } else if (url.match(/\.pdf$/i)) {
                   // PDF
                   return (
-                    <div key={url || idx} className='w-48 h-64 border rounded overflow-hidden'>
+                    <div key={url || idx} className='w-40 h-56 border rounded overflow-hidden'>
                       <iframe src={url} title={`pdf-${idx}`} className='w-full h-full' />
                       <a
                         href={url}
                         target='_blank'
                         rel='noopener noreferrer'
-                        className='block text-blue-600 underline text-center mt-1 font-medium'
+                        className='block text-blue-600 underline text-center mt-1 font-medium text-xs'
                       >
                         View PDF
                       </a>
@@ -1242,7 +1242,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                       href={url}
                       target='_blank'
                       rel='noopener noreferrer'
-                      className='text-blue-600 underline flex items-center gap-1 font-medium'
+                      className='text-blue-600 underline flex items-center gap-1 font-medium text-sm'
                     >
                       📎 File {idx + 1}
                     </a>
@@ -1255,31 +1255,31 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
         {/* Completion Files - Special section for files uploaded when completing task */}
         {Array.isArray(localTaskData.completionAttachmentUrls) && localTaskData.completionAttachmentUrls.length > 0 && (
-          <div className='mt-4 p-4 bg-green-50 border border-green-200 rounded-lg'>
-            <div className='flex items-center gap-2 mb-3'>
-              <Check className='h-5 w-5 text-green-600' />
-              <span className='font-semibold text-green-800'>Completion Files</span>
-              <span className='text-sm text-green-600'>Files uploaded when completing this task</span>
+          <div className='mt-3 p-3 bg-green-50 border border-green-200 rounded-lg'>
+            <div className='flex items-center gap-2 mb-2'>
+              <Check className='h-4 w-4 text-green-600' />
+              <span className='font-semibold text-green-800 text-sm'>Completion Files</span>
+              <span className='text-xs text-green-600'>Files uploaded when completing this task</span>
             </div>
-            <div className='flex flex-wrap gap-3'>
+            <div className='flex flex-wrap gap-2'>
               {localTaskData.completionAttachmentUrls.map((url: string, idx: number) => {
                 if (url.match(/\.(jpg|jpeg|png|gif)$/i)) {
                   // Image
                   return (
                     <a key={url || idx} href={url} target='_blank' rel='noopener noreferrer'>
-                      <img src={url} alt={`completion-file-${idx}`} className='w-24 h-24 object-cover rounded border border-green-300' />
+                      <img src={url} alt={`completion-file-${idx}`} className='w-20 h-20 object-cover rounded border border-green-300' />
                     </a>
                   )
                 } else if (url.match(/\.pdf$/i)) {
                   // PDF
                   return (
-                    <div key={url || idx} className='w-48 h-64 border border-green-300 rounded overflow-hidden'>
+                    <div key={url || idx} className='w-40 h-56 border border-green-300 rounded overflow-hidden'>
                       <iframe src={url} title={`completion-pdf-${idx}`} className='w-full h-full' />
                       <a
                         href={url}
                         target='_blank'
                         rel='noopener noreferrer'
-                        className='block text-green-600 underline text-center mt-1 font-medium'
+                        className='block text-green-600 underline text-center mt-1 font-medium text-xs'
                       >
                         View PDF
                       </a>
@@ -1293,7 +1293,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                       href={url}
                       target='_blank'
                       rel='noopener noreferrer'
-                      className='text-green-600 underline flex items-center gap-1 font-medium'
+                      className='text-green-600 underline flex items-center gap-1 font-medium text-sm'
                     >
                       📎 Completion File {idx + 1}
                     </a>
@@ -1305,21 +1305,21 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         )}
 
         {/* Action Buttons */}
-        <div className='flex gap-2 mb-6'>
+        <div className='flex gap-2 mb-4'>
           <button
             onClick={handleAttach}
-            className='flex items-center gap-2 px-3 py-1.5 text-gray-600 rounded-lg border hover:bg-gray-50'
+            className='flex items-center gap-1 px-2 py-1 text-gray-600 rounded-lg border hover:bg-gray-50 text-sm'
           >
-            <Paperclip className='h-4 w-4' />
+            <Paperclip className='h-3 w-3' />
             <span>Attach</span>
           </button>
           
           {/* File Selection for Task Completion */}
           <button
             onClick={() => fileInputRef.current?.click()}
-            className='flex items-center gap-2 px-3 py-1.5 text-blue-600 rounded-lg border border-blue-300 bg-blue-50 hover:bg-blue-100'
+            className='flex items-center gap-1 px-2 py-1 text-blue-600 rounded-lg border border-blue-300 bg-blue-50 hover:bg-blue-100 text-sm'
           >
-            <Upload className='h-4 w-4' />
+            <Upload className='h-3 w-3' />
             <span>Select Files</span>
           </button>
           
@@ -1341,16 +1341,16 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             <Button
               onClick={handleCompleteTask}
               disabled={completeLoading}
-              className='flex items-center gap-2 px-3 py-1.5 text-green-700 border border-green-300 bg-green-50 hover:bg-green-100'
+              className='flex items-center gap-1 px-2 py-1 text-green-700 border border-green-300 bg-green-50 hover:bg-green-100 text-sm'
             >
               {completeLoading || isMovingTask ? (
                 <>
-                  <Loader2 className='h-4 w-4 animate-spin' />
+                  <Loader2 className='h-3 w-3 animate-spin' />
                   {completeLoading ? 'Completing...' : 'Moving to Complete Column...'}
                 </>
               ) : (
                 <>
-                  <Check className='h-4 w-4' />
+                  <Check className='h-3 w-3' />
                   Complete Task
                 </>
               )}
@@ -1364,10 +1364,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
         {/* Realtime Update Status */}
         {isMovingTask && (
-          <div className='mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg'>
+          <div className='mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg'>
             <div className='flex items-center gap-2 text-blue-700'>
-              <Loader2 className='h-4 w-4 animate-spin' />
-              <span className='text-sm font-medium'>Updating board in real-time...</span>
+              <Loader2 className='h-3 w-3 animate-spin' />
+              <span className='text-xs font-medium'>Updating board in real-time...</span>
             </div>
             <p className='text-xs text-blue-600 mt-1'>
               Task is being moved to complete column. The board will update automatically.
@@ -1377,17 +1377,17 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
         {/* Selected Files Display */}
         {completeFiles.length > 0 && (
-          <div className='mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg'>
-            <h3 className='text-sm font-medium text-blue-800 mb-2 flex items-center gap-2'>
-              <FileText className='h-4 w-4' />
+          <div className='mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg'>
+            <h3 className='text-xs font-medium text-blue-800 mb-2 flex items-center gap-2'>
+              <FileText className='h-3 w-3' />
               Files Selected for Completion ({completeFiles.length})
             </h3>
-            <div className='space-y-2'>
+            <div className='space-y-1'>
               {completeFiles.map((file, index) => (
-                <div key={index} className='flex items-center justify-between p-2 bg-white rounded border'>
+                <div key={index} className='flex items-center justify-between p-1.5 bg-white rounded border'>
                   <div className='flex items-center gap-2'>
-                    <FileText className='h-4 w-4 text-blue-600' />
-                    <span className='text-sm text-gray-700'>{file.name}</span>
+                    <FileText className='h-3 w-3 text-blue-600' />
+                    <span className='text-xs text-gray-700'>{file.name}</span>
                     <span className='text-xs text-gray-500'>({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
                   </div>
                   <button
@@ -1397,25 +1397,25 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     className='p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded'
                     title='Remove file'
                   >
-                    <X className='h-4 w-4' />
+                    <X className='h-3 w-3' />
                   </button>
                 </div>
               ))}
             </div>
-            <div className='mt-3 text-xs text-blue-600'>
+            <div className='mt-2 text-xs text-blue-600'>
               Click "Complete Task" above to finish the task with these files.
             </div>
           </div>
         )}
 
-        {/* Assignee and Tags - Layout 2 cột */}
-        <div className='grid grid-cols-2 gap-6 mb-6'>
+        {/* Assignee and Tags - Layout responsive */}
+        <div className='grid grid-cols-1 lg:grid-cols-2 gap-3 lg:gap-4 mb-4'>
           {/* Assignee Section - Cột trái */}
           <div>
-            <h1 className='text-base font-semibold mb-3 flex items-center gap-2'>Assignee</h1>
-            <div className='flex flex-col gap-4 p-4 bg-white rounded-lg shadow-sm border'>
+            <h1 className='text-sm font-semibold mb-2 flex items-center gap-2'>Assignee</h1>
+            <div className='flex flex-col gap-2 lg:gap-3 p-2 lg:p-3 bg-white rounded-lg shadow-sm border'>
               {/* Debug info */}
-              <div className='text-xs text-gray-500 mb-2'>
+              <div className='text-xs text-gray-500 mb-1'>
                 {/* Debug: Task ID: {localTaskData.id} | Assignees: {Array.isArray(localTaskData.taskAssignees) ? localTaskData.taskAssignees.length : 0} */}
               </div>
 
@@ -1438,20 +1438,20 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                   return (
                     <div
                       key={a.projectMemberId || idx}
-                      className='flex items-center justify-between p-3 border-b last:border-b-0 bg-gray-50 rounded-lg'
+                      className='flex flex-col sm:flex-row sm:items-center justify-between p-2 border-b last:border-b-0 bg-gray-50 rounded-lg gap-2'
                     >
-                      <div className='flex items-center gap-3'>
-                        <Avatar className='w-12 h-12 border border-gray-200 shadow'>
+                      <div className='flex items-center gap-2'>
+                        <Avatar className='w-8 h-8 lg:w-10 lg:h-10 border border-gray-200 shadow flex-shrink-0'>
                           <AvatarImage src={a.avatar} alt={a.executor} />
                           <AvatarFallback>{a.executor?.[0] || '?'}</AvatarFallback>
                         </Avatar>
-                        <div className='flex flex-col'>
-                          <span className='font-semibold text-gray-800 text-base'>{a.executor}</span>
-                          <span className='text-sm text-gray-500'>{a.role}</span>
+                        <div className='flex flex-col min-w-0'>
+                          <span className='font-semibold text-gray-800 text-xs lg:text-sm truncate'>{a.executor}</span>
+                          <span className='text-xs text-gray-500 truncate'>{a.role}</span>
                         </div>
                       </div>
                       {/* Action buttons - hiển thị icon thay vì nút */}
-                      <div className='flex items-center gap-2'>
+                      <div className='flex items-center gap-1 flex-shrink-0'>
                         {/* Leave task - chỉ hiển thị cho assignee hiện tại */}
                         {isCurrentUser && (
                           <button
@@ -1461,12 +1461,12 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                             }}
                             disabled={leaveLoading}
                             title='Rời khỏi task'
-                            className='p-1.5 rounded-full hover:bg-orange-50 hover:text-orange-600 text-gray-400 transition-all duration-200 hover:scale-110'
+                            className='p-1 rounded-full hover:bg-orange-50 hover:text-orange-600 text-gray-400 transition-all duration-200 hover:scale-110'
                           >
                             {leaveLoading ? (
-                              <Loader2 className='w-4 h-4 animate-spin' />
+                              <Loader2 className='w-3 h-3 animate-spin' />
                             ) : (
-                              <LogOut className='w-4 h-4' />
+                              <LogOut className='w-3 h-3' />
                             )}
                           </button>
                         )}
@@ -1480,12 +1480,12 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                             }}
                             disabled={removeLoadingMap[a.projectMemberId] || false}
                             title='Xóa assignee khỏi task'
-                            className='p-1.5 rounded-full hover:bg-red-50 hover:text-red-600 text-gray-400 transition-all duration-200 hover:scale-110'
+                            className='p-1 rounded-full hover:bg-red-50 hover:text-red-600 text-gray-400 transition-all duration-200 hover:scale-110'
                           >
                             {removeLoadingMap[a.projectMemberId] ? (
-                              <Loader2 className='w-4 h-4 animate-spin' />
+                              <Loader2 className='w-3 h-3 animate-spin' />
                             ) : (
-                              <X className='w-4 h-4' />
+                              <X className='w-3 h-3' />
                             )}
                           </button>
                         )}
@@ -1494,12 +1494,12 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                   )
                 })
               ) : (
-                <span className='text-gray-400 italic'>Chưa có assignee</span>
+                <span className='text-gray-400 italic text-sm'>Chưa có assignee</span>
               )}
               {/* Dropdown chọn assignee (nếu là leader) */}
               {isUserLeader && (
-                <div className='mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200'>
-                  <div className='text-sm font-medium text-blue-800 mb-2'>Assign new member</div>
+                <div className='mt-3 p-2 bg-blue-50 rounded-lg border border-blue-200'>
+                  <div className='text-xs font-medium text-blue-800 mb-2'>Assign new member</div>
                   <Select
                     onValueChange={async (memberId) => {
                       await handleAssignMember(memberId)
@@ -1512,7 +1512,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                   >
                     <SelectTrigger
                       className={cn(
-                        'flex items-center gap-2 px-3 py-1.5 text-gray-600 rounded-lg border hover:bg-gray-50',
+                        'flex items-center gap-2 px-2 py-1 text-gray-600 rounded-lg border hover:bg-gray-50 text-sm',
                         'focus:ring-0 focus:ring-offset-0 h-auto',
                         '[&>span]:flex [&>span]:items-center [&>span]:gap-2 [&>span]:m-0 [&>span]:p-0',
                         '[&>svg]:hidden',
@@ -1521,8 +1521,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     >
                       <SelectValue
                         placeholder={
-                          <div className='flex items-center gap-2 text-gray-500'>
-                            <UserPlus className='h-4 w-4' />
+                          <div className='flex items-center gap-2 text-gray-500 text-sm'>
+                            <UserPlus className='h-3 w-3' />
                             <span>Assign member</span>
                           </div>
                         }
@@ -1532,12 +1532,12 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                             <img
                               src={assignee.avatar}
                               alt={assignee.fullName}
-                              style={{ width: 24, height: 24, borderRadius: '50%', marginRight: 8 }}
+                              style={{ width: 20, height: 20, borderRadius: '50%', marginRight: 6 }}
                             />
-                            <span>{assignee.fullName}</span>
+                            <span className='text-sm'>{assignee.fullName}</span>
                           </div>
                         ) : (
-                          <span>Assign member</span>
+                          <span className='text-sm'>Assign member</span>
                         )}
                       </SelectValue>
                     </SelectTrigger>
@@ -1559,14 +1559,14 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                             <SelectItem
                               key={memberId}
                               value={memberId}
-                              className='focus:bg-gray-100 focus:text-gray-900 py-2 px-3'
+                              className='focus:bg-gray-100 focus:text-gray-900 py-1.5 px-2'
                             >
-                              <div className='flex items-center pl-5 gap-2'>
-                                <Avatar>
+                              <div className='flex items-center pl-4 gap-2'>
+                                <Avatar className='w-6 h-6'>
                                   <AvatarImage src={member.avatar} alt={displayName} />
-                                  <AvatarFallback>{avatarChar}</AvatarFallback>
+                                  <AvatarFallback className='text-xs'>{avatarChar}</AvatarFallback>
                                 </Avatar>
-                                <span>{displayName}</span>
+                                <span className='text-sm'>{displayName}</span>
                               </div>
                             </SelectItem>
                           )
@@ -1581,7 +1581,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
           {/* Tags Section - Cột phải */}
           <div>
-            <h1 className='text-base font-semibold mb-3 flex items-center gap-2'>
+            <h1 className='text-sm font-semibold mb-2 flex items-center gap-2'>
               Tags
               <button
                 type='button'
@@ -1589,10 +1589,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                 onClick={() => setIsTagManagerOpen(true)}
                 title='Manage tags'
               >
-                <Settings className='w-4 h-4' />
+                <Settings className='w-3 h-3' />
               </button>
             </h1>
-            <div className='p-4 bg-white rounded-lg shadow-sm border'>
+            <div className='p-3 bg-white rounded-lg shadow-sm border'>
               <div className='flex items-center gap-2 flex-wrap'>
                 {(task.tags || []).map((tag, idx) => (
                   <span
@@ -1600,20 +1600,20 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     style={{
                       backgroundColor: tag.color || '#eee',
                       color: '#fff',
-                      borderRadius: '8px',
-                      padding: '6px 16px',
+                      borderRadius: '6px',
+                      padding: '4px 12px',
                       fontWeight: 500,
-                      fontSize: '1em',
+                      fontSize: '0.875em',
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '8px'
+                      gap: '6px'
                     }}
                   >
                     {tag.name}
                   </span>
                 ))}
                 <div
-                  className='flex items-center gap-2 cursor-pointer relative group'
+                  className='flex items-center gap-1 cursor-pointer relative group'
                   ref={tagDropdownRef}
                   onClick={() => setIsTagSelectOpen((v) => !v)}
                   tabIndex={0}
@@ -1626,32 +1626,32 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                   <Button
                     variant='ghost'
                     size='icon'
-                    className='h-6 w-6 rounded-lg bg-lavender-200 group-hover:bg-lavender-300/60 transition-colors duration-150 pointer-events-none'
+                    className='h-5 w-5 rounded-lg bg-lavender-200 group-hover:bg-lavender-300/60 transition-colors duration-150 pointer-events-none'
                     aria-label='Add tag icon'
                   >
-                    <Plus className='h-4 w-4 text-lavender-500 group-hover:text-lavender-800 transition-colors duration-150' />
+                    <Plus className='h-3 w-3 text-lavender-500 group-hover:text-lavender-800 transition-colors duration-150' />
                   </Button>
-                  <span className='font-medium text-lavender-500 group-hover:text-lavender-800 transition-colors duration-150'>
+                  <span className='font-medium text-lavender-500 group-hover:text-lavender-800 transition-colors duration-150 text-sm'>
                     Add
                   </span>
                                        {isTagSelectOpen && (
-                     <div className='absolute left-0 top-12 z-50 bg-white border rounded shadow-lg min-w-[200px] max-h-60 overflow-y-auto'>
+                     <div className='absolute left-0 top-10 z-50 bg-white border rounded shadow-lg min-w-[180px] max-h-48 overflow-y-auto'>
                                               {tags.filter((t) => !(task.tags || []).some((tag) => tag.id === t.id || tag.name === t.name)).length === 0 ? (
-                        <div className='px-4 py-2 text-gray-400 text-sm'>No tags available</div>
+                        <div className='px-3 py-1.5 text-gray-400 text-xs'>No tags available</div>
                       ) : (
                         tags
                           .filter((t) => !(task.tags || []).some((tag) => tag.id === t.id || tag.name === t.name))
                           .map((tag) => (
                             <button
                               key={tag.id}
-                              className='w-full text-left px-4 py-2 hover:bg-lavender-50 text-sm font-medium flex items-center gap-2'
+                              className='w-full text-left px-3 py-1.5 hover:bg-lavender-50 text-xs font-medium flex items-center gap-2'
                               onClick={async () => {
                                 await handleTagSelect(tag.id)
                                 setIsTagSelectOpen(false)
                               }}
                             >
                               <span
-                                className='px-3 py-1 rounded-full text-white font-medium text-sm'
+                                className='px-2 py-0.5 rounded-full text-white font-medium text-xs'
                                 style={{ backgroundColor: tag.color || '#eee' }}
                               >
                                 {tag.name}

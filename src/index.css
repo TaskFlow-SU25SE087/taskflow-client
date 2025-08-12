@@ -420,4 +420,14 @@
   .timeline-scroll-container::-webkit-scrollbar-thumb:hover {
     background: rgba(139, 92, 246, 0.5);
   }
+
+  /* Transparent scrollbar for TaskDetailMenu */
+  .scrollbar-transparent {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .scrollbar-transparent::-webkit-scrollbar {
+    display: none;
+  }
 }
