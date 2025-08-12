@@ -342,32 +342,45 @@ export default function ProjectBoard() {
         })
         return
       }
-      if (!currentProject?.id) {
-        console.log('[DnD] Không có currentProject khi kéo board')
-        return
-      }
-      let oldIndex = boards.findIndex((b) => b.id === active.id)
-      let newIndex
-      if (over.id === '__dropzone_start__') {
-        newIndex = 0
-      } else if (over.id === '__dropzone_end__') {
-        newIndex = boards.length - 1
-      } else {
-        newIndex = boards.findIndex((b) => b.id === over.id)
-      }
-      if (oldIndex === -1 || newIndex === -1) {
-        console.log('[DnD] Không tìm thấy oldIndex hoặc newIndex khi kéo board', {
-          oldIndex,
-          newIndex,
-          activeId: active.id,
-          overId: over.id
-        })
-        return
-      }
-      const newBoards = arrayMove(boards, oldIndex, newIndex)
-      setBoards(newBoards)
-      const orderPayload = newBoards.map((b, idx) => ({ id: b.id, order: idx }))
-      await boardApi.updateBoardOrder(currentProject.id, orderPayload)
+             if (!currentProject?.id) {
+         console.log('[DnD] Không có currentProject khi kéo board')
+         return
+       }
+       
+       // Double-check currentProject is still valid before proceeding
+       if (!currentProject?.id) {
+         console.log('[DnD] currentProject became null during board operation, aborting')
+         return
+       }
+       
+       let oldIndex = boards.findIndex((b) => b.id === active.id)
+       let newIndex
+       if (over.id === '__dropzone_start__') {
+         newIndex = 0
+       } else if (over.id === '__dropzone_end__') {
+         newIndex = boards.length - 1
+       } else {
+         newIndex = boards.findIndex((b) => b.id === over.id)
+       }
+       if (oldIndex === -1 || newIndex === -1) {
+         console.log('[DnD] Không tìm thấy oldIndex hoặc newIndex khi kéo board', {
+           oldIndex,
+           newIndex,
+           activeId: active.id,
+           overId: over.id
+         })
+         return
+       }
+       const newBoards = arrayMove(boards, oldIndex, newIndex)
+       setBoards(newBoards)
+       const orderPayload = newBoards.map((b, idx) => ({ id: b.id, order: idx }))
+       
+       // Final safety check before API call
+       if (!currentProject?.id) {
+         throw new Error('currentProject became null during board operation')
+       }
+       
+       await boardApi.updateBoardOrder(currentProject.id, orderPayload)
       console.log('[DnD] Đã cập nhật thứ tự board', { orderPayload })
       return
     }
@@ -398,6 +411,12 @@ export default function ProjectBoard() {
         return
       }
 
+      // Double-check currentProject is still valid before proceeding
+      if (!currentProject?.id) {
+        console.log('[DnD] currentProject became null during operation, aborting')
+        return
+      }
+
       console.log('[DnD] moveTaskToBoard', { projectId: currentProject.id, taskId, newBoardId })
 
       const boardObj = filteredBoards.find((b) => b.id === newBoardId)
@@ -418,7 +437,7 @@ export default function ProjectBoard() {
       setBoards((prevBoards) =>
         prevBoards.map((board) => ({
           ...board,
-          tasks: board.tasks.map((task) =>
+          tasks: (board.tasks || []).map((task) =>
             task.id === taskId ? { ...task, boardId: newBoardId, status: boardObj?.name || task.status } : task
           )
         }))
@@ -437,6 +456,11 @@ export default function ProjectBoard() {
       console.log('[TIMING] 📡 API call starting at:', new Date().toISOString())
 
       try {
+        // Final safety check before API call
+        if (!currentProject?.id) {
+          throw new Error('currentProject became null during operation')
+        }
+        
         await taskApi.moveTaskToBoard(currentProject.id, taskId, newBoardId)
 
         const apiCallEndTime = performance.now()
@@ -484,7 +508,7 @@ export default function ProjectBoard() {
         setBoards((prevBoards) =>
           prevBoards.map((board) => ({
             ...board,
-            tasks: board.tasks.map((task) =>
+            tasks: (board.tasks || []).map((task) =>
               task.id === taskId
                 ? { ...task, boardId: taskObj?.boardId || task.boardId, status: taskObj?.status || task.status }
                 : task
@@ -558,7 +582,7 @@ export default function ProjectBoard() {
     if (hasActiveSprint) {
       // Prefer API-provided sprint tasks when available
       boardTasks = (
-        sprintTasks.length > 0 ? sprintTasks : board.tasks.filter((t) => (t.sprintId || '') === selectedSprintId)
+        sprintTasks.length > 0 ? sprintTasks : (board.tasks || []).filter((t) => (t.sprintId || '') === selectedSprintId)
       ).filter((task) => task.boardId === board.id)
     }
 
@@ -569,7 +593,7 @@ export default function ProjectBoard() {
           (task.description || '').toLowerCase().includes(searchQuery.toLowerCase())) &&
         (filterStatus === 'all' || (task.status || '').toLowerCase() === filterStatus.toLowerCase())
     )
-    return { ...board, tasks: filteredTasks }
+    return { ...board, tasks: filteredTasks || [] }
   })
 
   const SprintSelector = () => {
