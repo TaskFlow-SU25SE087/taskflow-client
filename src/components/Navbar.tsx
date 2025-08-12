@@ -1,28 +1,18 @@
 import { Button } from '@/components/ui/button'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { useAuth } from '@/hooks/useAuth'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjects } from '@/hooks/useProjects'
 import Avatar from 'boring-avatars'
-import {
-  ChevronDown,
-  FolderKanban,
-  HelpCircle,
-  Layout,
-  LogOut,
-  Plus,
-  Settings,
-  Shield,
-  User
-} from 'lucide-react'
+import { ChevronDown, FolderKanban, HelpCircle, Layout, LogOut, Plus, Settings, Shield, User } from 'lucide-react'
 import { useState } from 'react'
 import { FiMenu, FiX } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
@@ -48,7 +38,6 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
 
   const handleProjectSelect = (projectId: string) => {
     setCurrentProjectId(projectId)
-    navigate('/board')
   }
 
   const handleLogout = () => {
@@ -66,11 +55,7 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
             className='text-gray-500 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 h-8 w-8 sm:h-10 sm:w-10'
             onClick={toggleSidebar}
           >
-            {isSidebarOpen ? (
-              <FiX className='h-4 w-4 sm:h-5 sm:w-5' />
-            ) : (
-              <FiMenu className='h-4 w-4 sm:h-5 sm:w-5' />
-            )}
+            {isSidebarOpen ? <FiX className='h-4 w-4 sm:h-5 sm:w-5' /> : <FiMenu className='h-4 w-4 sm:h-5 sm:w-5' />}
           </Button>
 
           {/* Projects Dropdown */}
@@ -145,7 +130,7 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
 
         <div className='flex items-center gap-2 sm:gap-4'>
           {/* Help Icon - Hidden on mobile */}
-          <div 
+          <div
             className='hidden md:block text-gray-500 px-2 hover:bg-transparent cursor-pointer hover:text-blue-600 transition-colors'
             onClick={() => setIsTutorialOpen(true)}
           >
@@ -216,10 +201,7 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
       </div>
 
       {/* Tutorial Modal */}
-      <TutorialModal 
-        isOpen={isTutorialOpen} 
-        onClose={() => setIsTutorialOpen(false)} 
-      />
+      <TutorialModal isOpen={isTutorialOpen} onClose={() => setIsTutorialOpen(false)} />
     </div>
   )
 }

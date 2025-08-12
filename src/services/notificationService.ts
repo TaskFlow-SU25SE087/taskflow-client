@@ -5,11 +5,22 @@ export class NotificationService {
   private signalRService: SignalRService
   private notifications: NotificationData[] = []
   private listeners: ((notification: NotificationData) => void)[] = []
-  private showToast: ((toast: { title?: React.ReactNode; description?: React.ReactNode; variant?: 'default' | 'destructive' }) => void) | null = null;
+  private showToast:
+    | ((toast: { title?: React.ReactNode; description?: React.ReactNode; variant?: 'default' | 'destructive' }) => void)
+    | null = null
 
-  constructor(signalRService: SignalRService, showToast: ((toast: { title?: React.ReactNode; description?: React.ReactNode; variant?: 'default' | 'destructive' }) => void) | null) {
+  constructor(
+    signalRService: SignalRService,
+    showToast:
+      | ((toast: {
+          title?: React.ReactNode
+          description?: React.ReactNode
+          variant?: 'default' | 'destructive'
+        }) => void)
+      | null
+  ) {
     this.signalRService = signalRService
-    this.showToast = showToast;
+    this.showToast = showToast
   }
 
   async fetchAllNotifications() {
@@ -50,11 +61,8 @@ export class NotificationService {
 
   async initialize() {
     try {
-      console.log('[NotificationService] Initializing notification service...');
-      
-      // Always try to fetch notifications first, regardless of SignalR status
-      await this.fetchAllNotifications();
-      
+      await this.fetchAllNotifications()
+
       // Only set up SignalR listeners if SignalR is enabled and connected
       if (this.signalRService.isEnabled() && this.signalRService.isConnected()) {
         console.log('[NotificationService] Setting up SignalR notification listeners...');
@@ -67,12 +75,10 @@ export class NotificationService {
           this.notifyListeners(notification)
         })
       } else {
-        console.log('[NotificationService] SignalR not available, skipping notification listeners');
-        console.log('[NotificationService] SignalR enabled:', this.signalRService.isEnabled());
-        console.log('[NotificationService] SignalR connected:', this.signalRService.isConnected());
+        console.log('[NotificationService] SignalR not available, skipping notification listeners')
       }
     } catch (error) {
-      console.warn('[NotificationService] Error initializing notification service:', error);
+      console.warn('[NotificationService] Error initializing notification service:', error)
     }
   }
 
@@ -108,12 +114,11 @@ export class NotificationService {
 
   async markAsRead(notificationId: string) {
     try {
-      const rememberMe = localStorage.getItem('rememberMe') === 'true'
-      const token = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken')
+      const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
 
       if (!token) {
-        console.log('[NotificationService] No access token available, skipping mark as read');
-        return;
+        console.log('[NotificationService] No access token available, skipping mark as read')
+        return
       }
 
       const response = await axiosClient.post(`/api/Notification/mark-read/${notificationId}`, {}, {
@@ -147,12 +152,11 @@ export class NotificationService {
 
   async deleteReadNotifications() {
     try {
-      const rememberMe = localStorage.getItem('rememberMe') === 'true'
-      const token = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken')
+      const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
 
       if (!token) {
-        console.log('[NotificationService] No access token available, skipping delete read notifications');
-        return;
+        console.log('[NotificationService] No access token available, skipping delete read notifications')
+        return
       }
 
       const response = await axiosClient.delete('/api/Notification/delete-read', {
@@ -183,8 +187,8 @@ export class NotificationService {
 
   async markAllAsRead() {
     // Không gọi API nữa, chỉ cập nhật local
-    this.notifications.forEach((n) => (n.isRead = true));
-    this.updateNotificationBadge();
+    this.notifications.forEach((n) => (n.isRead = true))
+    this.updateNotificationBadge()
   }
 
   getNotifications() {

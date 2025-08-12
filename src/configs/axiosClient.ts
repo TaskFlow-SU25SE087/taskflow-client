@@ -46,9 +46,8 @@ axiosClient.interceptors.request.use(
       console.log('📤 [axiosClient] Request data:', config.data)
     }
 
-    // Get access token from storage
-    const rememberMe = localStorage.getItem('rememberMe') === 'true'
-    const accessToken = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken')
+    // Get access token from storage (prefer persistent localStorage, fallback to sessionStorage)
+    const accessToken = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
 
     if (accessToken) {
       if (ENV_CONFIG.IS_DEVELOPMENT) {
