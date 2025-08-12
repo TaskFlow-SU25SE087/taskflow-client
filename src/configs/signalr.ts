@@ -49,6 +49,18 @@ export class SignalRService {
       return
     }
 
+    // Check if user is authenticated before attempting connection
+    const rememberMe = localStorage.getItem('rememberMe') === 'true'
+    const accessToken = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken')
+    
+    if (!accessToken) {
+      console.log('[SignalR] No access token found. Skipping SignalR connection until user is authenticated.')
+      return
+    }
+
+    if (this.isConnecting) return
+    this.isConnecting = true
+
     if (this.isConnecting) return
     this.isConnecting = true
     
@@ -110,6 +122,9 @@ export class SignalRService {
       await this.connection.stop()
       this.connection = null
     }
+    // Reset connection state
+    this.reconnectAttempts = 0
+    this.isConnecting = false
   }
 
   private handleReconnect() {
@@ -187,11 +202,25 @@ export class SignalRService {
     return this.signalREnabled && !this.connectionDisabled
   }
 
+  isAuthenticated(): boolean {
+    const rememberMe = localStorage.getItem('rememberMe') === 'true'
+    const accessToken = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken')
+    return !!accessToken
+  }
+
   // Method to re-enable SignalR if needed
   reEnable() {
     this.connectionDisabled = false
     this.signalREnabled = true
     this.reconnectAttempts = 0
+  }
+
+  // Method to force disable SignalR
+  forceDisable() {
+    this.connectionDisabled = true
+    this.signalREnabled = false
+    this.reconnectAttempts = 0
+    this.isConnecting = false
   }
 }
 
