@@ -43,7 +43,6 @@ export default function ProjectList() {
 
   const handleSelectProject = (id: string) => {
     setCurrentProjectId(id)
-    navigate('/board')
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
