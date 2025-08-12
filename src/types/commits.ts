@@ -26,4 +26,7 @@ export interface CommitDetail {
   message: string
   filePath: string
   line: number
+  lineContent: string
+  blamedGitEmail: string
+  blamedGitName: string
 }
