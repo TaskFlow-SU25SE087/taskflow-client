@@ -18,7 +18,7 @@ import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 export default function ProjectList() {
   const [searchParams] = useSearchParams()
   const viewParam = searchParams.get('view')
-  
+
   const {
     projects,
     isLoading,
@@ -33,7 +33,7 @@ export default function ProjectList() {
     goToPage,
     fetchProjects
   } = useProjects()
-  
+
   // If view=sprint-meetings, redirect to first project's sprint-meetings
   if (viewParam === 'sprint-meetings' && !isLoading && projects && projects.length > 0) {
     return <Navigate to={`/projects/${projects[0].id}/sprint-meetings`} replace />
@@ -42,8 +42,8 @@ export default function ProjectList() {
   const { setCurrentProjectId } = useCurrentProject()
 
   const handleSelectProject = (id: string) => {
+    // This will navigate to `/projects/:id/board` via context
     setCurrentProjectId(id)
-    navigate('/board')
   }
 
   // eslint-disable-next-line react-hooks/exhaustive-deps

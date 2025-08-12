@@ -50,14 +50,17 @@ export const CurrentProjectProvider: React.FC<{ children: React.ReactNode }> = (
         Cookies.set(CURRENT_PROJECT_COOKIE, projectId, { path: '/' })
         localStorage.setItem(CURRENT_PROJECT_LOCAL, projectId)
       } catch (err: any) {
-        // On 404 or HTML response, clear and navigate away
-        if (err?.response?.status === 404 || err?.isHtmlResponse) {
+        // Only redirect away on true 404 (project not found)
+        if (err?.response?.status === 404) {
           Cookies.remove(CURRENT_PROJECT_COOKIE)
           localStorage.removeItem(CURRENT_PROJECT_LOCAL)
           setCurrentProject(null)
           navigate('/projects')
+        } else {
+          // For transient/network/HTML/proxy issues, don't bounce the user
+          console.warn('[CurrentProjectProvider] Non-fatal fetch error, staying on page:', err)
+          setCurrentProject(null)
         }
-        console.error('[CurrentProjectProvider] Fetch error:', err)
       } finally {
         setIsLoading(false)
       }

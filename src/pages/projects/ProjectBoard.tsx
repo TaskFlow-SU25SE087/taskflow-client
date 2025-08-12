@@ -45,7 +45,7 @@ import {
   TrendingUp
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
 interface MemberAvatarProps {
   name: string
@@ -199,6 +199,7 @@ const calculateBoardProgress = (tasks: TaskP[]) => {
 
 export default function ProjectBoard() {
   const navigate = useNavigate()
+  const { projectId: urlProjectId } = useParams<{ projectId: string }>()
   const { boards, isLoading: isBoardLoading, error: boardError, refreshBoards, setBoards } = useBoards()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([])
@@ -262,11 +263,13 @@ export default function ProjectBoard() {
     setIsSidebarOpen(!isSidebarOpen)
   }
 
+  // Avoid bouncing back on first load: if URL has a projectId, wait for hydration
   useEffect(() => {
-    if (!isLoading && !currentProject) {
-      navigate('/projects')
+    if (!isLoading) {
+      const hasProjectContext = !!(currentProject?.id || urlProjectId)
+      if (!hasProjectContext) navigate('/projects')
     }
-  }, [currentProject, isLoading, navigate])
+  }, [currentProject, isLoading, urlProjectId, navigate])
 
   const handleCopyProjectId = () => {
     if (!currentProject?.id) return
