@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { useLocation, useNavigate } from 'react-router-dom'
 import type { Project } from '@/types/project'
 import { useAuth } from '@/hooks/useAuth'
+import { setLastProjectIdForUser, clearLastProjectForUser } from '@/lib/utils'
 
 type Ctx = {
   currentProject: Project | null
@@ -49,11 +50,22 @@ export const CurrentProjectProvider: React.FC<{ children: React.ReactNode }> = (
 
         Cookies.set(CURRENT_PROJECT_COOKIE, projectId, { path: '/' })
         localStorage.setItem(CURRENT_PROJECT_LOCAL, projectId)
+        // Persist per-user last project
+        setLastProjectIdForUser(user?.id, projectId)
       } catch (err: any) {
-        // Only redirect away on true 404 (project not found)
-        if (err?.response?.status === 404) {
+        const status = err?.response?.status
+        if (status === 404) {
+          // Project truly not found
           Cookies.remove(CURRENT_PROJECT_COOKIE)
           localStorage.removeItem(CURRENT_PROJECT_LOCAL)
+          setCurrentProject(null)
+          navigate('/projects')
+        } else if (status === 401) {
+          // Unauthorized to access this project with current account
+          console.warn('[CurrentProjectProvider] 401 Unauthorized for project; clearing saved project and redirecting')
+          Cookies.remove(CURRENT_PROJECT_COOKIE)
+          localStorage.removeItem(CURRENT_PROJECT_LOCAL)
+          clearLastProjectForUser(user?.id)
           setCurrentProject(null)
           navigate('/projects')
         } else {
@@ -77,7 +89,12 @@ export const CurrentProjectProvider: React.FC<{ children: React.ReactNode }> = (
     }
 
     if (activeProjectId) {
-      fetchProject(activeProjectId)
+      // Only fetch when authenticated to avoid early 401 churn during login
+      if (isAuthenticated) {
+        fetchProject(activeProjectId)
+      } else {
+        setIsLoading(false)
+      }
       return
     }
 
@@ -108,11 +125,15 @@ export const CurrentProjectProvider: React.FC<{ children: React.ReactNode }> = (
     setIsLoading(false)
   }, [activeProjectId, location.pathname, fetchProject, navigate, isAuthenticated])
 
+  const { user } = useAuth()
+
   const setCurrentProjectId = useCallback(
     (projectId: string) => {
+      // Persist per-user last project eagerly on selection
+      setLastProjectIdForUser(user?.id, projectId)
       navigate(`/projects/${projectId}/board`)
     },
-    [navigate]
+    [navigate, user?.id]
   )
 
   const refreshCurrentProject = useCallback(async () => {
