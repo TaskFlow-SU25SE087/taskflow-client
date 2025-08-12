@@ -42,16 +42,14 @@ import React from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 const AuthRedirect = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, authLoading } = useAuth()
   const location = useLocation()
 
-  // When authenticated, don't auto-redirect on landing or login page; otherwise, go to /projects
-  if (
-    isAuthenticated &&
-    location.pathname !== '/projects' &&
-    location.pathname !== '/' &&
-    location.pathname !== '/login'
-  ) {
+  // Wait for auth to hydrate to avoid flicker/mis-route
+  if (authLoading) return <></>
+
+  // If authenticated and on public landing or login, send to projects
+  if (isAuthenticated && (location.pathname === '/' || location.pathname === '/login')) {
     return <Navigate to='/projects' state={{ from: location }} replace />
   }
 

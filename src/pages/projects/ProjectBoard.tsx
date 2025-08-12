@@ -168,14 +168,17 @@ const fetchCurrentSprintAndTasks = async (
         return
       } else {
         console.log(`⚠️ [ProjectBoard] No current sprint found for project: ${projectId}`)
+        setSelectedSprintId(null)
         setSprintTasks([])
       }
     } catch (err: any) {
       console.error(`❌ [ProjectBoard] Error fetching sprint data:`, err)
+      setSelectedSprintId(null)
       setSprintTasks([])
     }
   } else {
     console.log(`⚠️ [ProjectBoard] No project ID provided`)
+    setSelectedSprintId(null)
     setSprintTasks([])
   }
 }
@@ -507,8 +510,42 @@ export default function ProjectBoard() {
     boards.flatMap((b) => b.tasks)
   )
 
+  // Determine if a sprint is actually active (status or date window)
+  const isSprintActive = (sprintId: string | null | undefined) => {
+    if (!sprintId) return false
+    const s = sprints.find((sp) => sp.id === sprintId)
+    if (!s) return false
+    // Primary check: explicit status
+    if (typeof s.status === 'number') {
+      if (s.status === 1) return true // In Progress
+    } else {
+      const st = String(s.status).toLowerCase()
+      if (st === 'inprogress' || st === 'in progress' || st === 'active') return true
+    }
+    // Fallback check: within start/end dates
+    if (s.startDate && s.endDate) {
+      const now = new Date()
+      const start = new Date(s.startDate)
+      const end = new Date(s.endDate)
+      if (now >= start && now <= end) return true
+    }
+    return false
+  }
+
   const filteredBoards = boards.map((board) => {
-    const boardTasks = sprintTasks.length > 0 ? sprintTasks.filter((task) => task.boardId === board.id) : board.tasks
+    // Jira-like behavior:
+    // - If there's a truly active sprint selected, only show tasks from that sprint
+    // - If no active sprint, show nothing on the board
+    let boardTasks: TaskP[] = []
+
+    const hasActiveSprint = isSprintActive(selectedSprintId)
+    if (hasActiveSprint) {
+      // Prefer API-provided sprint tasks when available
+      boardTasks = (
+        sprintTasks.length > 0 ? sprintTasks : board.tasks.filter((t) => (t.sprintId || '') === selectedSprintId)
+      ).filter((task) => task.boardId === board.id)
+    }
+
     const filteredTasks = boardTasks.filter(
       (task) =>
         (!searchQuery ||
@@ -524,7 +561,7 @@ export default function ProjectBoard() {
     return (
       <div className='flex items-center gap-2 text-gray-600'>
         <span className='font-medium'>Sprint:</span>
-        <span className='font-semibold text-gray-800'>{currentSprint ? currentSprint.name : 'No sprint'}</span>
+        <span className='font-semibold text-gray-800'>{currentSprint ? currentSprint.name : 'No active sprint'}</span>
       </div>
     )
   }

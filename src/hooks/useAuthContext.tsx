@@ -43,83 +43,90 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authLoading, setAuthLoading] = useState(true)
   const navigate = useNavigate()
 
-  // Initialize auth state from session storage
+  // Initialize auth state from storage; try refresh with refreshToken for new tabs
   useEffect(() => {
-    const storedUser = sessionStorage.getItem('auth_user')
-    const storedOtpStatus = sessionStorage.getItem('otp_verified')
-    // Ưu tiên lấy accessToken từ localStorage nếu có rememberMe
-    const rememberMe = localStorage.getItem('rememberMe') === 'true'
-    const storedAccessToken = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken')
-    console.log('[AuthProvider] useEffect mount:')
-    console.log('  storedUser:', storedUser)
-    console.log('  storedOtpStatus:', storedOtpStatus)
-    console.log('  storedAccessToken:', storedAccessToken)
-    if (storedAccessToken) {
-      axiosClient.defaults.headers.common['Authorization'] = `Bearer ${storedAccessToken}`
-      // Decode accessToken để lấy lại user info
-      try {
-        const tokenPayload = JSON.parse(atob(storedAccessToken.split('.')[1]))
-        const currentUser = {
-          id: tokenPayload.ID || '',
-          email: tokenPayload.Email || '',
-          fullName: tokenPayload.FullName || '',
-          role: tokenPayload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || '',
-          phoneNumber: '',
-          username: tokenPayload.Username || ''
-        }
-        setUser(currentUser)
-        sessionStorage.setItem('auth_user', JSON.stringify(currentUser))
-        setIsOtpVerified(true)
-      } catch (e) {
-        setUser(null)
-        setIsOtpVerified(false)
-        sessionStorage.removeItem('auth_user')
-        if (rememberMe) {
-          localStorage.removeItem('accessToken')
-        } else {
-          sessionStorage.removeItem('accessToken')
-        }
-      }
-    }
-    setAuthLoading(false)
+    let cancelled = false
 
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser)
-        setUser(parsedUser)
-        setIsOtpVerified(storedOtpStatus === 'true')
-        // Nếu user thiếu fullName, tự động lấy lại từ API /user/{userId}
-        if (storedOtpStatus === 'true' && (!parsedUser.fullName || parsedUser.fullName === '')) {
-          // Lấy userId từ token
-          let userId = ''
-          if (storedAccessToken) {
-            try {
-              const tokenPayload = JSON.parse(atob(storedAccessToken.split('.')[1]))
-              userId = tokenPayload.ID
-            } catch (e) {
-              userId = ''
-            }
+    const hydrateAuth = async () => {
+      const storedUser = sessionStorage.getItem('auth_user')
+      const storedOtpStatus = sessionStorage.getItem('otp_verified')
+      const rememberMe = localStorage.getItem('rememberMe') === 'true'
+      let accessToken = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken') || ''
+      const refreshToken = localStorage.getItem('refreshToken')
+
+      console.log('[AuthProvider] boot:', {
+        hasStoredUser: !!storedUser,
+        storedOtpStatus,
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken
+      })
+
+      // If we don't have an access token but do have a refresh token, try to refresh
+      if (!accessToken && refreshToken) {
+        try {
+          const refreshed = await authApi.refreshToken(accessToken, refreshToken)
+          accessToken = refreshed.accessToken
+          axiosClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+          // Persist token according to rememberMe; fallback to session for current tab
+          if (rememberMe) {
+            localStorage.setItem('accessToken', accessToken)
           }
-          if (userId) {
-            authApi
-              .getUserById(userId)
-              .then((currentUser) => {
-                setUser({ ...parsedUser, ...currentUser })
-                sessionStorage.setItem('auth_user', JSON.stringify({ ...parsedUser, ...currentUser }))
-                console.log('Auto-fetched user info from /user/{userId}:', currentUser)
-              })
-              .catch((error) => {
-                console.warn('Could not auto-fetch user info from /user/{userId}:', error)
-              })
-          }
+          sessionStorage.setItem('accessToken', accessToken)
+        } catch (e) {
+          console.warn('[AuthProvider] Failed to refresh access token on boot:', e)
         }
-      } catch (error) {
-        console.error('Error parsing stored user:', error)
-        sessionStorage.removeItem('auth_user')
-        sessionStorage.removeItem('otp_verified')
       }
+
+      // If we have an access token (either from storage or refresh), decode and set user
+      if (accessToken) {
+        try {
+          const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]))
+          const currentUser = {
+            id: tokenPayload.ID || '',
+            email: tokenPayload.Email || '',
+            fullName: tokenPayload.FullName || '',
+            role: tokenPayload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || '',
+            phoneNumber: '',
+            username: tokenPayload.Username || ''
+          }
+          if (cancelled) return
+          axiosClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+          setUser(currentUser)
+          sessionStorage.setItem('auth_user', JSON.stringify(currentUser))
+          setIsOtpVerified(true)
+          sessionStorage.setItem('otp_verified', 'true')
+        } catch (e) {
+          if (cancelled) return
+          setUser(null)
+          setIsOtpVerified(false)
+          sessionStorage.removeItem('auth_user')
+          // Don't aggressively remove refresh token here; keep for later manual login
+          sessionStorage.removeItem('accessToken')
+          localStorage.removeItem('accessToken')
+        }
+      } else if (storedUser) {
+        // Fall back to any previously stored user for UI continuity
+        try {
+          const parsedUser = JSON.parse(storedUser)
+          if (cancelled) return
+          setUser(parsedUser)
+          setIsOtpVerified(storedOtpStatus === 'true')
+          // Optionally backfill missing profile fields
+        } catch (error) {
+          console.error('Error parsing stored user:', error)
+          sessionStorage.removeItem('auth_user')
+          sessionStorage.removeItem('otp_verified')
+        }
+      }
+
+      if (!cancelled) setAuthLoading(false)
     }
-  }, []) // Empty dependency array to run only once on mount
+
+    hydrateAuth()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     console.log('[AuthProvider] user:', user)
@@ -137,13 +144,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Store tokens
       axiosClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
       localStorage.setItem('refreshToken', refreshToken)
-      // Lưu accessToken vào localStorage nếu rememberMe, ngược lại dùng sessionStorage
-      const rememberMe = localStorage.getItem('rememberMe') === 'true'
-      if (rememberMe) {
-        localStorage.setItem('accessToken', accessToken)
-      } else {
-        sessionStorage.setItem('accessToken', accessToken)
-      }
+      // Persist accessToken to both storages to support new tabs; logout clears both
+      localStorage.setItem('accessToken', accessToken)
+      sessionStorage.setItem('accessToken', accessToken)
 
       // Get current user information including role from JWT token
       let currentUser: User | null = null

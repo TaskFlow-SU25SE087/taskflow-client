@@ -8,8 +8,6 @@ export const SIGNALR_CONFIG = {
   MAX_RECONNECT_ATTEMPTS: ENV_CONFIG.SIGNALR_MAX_RECONNECT_ATTEMPTS
 }
 
-
-
 export interface NotificationData {
   id: string
   userId: string
@@ -37,7 +35,9 @@ export class SignalRService {
 
     // Check if we're in production and don't have a proper SignalR server
     if (ENV_CONFIG.IS_PRODUCTION && (SIGNALR_CONFIG.HUB_URL.includes('localhost') || !SIGNALR_CONFIG.HUB_URL)) {
-      console.warn('[SignalR] Production environment detected but SignalR server is not properly configured. Disabling SignalR.')
+      console.warn(
+        '[SignalR] Production environment detected but SignalR server is not properly configured. Disabling SignalR.'
+      )
       this.signalREnabled = false
       return
     }
@@ -51,25 +51,27 @@ export class SignalRService {
 
     if (this.isConnecting) return
     this.isConnecting = true
-    
+
     try {
       console.log('[SignalR] Environment:', ENV_CONFIG.IS_PRODUCTION ? 'PRODUCTION' : 'DEVELOPMENT')
       console.log('[SignalR] Config HUB_URL:', SIGNALR_CONFIG.HUB_URL)
       console.log('[SignalR] ENV_CONFIG.SIGNALR_HUB_URL:', ENV_CONFIG.SIGNALR_HUB_URL)
       console.log('[SignalR] Đang kết nối tới:', SIGNALR_CONFIG.HUB_URL)
-      
+
       this.connection = new signalR.HubConnectionBuilder()
         .withUrl(SIGNALR_CONFIG.HUB_URL, {
           accessTokenFactory: () => {
-            const rememberMe = localStorage.getItem('rememberMe') === 'true'
-            const token = rememberMe ? localStorage.getItem('accessToken') || '' : sessionStorage.getItem('accessToken') || ''
+            const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken') || ''
             if (!token) {
               console.warn('[SignalR] No access token found. SignalR connection may fail.')
             }
             return token
           },
           skipNegotiation: false,
-          transport: signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.ServerSentEvents | signalR.HttpTransportType.LongPolling
+          transport:
+            signalR.HttpTransportType.WebSockets |
+            signalR.HttpTransportType.ServerSentEvents |
+            signalR.HttpTransportType.LongPolling
         })
         .withAutomaticReconnect([0, 2000, 10000, 30000])
         .configureLogging(signalR.LogLevel.Warning)
@@ -83,7 +85,7 @@ export class SignalRService {
       this.reconnectAttempts = 0
     } catch (error: any) {
       console.error('[SignalR] Connection failed:', error)
-      
+
       // Handle specific error types
       if (error.message?.includes('401')) {
         console.error('[SignalR] Authentication failed. Check your access token.')
@@ -92,7 +94,7 @@ export class SignalRService {
       } else if (error.message?.includes('WebSocket failed to connect')) {
         console.error('[SignalR] WebSocket connection failed. Server may not support WebSockets or is down.')
       }
-      
+
       SignalRErrorHandler.handleConnectionError(error, this)
       this.handleReconnect()
     } finally {
@@ -114,10 +116,12 @@ export class SignalRService {
 
   private handleReconnect() {
     if (!this.signalREnabled || this.connectionDisabled) return
-    
+
     if (this.reconnectAttempts < SIGNALR_CONFIG.MAX_RECONNECT_ATTEMPTS) {
       this.reconnectAttempts++
-      console.log(`🔄 [SignalR] Reconnecting... Attempt ${this.reconnectAttempts}/${SIGNALR_CONFIG.MAX_RECONNECT_ATTEMPTS}`)
+      console.log(
+        `🔄 [SignalR] Reconnecting... Attempt ${this.reconnectAttempts}/${SIGNALR_CONFIG.MAX_RECONNECT_ATTEMPTS}`
+      )
       setTimeout(() => {
         this.connect()
       }, SIGNALR_CONFIG.RECONNECT_INTERVAL)
@@ -127,8 +131,6 @@ export class SignalRService {
       this.signalREnabled = false
     }
   }
-
-
 
   private registerEventHandlers() {
     if (!this.connection) return
@@ -147,8 +149,6 @@ export class SignalRService {
       this.reconnectAttempts = 0
     })
   }
-
-
 
   on(event: string, callback: (...args: any[]) => void) {
     if (this.connection) {
@@ -194,4 +194,3 @@ export class SignalRService {
     this.reconnectAttempts = 0
   }
 }
-
