@@ -132,7 +132,21 @@ export default function IssueCreateDialog({ isOpen, onClose, projectId, onIssueC
             </Label>
             <Select value={formData.type.toString()} onValueChange={(value) => handleInputChange('type', parseInt(value))}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select issue type" />
+                <SelectValue placeholder="Select issue type">
+                  {(() => {
+                    const selectedType = typeOptions.find(type => type.value === formData.type);
+                    if (selectedType) {
+                      const TypeIcon = selectedType.icon;
+                      return (
+                        <div className="flex items-center gap-2">
+                          <TypeIcon className={`w-4 h-4 ${selectedType.color}`} />
+                          {selectedType.label}
+                        </div>
+                      );
+                    }
+                    return "Select issue type";
+                  })()}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {typeOptions.map((type) => {
@@ -201,7 +215,20 @@ export default function IssueCreateDialog({ isOpen, onClose, projectId, onIssueC
             </Label>
             <Select value={formData.priority.toString()} onValueChange={(value) => handleInputChange('priority', parseInt(value))}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select priority" />
+                <SelectValue placeholder="Select priority">
+                  {(() => {
+                    const selectedPriority = priorityOptions.find(priority => priority.value === formData.priority);
+                    if (selectedPriority) {
+                      return (
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${selectedPriority.color.replace('text-', 'bg-')}`}></span>
+                          {selectedPriority.label}
+                        </div>
+                      );
+                    }
+                    return "Select priority";
+                  })()}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent>
                 {priorityOptions.map((priority) => (
