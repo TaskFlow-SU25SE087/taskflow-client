@@ -42,7 +42,7 @@ export function useProjectMembers() {
     setError(null)
     try {
       const res = await projectMemberApi.removeMember(projectId, memberId)
-      showToast({ title: 'Success', description: (res as any)?.message || 'Member removed successfully' })
+      showToast({ title: 'Success', description: (res as any)?.message || 'Member removed successfully', variant: 'success' })
     } catch (err) {
       const error = err as any
       showToast({ title: 'Error', description: error?.response?.data?.message || error?.message || 'Failed to remove member', variant: 'destructive' })

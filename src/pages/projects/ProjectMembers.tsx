@@ -1,8 +1,8 @@
 import { projectMemberApi } from '@/api/projectMembers'
 import { Navbar } from '@/components/Navbar'
-import { Sidebar } from '@/components/Sidebar'
+
 import { ProjectInviteDialog } from '@/components/projects/ProjectInviteDialog'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Sidebar } from '@/components/Sidebar'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,6 +13,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToastContext } from '@/components/ui/ToastContext'
@@ -20,7 +21,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjectMembers } from '@/hooks/useProjectMembers'
 import { ProjectMember } from '@/types/project'
-import { Users, LogOut } from 'lucide-react'
+import { LogOut, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import UserProfileDialog from '../../components/UserProfileDialog'
@@ -39,6 +40,8 @@ export default function ProjectMembers() {
   const { showToast } = useToastContext()
   const { leaveProject, removeMember } = useProjectMembers()
   const fetchSeq = useRef(0)
+  
+  console.log('🔄 ProjectMembers component rendered, members count:', members.length, 'loading:', isLoading)
 
   useEffect(() => {
     if (!isProjectLoading && !currentProject) {
@@ -49,19 +52,27 @@ export default function ProjectMembers() {
   const fetchMembers = async () => {
     if (!currentProject?.id) return
     const seq = ++fetchSeq.current
+    console.log('🔄 Fetching members, sequence:', seq)
     setIsLoading(true)
     setError(null)
     try {
       const data = await projectMemberApi.getMembersByProjectId(currentProject.id)
       if (fetchSeq.current === seq) {
+        console.log('✅ Members fetched successfully, count:', data?.length || 0)
         setMembers(data || [])
+      } else {
+        console.log('⚠️ Fetch sequence mismatch, ignoring response')
       }
     } catch (err: any) {
       if (fetchSeq.current === seq) {
+        console.error('❌ Error fetching members:', err)
         setError(err?.response?.data?.message || err?.message || 'Failed to load members')
       }
     } finally {
-      if (fetchSeq.current === seq) setIsLoading(false)
+      if (fetchSeq.current === seq) {
+        setIsLoading(false)
+        console.log('✅ Fetch completed, loading set to false')
+      }
     }
   }
 
@@ -72,25 +83,34 @@ export default function ProjectMembers() {
 
   const myMemberRecord = useMemo(() => {
     if (!user || !members.length) return null
-    return members.find((m) => m.userId === user.id || m.email === user.email) || null
+    return members.find((m) => m.userId === user.id || m.id === user.id || m.email === user.email) || null
   }, [members, user])
 
   const isLeader = (myMemberRecord?.role || '').toLowerCase() === 'leader'
 
   const sortedMembers = useMemo(() => {
-    return [...members].sort((a, b) => {
+    console.log('🔄 Recalculating sorted members, count:', members.length)
+    const sorted = [...members].sort((a, b) => {
       if ((a.role || '').toLowerCase() === 'leader') return -1
       if ((b.role || '').toLowerCase() === 'leader') return 1
       return 0
     })
+    console.log('✅ Sorted members calculated, leader count:', sorted.filter(m => (m.role || '').toLowerCase() === 'leader').length)
+    return sorted
   }, [members])
 
   const handleRemove = async (memberUserId: string) => {
     if (!currentProject?.id) return
     try {
+      console.log('🔄 Starting to remove member:', memberUserId)
       await removeMember(currentProject.id, memberUserId)
+      console.log('✅ Member removed, now refreshing members list...')
       await fetchMembers()
-    } catch {}
+      console.log('✅ Members list refreshed successfully')
+    } catch (err: any) {
+      console.error('❌ Error in handleRemove:', err)
+      showToast({ title: 'Error', description: 'Failed to remove member', variant: 'destructive' })
+    }
   }
 
   const handleLeave = async () => {
@@ -175,18 +195,22 @@ export default function ProjectMembers() {
 
           {/* Content */}
           <div className='flex-1'>
+
+            
             {error && (
               <div className='mb-4 p-3 rounded-md bg-red-50 border border-red-200 text-red-700 text-sm'>{error}</div>
             )}
 
             <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'>
               {sortedMembers.map((m) => {
-                const name = m.fullName || m.email || m.userId
-                const isSelf = user?.id && m.userId === user.id
+                                 const name = m.fullName || m.email || m.userId || m.id
+                 const isSelf = user?.id && (m.userId === user.id || m.id === user.id || m.email === user.email)
                 const roleBadgeClass =
                   (m.role || '').toLowerCase() === 'leader'
                     ? 'bg-violet-100 text-violet-700'
                     : 'bg-blue-100 text-blue-700'
+                
+                
                 return (
                   <div
                     key={m.userId || m.id}
@@ -217,12 +241,16 @@ export default function ProjectMembers() {
                       <Button
                         variant='destructive'
                         size='icon'
-                        className='absolute right-2.5 top-2.5 opacity-0 group-hover:opacity-100 transition bg-red-100 hover:bg-red-200 text-red-600 border-none shadow-none w-6 h-6 flex items-center justify-center p-0 rounded-full'
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setPendingRemove(m.userId)
-                        }}
+                        className='absolute right-2.5 top-2.5 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-red-100 hover:bg-red-200 text-red-600 border-none shadow-none w-6 h-6 flex items-center justify-center p-0 rounded-full hover:scale-110'
+                                                 onClick={(e) => {
+                           e.stopPropagation()
+                           const memberId = m.userId || m.id
+                           if (memberId) {
+                             setPendingRemove(memberId)
+                           }
+                         }}
                         title='Remove member'
+                        style={{ zIndex: 10 }}
                       >
                         <svg
                           xmlns='http://www.w3.org/2000/svg'
