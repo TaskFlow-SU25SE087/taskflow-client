@@ -5,6 +5,7 @@ export interface Board {
   projectId: string
   name: string
   description: string
+  type?: string
   order: number
   isActive: boolean
   tasks: TaskP[]

@@ -7,7 +7,7 @@ export const boardApi = {
       console.log(`[boardApi] Trying new endpoint: /projects/${projectId}/boards`)
       const response = await axiosClient.get(`/projects/${projectId}/boards`)
       console.log('[boardApi] New endpoint response:', response.data)
-      
+
       if (response.data && response.data.data) {
         console.log('[boardApi] boards from new endpoint:', response.data.data)
         const boards = response.data.data || []
@@ -25,7 +25,7 @@ export const boardApi = {
       }
     } catch (error) {
       console.warn('[boardApi] New endpoint failed, trying old endpoint:', error)
-      
+
       // Fallback to old endpoint
       try {
         const response = await axiosClient.get(`/project/${projectId}`)
@@ -47,14 +47,40 @@ export const boardApi = {
     }
   },
 
-  createBoard: async (projectId: string, name: string, description: string, type: string = "Todo"): Promise<boolean> => {
+  createBoard: async (
+    projectId: string,
+    name: string,
+    description: string,
+    type: string = 'Todo'
+  ): Promise<boolean> => {
     const response = await axiosClient.post(`/projects/${projectId}/boards`, { name, description, type })
     return response.data.data
   },
 
-  editBoard: async (projectId: string, boardId: string, name: string, description: string, type: string = "Todo"): Promise<boolean> => {
+  editBoard: async (
+    projectId: string,
+    boardId: string,
+    name: string,
+    description: string,
+    type: string = 'Todo'
+  ): Promise<boolean> => {
     const response = await axiosClient.put(`/projects/${projectId}/boards/${boardId}`, { name, description, type })
     return response.data.data
+  },
+
+  getBoardTypes: async (projectId: string): Promise<string[]> => {
+    try {
+      const response = await axiosClient.get(`/projects/${projectId}/boards/types`)
+      if (response?.data?.data && Array.isArray(response.data.data)) {
+        return response.data.data as string[]
+      }
+      // Fallback shape handling
+      if (Array.isArray(response?.data)) return response.data as string[]
+      return ['Todo', 'InProgress', 'Done', 'Custom']
+    } catch (error) {
+      console.warn('[boardApi] Failed to fetch board types, using defaults:', error)
+      return ['Todo', 'InProgress', 'Done', 'Custom']
+    }
   },
 
   deleteBoard: async (projectId: string, boardId: string): Promise<boolean> => {
