@@ -116,6 +116,8 @@ export default function TaskCreateMenuForBoard({
       formData.append('Deadline', deadline)
       if (file) formData.append('File', file)
       formData.append('SprintId', selectedSprintId)
+      // Hint backend to put task on the clicked board (best-effort; server may ignore)
+      if (boardId) formData.append('BoardId', boardId)
       selectedTagIds.forEach((tagId) => formData.append('TagIds', tagId))
       const res = await taskApi.createTask(projectId, formData)
       showToast({
@@ -123,6 +125,34 @@ export default function TaskCreateMenuForBoard({
         description: res.message || 'Task created successfully',
         variant: res.code === 200 ? 'success' : 'destructive'
       })
+      // Post-create: ensure the task is actually in the selected sprint and board
+      try {
+        const tasks = await taskApi.getTasksFromProject(projectId)
+        const createdTask = tasks.find((t) => t.title === title && t.description === description)
+        if (createdTask) {
+          // Ensure sprint assignment (in case backend ignored SprintId)
+          if (selectedSprintId && createdTask.sprintId !== selectedSprintId) {
+            try {
+              await sprintApi.assignTasksToSprint(projectId, selectedSprintId, [createdTask.id])
+            } catch {
+              /* ignore, best-effort */
+            }
+          }
+          // Ensure board placement (so it shows immediately on this column)
+          if (boardId && createdTask.boardId !== boardId) {
+            try {
+              await taskApi.moveTaskToBoard(projectId, createdTask.id, boardId)
+            } catch {
+              /* ignore, best-effort */
+            }
+          }
+        } else {
+          // Couldn't find created task deterministically
+          showToast({ title: 'Notice', description: 'Task created. Syncing lists…', variant: 'default' })
+        }
+      } catch {
+        /* ignore, will refresh below */
+      }
       await refreshTasks()
       onTaskCreated()
       onOpenChange(false)

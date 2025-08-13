@@ -1059,7 +1059,7 @@ export default function ProjectBoard() {
                                 description={board.description}
                                 tasks={board.tasks}
                                 color={getBoardColor(board.type || board.name)}
-                                onTaskCreated={refreshBoards}
+                                onTaskCreated={refreshBoardsAndSprintTasks}
                                 onTaskUpdated={refreshBoardsAndSprintTasks}
                                 status={board.name}
                                 boardId={board.id}

@@ -1,4 +1,5 @@
 import { projectMemberApi } from '@/api/projectMembers'
+import { sprintApi } from '@/api/sprints'
 import { taskApi } from '@/api/tasks'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
@@ -93,15 +94,23 @@ export default function TaskCreateMenu({
       } else {
         showToast({ title: 'Error', description: 'Failed to create task', variant: 'destructive' })
       }
-      // Sau khi tạo, lấy lại danh sách task và tìm task vừa tạo
+      // After create: locate the task and ensure sprint/tag assignments (and optional board move later)
       const tasks = await taskApi.getTasksFromProject(projectId)
       const createdTask = tasks.find((t) => t.title === title && t.description === description)
       if (createdTask) {
-        for (const tagId of selectedTagIds) {
-          await taskApi.addTagToTask(projectId, createdTask.id, tagId)
+        try {
+          for (const tagId of selectedTagIds) {
+            await taskApi.addTagToTask(projectId, createdTask.id, tagId)
+          }
+          if (sprintId && createdTask.sprintId !== sprintId) {
+            // enforce sprint assignment in case backend ignored SprintId
+            await sprintApi.assignTasksToSprint(projectId, sprintId, [createdTask.id])
+          }
+        } catch {
+          /* ignore */
         }
       } else {
-        showToast({ title: 'Warning', description: 'Task created but not found for tag/assignee.', variant: 'warning' })
+        showToast({ title: 'Warning', description: 'Task created but not found for tagging.', variant: 'warning' })
       }
       await refreshTasks()
       onTaskCreated()
@@ -114,7 +123,11 @@ export default function TaskCreateMenu({
       setDeadline(null)
     } catch (error) {
       const err = error as any
-      showToast({ title: 'Error', description: err?.response?.data?.message || err?.message || 'Failed to create task.', variant: 'destructive' })
+      showToast({
+        title: 'Error',
+        description: err?.response?.data?.message || err?.message || 'Failed to create task.',
+        variant: 'destructive'
+      })
     } finally {
       setIsSubmitting(false)
     }
