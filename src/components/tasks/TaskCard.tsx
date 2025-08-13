@@ -360,7 +360,6 @@ export const TaskCard = ({
           ${isHovered ? 'hover:shadow-lg transform hover:-translate-y-1' : ''}
           ${isMoving ? 'opacity-90 border-2 border-blue-400' : ''}
           bg-white backdrop-blur-sm
-          hover:animate-task-hover
         `}
         >
           <div className='p-4'>
