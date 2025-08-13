@@ -1,7 +1,7 @@
 import { authApi } from '@/api/auth'
 import { projectApi } from '@/api/projects'
-import { clearLastProjectForUser, getLastProjectIdForUser } from '@/lib/utils'
 import axiosClient from '@/configs/axiosClient'
+import { clearLastProjectForUser, getLastProjectIdForUser } from '@/lib/utils'
 import { User } from '@/types/auth'
 import Cookies from 'js-cookie'
 import { createContext, ReactNode, useEffect, useState } from 'react'

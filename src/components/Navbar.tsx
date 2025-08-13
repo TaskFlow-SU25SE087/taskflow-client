@@ -1,19 +1,19 @@
 import { Button } from '@/components/ui/button'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
+import axiosClient from '@/configs/axiosClient'
 import { useAuth } from '@/hooks/useAuth'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjects } from '@/hooks/useProjects'
-import Avatar from 'boring-avatars'
 import { ChevronDown, FolderKanban, HelpCircle, Layout, LogOut, Plus, Settings, Shield, User } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FiMenu, FiX } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
 import { GlobalSearch } from './GlobalSearch'
@@ -33,8 +33,25 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
   const { logout } = useAuth()
   const { user } = useAuth()
   const [isTutorialOpen, setIsTutorialOpen] = useState(false)
+  const [userProfile, setUserProfile] = useState<any>(null)
 
   console.log('user in Navbar:', user)
+
+  // Fetch full user profile including avatar
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user?.id) {
+        try {
+          const response = await axiosClient.get(`/user/${user.id}`)
+          setUserProfile(response.data.data)
+        } catch (error) {
+          console.error('Failed to fetch user profile:', error)
+        }
+      }
+    }
+
+    fetchUserProfile()
+  }, [user?.id])
 
   const handleProjectSelect = (projectId: string) => {
     setCurrentProjectId(projectId)
@@ -144,10 +161,10 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <div className='cursor-pointer relative h-8 w-fit flex items-center gap-1 sm:gap-2 px-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'>
-                {user?.avatar ? (
-                  <img src={user.avatar} alt='avatar' className='w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover' />
+                {userProfile?.avatar ? (
+                  <img src={userProfile.avatar} alt='avatar' className='w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover' />
                 ) : (
-                  <Avatar size='28px' variant='beam' name={user?.id || 'unknown'} className='sm:w-8 sm:h-8' />
+                  <img src='/logo.png' alt='default avatar' className='w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover' />
                 )}
                 {/* Ẩn tên và mũi tên */}
                 {/* <span className='hidden sm:block ml-2 font-medium text-black text-sm'>
