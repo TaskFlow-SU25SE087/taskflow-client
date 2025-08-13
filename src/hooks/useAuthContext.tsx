@@ -1,11 +1,12 @@
 import { authApi } from '@/api/auth'
 import { projectApi } from '@/api/projects'
 import axiosClient from '@/configs/axiosClient'
-import { clearLastProjectForUser, getLastProjectIdForUser } from '@/lib/utils'
+import { clearLastProjectForAllUsersExcept, clearLastProjectForUser, getLastProjectIdForUser } from '@/lib/utils'
 import { User } from '@/types/auth'
 import Cookies from 'js-cookie'
 import { createContext, ReactNode, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+
 
 interface AuthContextType {
   user: User | null
@@ -163,6 +164,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionStorage.setItem('auth_user', JSON.stringify(currentUser))
         sessionStorage.setItem('otp_verified', 'true')
         setIsOtpVerified(true)
+        
+        // Clear last project data for all other users to prevent data leakage
+        clearLastProjectForAllUsersExcept(currentUser?.id)
       } catch (userError) {
         console.warn('Could not decode JWT token, using basic user info:', userError)
         // Fallback to basic user info
@@ -171,6 +175,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionStorage.setItem('auth_user', JSON.stringify(currentUser))
         sessionStorage.setItem('otp_verified', 'true')
         setIsOtpVerified(true)
+        
+        // Clear last project data for all other users to prevent data leakage
+        clearLastProjectForAllUsersExcept(currentUser?.id)
       }
 
       console.log('Login successful, redirecting...')
@@ -259,8 +266,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('accessToken')
     localStorage.removeItem('refreshToken')
     localStorage.removeItem('rememberMe')
-    // Do not clear per-user last project so it works when the same user returns.
-    // Still clear global fallback to avoid cross-account leakage.
+    
+    // Clear current user's last project data on logout for security
+    if (user?.id) {
+      clearLastProjectForUser(user.id)
+    }
+    
+    // Clear global fallback to avoid cross-account leakage
     Cookies.remove('current_project_id')
     localStorage.removeItem('currentProjectId')
     navigate('/login', { replace: true })

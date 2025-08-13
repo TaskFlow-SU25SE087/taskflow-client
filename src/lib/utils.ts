@@ -48,3 +48,33 @@ export function clearLastProjectForUser(userId: string | undefined | null) {
     // ignore
   }
 }
+
+export function clearLastProjectForAllUsersExcept(userId: string | undefined | null) {
+  if (!userId) return
+  try {
+    const raw = localStorage.getItem(LAST_PROJECT_KEY)
+    if (!raw) return
+    const map: LastProjectMap = JSON.parse(raw)
+    
+    // Keep only the current user's data, remove all others
+    const newMap: LastProjectMap = {}
+    if (map[userId]) {
+      newMap[userId] = map[userId]
+    }
+    
+    localStorage.setItem(LAST_PROJECT_KEY, JSON.stringify(newMap))
+  } catch {
+    // ignore
+  }
+}
+
+export function getAllUserIdsFromLastProject(): string[] {
+  try {
+    const raw = localStorage.getItem(LAST_PROJECT_KEY)
+    if (!raw) return []
+    const map: LastProjectMap = JSON.parse(raw)
+    return Object.keys(map)
+  } catch {
+    return []
+  }
+}
