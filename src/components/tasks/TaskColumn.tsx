@@ -1,7 +1,7 @@
 import TaskCreateMenuForBoard from '@/components/tasks/TaskCreateMenuForBoard'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { TaskP } from '@/types/task'
-import { Inbox, Plus } from 'lucide-react'
+import { Inbox, Plus, Pencil } from 'lucide-react'
 import { useState } from 'react'
 import { BoardDeleteButton } from './BoardDeleteButton'
 import { BoardEditMenu } from './BoardEditMenu'
@@ -16,34 +16,39 @@ interface TaskColumnProps {
   status: string
   boardId: string
   movingTaskId?: string | null
+  type?: string
 }
 
-// Enhanced color mapping for different board statuses (adapted from V2)
-const getBoardColor = (boardName: string, fallbackColor: string) => {
-  const name = boardName.toLowerCase()
-
-  if (name.includes('todo') || name.includes('backlog') || name.includes('new')) {
-    return '#64748b' // slate-500
-  } else if (name.includes('progress') || name.includes('doing') || name.includes('active')) {
-    return '#3b82f6' // blue-500
-  } else if (name.includes('review') || name.includes('testing') || name.includes('qa')) {
-    return '#f59e0b' // amber-500
-  } else if (name.includes('done') || name.includes('complete') || name.includes('finished')) {
-    return '#10b981' // emerald-500
-  } else if (name.includes('blocked') || name.includes('error') || name.includes('failed')) {
-    return '#ef4444' // red-500
-  }
-
+// Color mapping aligned with project board colors and API types
+const getBoardColor = (labelOrType: string, fallbackColor: string) => {
+  const key = (labelOrType || '').toLowerCase().replace(/\s+/g, '')
+  if (key === 'done') return '#8BC34A' // project green
+  if (key === 'inprogress') return '#3b82f6' // blue
+  if (key === 'todo' || key === 'to-do') return '#5030E5' // purple
+  if (key === 'custom') return '#64748b' // gray
+  // legacy heuristics if only a name is provided
+  if (key.includes('done') || key.includes('complete') || key.includes('finished')) return '#8BC34A'
+  if (key.includes('progress') || key.includes('doing') || key.includes('active')) return '#3b82f6'
+  if (key.includes('todo') || key.includes('backlog') || key.includes('new')) return '#5030E5'
   return fallbackColor
 }
 
-export function TaskColumn({ title, tasks, color, onTaskCreated, onTaskUpdated, boardId, movingTaskId }: TaskColumnProps) {
+export function TaskColumn({
+  title,
+  tasks,
+  color,
+  onTaskCreated,
+  onTaskUpdated,
+  boardId,
+  movingTaskId,
+  type
+}: TaskColumnProps) {
   const [isAddingTask, setIsAddingTask] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const { currentProject } = useCurrentProject()
 
-  // Use the enhanced color logic from V2 while keeping V1's design
-  const dynamicColor = getBoardColor(title, color)
+  // Prefer type-based color if available, fallback to title-based heuristics
+  const dynamicColor = getBoardColor(type || title, color)
 
   const EmptyState = () => (
     <div className='flex flex-col items-center justify-center py-12 text-gray-400'>
@@ -96,13 +101,14 @@ export function TaskColumn({ title, tasks, color, onTaskCreated, onTaskUpdated, 
                 boardId={boardId}
                 currentName={title}
                 currentDescription={''}
+                currentType={type}
                 onEdited={onTaskCreated}
                 trigger={
                   <button
                     type='button'
                     className='w-8 h-8 p-0 flex items-center justify-center bg-lavender-100 hover:bg-lavender-200 rounded-xl transition-colors duration-150 shadow-none border-none focus:outline-none'
                   >
-                    <Inbox className='h-4 w-4 text-lavender-600' /> {/* Replace with Pencil if desired */}
+                    <Pencil className='h-4 w-4 text-lavender-600' />
                   </button>
                 }
               />

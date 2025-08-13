@@ -66,6 +66,13 @@ const boardColors: { [key: string]: string } = {
 }
 
 const getBoardColor = (status: string): string => {
+  // Support both type (Todo, InProgress, Done, Custom) and legacy display names
+  const norm = (status || '').toLowerCase().replace(/\s+/g, '')
+  if (norm === 'done') return '#8BC34A' // existing green used for Done
+  if (norm === 'inprogress') return '#3b82f6' // blue used elsewhere in boards UI
+  if (norm === 'todo' || norm === 'to-do') return '#5030E5' // purple used for To-Do
+  if (norm === 'custom') return '#64748b' // gray
+  // Fallback to legacy mapping by display label (e.g., 'In Progress', 'To-Do')
   return boardColors[status] || '#5030E5'
 }
 
@@ -1051,12 +1058,13 @@ export default function ProjectBoard() {
                                 title={board.name}
                                 description={board.description}
                                 tasks={board.tasks}
-                                color={getBoardColor(board.name)}
+                                color={getBoardColor(board.type || board.name)}
                                 onTaskCreated={refreshBoards}
                                 onTaskUpdated={refreshBoardsAndSprintTasks}
                                 status={board.name}
                                 boardId={board.id}
                                 movingTaskId={movingTaskId}
+                                type={board.type}
                               />
                             </SortableContext>
                           </DroppableBoard>
