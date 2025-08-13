@@ -20,6 +20,48 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
 import { Card } from '../ui/card'
 import { TaskDetailMenu } from './TaskDetailMenu'
 
+// Normalize various priority representations to a small internal scale: 1..4 (Low..Urgent)
+// Supports:
+// - 1,2,3,4 (internal)
+// - 0,10000,20000,30000 (Jira-like numeric scale)
+// - 'Low' | 'Medium' | 'High' | 'Urgent' (strings)
+const normalizePriority = (raw: unknown): number => {
+  // Handle numbers directly
+  if (typeof raw === 'number') {
+    if ([1, 2, 3, 4].includes(raw)) return raw
+    switch (raw) {
+      case 0:
+        return 1
+      case 10000:
+        return 2
+      case 20000:
+        return 3
+      case 30000:
+        return 4
+      default:
+        // Any other numeric -> try to bucket
+        if (raw >= 30000) return 4
+        if (raw >= 20000) return 3
+        if (raw >= 10000) return 2
+        return 1
+    }
+  }
+  // Handle string values
+  if (typeof raw === 'string') {
+    const s = raw.trim().toLowerCase()
+    if (s === 'low') return 1
+    if (s === 'medium') return 2
+    if (s === 'high') return 3
+    if (s === 'urgent' || s === 'critical') return 4
+    // Numeric string?
+    const n = Number(s)
+    if (!Number.isNaN(n)) return normalizePriority(n)
+    return 1
+  }
+  // Fallback
+  return 1
+}
+
 const getPriorityConfig = (priority: number) => {
   // Handle edge cases
   if (!priority || priority === 0) {
@@ -32,7 +74,7 @@ const getPriorityConfig = (priority: number) => {
       leftBorder: 'bg-blue-400'
     }
   }
-  
+
   switch (priority) {
     case 1:
       return {
@@ -160,10 +202,18 @@ export const TaskCard = ({
   const fileCount = task.attachmentUrl ? 1 : 0
   const assignees = Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0 ? task.taskAssignees : []
 
-  const priorityConfig = getPriorityConfig(Number(task.priority))
-  
+  // Use normalized priority so different sources display correctly
+  const priorityConfig = getPriorityConfig(normalizePriority(task.priority))
+
   // Debug priority
-  console.log('Task priority:', task.priority, 'Number priority:', Number(task.priority), 'Priority config:', priorityConfig)
+  console.log(
+    'Task priority:',
+    task.priority,
+    'Normalized:',
+    normalizePriority(task.priority),
+    'Priority config:',
+    priorityConfig
+  )
 
   // Enhanced avatar colors with gradients
   const avatarColors = [

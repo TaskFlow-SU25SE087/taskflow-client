@@ -18,27 +18,27 @@ import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { formatDistanceToNow } from 'date-fns'
 import {
-    Calendar,
-    Check,
-    ChevronDown,
-    ChevronsDown,
-    ChevronsUp,
-    ChevronUp,
-    Eye,
-    FileText,
-    Filter,
-    Link,
-    ListTodo,
-    Loader2,
-    LogOut,
-    MessageCircle,
-    Paperclip,
-    Pencil,
-    Plus,
-    Settings,
-    Upload,
-    UserPlus,
-    X
+  Calendar,
+  Check,
+  ChevronDown,
+  ChevronsDown,
+  ChevronsUp,
+  ChevronUp,
+  Eye,
+  FileText,
+  Filter,
+  Link,
+  ListTodo,
+  Loader2,
+  LogOut,
+  MessageCircle,
+  Paperclip,
+  Pencil,
+  Plus,
+  Settings,
+  Upload,
+  UserPlus,
+  X
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -84,14 +84,45 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const [isUpdating, setIsUpdating] = useState(false)
   const [editTitle, setEditTitle] = useState(task.title)
   const [editDescription, setEditDescription] = useState(task.description)
-  const [editPriority, setEditPriority] = useState<number>(
-    typeof task.priority === 'number' ? task.priority : parseInt(task.priority as string) || 1
-  )
+  const [editPriority, setEditPriority] = useState<number>(normalizePriority(task.priority))
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false)
 
   // State cho edit mode
   const [isEditingTitle, setIsEditingTitle] = useState(false)
   const [isEditingDescription, setIsEditingDescription] = useState(false)
+
+  // Normalize various priority representations to internal scale 1..4
+  function normalizePriority(raw: unknown): number {
+    if (typeof raw === 'number') {
+      if ([1, 2, 3, 4].includes(raw)) return raw
+      switch (raw) {
+        case 0:
+          return 1
+        case 10000:
+          return 2
+        case 20000:
+          return 3
+        case 30000:
+          return 4
+        default:
+          if (raw >= 30000) return 4
+          if (raw >= 20000) return 3
+          if (raw >= 10000) return 2
+          return 1
+      }
+    }
+    if (typeof raw === 'string') {
+      const s = raw.trim().toLowerCase()
+      if (s === 'low') return 1
+      if (s === 'medium') return 2
+      if (s === 'high') return 3
+      if (s === 'urgent' || s === 'critical') return 4
+      const n = Number(s)
+      if (!Number.isNaN(n)) return normalizePriority(n)
+      return 1
+    }
+    return 1
+  }
 
   // Priority mapping
   const PRIORITY_MAP: Record<number, string> = {
@@ -289,8 +320,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           const tasks = await taskApi.getTasksFromProject(currentProject?.id || '')
           const taskDetails = tasks?.find((t) => t.id === task.id)
           if (taskDetails) {
-                // Cập nhật task tags để hiển thị màu sắc realtime
-            
+            // Cập nhật task tags để hiển thị màu sắc realtime
+
             if (taskDetails.taskAssignees) {
               const assigneeFromTask =
                 Array.isArray(taskDetails.taskAssignees) && taskDetails.taskAssignees.length > 0
@@ -530,8 +561,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     }
   }
 
-
-
   const handleCommentFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       setCommentFiles(Array.from(e.target.files))
@@ -552,11 +581,11 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       const errorMessage = extractBackendErrorMessage(error)
       const errorTitle = getErrorTitle(error)
       const errorVariant = getErrorVariant(error)
-      
-      showToast({ 
-        title: errorTitle, 
-        description: errorMessage, 
-        variant: errorVariant 
+
+      showToast({
+        title: errorTitle,
+        description: errorMessage,
+        variant: errorVariant
       })
     } finally {
       setIsCommentLoading(false)
@@ -566,7 +595,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   useEffect(() => {
     setEditTitle(task.title)
     setEditDescription(task.description)
-    setEditPriority(typeof task.priority === 'number' ? task.priority : parseInt(task.priority as string) || 1)
+    setEditPriority(normalizePriority(task.priority))
     setLocalTaskData(task)
     // Task data updated
   }, [task])
@@ -575,7 +604,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   useEffect(() => {
     setEditTitle(localTaskData.title)
     setEditDescription(localTaskData.description)
-    setEditPriority(typeof localTaskData.priority === 'number' ? localTaskData.priority : parseInt(localTaskData.priority as string) || 1)
+    setEditPriority(normalizePriority(localTaskData.priority))
   }, [localTaskData])
 
   const handleUpdateTask = async () => {
@@ -606,11 +635,11 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       const errorMessage = extractBackendErrorMessage(error)
       const errorTitle = getErrorTitle(error)
       const errorVariant = getErrorVariant(error)
-      
-      showToast({ 
-        title: errorTitle, 
-        description: errorMessage, 
-        variant: errorVariant 
+
+      showToast({
+        title: errorTitle,
+        description: errorMessage,
+        variant: errorVariant
       })
     } finally {
       setIsUpdating(false)
@@ -644,11 +673,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     // eslint-disable-next-line
   }, [isOpen, task.id])
 
-         
-        const allAttachmentUrls: string[] = [
-          ...(localTaskData.attachmentUrl ? [localTaskData.attachmentUrl] : []),
-          ...(localTaskData.commnets || []).flatMap((c) => c.attachmentUrls || [])
-        ]
+  const allAttachmentUrls: string[] = [
+    ...(localTaskData.attachmentUrl ? [localTaskData.attachmentUrl] : []),
+    ...(localTaskData.commnets || []).flatMap((c) => c.attachmentUrls || [])
+  ]
 
   const priorityDropdownRef = useRef<HTMLDivElement>(null)
   const tagDropdownRef = useRef<HTMLDivElement>(null)
@@ -666,18 +694,19 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setCompleteLoading(true)
     try {
       const res = await taskApi.completeTaskWithUpload(currentProject.id, task.id, completeFiles)
-              showToast({
-          title: res ? 'Success' : 'Error',
-          description: res ? 'Task marked as complete!' : 'Failed to complete task',
-          variant: res ? 'success' : 'destructive'
-        })
+      showToast({
+        title: res ? 'Success' : 'Error',
+        description: res ? 'Task marked as complete!' : 'Failed to complete task',
+        variant: res ? 'success' : 'destructive'
+      })
 
       if (res) {
         // Find the "complete" or "done" board to move the task to
-        const completeBoard = boards.find(board => 
-          board.name.toLowerCase().includes('complete') || 
-          board.name.toLowerCase().includes('done') ||
-          board.name.toLowerCase().includes('finished')
+        const completeBoard = boards.find(
+          (board) =>
+            board.name.toLowerCase().includes('complete') ||
+            board.name.toLowerCase().includes('done') ||
+            board.name.toLowerCase().includes('finished')
         )
 
         if (completeBoard && completeBoard.id !== task.boardId) {
@@ -686,31 +715,30 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             console.log(`🔄 Moving completed task to ${completeBoard.name} board...`)
             await taskApi.moveTaskToBoard(currentProject.id, task.id, completeBoard.id)
             console.log(`✅ Task successfully moved to ${completeBoard.name} board`)
-            
+
             showToast({
               title: 'Task Moved',
               description: `Task has been moved to ${completeBoard.name} column`,
               variant: 'success'
             })
-            
+
             // Thêm delay nhỏ để đảm bảo server xử lý xong
-            await new Promise(resolve => setTimeout(resolve, 100))
-            
+            await new Promise((resolve) => setTimeout(resolve, 100))
+
             // Notify parent component to refresh the board IMMEDIATELY after move
             console.log('🔄 Notifying parent to refresh board after task move...')
             onTaskUpdated()
-            
+
             // Thêm delay nhỏ nữa để đảm bảo UI được cập nhật
-            await new Promise(resolve => setTimeout(resolve, 200))
-            
+            await new Promise((resolve) => setTimeout(resolve, 200))
+
             // Gọi lại onTaskUpdated một lần nữa để đảm bảo board được refresh hoàn toàn
             console.log('🔄 Final board refresh after task move...')
             onTaskUpdated()
-            
+
             // Force refresh boards ngay lập tức để đảm bảo UI được cập nhật
             console.log('🔄 Force refreshing boards immediately...')
             await refreshBoards()
-            
           } catch (moveError) {
             console.error('❌ Failed to move task to complete board:', moveError)
             showToast({
@@ -730,18 +758,18 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         // Refresh data immediately using the optimized function
         console.log('🔄 Refreshing data after complete task...')
         await fetchAssigneeAndMembers()
-        
+
         // Refresh task data from server to show uploaded files
         await reloadDialogData()
-        
+
         // Clear the selected files
         setCompleteFiles([])
-        
+
         // Final board refresh to ensure everything is updated
         console.log('🔄 Final board refresh after all data updates...')
-        await new Promise(resolve => setTimeout(resolve, 300))
+        await new Promise((resolve) => setTimeout(resolve, 300))
         onTaskUpdated()
-        
+
         // Show success message that task is completed but dialog remains open
         showToast({
           title: 'Task Completed!',
@@ -753,7 +781,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       const errorMessage = extractBackendErrorMessage(error)
       const errorTitle = getErrorTitle(error)
       const errorVariant = getErrorVariant(error)
-      
+
       showToast({
         title: errorTitle,
         description: errorMessage,
@@ -850,7 +878,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       const errorMessage = extractBackendErrorMessage(error)
       const errorTitle = getErrorTitle(error)
       const errorVariant = getErrorVariant(error)
-      
+
       showToast({
         title: errorTitle,
         description: errorMessage,
@@ -867,17 +895,17 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const reloadDialogData = async () => {
     try {
       console.log('🔄 Reloading dialog data from server...')
-      
+
       // Refresh task data từ server
       const updatedTasks = await taskApi.getTasksFromProject(currentProject!.id)
       const updatedTask = updatedTasks?.find((t) => t.id === task.id)
 
       if (updatedTask) {
         console.log('📋 Updated task data from server:', updatedTask)
-        
+
         // Update local task data to reflect real-time changes
         setLocalTaskData(updatedTask)
-        
+
         // Refresh assignee data
         if (updatedTask.taskAssignees) {
           const assigneeFromTask =
@@ -900,12 +928,12 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
         // Refresh comments
         setComments(updatedTask.commnets || [])
-        
+
         // Log completion status and files
         console.log('✅ Task completion status:', updatedTask.status)
         console.log('📁 Task completion files:', updatedTask.completionAttachmentUrls)
         console.log('📎 Task attachment URL:', updatedTask.attachmentUrl)
-        
+
         // Show real-time update notification
         if (updatedTask.status === 'done' || updatedTask.status === 'completed') {
           console.log('🎉 Task is now completed!')
@@ -1017,7 +1045,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       const errorMessage = extractBackendErrorMessage(error)
       const errorTitle = getErrorTitle(error)
       const errorVariant = getErrorVariant(error)
-      
+
       showToast({
         title: errorTitle,
         description: errorMessage,
@@ -1064,7 +1092,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                 <div className='flex-1'>
                   <h3 className='text-base font-semibold text-green-800'>Task Completed Successfully!</h3>
                   <p className='text-green-700 text-xs'>
-                    This task has been marked as complete. You can continue viewing details or close the dialog when ready.
+                    This task has been marked as complete. You can continue viewing details or close the dialog when
+                    ready.
                   </p>
                 </div>
               </div>
@@ -1220,7 +1249,11 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                   // Image
                   return (
                     <a key={url || idx} href={url} target='_blank' rel='noopener noreferrer'>
-                      <img src={url} alt={`attachment-${idx}`} className='w-full h-16 sm:h-20 object-cover rounded border' />
+                      <img
+                        src={url}
+                        alt={`attachment-${idx}`}
+                        className='w-full h-16 sm:h-20 object-cover rounded border'
+                      />
                     </a>
                   )
                 } else if (url.match(/\.pdf$/i)) {
@@ -1273,13 +1306,20 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                   // Image
                   return (
                     <a key={url || idx} href={url} target='_blank' rel='noopener noreferrer'>
-                      <img src={url} alt={`completion-file-${idx}`} className='w-full h-16 sm:h-20 object-cover rounded border border-green-300' />
+                      <img
+                        src={url}
+                        alt={`completion-file-${idx}`}
+                        className='w-full h-16 sm:h-20 object-cover rounded border border-green-300'
+                      />
                     </a>
                   )
                 } else if (url.match(/\.pdf$/i)) {
                   // PDF
                   return (
-                    <div key={url || idx} className='w-full h-32 sm:h-40 md:h-56 border border-green-300 rounded overflow-hidden'>
+                    <div
+                      key={url || idx}
+                      className='w-full h-32 sm:h-40 md:h-56 border border-green-300 rounded overflow-hidden'
+                    >
                       <iframe src={url} title={`completion-pdf-${idx}`} className='w-full h-full' />
                       <a
                         href={url}
@@ -1319,7 +1359,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             <Paperclip className='h-3 w-3' />
             <span>Attach</span>
           </button>
-          
+
           {/* File Selection for Task Completion */}
           <button
             onClick={() => fileInputRef.current?.click()}
@@ -1328,7 +1368,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             <Upload className='h-3 w-3' />
             <span>Select Files</span>
           </button>
-          
+
           <input
             type='file'
             multiple
@@ -1341,7 +1381,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               }
             }}
           />
-          
+
           {/* Complete Button - Only show when files are selected */}
           {completeFiles.length > 0 && (
             <Button
@@ -1352,7 +1392,9 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               {completeLoading || isMovingTask ? (
                 <>
                   <Loader2 className='h-3 w-3 animate-spin' />
-                  <span className='hidden sm:inline'>{completeLoading ? 'Completing...' : 'Moving to Complete Column...'}</span>
+                  <span className='hidden sm:inline'>
+                    {completeLoading ? 'Completing...' : 'Moving to Complete Column...'}
+                  </span>
                   <span className='sm:hidden'>{completeLoading ? 'Completing...' : 'Moving...'}</span>
                 </>
               ) : (
@@ -1364,7 +1406,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               )}
             </Button>
           )}
-          
+
           {currentProject && (
             <IssueCreateMenu projectId={currentProject.id} taskId={task.id} onIssueCreated={onTaskUpdated} />
           )}
@@ -1550,7 +1592,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                       </SelectValue>
                     </SelectTrigger>
                     {user?.id && (
-                      <SelectContent className='p-0' position="popper">
+                      <SelectContent className='p-0' position='popper'>
                         {projectMembers.map((member) => {
                           const memberId = ('id' in member ? member.id : member.userId) || ''
                           const displayName =
@@ -1642,9 +1684,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                   <span className='font-medium text-lavender-500 group-hover:text-lavender-800 transition-colors duration-150 text-sm'>
                     Add
                   </span>
-                                       {isTagSelectOpen && (
-                     <div className='absolute left-0 top-10 z-[9993] bg-white border rounded shadow-lg min-w-[180px] max-h-48 overflow-y-auto'>
-                                              {tags.filter((t) => !(task.tags || []).some((tag) => tag.id === t.id || tag.name === t.name)).length === 0 ? (
+                  {isTagSelectOpen && (
+                    <div className='absolute left-0 top-10 z-[9993] bg-white border rounded shadow-lg min-w-[180px] max-h-48 overflow-y-auto'>
+                      {tags.filter((t) => !(task.tags || []).some((tag) => tag.id === t.id || tag.name === t.name))
+                        .length === 0 ? (
                         <div className='px-3 py-1.5 text-gray-400 text-xs'>No tags available</div>
                       ) : (
                         tags
@@ -1672,23 +1715,23 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                 </div>
               </div>
             </div>
-            <ProjectTagManager 
-          isOpen={isTagManagerOpen} 
-          onClose={() => setIsTagManagerOpen(false)} 
-          onTagUpdated={() => {
-            // Khi tag được cập nhật, refresh task data để hiển thị tên tag mới
-            if (currentProject) {
-              taskApi.getTasksFromProject(currentProject.id).then(tasks => {
-                const updatedTask = tasks.find(t => t.id === task.id)
-                if (updatedTask) {
-                  // Task tags updated
-                  // Thông báo cho component cha biết task đã được cập nhật
-                  onTaskUpdated && onTaskUpdated()
+            <ProjectTagManager
+              isOpen={isTagManagerOpen}
+              onClose={() => setIsTagManagerOpen(false)}
+              onTagUpdated={() => {
+                // Khi tag được cập nhật, refresh task data để hiển thị tên tag mới
+                if (currentProject) {
+                  taskApi.getTasksFromProject(currentProject.id).then((tasks) => {
+                    const updatedTask = tasks.find((t) => t.id === task.id)
+                    if (updatedTask) {
+                      // Task tags updated
+                      // Thông báo cho component cha biết task đã được cập nhật
+                      onTaskUpdated && onTaskUpdated()
+                    }
+                  })
                 }
-              })
-            }
-          }}
-        />
+              }}
+            />
           </div>
         </div>
 
@@ -1727,7 +1770,13 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                   alt={user?.fullName || user?.username || user?.email || user?.id || 'Unknown'}
                 />
                 <AvatarFallback>
-                  {(user?.fullName?.[0] || user?.username?.[0] || user?.email?.[0] || user?.id?.[0] || '?').toUpperCase()}
+                  {(
+                    user?.fullName?.[0] ||
+                    user?.username?.[0] ||
+                    user?.email?.[0] ||
+                    user?.id?.[0] ||
+                    '?'
+                  ).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <input
