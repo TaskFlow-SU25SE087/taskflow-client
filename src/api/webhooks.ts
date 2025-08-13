@@ -1,14 +1,14 @@
 import axiosClient from '../configs/axiosClient'
 import {
-    CodeQualityResponse,
-    CommitsResponse,
-    GitHubOAuthCallback,
-    GitHubOAuthConnectRequest,
-    GitHubOAuthRepositoryResponse,
-    GitHubWebhookPayload,
-    RepositoryConnection,
-    RepositoryConnectionResponse,
-    WebhookResponse
+  CodeQualityResponse,
+  CommitsResponse,
+  GitHubOAuthCallback,
+  GitHubOAuthConnectRequest,
+  GitHubOAuthRepositoryResponse,
+  GitHubWebhookPayload,
+  RepositoryConnection,
+  RepositoryConnectionResponse,
+  WebhookResponse
 } from '../types/webhook'
 
 // GitHub Webhook API (được gọi bởi GitHub, không phải Frontend)
@@ -41,6 +41,12 @@ export async function connectRepositoryToPart(
   partId: string,
   connection: RepositoryConnection
 ): Promise<RepositoryConnectionResponse> {
+  // Validate that partId is a valid UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(partId)) {
+    throw new Error(`Invalid partId format: ${partId}. Expected a valid UUID.`);
+  }
+  
   // URL encode the partId to handle special characters and spaces
   const encodedPartId = encodeURIComponent(partId)
   const res = await axiosClient.patch(
@@ -59,6 +65,12 @@ export async function disconnectRepositoryFromPart(
   projectId: string,
   partId: string
 ): Promise<RepositoryConnectionResponse> {
+  // Validate that partId is a valid UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(partId)) {
+    throw new Error(`Invalid partId format: ${partId}. Expected a valid UUID.`);
+  }
+  
   // URL encode the partId to handle special characters and spaces
   const encodedPartId = encodeURIComponent(partId)
   const res = await axiosClient.delete(`/projects/${projectId}/parts/${encodedPartId}/disconnect-repo`)

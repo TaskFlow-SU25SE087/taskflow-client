@@ -43,6 +43,12 @@ export async function connectRepositoryToPart(
     accessToken: string
   }
 ) {
+  // Validate that partId is a valid UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!uuidRegex.test(partId)) {
+    throw new Error(`Invalid partId format: ${partId}. Expected a valid UUID.`);
+  }
+  
   // URL encode the partId to handle special characters and spaces
   const encodedPartId = encodeURIComponent(partId)
   const res = await axiosClient.patch(`/projects/${projectId}/parts/${encodedPartId}/connect-repo`, repoData)

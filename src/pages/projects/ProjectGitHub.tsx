@@ -38,6 +38,7 @@ export default function ProjectGitHub() {
   const [oauthLoading, setOauthLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [refreshingParts, setRefreshingParts] = useState(false)
   
   
   
@@ -51,6 +52,7 @@ export default function ProjectGitHub() {
   const [selectedRepo, setSelectedRepo] = useState<string>('')
   const [selectedPart, setSelectedPart] = useState<string>('')
   const [connecting, setConnecting] = useState(false)
+  const [focusRepoDropdown, setFocusRepoDropdown] = useState(false)
 
   const fetchData = async () => {
     setLoading(true)
@@ -69,16 +71,13 @@ export default function ProjectGitHub() {
       if (projectId) {
         try {
           const partsRes = await axiosClient.get(`/projects/${projectId}/parts`)
-          console.log('Parts response:', partsRes.data)
           
           // Sử dụng utility function để xử lý dữ liệu parts
           let partsData = partsRes.data.data || partsRes.data || []
           const processedParts = processPartsData(partsData)
           
-          console.log('Processed parts data:', processedParts)
           setParts(processedParts)
         } catch (err) {
-          console.error('Error fetching parts:', err)
           setParts([])
         }
       }
@@ -87,6 +86,26 @@ export default function ProjectGitHub() {
       updateConnectionStatus(null)
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Function để refresh lại danh sách parts
+  const refreshPartsList = async () => {
+    if (!projectId) return
+    
+    setRefreshingParts(true)
+    try {
+      const partsRes = await axiosClient.get(`/projects/${projectId}/parts`)
+      
+      // Sử dụng utility function để xử lý dữ liệu parts
+      let partsData = partsRes.data.data || partsRes.data || []
+      const processedParts = processPartsData(partsData)
+      
+      setParts(processedParts)
+    } catch (err) {
+      // Không hiển thị error toast khi refresh để tránh làm phiền user
+    } finally {
+      setRefreshingParts(false)
     }
   }
 
@@ -109,7 +128,6 @@ export default function ProjectGitHub() {
 
   const handleCreatePart = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Create Part Clicked:', newPart);
     if (!newPart.name.trim()) {
       showToast({ title: 'Error', description: 'Please fill in all fields (Name is required)', variant: 'destructive' });
       return;
@@ -122,12 +140,62 @@ export default function ProjectGitHub() {
         programmingLanguage: newPart.programmingLanguage || 'None',
         framework: newPart.framework || 'None',
       });
-      console.log('Create part response:', response)
       
       // Sử dụng utility function để lấy id chính xác
       const partId = extractPartId(response.data);
+      
+      // If backend returns success message instead of UUID, treat it as success
+      if (!partId && response.data && typeof response.data === 'string' && response.data.includes('successfully')) {
+        // Backend returned success message, treat as successful creation
+        // Generate a temporary ID for frontend use
+        const tempId = `temp-${Date.now()}`;
+        
+        const newPartWithId = {
+          id: tempId,
+          name: newPart.name,
+          programmingLanguage: newPart.programmingLanguage,
+          framework: newPart.framework
+        };
+        
+        // Reset form and close dialog
+        setNewPart({ name: '', programmingLanguage: '', framework: '' });
+        setShowCreatePart(false);
+        
+        // Show success message
+        showToast({ title: 'Project Part Created', description: 'Project part created successfully!' });
+        
+        // Refresh the page data to get updated parts list
+        await fetchData();
+        
+        // Auto-select the newly created part for repository connection
+        setTimeout(() => {
+          const createdPart = parts.find(part => part.name === newPart.name);
+          if (createdPart) {
+            setSelectedPart(createdPart.id);
+          }
+        }, 200);
+        
+        // Show success message and guide user to next step
+        setSuccess('✅ Project part created successfully! Now connect a repository to this part.');
+        
+        // Auto-focus repository dropdown after a short delay
+        setTimeout(() => {
+          const repoSelect = document.querySelector('select[value=""]') as HTMLSelectElement;
+          if (repoSelect) {
+            repoSelect.focus();
+          }
+        }, 100);
+        
+        return;
+      }
+      
       if (!partId) {
-        throw new Error('Failed to extract part ID from response');
+        // Simple error message without backend details
+        setError('Failed to create project part. Please try again.');
+        
+        // Clear any previous success messages
+        setSuccess(null);
+        return;
       }
       
       const newPartWithId = {
@@ -136,13 +204,43 @@ export default function ProjectGitHub() {
         programmingLanguage: newPart.programmingLanguage,
         framework: newPart.framework
       };
-      setParts((prev) => [...prev, newPartWithId]);
-      setShowCreatePart(false);
+      
+      // Reset form and close dialog
       setNewPart({ name: '', programmingLanguage: '', framework: '' });
-      showToast({ title: 'Success', description: 'Project Part created successfully!' });
+      setShowCreatePart(false);
+      
+      // Show success message
+      showToast({ title: 'Project Part Created', description: 'Project part created successfully!' });
+      
+      // Refresh the page data to get updated parts list
+      await fetchData();
+      
+      // Auto-select the newly created part for repository connection
+      // Wait a bit for the data to be updated, then select the part
+      setTimeout(() => {
+        const createdPart = parts.find(part => part.name === newPart.name);
+        if (createdPart) {
+          setSelectedPart(createdPart.id);
+        }
+      }, 200);
+      
+      // Show success message and guide user to next step
+      setSuccess('✅ Project part created successfully! Now connect a repository to this part.');
+      
+      // Auto-focus repository dropdown after a short delay
+      setTimeout(() => {
+        const repoSelect = document.querySelector('select[value=""]') as HTMLSelectElement;
+        if (repoSelect) {
+          repoSelect.focus();
+        }
+      }, 100);
+      
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message || 'Error creating project part';
-      showToast({ title: 'Error', description: errorMessage, variant: 'destructive' });
+      const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.error || 
+                          err.message || 
+                          'Error creating project part';
+      setError(`Error creating project part: ${errorMessage}`);
     } finally {
       setCreatingPart(false);
     }
@@ -154,17 +252,20 @@ export default function ProjectGitHub() {
       return
     }
     
+    // Additional validation: Check if selectedPart is a valid UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(selectedPart)) {
+      setError('Invalid project part ID format. Please select a valid project part.');
+      return;
+    }
+    
     // Sử dụng utility function để validate part ID
     if (!validatePartId(selectedPart, parts)) {
-      console.error('Selected part not found in parts list:', selectedPart)
-      console.log('Available parts:', parts)
       setError('Invalid project part selected. Please try again.')
       return
     }
     
     const selectedPartObj = parts.find(part => part.id === selectedPart)!
-    
-    console.log('Connecting repo to part:', selectedPartObj)
     
     setConnecting(true)
     setError(null)
@@ -173,11 +274,18 @@ export default function ProjectGitHub() {
       await connectRepoToPart(projectId!, selectedPart, { 
         repoUrl: selectedRepo
       })
-      setSuccess('Repository connected to Project Part successfully!')
+      
+      // Cập nhật trạng thái thành công
+      setSuccess('Repository connected to Project Part successfully! Parts list updated.')
+      
+      // Reset form
       setSelectedRepo('')
       setSelectedPart('')
+      
+      // Refresh lại danh sách parts để cập nhật dropdown realtime
+      await refreshPartsList()
+      
     } catch (err: any) {
-      console.error('Error connecting repository:', err)
       const errorMessage = err.response?.data?.message || 
                           err.response?.data?.error || 
                           err.message || 
@@ -250,6 +358,38 @@ export default function ProjectGitHub() {
           {success && (
             <div className='text-green-600 mb-4 text-center w-full max-w-2xl shadow rounded p-2 bg-green-50'>
               {success}
+              {/* Show next steps guide */}
+              {success.includes('Now connect a repository') && (
+                <div className='mt-2 text-sm text-green-700'>
+                  <strong>Next steps:</strong> Select a repository above and click "Connect Repository to Project Part"
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Success Animation - Shows when part is created */}
+          {selectedPart && !showCreatePart && (
+            <div className='mb-6 w-full max-w-2xl'>
+              <div className='bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-2xl p-6 text-center animate-pulse'>
+                <div className='flex items-center justify-center gap-3 mb-3'>
+                  <div className='w-12 h-12 bg-green-100 rounded-full flex items-center justify-center'>
+                    <span className='text-2xl'>✅</span>
+                  </div>
+                  <div>
+                    <h3 className='text-xl font-bold text-green-700'>Project Part Ready!</h3>
+                    <p className='text-green-600'>Now connect a repository to continue</p>
+                  </div>
+                </div>
+                <div className='bg-white rounded-xl p-3 border border-green-200'>
+                  <p className='text-sm text-gray-600 mb-1'>Created Part:</p>
+                  <p className='font-semibold text-lg text-gray-800'>
+                    {parts.find(p => p.id === selectedPart)?.name}
+                  </p>
+                  <p className='text-sm text-gray-500'>
+                    {parts.find(p => p.id === selectedPart)?.programmingLanguage} • {parts.find(p => p.id === selectedPart)?.framework}
+                  </p>
+                </div>
+              </div>
             </div>
           )}
           <Card className='w-full max-w-2xl mb-8 shadow-2xl border-0 bg-white/95 rounded-2xl'>
@@ -286,67 +426,115 @@ export default function ProjectGitHub() {
                 </div>
               ) : (
                 <>
-                  <div className='mb-6 space-y-4'>
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                      <div>
-                        <label className='block font-semibold mb-2 text-lavender-700'>Select Repository</label>
-                        <select
-                          className='w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl px-4 py-3 text-base text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300 shadow-none'
-                          value={selectedRepo}
-                          onChange={(e) => setSelectedRepo(e.target.value)}
-                        >
-                          <option value=''>-- Select a repository --</option>
-                          {repos.map((repo) => (
-                            <option key={repo.fullName} value={repo.htmlUrl} className='text-blue-700'>
-                              {repo.fullName}
-                            </option>
-                          ))}
-                        </select>
+                  
+                  {/* Only show main connection form when no part is selected for dedicated connection */}
+                  {!selectedPart && (
+                    <>
+                      <div className='mb-6 space-y-4'>
+                        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                          <div>
+                            <label className='block font-semibold mb-2 text-lavender-700'>Select Repository</label>
+                            <select
+                              className='w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl px-4 py-3 text-base text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300 shadow-none'
+                              value={selectedRepo}
+                              onChange={(e) => setSelectedRepo(e.target.value)}
+                              onFocus={() => setFocusRepoDropdown(true)}
+                              onBlur={() => setFocusRepoDropdown(false)}
+                            >
+                              <option value=''>-- Select a repository --</option>
+                              {repos.map((repo) => (
+                                <option key={repo.fullName} value={repo.htmlUrl} className='text-blue-700'>
+                                  {repo.fullName}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className='block font-semibold mb-2 text-lavender-700'>Select Project Part</label>
+                            <select
+                              className='w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl px-4 py-4 text-base text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300 shadow-none'
+                              value={selectedPart}
+                              onChange={(e) => setSelectedPart(e.target.value)}
+                              disabled={refreshingParts}
+                            >
+                              <option value=''>-- Select a part --</option>
+                              {refreshingParts ? (
+                                <option value='' disabled className='text-gray-400'>
+                                  🔄 Refreshing parts...
+                                </option>
+                              ) : parts.length === 0 ? (
+                                <option value='' disabled className='text-gray-400'>
+                                  No project parts available
+                                </option>
+                              ) : (
+                                parts
+                                  .filter((part) => !(part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl))
+                                  .map((part) => (
+                                    <option key={part.id} value={part.id} className='text-purple-700'>
+                                      {part.name} ({part.programmingLanguage}, {part.framework})
+                                      {selectedPart === part.id ? ' 🎯 (Newly Created)' : ''}
+                                    </option>
+                                  ))
+                              )}
+                            </select>
+                            
+                            {/* Show guidance when part is selected */}
+                            {selectedPart && (
+                              <div className='mt-2 text-sm text-blue-600 bg-blue-50 p-2 rounded'>
+                                <span className='font-semibold'>✓ Part selected:</span> {parts.find(p => p.id === selectedPart)?.name}
+                              </div>
+                            )}
+                            
+                            <Button
+                              variant='link'
+                              className='mt-2 p-0 text-blue-600 text-base font-semibold'
+                              onClick={() => setShowCreatePart(true)}
+                            >
+                              + Create new part
+                            </Button>
+                          </div>
+                        </div>
+                        <div>
+                          {/* Đã xoá input accessToken ở đây */}
+                        </div>
                       </div>
-                      <div>
-                        <label className='block font-semibold mb-2 text-lavender-700'>Select Project Part</label>
-                        <select
-                          className='w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl px-4 py-3 text-base text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300 shadow-none'
-                          value={selectedPart}
-                          onChange={(e) => setSelectedPart(e.target.value)}
-                        >
-                          <option value=''>-- Select a part --</option>
-                          {parts
-                            .filter((part) => !(part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl))
-                            .map((part) => (
-                              <option key={part.id} value={part.id} className='text-purple-700'>
-                                {part.name} ({part.programmingLanguage}, {part.framework})
-                              </option>
-                            ))}
-                        </select>
-                        <Button
-                          variant='link'
-                          className='mt-2 p-0 text-blue-600 text-base font-semibold'
-                          onClick={() => setShowCreatePart(true)}
-                        >
-                          + Create new part
-                        </Button>
-                      </div>
+                      <Button
+                        onClick={handleConnectRepo}
+                        disabled={!selectedRepo || !selectedPart || connecting}
+                        className='w-full py-4 text-lg font-bold bg-gradient-to-r from-lavender-500 to-blue-400 hover:from-lavender-600 hover:to-blue-500 text-white shadow-lg rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed mt-4'
+                        size='lg'
+                      >
+                        {connecting ? (
+                          <>
+                            <Loader className='mr-2 h-5 w-5 animate-spin' />
+                            Connecting...
+                          </>
+                        ) : (
+                          'Connect Repository to Project Part'
+                        )}
+                      </Button>
+                    </>
+                  )}
+                  
+                  {/* Show create part button when no part is selected */}
+                  {!selectedPart && (
+                    <div className='text-center mt-6'>
+                      <Button
+                        variant='outline'
+                        className='text-lavender-700 border-lavender-300 hover:bg-lavender-50 hover:border-lavender-400 transition-colors'
+                        onClick={() => setShowCreatePart(true)}
+                      >
+                        <span className='mr-2'>➕</span>
+                        Create New Project Part
+                      </Button>
+                      {refreshingParts && (
+                        <div className='mt-3 text-sm text-gray-500 flex items-center justify-center gap-2'>
+                          <Loader className='h-4 w-4 animate-spin' />
+                          Refreshing project parts...
+                        </div>
+                      )}
                     </div>
-                    <div>
-                      {/* Đã xoá input accessToken ở đây */}
-                    </div>
-                  </div>
-                  <Button
-                    onClick={handleConnectRepo}
-                    disabled={!selectedRepo || !selectedPart || connecting}
-                    className='w-full py-4 text-lg font-bold bg-gradient-to-r from-lavender-500 to-blue-400 hover:from-lavender-600 hover:to-blue-500 text-white shadow-lg rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed mt-4'
-                    size='lg'
-                  >
-                    {connecting ? (
-                      <>
-                        <Loader className='mr-2 h-5 w-5 animate-spin' />
-                        Connecting...
-                      </>
-                    ) : (
-                      'Connect Repository to Project Part'
-                    )}
-                  </Button>
+                  )}
                 </>
               )}
             </CardContent>
@@ -521,6 +709,93 @@ export default function ProjectGitHub() {
                     </Button>
                   </div>
                 </form>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Repository Connection Section - Appears after creating a part */}
+          {selectedPart && !showCreatePart && (
+            <Card className='w-full max-w-3xl mb-8 shadow-2xl border-0 bg-gradient-to-br from-white to-blue-50 rounded-2xl animate-fade-in'>
+              <CardHeader className='flex flex-col items-center pb-0'>
+                <CardTitle className='text-3xl font-extrabold text-lavender-700 mb-2 drop-shadow flex items-center gap-3'>
+                  <Github className='h-10 w-10 text-lavender-500' />
+                  Connect Repository to Project Part
+                </CardTitle>
+                <p className='text-lavender-600 text-center text-lg'>
+                  Connect a GitHub repository to: <strong className='text-lavender-800'>{parts.find(p => p.id === selectedPart)?.name}</strong>
+                </p>
+              </CardHeader>
+              <CardContent className='pt-6 pb-8'>
+                <div className='space-y-6'>
+                  <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+                    <div className='space-y-3'>
+                      <label className='block font-semibold text-lg text-lavender-700'>Select Repository</label>
+                      <select
+                        className='w-full bg-white border-2 border-lavender-200 rounded-xl px-4 py-4 text-base text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300 shadow-sm hover:border-lavender-300 transition-colors'
+                        value={selectedRepo}
+                        onChange={(e) => setSelectedRepo(e.target.value)}
+                      >
+                        <option value=''>-- Select a repository --</option>
+                        {repos.map((repo) => (
+                          <option key={repo.fullName} value={repo.htmlUrl} className='text-blue-700'>
+                            {repo.fullName}
+                          </option>
+                        ))}
+                      </select>
+                      <p className='text-sm text-gray-500'>Choose the GitHub repository you want to connect</p>
+                    </div>
+                    <div className='space-y-3'>
+                      <label className='block font-semibold text-lg text-lavender-700'>Selected Project Part</label>
+                      <div className='w-full bg-white border-2 border-lavender-200 rounded-xl px-4 py-4 text-base text-lavender-700 font-medium shadow-sm'>
+                        <div className='flex items-center gap-3'>
+                          <span className='text-2xl'>📁</span>
+                          <div>
+                            <div className='font-semibold text-lg text-lavender-800'>
+                              {parts.find(p => p.id === selectedPart)?.name}
+                            </div>
+                            <div className='text-sm text-lavender-500'>
+                              {parts.find(p => p.id === selectedPart)?.programmingLanguage} • {parts.find(p => p.id === selectedPart)?.framework}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <p className='text-sm text-gray-500'>This is the part you just created</p>
+                    </div>
+                  </div>
+                  
+                  <div className='text-center space-y-4'>
+                    <Button
+                      onClick={handleConnectRepo}
+                      disabled={!selectedRepo || connecting}
+                      className='w-full max-w-md py-5 text-xl font-bold bg-gradient-to-r from-lavender-500 to-blue-400 hover:from-lavender-600 hover:to-blue-500 text-white shadow-lg rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-105 transition-all'
+                      size='lg'
+                    >
+                      {connecting ? (
+                        <>
+                          <Loader className='mr-3 h-6 w-6 animate-spin' />
+                          Connecting Repository...
+                        </>
+                      ) : (
+                        <>
+                          <Github className='mr-3 h-6 w-6' />
+                          Connect Repository to Project Part
+                        </>
+                      )}
+                    </Button>
+                    
+                    <Button
+                      variant='link'
+                      className='text-blue-600 text-base font-semibold hover:text-blue-800'
+                      onClick={() => {
+                        setSelectedPart('');
+                        setSelectedRepo('');
+                        setSuccess(null);
+                      }}
+                    >
+                      ← Back to Repository Selection
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}
