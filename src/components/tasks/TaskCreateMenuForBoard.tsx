@@ -1,7 +1,14 @@
 import { sprintApi } from '@/api/sprints'
 import { taskApi } from '@/api/tasks'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -111,7 +118,11 @@ export default function TaskCreateMenuForBoard({
       formData.append('SprintId', selectedSprintId)
       selectedTagIds.forEach((tagId) => formData.append('TagIds', tagId))
       const res = await taskApi.createTask(projectId, formData)
-              showToast({ title: res.code === 200 ? 'Success' : 'Error', description: res.message || 'Task created successfully', variant: res.code === 200 ? 'success' : 'destructive' })
+      showToast({
+        title: res.code === 200 ? 'Success' : 'Error',
+        description: res.message || 'Task created successfully',
+        variant: res.code === 200 ? 'success' : 'destructive'
+      })
       await refreshTasks()
       onTaskCreated()
       onOpenChange(false)
@@ -121,7 +132,11 @@ export default function TaskCreateMenuForBoard({
       setSelectedTagIds([])
     } catch (error) {
       const err = error as any
-      showToast({ title: 'Error', description: err?.response?.data?.message || err?.message || 'Failed to create task.', variant: 'destructive' })
+      showToast({
+        title: 'Error',
+        description: err?.response?.data?.message || err?.message || 'Failed to create task.',
+        variant: 'destructive'
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -139,35 +154,45 @@ export default function TaskCreateMenuForBoard({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{trigger || defaultTrigger}</DialogTrigger>
-      <DialogContent className='sm:max-w-[425px]'>
+      <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle className='text-2xl font-semibold'>Create New Task</DialogTitle>
+          <DialogTitle className='text-center'>
+            <div className='flex flex-col items-center gap-4'>
+              <Plus className='h-12 w-12 text-lavender-700' />
+              <div>
+                <h2 className='text-2xl font-bold'>Create new task</h2>
+                <p className='text-sm text-gray-500 mt-1'>Add a task to the selected board and sprint</p>
+              </div>
+            </div>
+          </DialogTitle>
         </DialogHeader>
-        <div className='grid gap-4 py-4'>
-          <div className='space-y-2'>
+        <DialogDescription>
+          Fill in the task details below. You can attach a file and set priority and deadline.
+        </DialogDescription>
+
+        <div className='grid gap-6 py-4'>
+          <div>
             <Label htmlFor='title' className='text-sm font-medium'>
-              Task Title
+              Task title
             </Label>
-            <Input
+            <input
               id='title'
               placeholder='Enter task title'
-              className='h-11'
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isSubmitting) {
-                  handleSubmit()
-                }
+                if (e.key === 'Enter' && !isSubmitting) handleSubmit()
               }}
+              className='w-full bg-transparent text-foreground placeholder-gray-400 text-lg border-b-2 border-gray-200 focus:border-lavender-700 transition-colors duration-300 focus:outline-none focus:ring-0'
             />
           </div>
 
-          <div className='space-y-2'>
+          <div>
             <Label htmlFor='sprint' className='text-sm font-medium'>
-              Select Sprint
+              Select sprint
             </Label>
             <Select value={selectedSprintId} onValueChange={setSelectedSprintId}>
-              <SelectTrigger className='h-11'>
+              <SelectTrigger className='h-11 border-0 border-b-2 border-gray-200 rounded-none px-0 focus:ring-0 focus:ring-offset-0 focus:outline-none focus:border-lavender-700'>
                 <SelectValue placeholder='Select a sprint' />
               </SelectTrigger>
               <SelectContent>
@@ -178,7 +203,6 @@ export default function TaskCreateMenuForBoard({
                 ))}
               </SelectContent>
             </Select>
-            {/* Show selected sprint time in English */}
             {selectedSprintId &&
               (() => {
                 const sprint = sprints.find((s) => s.id === selectedSprintId)
@@ -192,7 +216,7 @@ export default function TaskCreateMenuForBoard({
               })()}
           </div>
 
-          <div className='space-y-2'>
+          <div>
             <Label className='text-sm font-medium'>Tags</Label>
             <div className='flex flex-wrap gap-2'>
               {tags.map((tag) => (
@@ -208,12 +232,12 @@ export default function TaskCreateMenuForBoard({
             </div>
           </div>
 
-          <div className='space-y-2'>
+          <div>
             <Label htmlFor='priority' className='text-sm font-medium'>
               Priority
             </Label>
             <Select value={priority} onValueChange={setPriority}>
-              <SelectTrigger className='h-11'>
+              <SelectTrigger className='h-11 border-0 border-b-2 border-gray-200 rounded-none px-0 focus:ring-0 focus:ring-offset-0 focus:outline-none focus:border-lavender-700'>
                 <SelectValue placeholder='Select priority' />
               </SelectTrigger>
               <SelectContent>
@@ -223,34 +247,37 @@ export default function TaskCreateMenuForBoard({
               </SelectContent>
             </Select>
           </div>
-          <div className='space-y-2'>
+
+          <div>
             <Label htmlFor='deadline' className='text-sm font-medium'>
               Deadline
             </Label>
-            <Input
+            <input
               id='deadline'
               type='date'
-              className='h-11'
               value={deadline}
               onChange={(e) => setDeadline(e.target.value)}
+              className='w-full bg-transparent text-foreground placeholder-gray-400 text-lg border-b-2 border-gray-200 focus:border-lavender-700 transition-colors duration-300 focus:outline-none focus:ring-0'
             />
           </div>
 
-          <div className='space-y-2'>
+          <div>
             <Label htmlFor='description' className='text-sm font-medium'>
               Description
             </Label>
-            <Input
+            <input
               id='description'
-              placeholder='Enter task description'
-              className='h-11'
+              placeholder='Enter task description (optional)'
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              className='w-full bg-transparent text-foreground placeholder-gray-400 text-lg border-b-2 border-gray-200 focus:border-lavender-700 transition-colors duration-300 focus:outline-none focus:ring-0'
             />
+            <p className='text-xs text-gray-500 mt-1'>Optional, you can attach a file below.</p>
           </div>
-          <div className='space-y-2'>
+
+          <div>
             <Label htmlFor='file' className='text-sm font-medium'>
-              Attach File
+              Attach file
             </Label>
             <Input
               id='file'
@@ -260,7 +287,7 @@ export default function TaskCreateMenuForBoard({
             />
           </div>
 
-          <div className='flex justify-end gap-3 pt-4'>
+          <div className='flex justify-end gap-3 pt-2'>
             <Button
               variant='outline'
               onClick={() => onOpenChange(false)}
@@ -271,7 +298,7 @@ export default function TaskCreateMenuForBoard({
             </Button>
             <Button
               onClick={handleSubmit}
-              className='px-8 bg-violet-100 hover:bg-violet-200 text-violet-600 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0'
+              className='px-8 bg-lavender-700 hover:bg-lavender-800 text-white focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0'
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -280,7 +307,7 @@ export default function TaskCreateMenuForBoard({
                   Creating...
                 </>
               ) : (
-                'Create Task'
+                'Create task'
               )}
             </Button>
           </div>
