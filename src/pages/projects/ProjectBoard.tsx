@@ -430,6 +430,8 @@ export default function ProjectBoard() {
       const taskObj = filteredBoards.flatMap((b) => b.tasks).find((t) => t.id === taskId)
       if (taskObj && taskObj.boardId === newBoardId) {
         console.log('[DnD] Task đã ở board này, không cần gọi API')
+        // Clear moving state since no actual move occurred
+        setMovingTaskId(null)
         return
       }
 
