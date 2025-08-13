@@ -3,17 +3,7 @@ import { useSignalR } from '@/contexts/SignalRContext'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { TaskP } from '@/types/task'
 import { format } from 'date-fns'
-import {
-  Calendar,
-  ChevronDown,
-  ChevronsDown,
-  ChevronsUp,
-  ChevronUp,
-  Clock,
-  FileText,
-  MessageSquare,
-  User
-} from 'lucide-react'
+import { Calendar, ChevronDown, ChevronsDown, ChevronsUp, ChevronUp, FileText, MessageSquare, User } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar'
@@ -66,7 +56,7 @@ const getPriorityConfig = (priority: number) => {
   // Handle edge cases
   if (!priority || priority === 0) {
     return {
-      icon: <ChevronDown className='h-4 w-4' />,
+      icon: <ChevronDown className='h-5 w-5' />,
       text: 'Low',
       color: 'text-blue-500',
       bg: 'bg-blue-50',
@@ -78,7 +68,7 @@ const getPriorityConfig = (priority: number) => {
   switch (priority) {
     case 1:
       return {
-        icon: <ChevronDown className='h-4 w-4' />,
+        icon: <ChevronDown className='h-5 w-5' />,
         text: 'Low',
         color: 'text-blue-500',
         bg: 'bg-blue-50',
@@ -87,7 +77,7 @@ const getPriorityConfig = (priority: number) => {
       }
     case 2:
       return {
-        icon: <ChevronsDown className='h-4 w-4' />,
+        icon: <ChevronsDown className='h-5 w-5' />,
         text: 'Medium',
         color: 'text-orange-500',
         bg: 'bg-orange-50',
@@ -96,7 +86,7 @@ const getPriorityConfig = (priority: number) => {
       }
     case 3:
       return {
-        icon: <ChevronUp className='h-4 w-4' />,
+        icon: <ChevronUp className='h-5 w-5' />,
         text: 'High',
         color: 'text-red-500',
         bg: 'bg-red-50',
@@ -105,7 +95,7 @@ const getPriorityConfig = (priority: number) => {
       }
     case 4:
       return {
-        icon: <ChevronsUp className='h-4 w-4' />,
+        icon: <ChevronsUp className='h-5 w-5' />,
         text: 'Urgent',
         color: 'text-red-600',
         bg: 'bg-red-100',
@@ -114,7 +104,7 @@ const getPriorityConfig = (priority: number) => {
       }
     default:
       return {
-        icon: <ChevronDown className='h-4 w-4' />,
+        icon: <ChevronDown className='h-5 w-5' />,
         text: 'Low',
         color: 'text-blue-500',
         bg: 'bg-blue-50',
@@ -206,14 +196,7 @@ export const TaskCard = ({
   const priorityConfig = getPriorityConfig(normalizePriority(task.priority))
 
   // Debug priority
-  console.log(
-    'Task priority:',
-    task.priority,
-    'Normalized:',
-    normalizePriority(task.priority),
-    'Priority config:',
-    priorityConfig
-  )
+  // console.log('Task priority:', task.priority, 'Normalized:', normalizePriority(task.priority), 'Priority config:', priorityConfig)
 
   // Enhanced avatar colors with gradients
   const avatarColors = [
@@ -232,14 +215,18 @@ export const TaskCard = ({
   function AvatarStack({ assignees }: { assignees: any[] }) {
     if (!assignees || assignees.length === 0) {
       return (
-        <div className='flex items-center justify-center h-8 px-3 rounded-full bg-gray-100 border border-gray-200'>
-          <User className='w-3 h-3 text-gray-400' />
-          <span className='text-xs text-gray-500 ml-1'>Unassigned</span>
+        <div className='flex items-center gap-2 -ml-0.5'>
+          <Avatar className='h-8 w-8 border-2 border-white shadow-sm'>
+            <AvatarFallback className='bg-gray-200 text-gray-400 flex items-center justify-center'>
+              <User className='w-4 h-4' />
+            </AvatarFallback>
+          </Avatar>
+          <span className='text-xs font-medium text-gray-500'>No assignee</span>
         </div>
       )
     }
     return (
-      <div className='flex -space-x-2'>
+      <div className='flex -space-x-2 -ml-1'>
         {assignees.slice(0, 3).map((assignee, idx) => {
           const { bg, text } = getAvatarColor(idx)
           return (
@@ -349,20 +336,19 @@ export const TaskCard = ({
           setWasTaskUpdated(false) // Reset the flag when opening the dialog
         }}
       >
-        {/* Priority indicator bar */}
-        <div
-          className={`absolute left-0 top-4 bottom-4 w-1 rounded-full ${priorityConfig.leftBorder} shadow-sm transition-all duration-200`}
-        />
-
         <Card
           className={`
-          w-full border-none shadow-none cursor-pointer transition-all duration-150 ml-2 
-          ${isHovered ? 'hover:shadow-lg transform hover:-translate-y-1' : ''}
+          relative w-full cursor-pointer transition-all duration-150 overflow-visible
+          rounded-xl border border-gray-200 bg-white shadow-sm
+          ${isHovered ? 'transform hover:-translate-y-0.5 hover:shadow-md' : ''}
           ${isMoving ? 'opacity-90 border-2 border-blue-400' : ''}
-          bg-white backdrop-blur-sm
         `}
         >
-          <div className='p-4'>
+          {/* Left accent bar*/}
+          <div
+            className={`absolute -left-[2px] top-4 h-[30%] w-[0.22rem] rounded-full ${priorityConfig.leftBorder} shadow-sm transition-all duration-200`}
+          />
+          <div className='p-4 relative'>
             {/* Tags */}
             {task.tags && task.tags.length > 0 && (
               <div className='flex gap-2 mb-3 flex-wrap'>
@@ -378,11 +364,11 @@ export const TaskCard = ({
               </div>
             )}
 
-            {/* Title and Priority */}
-            <div className='flex items-start justify-between mb-3'>
-              <h3 className='font-bold text-lg text-gray-900 leading-tight flex-1 mr-3'>{task.title}</h3>
+            {/* Title + Priority inline */}
+            <div className='flex items-center justify-between gap-3 mt-1 mb-1'>
+              <h3 className='font-bold text-lg text-gray-900 leading-snug flex-1'>{task.title}</h3>
               <div
-                className={`flex items-center gap-1 ${priorityConfig.color} ${priorityConfig.bg} px-2 py-1 rounded-full text-xs font-semibold border ${priorityConfig.border}`}
+                className={`flex items-center gap-1.5 ${priorityConfig.color} ${priorityConfig.bg} px-2.5 py-1 rounded-md text-xs font-semibold border ${priorityConfig.border} shrink-0`}
               >
                 {priorityConfig.icon}
                 <span>{priorityConfig.text}</span>
@@ -390,34 +376,35 @@ export const TaskCard = ({
             </div>
 
             {/* Description */}
-            <p className='text-gray-600 mb-4 line-clamp-2 text-sm leading-relaxed'>{task.description}</p>
+            <p className='text-gray-600 mb-2 line-clamp-2 mt-1 text-sm leading-relaxed'>{task.description}</p>
 
             {/* Stats */}
-            <div className='flex items-center gap-4 mb-4'>
-              <div className='flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors'>
-                <MessageSquare className='w-4 h-4' />
-                <span className='text-sm font-medium'>{commentCount}</span>
+            <div className='flex items-center gap-4 mt-3'>
+              <div className='flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors text-[11px]'>
+                <MessageSquare className='w-3.5 h-3.5' />
+                <span className='font-medium'>{commentCount}</span>
+                <span className='font-medium text-gray-500'>comments</span>
               </div>
-              <div className='flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors'>
-                <FileText className='w-4 h-4' />
-                <span className='text-sm font-medium'>{fileCount}</span>
+              <div className='flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors text-[11px]'>
+                <FileText className='w-3.5 h-3.5' />
+                <span className='font-medium'>{fileCount}</span>
+                <span className='font-medium text-gray-500'>files</span>
               </div>
-              {task.deadline && (
-                <div className='flex items-center gap-1 text-gray-500'>
-                  <Clock className='w-4 h-4' />
-                  <span className='text-sm font-medium'>{format(new Date(task.deadline), 'MMM d')}</span>
-                </div>
-              )}
             </div>
+
+            {/* Single separator below stats */}
+            <div className='border-t border-gray-100 mt-2 mb-1' />
 
             {/* Footer */}
             <div className='flex justify-between items-center'>
               <AvatarStack assignees={assignees} />
 
               {task.deadline && (
-                <div className='flex items-center gap-1 text-gray-500'>
-                  <Calendar className='w-4 h-4' />
-                  <span className='text-sm font-semibold'>{format(new Date(task.deadline), 'dd/MM/yyyy')}</span>
+                <div className='flex items-center gap-1.5 text-gray-400'>
+                  <Calendar className='w-3.5 h-3.5 text-gray-400' />
+                  <span className='text-xs font-medium tracking-wide'>
+                    {format(new Date(task.deadline), 'dd/MM/yyyy')}
+                  </span>
                 </div>
               )}
             </div>
