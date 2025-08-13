@@ -15,6 +15,16 @@ export interface AdminUser {
   pastTerms?: string
 }
 
+export interface Term {
+  id: string
+  season: string
+  year: number
+  startDate: string
+  endDate: string
+  isActive: boolean
+  isLocked: boolean
+}
+
 export interface AdminUsersResponse {
   code: number
   message: string

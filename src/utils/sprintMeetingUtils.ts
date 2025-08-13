@@ -4,7 +4,7 @@ import { SprintMeeting, SprintMeetingDetail } from '@/types/sprint'
  * Check if a sprint meeting is still active
  * No time restriction - all meetings are always updatable
  */
-export const isSprintMeetingActive = (meeting: SprintMeeting | SprintMeetingDetail): boolean => {
+export const isSprintMeetingActive = (_meeting: SprintMeeting | SprintMeetingDetail): boolean => {
   // Bỏ hoàn toàn giới hạn thời gian - tất cả meeting đều có thể edit
   return true
 }
@@ -13,7 +13,7 @@ export const isSprintMeetingActive = (meeting: SprintMeeting | SprintMeetingDeta
  * Check if a sprint meeting can be updated based on its status
  * No restrictions - all meetings can be updated
  */
-export const canUpdateSprintMeeting = (meeting: SprintMeeting | SprintMeetingDetail): boolean => {
+export const canUpdateSprintMeeting = (_meeting: SprintMeeting | SprintMeetingDetail): boolean => {
   // Bỏ hoàn toàn giới hạn - tất cả meeting đều có thể update
   return true
 }
@@ -22,7 +22,7 @@ export const canUpdateSprintMeeting = (meeting: SprintMeeting | SprintMeetingDet
  * Get a user-friendly message explaining why a meeting cannot be updated
  * Since all meetings are now updatable, return empty message
  */
-export const getUpdateRestrictionMessage = (meeting: SprintMeeting | SprintMeetingDetail): string => {
+export const getUpdateRestrictionMessage = (_meeting: SprintMeeting | SprintMeetingDetail): string => {
   // Không có giới hạn nào - trả về message rỗng
   return ''
 }

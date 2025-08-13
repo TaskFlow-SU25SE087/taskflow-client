@@ -5,10 +5,12 @@ import FileUpload from '@/components/admin/FileUpload'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useAdmin } from '@/hooks/useAdmin'
 import { useAdminTerm } from '@/hooks/useAdminTerm'
-import { Loader2, Users } from 'lucide-react'
-import { useState } from 'react'
+import { debounce } from 'lodash'
+import { Loader2, RefreshCw, Users } from 'lucide-react'
+import { useCallback, useState } from 'react'
 import * as XLSX from 'xlsx'
 
 export default function AdminUsersPage() {
@@ -19,7 +21,14 @@ export default function AdminUsersPage() {
   const [selectedSemester, setSelectedSemester] = useState<string>('all')
   const [showFileUpload, setShowFileUpload] = useState(false)
   const [exporting, setExporting] = useState(false)
+  const [uploadTimeout, setUploadTimeout] = useState(false)
+  const [cachedUsers, setCachedUsers] = useState<any[]>([])
+  const [lastFetchTime, setLastFetchTime] = useState<number>(0)
   const pageSize = 10
+  const { showToast } = useToastContext()
+
+  // Cache timeout: 30 giây
+  const CACHE_TIMEOUT = 30000
 
   // Lấy danh sách semester (term) từ API
   const { terms, loading: loadingTerms } = useAdminTerm(1, 0)
@@ -28,11 +37,153 @@ export default function AdminUsersPage() {
     fetchUsers(page, pageSize)
   }
 
-  const handleFileUpload = async (file: File) => {
+  // Kiểm tra cache có còn hợp lệ không
+  const isCacheValid = () => {
+    return Date.now() - lastFetchTime < CACHE_TIMEOUT && cachedUsers.length > 0
+  }
+
+  // Fetch users với cache
+  const fetchUsersWithCache = async (page: number, size: number) => {
+    // Nếu cache còn hợp lệ và đang ở page 1, sử dụng cache
+    if (page === 1 && isCacheValid()) {
+      return cachedUsers
+    }
+    
+    // Nếu không có cache hoặc cache hết hạn, fetch từ server
+    await fetchUsers(page, size)
+    
+    // Cache kết quả nếu fetch thành công và đang ở page 1
+    if (page === 1) {
+      setCachedUsers(users)
+      setLastFetchTime(Date.now())
+    }
+  }
+
+  // Debounced search để tránh fetch quá nhiều
+  const debouncedSearch = useCallback(
+    debounce((term: string) => {
+      if (term.length >= 2 || term.length === 0) {
+        // Reset về page 1 khi search
+        fetchUsersWithCache(1, pageSize)
+      }
+    }, 300),
+    []
+  )
+
+  // Xử lý search với debounce
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value)
+    debouncedSearch(value)
+  }
+
+  // Xử lý filter changes
+  const handleFilterChange = (filterType: string, value: string) => {
+    switch (filterType) {
+      case 'role':
+        setSelectedRole(value)
+        break
+      case 'status':
+        setSelectedStatus(value)
+        break
+      case 'semester':
+        setSelectedSemester(value)
+        break
+    }
+    
+    // Reset về page 1 khi thay đổi filter
+    fetchUsersWithCache(1, pageSize)
+  }
+
+  // Clear cache khi cần thiết
+  const clearCache = () => {
+    setCachedUsers([])
+    setLastFetchTime(0)
+  }
+
+  const handleFileUpload = async (file: File, onProgress?: (progress: number) => void) => {
     try {
-      await importUsers(file)
+      let result: boolean | undefined
+      
+      // Simulate progress updates if progress callback is provided
+      if (onProgress) {
+        // Start with 5% progress
+        onProgress(5)
+        
+        // Simulate realistic progress updates
+        const progressSteps = [15, 25, 35, 45, 55, 65, 75, 85, 95]
+        let currentStep = 0
+        
+        const progressInterval = setInterval(() => {
+          if (currentStep < progressSteps.length) {
+            onProgress(progressSteps[currentStep])
+            currentStep++
+          } else {
+            // If we've shown all steps but upload is still going, show 95%
+            onProgress(95)
+          }
+        }, 300) // Update every 300ms for smoother progress
+        
+        result = await importUsers(file)
+        
+        // Clear interval and smoothly go to 100%
+        clearInterval(progressInterval)
+        onProgress(100)
+      } else {
+        result = await importUsers(file)
+      }
+      
+      if (result === false) {
+        // Upload timeout - hiển thị thông báo đặc biệt
+        setUploadTimeout(true)
+        showToast({
+          title: 'Upload Timeout',
+          description: 'File upload timed out, but may still be processing. Please refresh the page to see updated data.',
+          variant: 'warning'
+        })
+        
+        // Clear cache vì dữ liệu có thể đã thay đổi
+        clearCache()
+        
+        // Lưu trạng thái để hiện dialog sau khi refresh
+        localStorage.setItem('showFileUploadAfterRefresh', 'true')
+        
+        // Refresh trang ngay lập tức
+        window.location.reload()
+        
+      } else {
+        // Upload thành công
+        setUploadTimeout(false)
+        showToast({
+          title: 'Upload Successful',
+          description: 'File uploaded and users imported successfully! Refreshing page to show new data...',
+          variant: 'success'
+        })
+        
+        // Clear cache vì dữ liệu đã thay đổi
+        clearCache()
+        
+        // Lưu trạng thái để hiện dialog sau khi refresh
+        localStorage.setItem('showFileUploadAfterRefresh', 'true')
+        
+        // Refresh trang ngay lập tức
+        window.location.reload()
+      }
+      
+      // Đóng dialog upload
+      setShowFileUpload(false)
+      
     } catch (error) {
       console.error('Error uploading file:', error)
+      // Error đã được xử lý trong useAdmin hook
+      
+      // Clear cache vì có thể có lỗi
+      clearCache()
+      
+      // Lưu trạng thái để hiện dialog sau khi refresh
+      localStorage.setItem('showFileUploadAfterRefresh', 'true')
+      
+      // Refresh trang ngay lập tức
+      window.location.reload()
     }
   }
 
@@ -165,17 +316,48 @@ export default function AdminUsersPage() {
 
   return (
     <AdminLayout title='User Management' description='Manage all users in the system'>
+      {/* Semester Header - Hiển thị semester hiện tại */}
+      <div className='mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg'>
+        <div className='flex items-center justify-between'>
+          <div className='flex items-center space-x-3'>
+            <div className='p-2 bg-blue-100 rounded-full'>
+              <svg className='w-5 h-5 text-blue-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' />
+              </svg>
+            </div>
+            <div>
+              <h3 className='text-lg font-semibold text-blue-900'>Current Semester</h3>
+              <p className='text-blue-700'>
+                {selectedSemester !== 'all' ? selectedSemester : 'All Semesters'}
+              </p>
+            </div>
+          </div>
+          <div className='text-right'>
+            <div className='flex items-center space-x-4'>
+              <div className='text-right'>
+                <p className='text-sm text-blue-600'>Total Users: {filteredUsers.length}</p>
+                <p className='text-xs text-blue-500'>Filtered by selected criteria</p>
+                {isCacheValid() && (
+                  <p className='text-xs text-green-500'>🔄 Using cached data</p>
+                )}
+              </div>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className='flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4'>
         <div className='flex flex-1 gap-2 items-center'>
           <Input
             placeholder='Search by name or email'
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className='max-w-xs'
           />
           <select
             value={selectedRole}
-            onChange={(e) => setSelectedRole(e.target.value)}
+            onChange={(e) => handleFilterChange('role', e.target.value)}
             className='border rounded px-2 py-1 text-sm'
           >
             <option value='all'>All Roles</option>
@@ -187,7 +369,7 @@ export default function AdminUsersPage() {
           </select>
           <select
             value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
+            onChange={(e) => handleFilterChange('status', e.target.value)}
             className='border rounded px-2 py-1 text-sm'
           >
             <option value='all'>All Status</option>
@@ -196,25 +378,39 @@ export default function AdminUsersPage() {
           </select>
           <select
             value={selectedSemester}
-            onChange={(e) => setSelectedSemester(e.target.value)}
-            className='border rounded px-2 py-1 text-sm'
+            onChange={(e) => handleFilterChange('semester', e.target.value)}
+            className='border rounded px-3 py-2 text-sm bg-white shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
             disabled={loadingTerms}
           >
-            <option value='all'>All Semesters</option>
+            <option value='all'>📚 All Semesters</option>
             {semesters.map((term) => (
               <option key={term} value={term}>
-                {term}
+                🎓 {term}
               </option>
             ))}
           </select>
         </div>
         <div>
           <Button variant='outline' onClick={() => setShowFileUpload((v) => !v)}>
+            <RefreshCw className='h-4 w-4 mr-2' />
             <span className='hidden md:inline'>Import Users</span>
             <span className='md:hidden'>Import</span>
           </Button>
           <Button variant='outline' className='ml-2' onClick={handleExportExcel} disabled={exporting}>
+            <RefreshCw className='h-4 w-4 mr-2' />
             {exporting ? 'Exporting...' : 'Export Excel'}
+          </Button>
+          <Button 
+            variant='outline' 
+            className='ml-2' 
+            onClick={() => {
+              clearCache()
+              fetchUsersWithCache(1, pageSize)
+            }}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
           </Button>
         </div>
       </div>
@@ -223,6 +419,37 @@ export default function AdminUsersPage() {
           <FileUpload onFileUpload={handleFileUpload} />
         </div>
       )}
+      
+      {/* Timeout Warning */}
+      {uploadTimeout && (
+        <div className='mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg'>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center space-x-3'>
+              <div className='p-2 bg-yellow-100 rounded-full'>
+                <svg className='w-5 h-5 text-yellow-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z' />
+                </svg>
+              </div>
+              <div>
+                <h3 className='text-lg font-semibold text-yellow-900'>Upload Timeout</h3>
+                <p className='text-yellow-700'>
+                  Your file upload timed out, but the file may still be processing on the server. 
+                  The page is now automatically refreshing every 3 seconds to monitor progress.
+                </p>
+              </div>
+            </div>
+            <Button 
+              variant='outline' 
+              size='sm'
+              onClick={() => window.location.reload()}
+              className='bg-yellow-100 border-yellow-300 text-yellow-800 hover:bg-yellow-200'
+            >
+              Refresh Now
+            </Button>
+          </div>
+        </div>
+      )}
+
       {error ? (
         <Card className='w-full max-w-md mx-auto'>
           <CardContent className='pt-6'>
@@ -256,7 +483,14 @@ export default function AdminUsersPage() {
                 <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Email</th>
                 <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Phone</th>
                 <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Student ID</th>
-                <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Term</th>
+                <th className='px-4 py-2 text-left text-xs font-medium text-green-600 uppercase bg-green-50'>
+                  <div className='flex items-center space-x-1'>
+                    <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' />
+                    </svg>
+                    <span>Term</span>
+                  </div>
+                </th>
                 <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Status</th>
                 <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Role</th>
                 <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Action</th>
@@ -276,7 +510,18 @@ export default function AdminUsersPage() {
                     <td className='px-4 py-2'>{user.email}</td>
                     <td className='px-4 py-2'>{user.phoneNumber || 'Not provided'}</td>
                     <td className='px-4 py-2'>{user.studentId || 'Not provided'}</td>
-                    <td className='px-4 py-2'>{userSemester}</td>
+                    <td className='px-4 py-2'>
+                      {userSemester !== 'Not provided' ? (
+                        <span className='inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200'>
+                          <svg className='w-3 h-3 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' />
+                          </svg>
+                          {userSemester}
+                        </span>
+                      ) : (
+                        <span className='text-gray-500 text-sm'>Not provided</span>
+                      )}
+                    </td>
                     <td className='px-4 py-2'>
                       {user.isActive ? (
                         <span className='inline-block px-2 py-1 rounded text-green-600 bg-green-100 text-xs font-semibold'>Active</span>

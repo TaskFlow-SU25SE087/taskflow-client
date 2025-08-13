@@ -34,7 +34,7 @@ export const SprintMeetingDetail: React.FC<SprintMeetingDetailProps> = ({
   onUpdateNextPlan,
   onUpdateTask,
   onRefreshMeeting,  // Thêm prop
-  onVersionConflict,  // Thêm prop
+  // onVersionConflict,  // Thêm prop
   loading = false
 }) => {
   const [isEditing, setIsEditing] = useState(false)

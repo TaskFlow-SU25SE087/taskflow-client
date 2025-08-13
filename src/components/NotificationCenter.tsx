@@ -7,7 +7,7 @@ import { Bell, Check, RefreshCw, Trash } from 'lucide-react'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 const NotificationCenter: React.FC = () => {
-  const { notificationService, notifications, isConnected, connectionState } = useSignalR()
+  const { notificationService, notifications } = useSignalR()
   const [isOpen, setIsOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
@@ -42,31 +42,30 @@ const NotificationCenter: React.FC = () => {
       setUnreadCount(event.detail.count)
     }
 
-    const handleNotificationsUpdated = (event: CustomEvent) => {
-      const newNotifications = notificationService.getNotifications();
+    const handleNotificationsUpdated = () => {
       const newUnreadCount = notificationService.getUnreadCount();
       setUnreadCount(newUnreadCount);
     }
 
     const handleForceNotificationUpdate = (event: CustomEvent) => {
-      const { count, unreadCount } = event.detail;
+      const { unreadCount } = event.detail;
       setUnreadCount(unreadCount);
     }
 
-    const handleNotificationsDeleted = (event: CustomEvent) => {
+    const handleNotificationsDeleted = () => {
       // Refresh notifications list after deletion
       setTimeout(() => {
         fetchNotificationsFromAPI();
       }, 100);
     }
 
-    const handleNotificationMarkedAsRead = (event: CustomEvent) => {
+    const handleNotificationMarkedAsRead = () => {
       // Update unread count after marking as read
       const newCount = notificationService.getUnreadCount();
       setUnreadCount(newCount);
     }
 
-    const handleAllNotificationsMarkedAsRead = (event: CustomEvent) => {
+    const handleAllNotificationsMarkedAsRead = () => {
       // Update unread count after marking all as read
       setUnreadCount(0);
     }

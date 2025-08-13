@@ -52,7 +52,7 @@ export default function ProjectGitHub() {
   const [selectedRepo, setSelectedRepo] = useState<string>('')
   const [selectedPart, setSelectedPart] = useState<string>('')
   const [connecting, setConnecting] = useState(false)
-  const [focusRepoDropdown, setFocusRepoDropdown] = useState(false)
+  // const [focusRepoDropdown, setFocusRepoDropdown] = useState(false)
 
   const fetchData = async () => {
     setLoading(true)
@@ -148,14 +148,14 @@ export default function ProjectGitHub() {
       if (!partId && response.data && typeof response.data === 'string' && response.data.includes('successfully')) {
         // Backend returned success message, treat as successful creation
         // Generate a temporary ID for frontend use
-        const tempId = `temp-${Date.now()}`;
+        // const tempId = `temp-${Date.now()}`;
         
-        const newPartWithId = {
-          id: tempId,
-          name: newPart.name,
-          programmingLanguage: newPart.programmingLanguage,
-          framework: newPart.framework
-        };
+        // const newPartWithId = {
+        //   id: tempId,
+        //   name: newPart.name,
+        //   programmingLanguage: newPart.programmingLanguage,
+        //   framework: newPart.framework
+        // };
         
         // Reset form and close dialog
         setNewPart({ name: '', programmingLanguage: '', framework: '' });
@@ -198,12 +198,12 @@ export default function ProjectGitHub() {
         return;
       }
       
-      const newPartWithId = {
-        id: partId,
-        name: newPart.name,
-        programmingLanguage: newPart.programmingLanguage,
-        framework: newPart.framework
-      };
+      // const newPartWithId = {
+      //   id: partId,
+      //   name: newPart.name,
+      //   programmingLanguage: newPart.programmingLanguage,
+      //   framework: newPart.framework
+      // };
       
       // Reset form and close dialog
       setNewPart({ name: '', programmingLanguage: '', framework: '' });
@@ -265,7 +265,7 @@ export default function ProjectGitHub() {
       return
     }
     
-    const selectedPartObj = parts.find(part => part.id === selectedPart)!
+    // const selectedPartObj = parts.find(part => part.id === selectedPart)!
     
     setConnecting(true)
     setError(null)
@@ -438,8 +438,8 @@ export default function ProjectGitHub() {
                               className='w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl px-4 py-3 text-base text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300 shadow-none'
                               value={selectedRepo}
                               onChange={(e) => setSelectedRepo(e.target.value)}
-                              onFocus={() => setFocusRepoDropdown(true)}
-                              onBlur={() => setFocusRepoDropdown(false)}
+                              // onFocus={() => setFocusRepoDropdown(true)}
+                              // onBlur={() => setFocusRepoDropdown(false)}
                             >
                               <option value=''>-- Select a repository --</option>
                               {repos.map((repo) => (

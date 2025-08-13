@@ -12,7 +12,7 @@ import { useIssues } from '@/hooks/useIssues'
 import { Issue, IssuePriority, IssueStatus, IssueType } from '@/types/issue'
 import { AlertCircle, Bug, ChevronDown, ChevronUp, ExternalLink, FileText, GitBranch, Lightbulb, MessageSquare, RefreshCw, Share2 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 
 const priorityOptions = [
   { value: 0, label: 'Low', color: 'bg-blue-100 text-blue-800', stringValue: 'Low' },
@@ -61,8 +61,8 @@ export const ProjectIssues: React.FC = () => {
   const [openIndexes, setOpenIndexes] = useState<{ [key: string]: boolean }>({})
   
   // URL parameters handling
-  const [searchParams, setSearchParams] = useSearchParams()
-  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  // const navigate = useNavigate()
   const issueIdFromUrl = searchParams.get('issue')
 
   const [loadingTimeout, setLoadingTimeout] = useState(false)

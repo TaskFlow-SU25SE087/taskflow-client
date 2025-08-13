@@ -60,7 +60,32 @@ export const useAdmin = () => {
       await fetchUsers(1)
       return result
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to upload file'
+      let errorMessage = 'Failed to upload file'
+      
+      // Xử lý các loại lỗi khác nhau
+      if (err.isTimeout) {
+        errorMessage = 'Upload timeout. File might still be processing on server. Please check the user list in a few minutes.'
+        showToast({
+          title: 'Upload Timeout',
+          description: errorMessage,
+          variant: 'warning'
+        })
+        
+        // Vẫn refresh danh sách users để kiểm tra xem có thành công không
+        try {
+          await fetchUsers(1)
+        } catch (refreshError) {
+          console.error('Failed to refresh users after timeout:', refreshError)
+        }
+        
+        // Không throw error để user có thể đóng dialog
+        return false
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message
+      } else if (err.message) {
+        errorMessage = err.message
+      }
+      
       showToast({
         title: 'Error',
         description: errorMessage,

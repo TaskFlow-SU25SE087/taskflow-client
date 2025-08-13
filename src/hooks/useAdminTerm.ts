@@ -1,8 +1,9 @@
 import { adminApi } from '@/api/admin'
+import { Term } from '@/types/admin'
 import { useEffect, useState } from 'react'
 
 export function useAdminTerm(page: number, reloadFlag: number) {
-  const [terms, setTerms] = useState([])
+  const [terms, setTerms] = useState<Term[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 

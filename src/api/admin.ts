@@ -22,6 +22,7 @@ export const adminApi = {
     const formData = new FormData()
     formData.append('file', file)
 
+    // Tăng timeout cho file upload (5 phút)
     const response = await axiosClient.post<{
       code: number
       message: string
@@ -29,6 +30,14 @@ export const adminApi = {
     }>(`${ENDPOINT}/users/import`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
+      },
+      timeout: 300000, // 5 phút cho file upload
+      // Thêm onUploadProgress để track progress
+      onUploadProgress: (progressEvent) => {
+        if (progressEvent.total) {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+          console.log(`Upload progress: ${percentCompleted}%`)
+        }
       }
     })
 

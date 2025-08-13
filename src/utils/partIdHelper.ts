@@ -86,9 +86,9 @@ export function extractPartId(response: any): string {
 /**
  * Generate a temporary UUID-like string for parts without valid IDs
  */
-function generateTempId(): string {
-  return 'temp-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
-}
+// function generateTempId(): string {
+//   return 'temp-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
+// }
 
 /**
  * Process parts data from backend to ensure each part has a valid ID
