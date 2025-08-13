@@ -73,21 +73,51 @@ export const useSprintMeetings = (projectId: string) => {
     sprintMeetingId: string,
     taskId: string,
     itemVersion: number,
-    reason: string
+    taskData: {
+      title: string
+      description: string
+      priority: string
+      reason: string
+    }
   ): Promise<boolean> => {
     if (!projectId) return false
-    
     try {
-      await sprintApi.updateSprintMeetingTask(projectId, sprintMeetingId, taskId, itemVersion, reason)
-      toast({
-        title: 'Success',
-        description: 'Task updated successfully',
-      })
-      return true
+      const result = await sprintApi.updateSprintMeetingTask(projectId, sprintMeetingId, taskId, itemVersion, taskData)
+      
+      if (result.success) {
+        toast({
+          title: 'Success',
+          description: 'Task reason updated successfully. Note: Title, description, and priority changes are saved locally only.'
+        })
+        return true
+      } else {
+        // Handle version conflict
+        if (result.message && result.message.includes('Someone has updated')) {
+          toast({
+            title: 'Version Conflict',
+            description: result.message
+          })
+          
+          // If we have new item version, we could potentially retry with the new version
+          if (result.newItemVersion) {
+            toast({
+              title: 'Info',
+              description: `New version available: ${result.newItemVersion}. Please refresh and try again.`
+            })
+          }
+        } else {
+          toast({
+            title: 'Warning',
+            description: result.message || 'Task update failed'
+          })
+        }
+        return false
+      }
     } catch (err: any) {
+      const errorMessage = err.message || 'Failed to update task'
       toast({
         title: 'Error',
-        description: err.message || 'Failed to update task'
+        description: errorMessage
       })
       return false
     }
@@ -104,13 +134,14 @@ export const useSprintMeetings = (projectId: string) => {
       await sprintApi.updateSprintMeeting(projectId, sprintMeetingId, data)
       toast({
         title: 'Success',
-        description: 'Sprint meeting updated successfully',
+        description: 'Sprint meeting updated successfully'
       })
       return true
     } catch (err: any) {
+      const errorMessage = err.message || 'Failed to update sprint meeting'
       toast({
         title: 'Error',
-        description: err.message || 'Failed to update sprint meeting'
+        description: errorMessage
       })
       return false
     }
@@ -127,13 +158,14 @@ export const useSprintMeetings = (projectId: string) => {
       await sprintApi.updateNextPlan(projectId, sprintMeetingId, nextPlan)
       toast({
         title: 'Success',
-        description: 'Next plan updated successfully',
+        description: 'Next plan updated successfully'
       })
       return true
     } catch (err: any) {
+      const errorMessage = err.message || 'Failed to update next plan'
       toast({
         title: 'Error',
-        description: err.message || 'Failed to update next plan'
+        description: errorMessage
       })
       return false
     }

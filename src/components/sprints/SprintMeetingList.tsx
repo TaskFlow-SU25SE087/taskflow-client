@@ -2,8 +2,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { SprintMeeting } from '@/types/sprint'
+import { canUpdateSprintMeeting, formatLastUpdateTime } from '@/utils/sprintMeetingUtils'
 import { format } from 'date-fns'
-import { Calendar, Clock } from 'lucide-react'
+import { Calendar, Clock, Lock } from 'lucide-react'
 import React from 'react'
 
 interface SprintMeetingListProps {
@@ -46,38 +47,59 @@ export const SprintMeetingList: React.FC<SprintMeetingListProps> = ({
 
   return (
     <div className="space-y-4">
-      {sprintMeetings.map((meeting) => (
-        <Card key={meeting.id} className="hover:shadow-md transition-shadow">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Calendar className="h-5 w-5 text-blue-600" />
-                <CardTitle className="text-lg">{meeting.sprintName}</CardTitle>
-                <Badge variant="secondary">Sprint Meeting</Badge>
+      {sprintMeetings.map((meeting) => {
+        const canUpdate = canUpdateSprintMeeting(meeting)
+        
+        return (
+          <Card key={meeting.id} className="hover:shadow-md transition-shadow">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <Calendar className="h-5 w-5 text-blue-600" />
+                  <CardTitle className="text-lg">{meeting.sprintName}</CardTitle>
+                  <Badge variant="secondary">Sprint Meeting</Badge>
+                  <Badge variant={canUpdate ? "secondary" : "destructive"}>
+                    {canUpdate ? 'Updatable' : 'Read Only'}
+                  </Badge>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onViewDetail(meeting.id)}
+                  disabled={!canUpdate}
+                >
+                  {canUpdate ? 'View Details' : (
+                    <>
+                      <Lock className="h-4 w-4 mr-2" />
+                      View Only
+                    </>
+                  )}
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onViewDetail(meeting.id)}
-              >
-                View Details
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-              <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4" />
-                <span>Created: {format(new Date(meeting.createdAt), 'MMM dd, yyyy HH:mm')}</span>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                <div className="flex items-center space-x-2">
+                  <Clock className="h-4 w-4" />
+                  <span>Created: {format(new Date(meeting.createdAt), 'MMM dd, yyyy HH:mm')}</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Clock className="h-4 w-4" />
+                  <span>Last Updated: {formatLastUpdateTime(meeting)}</span>
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4" />
-                <span>Updated: {format(new Date(meeting.updatedAt), 'MMM dd, yyyy HH:mm')}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+              
+              {!canUpdate && (
+                <div className="mt-3 p-2 bg-orange-50 border border-orange-200 rounded-md">
+                  <p className="text-sm text-orange-700">
+                    This meeting cannot be updated as it was last modified more than 7 days ago.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )
+      })}
     </div>
   )
 } 

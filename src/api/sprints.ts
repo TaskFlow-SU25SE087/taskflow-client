@@ -13,17 +13,13 @@ const retryRequest = async <T>(
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      console.log(`🔄 [retryRequest] Attempt ${attempt}/${maxRetries}`)
       return await requestFn()
     } catch (error: any) {
       lastError = error
       
       // Check if it's a timeout error
       if (error.isTimeout || (error.code === 'ECONNABORTED' && error.message.includes('timeout'))) {
-        console.warn(`⏰ [retryRequest] Timeout on attempt ${attempt}/${maxRetries}`)
-        
         if (attempt === maxRetries) {
-          console.error(`❌ [retryRequest] All ${maxRetries} attempts failed due to timeout`)
           throw {
             ...lastError,
             message: `Request failed after ${maxRetries} attempts due to timeout. Please check your connection.`,
@@ -33,13 +29,11 @@ const retryRequest = async <T>(
         
         // Exponential backoff for timeout errors
         const delay = baseDelay * Math.pow(2, attempt - 1)
-        console.log(`⏳ [retryRequest] Waiting ${delay}ms before retry...`)
         await new Promise(resolve => setTimeout(resolve, delay))
         continue
       }
       
       // For other errors, don't retry
-      console.error(`❌ [retryRequest] Non-timeout error on attempt ${attempt}:`, error.message)
       throw lastError
     }
   }
@@ -66,9 +60,7 @@ export const sprintApi = {
   ): Promise<boolean> => {
     // Chỉ gửi các field cần thiết, không gửi status
     const { status, ...sprintData } = sprint
-    console.log(`🔄 [sprintApi] Creating sprint in project ${projectId}:`, sprintData)
     const response = await axiosClient.post(`/projects/${projectId}/sprints`, sprintData)
-    console.log(`✅ [sprintApi] Sprint created successfully`)
     return response.data.data
   },
 
@@ -84,18 +76,14 @@ export const sprintApi = {
 
   // Cập nhật status của sprint
   updateSprintStatus: async (projectId: string, sprintId: string, status: string): Promise<boolean> => {
-    console.log(`🔄 [sprintApi] Updating sprint ${sprintId} status to ${status} in project ${projectId}`)
     const response = await axiosClient.post(`/projects/${projectId}/sprints/${sprintId}/status?status=${status}`)
-    console.log(`✅ [sprintApi] Successfully updated sprint status`)
     return response.data.data
   },
 
   // Lấy tasks của 1 sprint (cần cả projectId và sprintId) - với retry logic cải thiện
   getSprintTasks: async (projectId: string, sprintId: string): Promise<TaskP[]> => {
     return retryRequest(async () => {
-      console.log(`🔄 [sprintApi] Fetching tasks for sprint ${sprintId} in project ${projectId}`)
       const response = await axiosClient.get(`/projects/${projectId}/sprints/${sprintId}/tasks`)
-      console.log(`✅ [sprintApi] Successfully fetched ${response.data.data?.length || 0} tasks`)
       return response.data.data
     }, 3, 2000) // 3 retries, 2 second base delay
   },
@@ -120,9 +108,7 @@ export const sprintApi = {
   // Lấy sprint hiện tại (active sprint)(inprogess) của project - với retry logic cải thiện
   getCurrentSprint: async (projectId: string): Promise<Sprint> => {
     return retryRequest(async () => {
-      console.log(`🔄 [sprintApi] Fetching current sprint for project ${projectId}`)
       const response = await axiosClient.get(`/projects/${projectId}/sprints/current`)
-      console.log(`✅ [sprintApi] Successfully fetched current sprint:`, response.data.data?.name)
       return response.data.data
     }, 3, 2000) // 3 retries, 2 second base delay
   },
@@ -147,17 +133,58 @@ export const sprintApi = {
   },
 
   // Cập nhật task trong sprint meeting
+  // Note: Backend currently only supports updating 'reason' field
+  // Other fields (title, description, priority) are not updated
   updateSprintMeetingTask: async (
     projectId: string,
     sprintMeetingId: string,
     taskId: string,
     itemVersion: number,
-    reason: string
-  ): Promise<string> => {
-    const response = await axiosClient.patch(
-      `/projects/${projectId}/sprint-meetings/${sprintMeetingId}?taskId=${taskId}&itemVersion=${itemVersion}&reason=${encodeURIComponent(reason)}`
-    )
-    return response.data.data
+    taskData: {
+      title: string
+      description: string
+      priority: string
+      reason: string
+    }
+  ): Promise<{ success: boolean; message?: string; newItemVersion?: number }> => {
+    try {
+      // Backend only supports updating reason field
+      // Title, description, and priority updates are not supported
+      const url = `/projects/${projectId}/sprint-meetings/${sprintMeetingId}?taskId=${taskId}&itemVersion=${itemVersion}&reason=${encodeURIComponent(taskData.reason)}`
+      
+      const response = await axiosClient.patch(url)
+      
+      // Check if response contains a version conflict message
+      if (response.data.code === 200 && typeof response.data.data === 'string' && response.data.data.includes('Someone has updated')) {
+        // Extract new item version from message
+        const versionMatch = response.data.data.match(/New ItemVersion: (\d+)/)
+        const newItemVersion = versionMatch ? parseInt(versionMatch[1]) : undefined
+        
+        return {
+          success: false,
+          message: response.data.data,
+          newItemVersion
+        }
+      }
+      
+      // Check API response code - both 0 and 200 are considered success
+      if (response.data.code === 0 || response.data.code === 200) {
+        return {
+          success: true,
+          message: response.data.data || response.data.message || 'Task updated successfully'
+        }
+      }
+      
+      // If we reach here, it's an error
+      throw new Error(response.data.message || 'Failed to update task')
+      
+    } catch (error: any) {
+      // Handle specific API error codes
+      if (error.response?.data?.code === 9012) {
+        throw new Error('Sprint meeting cannot be updated. Please check if the meeting is still active.')
+      }
+      throw error
+    }
   },
 
   // Cập nhật sprint meeting
@@ -166,16 +193,44 @@ export const sprintApi = {
     sprintMeetingId: string,
     data: SprintMeetingUpdateRequest
   ): Promise<string> => {
-    const response = await axiosClient.put(`/projects/${projectId}/sprint-meetings/${sprintMeetingId}`, data)
-    return response.data.data
+    try {
+      const response = await axiosClient.put(`/projects/${projectId}/sprint-meetings/${sprintMeetingId}`, data)
+      
+      // Check API response code
+      if (response.data.code !== 0) {
+        throw new Error(response.data.message || 'Failed to update sprint meeting')
+      }
+      
+      return response.data.data
+    } catch (error: any) {
+      // Handle specific API error codes
+      if (error.response?.data?.code === 9012) {
+        throw new Error('Sprint meeting cannot be updated. Please check if the meeting is still active.')
+      }
+      throw error
+    }
   },
 
   // Cập nhật next plan
   updateNextPlan: async (projectId: string, sprintMeetingId: string, nextPlan: string): Promise<boolean> => {
-    const response = await axiosClient.patch(
-      `/projects/${projectId}/sprint-meetings/${sprintMeetingId}/next-plan`,
-      nextPlan
-    )
-    return response.data.data
+    try {
+      const response = await axiosClient.patch(
+        `/projects/${projectId}/sprint-meetings/${sprintMeetingId}/next-plan`,
+        nextPlan
+      )
+      
+      // Check API response code
+      if (response.data.code !== 0) {
+        throw new Error(response.data.message || 'Failed to update next plan')
+      }
+      
+      return response.data.data
+    } catch (error: any) {
+      // Handle specific API error codes
+      if (error.response?.data?.code === 9012) {
+        throw new Error('Sprint meeting cannot be updated. Please check if the meeting is still active.')
+      }
+      throw error
+    }
   }
 }

@@ -45,6 +45,7 @@ export function SprintEditMenu({ sprint, onUpdateSprint }: SprintEditMenuProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
+    
     await onUpdateSprint({
       name,
       description,
@@ -99,11 +100,9 @@ export function SprintEditMenu({ sprint, onUpdateSprint }: SprintEditMenuProps) 
               className='w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-lavender-500'
               required
             >
-              <option value='0'>Not Started</option>
               <option value='10000'>In Progress</option>
               <option value='20000'>Completed</option>
               <option value='30000'>On Hold</option>
-              <option value='40000'>Cancelled</option>
             </select>
           </div>
           <div className='flex justify-end gap-2'>

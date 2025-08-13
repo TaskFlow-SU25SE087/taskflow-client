@@ -8,7 +8,12 @@ import React from 'react'
 
 interface TaskUpdateListProps {
   taskUpdates: TaskUpdate[]
-  onUpdateTask: (taskId: string, itemVersion: number, reason: string) => Promise<boolean>
+  onUpdateTask: (taskId: string, itemVersion: number, taskData: {
+    title: string
+    description: string
+    priority: string
+    reason: string
+  }) => Promise<boolean>
   loading?: boolean
 }
 
@@ -33,7 +38,12 @@ export const TaskUpdateList: React.FC<TaskUpdateListProps> = ({
 
     setUpdatingTaskId(selectedTask.id)
     try {
-      const success = await onUpdateTask(selectedTask.id, selectedTask.itemVersion, updateReason)
+      const success = await onUpdateTask(selectedTask.id, selectedTask.itemVersion, {
+        title: selectedTask.title,
+        description: selectedTask.description,
+        priority: selectedTask.priority,
+        reason: updateReason
+      })
       if (success) {
         setShowUpdateDialog(false)
         setSelectedTask(null)

@@ -8,9 +8,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loader } from '@/components/ui/loader'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useSprintMeetings } from '@/hooks/useSprintMeetings'
 import { SprintMeetingDetail as SprintMeetingDetailType } from '@/types/sprint'
+import { canUpdateSprintMeeting } from '@/utils/sprintMeetingUtils'
 import { Calendar, Clock, TrendingUp, Users } from 'lucide-react'
 import React, { useState } from 'react'
 import { useParams } from 'react-router-dom'
@@ -22,6 +24,7 @@ const SprintMeetings: React.FC = () => {
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null)
   const [meetingDetail, setMeetingDetail] = useState<SprintMeetingDetailType | null>(null)
   const [loadingDetail, setLoadingDetail] = useState(false)
+  const { showToast } = useToastContext()
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen)
@@ -49,6 +52,11 @@ const SprintMeetings: React.FC = () => {
       setMeetingDetail(detail)
     } catch (err) {
       console.error('Failed to load meeting detail:', err)
+      showToast({
+        title: 'Error',
+        description: 'Failed to load meeting detail. Please try again.',
+        variant: 'destructive'
+      })
     } finally {
       setLoadingDetail(false)
     }
@@ -60,42 +68,170 @@ const SprintMeetings: React.FC = () => {
   }
 
   const handleUpdateMeeting = async (data: { unfinishedTasks: any[]; nextPlan: string }) => {
-    if (!selectedMeetingId) return false
+    if (!selectedMeetingId || !meetingDetail) return false
     
-    const success = await updateSprintMeeting(selectedMeetingId, data)
-    if (success) {
-      // Refresh the meeting detail
-      const detail = await getSprintMeetingDetail(selectedMeetingId)
-      setMeetingDetail(detail)
+    // Check if meeting can be updated
+    if (!canUpdateSprintMeeting(meetingDetail)) {
+      showToast({
+        title: 'Error',
+        description: 'This meeting cannot be updated at this time.',
+        variant: 'destructive'
+      })
+      return false
     }
-    return success
+    
+    try {
+      const success = await updateSprintMeeting(selectedMeetingId, data)
+      if (success) {
+        // Auto-refresh meeting detail
+        await handleRefreshMeetingDetail()
+        showToast({
+          title: 'Success',
+          description: 'Meeting updated successfully',
+          variant: 'success'
+        })
+      }
+      return success
+    } catch (err: any) {
+      // Show specific error message
+      const errorMessage = err.message || 'Failed to update meeting'
+      showToast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive'
+      })
+      return false
+    }
   }
 
   const handleUpdateNextPlan = async (nextPlan: string) => {
-    if (!selectedMeetingId) return false
+    if (!selectedMeetingId || !meetingDetail) return false
     
-    const success = await updateNextPlan(selectedMeetingId, nextPlan)
-    if (success) {
-      // Refresh the meeting detail
-      const detail = await getSprintMeetingDetail(selectedMeetingId)
-      setMeetingDetail(detail)
+    // Check if meeting can be updated
+    if (!canUpdateSprintMeeting(meetingDetail)) {
+      showToast({
+        title: 'Error',
+        description: 'This meeting cannot be updated at this time.',
+        variant: 'destructive'
+      })
+      return false
     }
-    return success
+    
+    try {
+      const success = await updateNextPlan(selectedMeetingId, nextPlan)
+      if (success) {
+        // Auto-refresh meeting detail
+        await handleRefreshMeetingDetail()
+        showToast({
+          title: 'Success',
+          description: 'Next plan updated successfully',
+          variant: 'success'
+        })
+      }
+      return success
+    } catch (err: any) {
+      // Show specific error message
+      const errorMessage = err.message || 'Failed to update next plan'
+      showToast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive'
+      })
+      return false
+    }
   }
 
-  const handleUpdateTask = async (taskId: string, itemVersion: number, reason: string) => {
-    if (!selectedMeetingId) return false
+  const handleUpdateTask = async (taskId: string, itemVersion: number, taskData: {
+    title: string
+    description: string
+    priority: string
+    reason: string
+  }) => {
+    if (!selectedMeetingId || !meetingDetail) return false
     
-    const success = await updateSprintMeetingTask(selectedMeetingId, taskId, itemVersion, reason)
-    if (success) {
-      // Refresh data
-      fetchTaskUpdates()
-      if (meetingDetail) {
-        const detail = await getSprintMeetingDetail(selectedMeetingId)
-        setMeetingDetail(detail)
-      }
+    // Check if meeting can be updated
+    if (!canUpdateSprintMeeting(meetingDetail)) {
+      showToast({
+        title: 'Error',
+        description: 'This meeting cannot be updated at this time.',
+        variant: 'destructive'
+      })
+      return false
     }
-    return success
+    
+    try {
+      const success = await updateSprintMeetingTask(selectedMeetingId, taskId, itemVersion, taskData)
+      if (success) {
+        // Auto-refresh all data
+        await Promise.all([
+          fetchTaskUpdates(),
+          handleRefreshMeetingDetail()
+        ])
+        showToast({
+          title: 'Success',
+          description: 'Task updated successfully',
+          variant: 'success'
+        })
+      }
+      return success
+    } catch (err: any) {
+      // Show specific error message
+      const errorMessage = err.message || 'Failed to update task'
+      showToast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive'
+      })
+      return false
+    }
+  }
+
+  // Handle version conflicts from task updates
+  const handleVersionConflict = (message: string, newItemVersion?: number, taskId?: string, reason?: string) => {
+    if (taskId && reason && newItemVersion) {
+      showToast({
+        title: 'Version Conflict',
+        description: `${message} New version: ${newItemVersion}`,
+        variant: 'warning'
+      })
+      
+      // Optionally, we could automatically retry with the new version
+      // handleUpdateTask(taskId, newItemVersion, reason)
+    }
+  }
+
+  // Thêm function để refresh meeting detail
+  const handleRefreshMeetingDetail = async () => {
+    if (!selectedMeetingId) return
+    
+    try {
+      const detail = await getSprintMeetingDetail(selectedMeetingId)
+      setMeetingDetail(detail)
+    } catch (err) {
+      console.error('Failed to refresh meeting detail:', err)
+      showToast({
+        title: 'Error',
+        description: 'Failed to refresh meeting detail',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handleRefresh = async () => {
+    try {
+      await Promise.all([fetchSprintMeetings(), fetchTaskUpdates()])
+      showToast({
+        title: 'Success',
+        description: 'Data refreshed successfully',
+        variant: 'success'
+      })
+    } catch (err) {
+      showToast({
+        title: 'Error',
+        description: 'Failed to refresh data',
+        variant: 'destructive'
+      })
+    }
   }
 
   if (isLoading || !currentProject) {
@@ -125,7 +261,10 @@ const SprintMeetings: React.FC = () => {
               onBack={handleBackToList}
               onUpdate={handleUpdateMeeting}
               onUpdateNextPlan={handleUpdateNextPlan}
+              onUpdateTask={handleUpdateTask}
+              onRefreshMeeting={handleRefreshMeetingDetail}
               loading={loadingDetail}
+              onVersionConflict={handleVersionConflict}
             />
           </div>
         </div>
@@ -150,10 +289,7 @@ const SprintMeetings: React.FC = () => {
           <div className="flex items-center space-x-4">
             <Button
               variant="outline"
-              onClick={() => {
-                fetchSprintMeetings()
-                fetchTaskUpdates()
-              }}
+              onClick={handleRefresh}
               disabled={loading}
             >
               <Clock className="h-4 w-4 mr-2" />

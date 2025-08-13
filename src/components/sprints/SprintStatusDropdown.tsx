@@ -12,11 +12,9 @@ interface SprintStatusDropdownProps {
 
 
 const statusOptions = [
-  { value: '0', label: 'Not Started' },
-  { value: '10000', label: 'In Progress' },
-  { value: '20000', label: 'Completed' },
-  { value: '30000', label: 'On Hold' },
-  { value: '40000', label: 'Cancelled' }
+  { value: '10000', label: 'In Progress', disabled: false },
+  { value: '20000', label: 'Completed', disabled: false },
+  { value: '30000', label: 'On Hold', disabled: false }
 ]
 
 export function SprintStatusDropdown({ sprint, onStatusUpdate }: SprintStatusDropdownProps) {
@@ -63,6 +61,17 @@ export function SprintStatusDropdown({ sprint, onStatusUpdate }: SprintStatusDro
   const handleStatusChange = async (newStatus: string) => {
     const currentEnumValue = getStatusEnumValue(sprint.status)
     if (newStatus === currentEnumValue) return
+
+    // Check if the selected status is disabled
+    const selectedOption = statusOptions.find(option => option.value === newStatus)
+    if (selectedOption?.disabled) {
+      showToast({
+        title: 'Error',
+        description: `Cannot change sprint status to ${selectedOption.label}`,
+        variant: 'destructive'
+      })
+      return
+    }
 
     setIsUpdating(true)
     try {
@@ -127,9 +136,11 @@ export function SprintStatusDropdown({ sprint, onStatusUpdate }: SprintStatusDro
         </SelectTrigger>
         <SelectContent>
           {statusOptions.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
+            <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
               <div className="flex items-center gap-2">
                 <span className={`px-2 py-1 rounded text-xs font-medium ${
+                  option.disabled ? 'opacity-50 cursor-not-allowed' : ''
+                } ${
                   option.value === '0' ? 'bg-gray-100 text-gray-700' :
                   option.value === '10000' ? 'bg-blue-100 text-blue-700' :
                   option.value === '20000' ? 'bg-green-100 text-green-700' :
@@ -138,6 +149,7 @@ export function SprintStatusDropdown({ sprint, onStatusUpdate }: SprintStatusDro
                   'bg-gray-100 text-gray-700'
                 }`}>
                   {option.label}
+                  {option.disabled && <span className="ml-1 text-xs text-gray-400">(Disabled)</span>}
                 </span>
               </div>
             </SelectItem>

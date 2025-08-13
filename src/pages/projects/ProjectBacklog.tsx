@@ -5,16 +5,16 @@ import { SprintBacklog } from '@/components/sprints/SprintBacklog'
 import { SprintBoard } from '@/components/sprints/SprintBoard'
 import { SprintCreateMenu } from '@/components/sprints/SprintCreateMenu'
 import { SprintSelector } from '@/components/sprints/SprintSelector'
-import { useBoards } from '@/hooks/useBoards'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToastContext } from '@/components/ui/ToastContext'
+import { useBoards } from '@/hooks/useBoards'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useOptimizedTasks } from '@/hooks/useOptimizedTasks'
 import { useSprints } from '@/hooks/useSprints'
 import { TaskP } from '@/types/task'
-import { Filter, Search, Share2, ChevronDown } from 'lucide-react'
+import { ChevronDown, Filter, Search, Share2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 const ProjectBacklog = () => {
@@ -155,7 +155,7 @@ const ProjectBacklog = () => {
           description: data.description,
           startDate: data.startDate,
           endDate: data.endDate,
-          status: '0'
+          status: '10000' // Changed from '0' (Not Started) to '10000' (In Progress)
         })
         if (result.ok) {
           showToast({
