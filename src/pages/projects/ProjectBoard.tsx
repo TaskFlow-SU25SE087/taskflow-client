@@ -211,6 +211,7 @@ export default function ProjectBoard() {
   const { tasks } = useTasks()
   const [sprintTasks, setSprintTasks] = useState<TaskP[]>([])
   const [selectedSprintId, setSelectedSprintId] = useState<string | null>(null)
+  const [isSprintLoading, setIsSprintLoading] = useState<boolean>(true)
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [isLockDialogOpen, setIsLockDialogOpen] = useState(false)
   const [lockedColumns, setLockedColumns] = useState<string[]>([])
@@ -224,10 +225,10 @@ export default function ProjectBoard() {
   // Function to refresh both boards and sprint tasks
   const refreshBoardsAndSprintTasks = async () => {
     if (!currentProject?.id) return
-    
+
     // Refresh boards
     await refreshBoards()
-    
+
     // Also refresh sprint tasks to ensure consistency
     if (selectedSprintId) {
       await fetchCurrentSprintAndTasks(currentProject.id, setSelectedSprintId, setSprintTasks)
@@ -253,8 +254,22 @@ export default function ProjectBoard() {
   }, [sprintTasks])
 
   useEffect(() => {
-    if (currentProject?.id) {
-      fetchCurrentSprintAndTasks(currentProject?.id, setSelectedSprintId, setSprintTasks)
+    let cancelled = false
+    const hydrateSprint = async () => {
+      if (!currentProject?.id) {
+        setIsSprintLoading(false)
+        return
+      }
+      setIsSprintLoading(true)
+      try {
+        await fetchCurrentSprintAndTasks(currentProject.id, setSelectedSprintId, setSprintTasks)
+      } finally {
+        if (!cancelled) setIsSprintLoading(false)
+      }
+    }
+    hydrateSprint()
+    return () => {
+      cancelled = true
     }
   }, [currentProject])
 
@@ -342,45 +357,45 @@ export default function ProjectBoard() {
         })
         return
       }
-             if (!currentProject?.id) {
-         console.log('[DnD] Không có currentProject khi kéo board')
-         return
-       }
-       
-       // Double-check currentProject is still valid before proceeding
-       if (!currentProject?.id) {
-         console.log('[DnD] currentProject became null during board operation, aborting')
-         return
-       }
-       
-       let oldIndex = boards.findIndex((b) => b.id === active.id)
-       let newIndex
-       if (over.id === '__dropzone_start__') {
-         newIndex = 0
-       } else if (over.id === '__dropzone_end__') {
-         newIndex = boards.length - 1
-       } else {
-         newIndex = boards.findIndex((b) => b.id === over.id)
-       }
-       if (oldIndex === -1 || newIndex === -1) {
-         console.log('[DnD] Không tìm thấy oldIndex hoặc newIndex khi kéo board', {
-           oldIndex,
-           newIndex,
-           activeId: active.id,
-           overId: over.id
-         })
-         return
-       }
-       const newBoards = arrayMove(boards, oldIndex, newIndex)
-       setBoards(newBoards)
-       const orderPayload = newBoards.map((b, idx) => ({ id: b.id, order: idx }))
-       
-       // Final safety check before API call
-       if (!currentProject?.id) {
-         throw new Error('currentProject became null during board operation')
-       }
-       
-       await boardApi.updateBoardOrder(currentProject.id, orderPayload)
+      if (!currentProject?.id) {
+        console.log('[DnD] Không có currentProject khi kéo board')
+        return
+      }
+
+      // Double-check currentProject is still valid before proceeding
+      if (!currentProject?.id) {
+        console.log('[DnD] currentProject became null during board operation, aborting')
+        return
+      }
+
+      let oldIndex = boards.findIndex((b) => b.id === active.id)
+      let newIndex
+      if (over.id === '__dropzone_start__') {
+        newIndex = 0
+      } else if (over.id === '__dropzone_end__') {
+        newIndex = boards.length - 1
+      } else {
+        newIndex = boards.findIndex((b) => b.id === over.id)
+      }
+      if (oldIndex === -1 || newIndex === -1) {
+        console.log('[DnD] Không tìm thấy oldIndex hoặc newIndex khi kéo board', {
+          oldIndex,
+          newIndex,
+          activeId: active.id,
+          overId: over.id
+        })
+        return
+      }
+      const newBoards = arrayMove(boards, oldIndex, newIndex)
+      setBoards(newBoards)
+      const orderPayload = newBoards.map((b, idx) => ({ id: b.id, order: idx }))
+
+      // Final safety check before API call
+      if (!currentProject?.id) {
+        throw new Error('currentProject became null during board operation')
+      }
+
+      await boardApi.updateBoardOrder(currentProject.id, orderPayload)
       console.log('[DnD] Đã cập nhật thứ tự board', { orderPayload })
       return
     }
@@ -460,7 +475,7 @@ export default function ProjectBoard() {
         if (!currentProject?.id) {
           throw new Error('currentProject became null during operation')
         }
-        
+
         await taskApi.moveTaskToBoard(currentProject.id, taskId, newBoardId)
 
         const apiCallEndTime = performance.now()
@@ -582,7 +597,9 @@ export default function ProjectBoard() {
     if (hasActiveSprint) {
       // Prefer API-provided sprint tasks when available
       boardTasks = (
-        sprintTasks.length > 0 ? sprintTasks : (board.tasks || []).filter((t) => (t.sprintId || '') === selectedSprintId)
+        sprintTasks.length > 0
+          ? sprintTasks
+          : (board.tasks || []).filter((t) => (t.sprintId || '') === selectedSprintId)
       ).filter((task) => task.boardId === board.id)
     }
 
@@ -634,7 +651,7 @@ export default function ProjectBoard() {
     localStorage.setItem('board_locked_columns', JSON.stringify({ lockedColumns, lockAll }))
   }, [lockedColumns, lockAll])
 
-  if (isLoading || isBoardLoading || !currentProject) {
+  if (isLoading || isBoardLoading || isSprintLoading || !currentProject) {
     return (
       <div className='flex h-screen bg-gray-50'>
         <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
