@@ -1,109 +1,111 @@
-import { AlertCircle, Calendar, Clock, FileText, TrendingUp } from 'lucide-react'
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
-
 import { Navbar } from '@/components/Navbar'
-import { ActivityChart, ActivityTimeline, BarChart, DistributionChart, DonutChart, LineChartComponent, MetricCard, MultiLineChart, PieChartComponent, ProgressChart, StackedBarChart } from '@/components/reports/ReportCharts'
 import { Sidebar } from '@/components/Sidebar'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
-import { useProjectReports } from '@/hooks/useProjectReports'
+import { useTeamActivityReport } from '@/hooks/useTeamActivityReport'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  AlertCircle,
+  Calendar,
+  Users,
+  BarChart3,
+  TrendingUp,
+  MessageSquare,
+  Filter,
+  RefreshCw,
+  Search,
+  Timer
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 const ProjectReports: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>()
-  const { reportData, loading, error, refetch } = useProjectReports(projectId)
+  const { report, loading, error, refetch, setQuery } = useTeamActivityReport(projectId)
   const { currentProject } = useCurrentProject()
-  const [selectedTimeRange, setSelectedTimeRange] = useState<'week' | 'month' | 'quarter'>('month')
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
-
   const toggleSidebar = () => setIsSidebarOpen((v) => !v)
+  const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d')
+  const [memberSearch, setMemberSearch] = useState('')
+  const [showComments, setShowComments] = useState(true)
+  const [showTasks, setShowTasks] = useState(true)
+  const [topCount, setTopCount] = useState(5)
 
-  const getPriorityColor = (priority: string | number) => {
-    switch (priority?.toString()) {
-      case 'High':
-      case '3':
-        return 'bg-red-100 text-red-800'
-      case 'Medium':
-      case '2':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'Low':
-      case '1':
-        return 'bg-green-100 text-green-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
+  const applyTimeRange = (range: typeof timeRange) => {
+    setTimeRange(range)
+    if (!report) return
+    const end = new Date()
+    const start = new Date()
+    if (range === '7d') start.setDate(end.getDate() - 7)
+    else if (range === '30d') start.setDate(end.getDate() - 30)
+    else start.setDate(end.getDate() - 90)
+    setQuery((q) => ({
+      ...q,
+      startDate: start.toISOString(),
+      endDate: end.toISOString(),
+      topContributorsCount: topCount
+    }))
+    refetch({ startDate: start.toISOString(), endDate: end.toISOString(), topContributorsCount: topCount })
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'done':
-        return 'bg-green-100 text-green-800'
-      case 'ongoing':
-        return 'bg-blue-100 text-blue-800'
-      case 'todo':
-        return 'bg-gray-100 text-gray-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
+  const filteredMembers = useMemo(() => {
+    if (!report?.memberActivities) return []
+    const term = memberSearch.trim().toLowerCase()
+    if (!term) return report.memberActivities
+    return report.memberActivities.filter(
+      (m) =>
+        m.fullName.toLowerCase().includes(term) ||
+        m.email.toLowerCase().includes(term) ||
+        m.role.toLowerCase().includes(term)
+    )
+  }, [report, memberSearch])
+
+  const recentTaskActivities = useMemo(() => {
+    if (!showTasks) return []
+    return (
+      report?.memberActivities
+        .flatMap((m) => m.taskActivities.map((t) => ({ ...t, fullName: m.fullName })))
+        .sort(
+          (a, b) =>
+            new Date(b.assignedAt || b.completedAt || b.deadline || 0).getTime() -
+            new Date(a.assignedAt || a.completedAt || a.deadline || 0).getTime()
+        )
+        .slice(0, 30) || []
+    )
+  }, [report, showTasks])
+
+  const recentCommentActivities = useMemo(() => {
+    if (!showComments) return []
+    return (
+      report?.memberActivities
+        .flatMap((m) => m.commentActivities.map((c) => ({ ...c, fullName: m.fullName })))
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 30) || []
+    )
+  }, [report, showComments])
+
+  const handleTopCountChange = (val: string) => {
+    const n = Number(val)
+    setTopCount(n)
+    setQuery((q) => ({ ...q, topContributorsCount: n }))
+    refetch({ topContributorsCount: n })
   }
 
-  const getIssueTypeName = (type: string | number) => {
-    switch (type?.toString()) {
-      case '10000':
-      case 'Bug':
-        return 'Bug'
-      case '20000':
-      case 'FeatureRequest':
-        return 'Feature Request'
-      case '30000':
-      case 'Improvement':
-        return 'Improvement'
-      case '40000':
-      case 'Task':
-        return 'Task'
-      case '50000':
-      case 'Documentation':
-        return 'Documentation'
-      case '60000':
-      case 'Other':
-        return 'Other'
-      default:
-        return type?.toString() || 'Unknown'
-    }
-  }
-
-  const getIssuePriorityName = (priority: string | number) => {
-    switch (priority?.toString()) {
-      case '0':
-      case 'Low':
-        return 'Low'
-      case '10000':
-      case 'Medium':
-        return 'Medium'
-      case '20000':
-      case 'High':
-        return 'High'
-      case '30000':
-      case 'Urgent':
-        return 'Urgent'
-      default:
-        return priority?.toString() || 'Unknown'
-    }
-  }
+  const fmt = (d?: string) => (d ? new Date(d).toLocaleString() : '-')
 
   if (loading) {
     return (
-      <div className="flex h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50">
+      <div className='flex h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50'>
         <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className='flex-1 flex flex-col overflow-hidden'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-          <div className="flex items-center justify-center flex-1">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
-              <p className="mt-4 text-gray-600">Loading reports...</p>
+          <div className='flex items-center justify-center flex-1'>
+            <div className='text-center'>
+              <div className='animate-spin rounded-full h-16 w-16 border-b-2 border-gray-900 mx-auto'></div>
+              <p className='mt-4 text-gray-600'>Loading project report...</p>
             </div>
           </div>
         </div>
@@ -113,18 +115,18 @@ const ProjectReports: React.FC = () => {
 
   if (error) {
     return (
-      <div className="flex h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50">
+      <div className='flex h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50'>
         <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className='flex-1 flex flex-col overflow-hidden'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-          <div className="flex items-center justify-center flex-1">
-            <Card className="w-full max-w-md">
-              <CardContent className="pt-6">
-                <div className="text-center">
-                  <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Error Loading Reports</h3>
-                  <p className="text-gray-600 mb-4">{error}</p>
-                  <Button onClick={refetch}>Try Again</Button>
+          <div className='flex items-center justify-center flex-1'>
+            <Card className='w-full max-w-md'>
+              <CardContent className='pt-6'>
+                <div className='text-center'>
+                  <AlertCircle className='h-12 w-12 text-red-500 mx-auto mb-4' />
+                  <h3 className='text-lg font-semibold mb-2'>Error Loading Project Report</h3>
+                  <p className='text-gray-600 mb-4'>{error}</p>
+                  <Button onClick={() => refetch()}>Try Again</Button>
                 </div>
               </CardContent>
             </Card>
@@ -134,511 +136,320 @@ const ProjectReports: React.FC = () => {
     )
   }
 
-  if (!reportData) {
-    return null
-  }
+  if (!report) return null
+  const s = report.summary
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50">
+    <div className='flex h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50'>
       <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className='flex-1 flex flex-col overflow-hidden'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-        <div className="flex-1 overflow-y-auto bg-white/90">
-          <div className="container mx-auto p-6 space-y-6">
-            {/* Header */}
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-3xl font-bold">Project Reports</h1>
-                <p className="text-gray-600">Comprehensive analytics and insights for your project</p>
+        <div className='flex-1 overflow-y-auto bg-gradient-to-br from-white via-slate-50 to-lavender-50/60'>
+          <div className='flex flex-col flex-1 min-h-0'>
+            <div className='flex-none w-full p-6 pb-4 bg-transparent'>
+              <div className='flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4'>
+                <div className='flex items-center gap-3'>
+                  <div className='p-2 bg-lavender-100 rounded-lg'>
+                    <BarChart3 className='h-6 w-6 text-lavender-600' />
+                  </div>
+                  <div>
+                    <h1 className='text-3xl font-bold text-gray-900'>Report</h1>
+                    <p className='text-sm text-gray-600'>Project: {currentProject?.title || report.projectTitle}</p>
+                  </div>
+                  <div className='ml-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-full px-3 py-1 border border-gray-200'>
+                    {s.totalTasks} tasks • {s.totalComments} comments
+                  </div>
+                </div>
+                <div className='flex items-center gap-2 lg:gap-3 flex-wrap'>
+                  <Select value={timeRange} onValueChange={(v: any) => applyTimeRange(v)}>
+                    <SelectTrigger className='w-[120px] h-9 rounded-lg border-gray-300 bg-white/70 backdrop-blur shadow-sm'>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='7d'>Last 7 days</SelectItem>
+                      <SelectItem value='30d'>Last 30 days</SelectItem>
+                      <SelectItem value='90d'>Last 90 days</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={String(topCount)} onValueChange={handleTopCountChange}>
+                    <SelectTrigger className='w-[110px] h-9 rounded-lg border-gray-300 bg-white/70 backdrop-blur shadow-sm'>
+                      <SelectValue placeholder='Top N' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[3, 5, 10].map((n) => (
+                        <SelectItem key={n} value={String(n)}>
+                          Top {n}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    size='sm'
+                    variant='ghost'
+                    onClick={() => refetch()}
+                    className='h-9 px-3 rounded-lg bg-[#ece8fd] hover:bg-[#e0dbfa] text-[#7c3aed] flex items-center gap-1'
+                  >
+                    <RefreshCw className='h-4 w-4' /> Refresh
+                  </Button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button
-                  variant={selectedTimeRange === 'week' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSelectedTimeRange('week')}
-                >
-                  Week
-                </Button>
-                <Button
-                  variant={selectedTimeRange === 'month' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSelectedTimeRange('month')}
-                >
-                  Month
-                </Button>
-                <Button
-                  variant={selectedTimeRange === 'quarter' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSelectedTimeRange('quarter')}
-                >
-                  Quarter
-                </Button>
+              {/* Meta row moved below to mirror secondary details area */}
+              <div className='flex flex-wrap items-center gap-4 mb-2 text-xs text-gray-500 pl-[52px]'>
+                <span className='inline-flex items-center gap-1'>
+                  <Calendar className='h-3.5 w-3.5' /> {fmt(report.startDate)} – {fmt(report.endDate)}
+                </span>
+                <span className='inline-flex items-center gap-1'>
+                  <Users className='h-3.5 w-3.5' /> {s.totalMembers} members
+                </span>
+                <span className='inline-flex items-center gap-1'>
+                  <Timer className='h-3.5 w-3.5' /> Generated {fmt(report.reportGeneratedAt)}
+                </span>
+              </div>
+
+              {/* Controls Bar */}
+              <div className='flex flex-col md:flex-row md:items-center justify-between gap-3'>
+                <div className='flex items-center gap-2 flex-wrap'>
+                  <div className='relative'>
+                    <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400' />
+                    <Input
+                      placeholder='Search members...'
+                      className='pl-10 w-[220px] h-9 rounded-lg border-gray-300 bg-white/70 backdrop-blur'
+                      value={memberSearch}
+                      onChange={(e) => setMemberSearch(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    variant={showTasks ? 'default' : 'outline'}
+                    size='sm'
+                    className={`h-9 rounded-lg ${showTasks ? 'bg-lavender-600 hover:bg-lavender-500' : ''}`}
+                    onClick={() => setShowTasks((v) => !v)}
+                  >
+                    Tasks
+                  </Button>
+                  <Button
+                    variant={showComments ? 'default' : 'outline'}
+                    size='sm'
+                    className={`h-9 rounded-lg ${showComments ? 'bg-lavender-600 hover:bg-lavender-500' : ''}`}
+                    onClick={() => setShowComments((v) => !v)}
+                  >
+                    Comments
+                  </Button>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    className='h-9 rounded-lg flex items-center gap-1 border-gray-300'
+                    disabled
+                  >
+                    <Filter className='h-4 w-4' /> Filters
+                  </Button>
+                </div>
+                <div className='text-xs text-gray-500'>
+                  Showing {filteredMembers.length} of {s.totalMembers} members
+                </div>
               </div>
             </div>
 
-                         {/* Key Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <MetricCard
-                title="Total Tasks"
-                value={reportData.stats.totalTasks}
-                icon={<FileText className="h-4 w-4 text-blue-600" />}
-                color="blue"
-              />
-              <MetricCard
-                title="Completion Rate"
-                value={`${reportData.stats.completionRate.toFixed(1)}%`}
-                icon={<TrendingUp className="h-4 w-4 text-green-600" />}
-                color="green"
-              />
-              <MetricCard
-                title="Active Sprints"
-                value={reportData.stats.activeSprints}
-                icon={<Clock className="h-4 w-4 text-purple-600" />}
-                color="purple"
-              />
-              <MetricCard
-                title="Open Issues"
-                value={reportData.stats.openIssues}
-                icon={<AlertCircle className="h-4 w-4 text-red-600" />}
-                color="red"
-              />
+            {/* Summary Cards */}
+            <div className='px-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4'>
+              {[
+                {
+                  label: 'Total Tasks',
+                  value: s.totalTasks,
+                  icon: <BarChart3 className='h-5 w-5 text-blue-600' />
+                },
+                {
+                  label: 'Completed',
+                  value: s.totalCompletedTasks,
+                  icon: <TrendingUp className='h-5 w-5 text-green-600' />
+                },
+                {
+                  label: 'In Progress',
+                  value: s.totalInProgressTasks,
+                  icon: <BarChart3 className='h-5 w-5 text-purple-600' />
+                },
+                {
+                  label: 'Overdue',
+                  value: s.totalOverdueTasks,
+                  icon: <AlertCircle className='h-5 w-5 text-red-600' />
+                }
+              ].map((c) => (
+                <Card
+                  key={c.label}
+                  className='rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition bg-white/80 backdrop-blur'
+                >
+                  <CardContent className='p-4'>
+                    <div className='flex items-center justify-between'>
+                      <div>
+                        <p className='text-xs font-medium text-gray-500 tracking-wide uppercase'>{c.label}</p>
+                        <p className='mt-1 text-2xl font-bold text-gray-900'>{c.value}</p>
+                      </div>
+                      {c.icon}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
 
-            {/* Detailed Reports */}
-            <Tabs defaultValue="overview" className="space-y-4">
-              <TabsList>
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="charts">Charts</TabsTrigger>
-                <TabsTrigger value="tasks">Tasks</TabsTrigger>
-                <TabsTrigger value="sprints">Sprints</TabsTrigger>
-                <TabsTrigger value="issues">Issues</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="overview" className="space-y-4">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Task Status Distribution */}
-                  <ProgressChart
-                    title="Task Status Distribution"
-                    description="Breakdown of tasks by current status"
-                    data={Object.entries(reportData.stats.tasksByStatus).map(([status, count]) => ({
-                      label: status.charAt(0).toUpperCase() + status.slice(1),
-                      value: count,
-                      color: status === 'done' ? '#10b981' : status === 'ongoing' ? '#3b82f6' : '#6b7280'
-                    }))}
-                    total={reportData.stats.totalTasks}
-                  />
-
-                  {/* Task Priority Distribution */}
-                  <DistributionChart
-                    title="Task Priority Distribution"
-                    description="Breakdown of tasks by priority level"
-                    data={Object.entries(reportData.stats.tasksByPriority).map(([priority, count]) => ({
-                      label: priority,
-                      value: count,
-                      color: priority === 'High' || priority === '3' ? '#ef4444' : 
-                             priority === 'Medium' || priority === '2' ? '#f59e0b' : '#10b981'
-                    }))}
-                  />
-                </div>
-
-                {/* Additional Charts */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Bar Chart for Sprint Performance */}
-                  <BarChart
-                    title="Sprint Performance"
-                    description="Tasks completed per sprint"
-                    data={reportData.sprints.slice(0, 5).map(sprint => ({
-                      label: sprint.name,
-                      value: sprint.taskPs?.length || 0,
-                      color: sprint.status === 1 ? '#3b82f6' : '#10b981'
-                    }))}
-                  />
-
-                  {/* Pie Chart for Issue Types */}
-                  <PieChartComponent
-                    title="Issue Types Distribution"
-                    description="Breakdown of issues by type"
-                    data={Object.entries(reportData.stats.issuesByType).map(([type, count]) => ({
-                      label: getIssueTypeName(type),
-                      value: count,
-                      color: type === '10000' || type === 'Bug' ? '#ef4444' : 
-                             type === '20000' || type === 'FeatureRequest' ? '#10b981' : 
-                             type === '30000' || type === 'Improvement' ? '#3b82f6' : 
-                             type === '40000' || type === 'Task' ? '#8b5cf6' :
-                             type === '50000' || type === 'Documentation' ? '#06b6d4' : '#f59e0b'
-                    }))}
-                  />
-                </div>
-
-                {/* Line Chart - Task Completion Trend */}
-                <LineChartComponent
-                  title="Task Completion Trend"
-                  description="Weekly task completion progress"
-                  data={[
-                    { label: 'Week 1', value: Math.floor(reportData.stats.completedTasks * 0.3) },
-                    { label: 'Week 2', value: Math.floor(reportData.stats.completedTasks * 0.5) },
-                    { label: 'Week 3', value: Math.floor(reportData.stats.completedTasks * 0.7) },
-                    { label: 'Week 4', value: reportData.stats.completedTasks },
-                    { label: 'Week 5', value: Math.floor(reportData.stats.completedTasks * 1.1) }
-                  ]}
-                />
-
-                {/* Donut Chart - Sprint Status */}
-                <DonutChart
-                  title="Sprint Status Distribution"
-                  description="Current sprint status breakdown"
-                  data={[
-                    { label: 'Active', value: reportData.stats.activeSprints, color: '#3b82f6' },
-                    { label: 'Completed', value: reportData.stats.completedSprints, color: '#10b981' },
-                    { label: 'Planning', value: reportData.stats.totalSprints - reportData.stats.activeSprints - reportData.stats.completedSprints, color: '#f59e0b' }
-                  ]}
-                />
-
-                {/* Multi-line Chart */}
-                <MultiLineChart
-                  title="Project Activity Overview"
-                  description="Tasks, Issues, and Sprints by week"
-                  data={[
-                    { label: 'Week 1', tasks: Math.floor(reportData.stats.completedTasks * 0.2), issues: Math.floor(reportData.stats.openIssues * 0.3), sprints: 1 },
-                    { label: 'Week 2', tasks: Math.floor(reportData.stats.completedTasks * 0.4), issues: Math.floor(reportData.stats.openIssues * 0.6), sprints: 1 },
-                    { label: 'Week 3', tasks: Math.floor(reportData.stats.completedTasks * 0.6), issues: Math.floor(reportData.stats.openIssues * 0.8), sprints: 2 },
-                    { label: 'Week 4', tasks: reportData.stats.completedTasks, issues: reportData.stats.openIssues, sprints: reportData.stats.activeSprints }
-                  ]}
-                />
-
-                {/* Stacked Bar Chart */}
-                <StackedBarChart
-                  title="Task Status by Sprint"
-                  description="Task breakdown by status for each sprint"
-                  data={reportData.sprints.slice(0, 4).map(sprint => ({
-                    label: sprint.name,
-                    completed: Math.floor((sprint.taskPs?.length || 0) * 0.6),
-                    inProgress: Math.floor((sprint.taskPs?.length || 0) * 0.3),
-                    pending: Math.floor((sprint.taskPs?.length || 0) * 0.1)
-                  }))}
-                />
-
-                {/* Activity Chart */}
-                <ActivityChart
-                  title="Weekly Activity"
-                  description="Activity summary for the last 7 days"
-                  data={[
-                    { date: 'Mon', tasks: reportData.stats.completedTasks, issues: reportData.stats.openIssues, sprints: reportData.stats.activeSprints },
-                    { date: 'Tue', tasks: Math.floor(reportData.stats.completedTasks * 0.8), issues: Math.floor(reportData.stats.openIssues * 1.1), sprints: reportData.stats.activeSprints },
-                    { date: 'Wed', tasks: Math.floor(reportData.stats.completedTasks * 0.9), issues: Math.floor(reportData.stats.openIssues * 0.9), sprints: reportData.stats.activeSprints },
-                    { date: 'Thu', tasks: Math.floor(reportData.stats.completedTasks * 1.1), issues: Math.floor(reportData.stats.openIssues * 0.8), sprints: reportData.stats.activeSprints },
-                    { date: 'Fri', tasks: Math.floor(reportData.stats.completedTasks * 0.7), issues: Math.floor(reportData.stats.openIssues * 1.2), sprints: reportData.stats.activeSprints }
-                  ]}
-                />
-
-                {/* Recent Activity */}
-                <ActivityTimeline
-                  activities={[
-                    ...reportData.tasks.slice(0, 3).map(task => ({
-                      id: task.id,
-                      title: task.title,
-                      description: `Task ${task.status}`,
-                      timestamp: task.updated,
-                      type: 'task' as const
-                    })),
-                    ...reportData.sprints.slice(0, 2).map(sprint => ({
-                      id: sprint.id,
-                      title: sprint.name,
-                      description: `Sprint ${sprint.status === 1 ? 'Active' : 'Completed'}`,
-                      timestamp: sprint.startDate,
-                      type: 'sprint' as const
-                    }))
-                  ]}
-                />
-              </TabsContent>
-
-              <TabsContent value="charts" className="space-y-4">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Line Chart */}
-                  <LineChartComponent
-                    title="Task Completion Trend"
-                    description="Weekly task completion progress"
-                    data={[
-                      { label: 'Week 1', value: Math.floor(reportData.stats.completedTasks * 0.3) },
-                      { label: 'Week 2', value: Math.floor(reportData.stats.completedTasks * 0.5) },
-                      { label: 'Week 3', value: Math.floor(reportData.stats.completedTasks * 0.7) },
-                      { label: 'Week 4', value: reportData.stats.completedTasks },
-                      { label: 'Week 5', value: Math.floor(reportData.stats.completedTasks * 1.1) }
-                    ]}
-                  />
-
-                  {/* Donut Chart */}
-                  <DonutChart
-                    title="Sprint Status Distribution"
-                    description="Current sprint status breakdown"
-                    data={[
-                      { label: 'Active', value: reportData.stats.activeSprints, color: '#3b82f6' },
-                      { label: 'Completed', value: reportData.stats.completedSprints, color: '#10b981' },
-                      { label: 'Planning', value: reportData.stats.totalSprints - reportData.stats.activeSprints - reportData.stats.completedSprints, color: '#f59e0b' }
-                    ]}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Multi-line Chart */}
-                  <MultiLineChart
-                    title="Project Activity Overview"
-                    description="Tasks, Issues, and Sprints by week"
-                    data={[
-                      { label: 'Week 1', tasks: Math.floor(reportData.stats.completedTasks * 0.2), issues: Math.floor(reportData.stats.openIssues * 0.3), sprints: 1 },
-                      { label: 'Week 2', tasks: Math.floor(reportData.stats.completedTasks * 0.4), issues: Math.floor(reportData.stats.openIssues * 0.6), sprints: 1 },
-                      { label: 'Week 3', tasks: Math.floor(reportData.stats.completedTasks * 0.6), issues: Math.floor(reportData.stats.openIssues * 0.8), sprints: 2 },
-                      { label: 'Week 4', tasks: reportData.stats.completedTasks, issues: reportData.stats.openIssues, sprints: reportData.stats.activeSprints }
-                    ]}
-                  />
-
-                  {/* Stacked Bar Chart */}
-                  <StackedBarChart
-                    title="Task Status by Sprint"
-                    description="Task breakdown by status for each sprint"
-                    data={reportData.sprints.slice(0, 4).map(sprint => ({
-                      label: sprint.name,
-                      completed: Math.floor((sprint.taskPs?.length || 0) * 0.6),
-                      inProgress: Math.floor((sprint.taskPs?.length || 0) * 0.3),
-                      pending: Math.floor((sprint.taskPs?.length || 0) * 0.1)
-                    }))}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Progress Chart */}
-                  <ProgressChart
-                    title="Task Status Distribution"
-                    description="Breakdown of tasks by current status"
-                    data={Object.entries(reportData.stats.tasksByStatus).map(([status, count]) => ({
-                      label: status.charAt(0).toUpperCase() + status.slice(1),
-                      value: count,
-                      color: status === 'done' ? '#10b981' : status === 'ongoing' ? '#3b82f6' : '#6b7280'
-                    }))}
-                    total={reportData.stats.totalTasks}
-                  />
-
-                  {/* Distribution Chart */}
-                  <DistributionChart
-                    title="Task Priority Distribution"
-                    description="Breakdown of tasks by priority level"
-                    data={Object.entries(reportData.stats.tasksByPriority).map(([priority, count]) => ({
-                      label: priority,
-                      value: count,
-                      color: priority === 'High' || priority === '3' ? '#ef4444' : 
-                             priority === 'Medium' || priority === '2' ? '#f59e0b' : '#10b981'
-                    }))}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Bar Chart */}
-                  <BarChart
-                    title="Sprint Performance"
-                    description="Tasks completed per sprint"
-                    data={reportData.sprints.slice(0, 5).map(sprint => ({
-                      label: sprint.name,
-                      value: sprint.taskPs?.length || 0,
-                      color: sprint.status === 1 ? '#3b82f6' : '#10b981'
-                    }))}
-                  />
-
-                  {/* Pie Chart */}
-                  <PieChartComponent
-                    title="Issue Types Distribution"
-                    description="Breakdown of issues by type"
-                    data={Object.entries(reportData.stats.issuesByType).map(([type, count]) => ({
-                      label: getIssueTypeName(type),
-                      value: count,
-                      color: type === '10000' || type === 'Bug' ? '#ef4444' : 
-                             type === '20000' || type === 'FeatureRequest' ? '#10b981' : 
-                             type === '30000' || type === 'Improvement' ? '#3b82f6' : 
-                             type === '40000' || type === 'Task' ? '#8b5cf6' :
-                             type === '50000' || type === 'Documentation' ? '#06b6d4' : '#f59e0b'
-                    }))}
-                  />
-                </div>
-              </TabsContent>
-
-              <TabsContent value="tasks" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Task Analytics</CardTitle>
-                    <CardDescription>Detailed task performance metrics</CardDescription>
+            {/* Main Content */}
+            <div className='p-6 pt-4 space-y-6'>
+              <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+                {/* Top Contributors */}
+                <Card className='lg:col-span-1 rounded-xl border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
+                  <CardHeader className='pb-3'>
+                    <CardTitle className='text-sm font-semibold'>Top Contributors</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Task Progress */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="text-center p-4 border rounded-lg">
-                        <div className="text-2xl font-bold text-green-600">{reportData.stats.completedTasks}</div>
-                        <div className="text-sm text-gray-600">Completed</div>
-                      </div>
-                      <div className="text-center p-4 border rounded-lg">
-                        <div className="text-2xl font-bold text-blue-600">{reportData.stats.inProgressTasks}</div>
-                        <div className="text-sm text-gray-600">In Progress</div>
-                      </div>
-                      <div className="text-center p-4 border rounded-lg">
-                        <div className="text-2xl font-bold text-gray-600">{reportData.stats.pendingTasks}</div>
-                        <div className="text-sm text-gray-600">Pending</div>
-                      </div>
-                    </div>
-
-                    {/* Average Task Duration */}
-                    <div className="p-4 border rounded-lg">
-                      <h4 className="font-medium mb-2">Average Task Duration</h4>
-                      <div className="text-2xl font-bold">
-                        {reportData.stats.averageTaskDuration.toFixed(1)} days
-                      </div>
-                      <p className="text-sm text-gray-600">For completed tasks</p>
-                    </div>
-
-                    {/* Task List */}
-                    <div>
-                      <h4 className="font-medium mb-4">All Tasks</h4>
-                      <div className="space-y-2 max-h-96 overflow-y-auto">
-                        {reportData.tasks.map((task) => (
-                          <div key={task.id} className="flex items-center justify-between p-3 border rounded-lg">
-                            <div className="flex-1">
-                              <p className="font-medium">{task.title}</p>
-                              <p className="text-sm text-gray-600">{task.description}</p>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <Badge className={getPriorityColor(task.priority)}>
-                                {task.priority}
-                              </Badge>
-                              <Badge className={getStatusColor(task.status)}>
-                                {task.status}
-                              </Badge>
-                            </div>
+                  <CardContent className='space-y-3'>
+                    {s.topContributors?.length ? (
+                      s.topContributors.map((tc) => (
+                        <div
+                          key={tc.userId}
+                          className='flex items-center justify-between p-3 border rounded-lg bg-white/60 backdrop-blur-sm'
+                        >
+                          <div>
+                            <p className='font-medium text-sm'>{tc.fullName}</p>
+                            <p className='text-xs text-gray-500'>
+                              Done {tc.completedTasks} • Comments {tc.totalComments}
+                            </p>
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                          <Badge variant='secondary' className='rounded-full'>
+                            Score {tc.contributionScore}
+                          </Badge>
+                        </div>
+                      ))
+                    ) : (
+                      <p className='text-sm text-gray-500'>No data</p>
+                    )}
                   </CardContent>
                 </Card>
-              </TabsContent>
 
-              <TabsContent value="sprints" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Sprint Analytics</CardTitle>
-                    <CardDescription>Sprint performance and timeline</CardDescription>
+                {/* Member Activities */}
+                <Card className='lg:col-span-2 rounded-xl border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
+                  <CardHeader className='pb-3'>
+                    <CardTitle className='text-sm font-semibold'>Member Activities</CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Sprint Overview */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="text-center p-4 border rounded-lg">
-                        <div className="text-2xl font-bold text-blue-600">{reportData.stats.activeSprints}</div>
-                        <div className="text-sm text-gray-600">Active Sprints</div>
-                      </div>
-                      <div className="text-center p-4 border rounded-lg">
-                        <div className="text-2xl font-bold text-green-600">{reportData.stats.completedSprints}</div>
-                        <div className="text-sm text-gray-600">Completed Sprints</div>
-                      </div>
-                      <div className="text-center p-4 border rounded-lg">
-                        <div className="text-2xl font-bold text-gray-600">{reportData.stats.totalSprints}</div>
-                        <div className="text-sm text-gray-600">Total Sprints</div>
-                      </div>
-                    </div>
-
-                    {/* Sprint List */}
-                    <div>
-                      <h4 className="font-medium mb-4">Sprint Details</h4>
-                      <div className="space-y-4">
-                        {reportData.sprints.map((sprint) => (
-                          <div key={sprint.id} className="p-4 border rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <h5 className="font-medium">{sprint.name}</h5>
-                              <Badge variant={sprint.status === 1 ? 'default' : 'secondary'}>
-                                {sprint.status === 1 ? 'Active' : sprint.status === 2 ? 'Completed' : 'Planning'}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-gray-600 mb-2">{sprint.description}</p>
-                            <div className="flex items-center space-x-4 text-sm text-gray-500">
-                              <div className="flex items-center space-x-1">
-                                <Calendar className="h-4 w-4" />
-                                <span>{new Date(sprint.startDate).toLocaleDateString()}</span>
-                              </div>
-                              <span>-</span>
-                              <div className="flex items-center space-x-1">
-                                <Calendar className="h-4 w-4" />
-                                <span>{new Date(sprint.endDate).toLocaleDateString()}</span>
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                <FileText className="h-4 w-4" />
-                                <span>{sprint.taskPs?.length || 0} tasks</span>
-                              </div>
-                            </div>
+                  <CardContent className='space-y-3 max-h-[420px] overflow-y-auto pr-1 custom-scroll'>
+                    {filteredMembers.map((m) => (
+                      <div key={m.projectMemberId} className='p-3 border rounded-lg bg-white/60 backdrop-blur-sm'>
+                        <div className='flex items-center justify-between mb-2'>
+                          <div>
+                            <p className='font-medium text-sm'>
+                              {m.fullName} <span className='text-xs text-gray-500'>• {m.role}</span>
+                            </p>
+                            <p className='text-xs text-gray-500'>{m.email}</p>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="issues" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Issue Analytics</CardTitle>
-                    <CardDescription>Issue tracking and resolution metrics</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    {/* Issue Overview */}
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div className="text-center p-4 border rounded-lg">
-                        <div className="text-2xl font-bold text-red-600">{reportData.stats.openIssues}</div>
-                        <div className="text-sm text-gray-600">Open Issues</div>
-                      </div>
-                      <div className="text-center p-4 border rounded-lg">
-                        <div className="text-2xl font-bold text-green-600">{reportData.stats.resolvedIssues}</div>
-                        <div className="text-sm text-gray-600">Resolved</div>
-                      </div>
-                      <div className="text-center p-4 border rounded-lg">
-                        <div className="text-2xl font-bold text-orange-600">{reportData.stats.highPriorityIssues}</div>
-                        <div className="text-sm text-gray-600">High Priority</div>
-                      </div>
-                      <div className="text-center p-4 border rounded-lg">
-                        <div className="text-2xl font-bold text-gray-600">{reportData.stats.totalIssues}</div>
-                        <div className="text-sm text-gray-600">Total Issues</div>
-                      </div>
-                    </div>
-
-                    {/* Issue Distribution */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="font-medium mb-4">Issues by Type</h4>
-                        <div className="space-y-2">
-                          {Object.entries(reportData.stats.issuesByType).map(([type, count]) => {
-                            const typeName = getIssueTypeName(type)
-                            return (
-                              <div key={type} className="flex items-center justify-between">
-                                <span className="text-sm">{typeName}</span>
-                                <Badge variant="outline">{count}</Badge>
-                              </div>
-                            )
-                          })}
+                          <div className='flex items-center gap-1.5 text-[10px] flex-wrap'>
+                            <Badge className='rounded-full'>Assigned {m.taskStats.totalAssigned}</Badge>
+                            <Badge variant='secondary' className='rounded-full'>
+                              Done {m.taskStats.totalCompleted}
+                            </Badge>
+                            <Badge className='bg-blue-100 text-blue-800 hover:bg-blue-100 rounded-full'>
+                              In Progress {m.taskStats.totalInProgress}
+                            </Badge>
+                            <Badge className='bg-gray-100 text-gray-800 hover:bg-gray-100 rounded-full'>
+                              Todo {m.taskStats.totalTodo}
+                            </Badge>
+                            <Badge className='bg-red-100 text-red-800 hover:bg-red-100 rounded-full'>
+                              Overdue {m.taskStats.totalOverdue}
+                            </Badge>
+                          </div>
+                        </div>
+                        <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+                          <div className='text-xs text-gray-600'>CR: {m.taskStats.completionRate.toFixed(1)}%</div>
+                          <div className='text-xs text-gray-600'>
+                            Pri: L {m.taskStats.lowPriorityTasks} • M {m.taskStats.mediumPriorityTasks} • H{' '}
+                            {m.taskStats.highPriorityTasks} • U {m.taskStats.urgentPriorityTasks}
+                          </div>
+                          <div className='text-xs text-gray-600'>
+                            Comments: {m.commentStats.totalComments} (avg{' '}
+                            {m.commentStats.averageCommentsPerTask.toFixed(1)})
+                          </div>
+                          {m.commentStats.lastCommentDate && (
+                            <div className='text-xs text-gray-600'>Last: {fmt(m.commentStats.lastCommentDate)}</div>
+                          )}
                         </div>
                       </div>
-                      <div>
-                        <h4 className="font-medium mb-4">Issues by Priority</h4>
-                        <div className="space-y-2">
-                          {Object.entries(reportData.stats.issuesByPriority).map(([priority, count]) => {
-                            const priorityName = getIssuePriorityName(priority)
-                            return (
-                              <div key={priority} className="flex items-center justify-between">
-                                <span className="text-sm">{priorityName}</span>
-                                <Badge variant="outline">{count}</Badge>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      </div>
-                    </div>
+                    ))}
                   </CardContent>
                 </Card>
-              </TabsContent>
-            </Tabs>
+              </div>
+
+              <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
+                {/* Recent Task Activities */}
+                {showTasks && (
+                  <Card className='rounded-xl border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
+                    <CardHeader className='pb-3'>
+                      <CardTitle className='text-sm font-semibold'>Recent Task Activities</CardTitle>
+                    </CardHeader>
+                    <CardContent className='space-y-3 max-h-[360px] overflow-y-auto pr-1 custom-scroll'>
+                      {recentTaskActivities.map((t) => (
+                        <div
+                          key={`${t.taskId}-${t.taskTitle}-${t.assignedAt || t.completedAt || t.deadline}`}
+                          className='p-3 border rounded-lg bg-white/60 backdrop-blur-sm'
+                        >
+                          <div className='flex items-center justify-between'>
+                            <p className='font-medium text-sm'>
+                              {t.taskTitle} <span className='text-xs text-gray-500'>• {t.status}</span>
+                            </p>
+                            <Badge variant='outline' className='rounded-full'>
+                              {t.priority}
+                            </Badge>
+                          </div>
+                          <div className='mt-1 text-[11px] text-gray-600 flex flex-wrap gap-3'>
+                            {t.sprintName && (
+                              <span className='inline-flex items-center gap-1'>
+                                <BarChart3 className='h-3.5 w-3.5' /> {t.sprintName}
+                              </span>
+                            )}
+                            {t.assignedAt && (
+                              <span className='inline-flex items-center gap-1'>
+                                <Calendar className='h-3.5 w-3.5' /> Assigned {fmt(t.assignedAt)}
+                              </span>
+                            )}
+                            {t.completedAt && (
+                              <span className='inline-flex items-center gap-1'>
+                                <TrendingUp className='h-3.5 w-3.5' /> Completed {fmt(t.completedAt)}
+                              </span>
+                            )}
+                            {t.deadline && (
+                              <span className='inline-flex items-center gap-1'>
+                                <Calendar className='h-3.5 w-3.5' /> Due {fmt(t.deadline)}
+                              </span>
+                            )}
+                            {t.isOverdue && (
+                              <span className='inline-flex items-center gap-1 text-red-600'>
+                                <AlertCircle className='h-3.5 w-3.5' /> Overdue
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Recent Comment Activities */}
+                {showComments && (
+                  <Card className='rounded-xl border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
+                    <CardHeader className='pb-3'>
+                      <CardTitle className='text-sm font-semibold'>Recent Comment Activities</CardTitle>
+                    </CardHeader>
+                    <CardContent className='space-y-3 max-h-[360px] overflow-y-auto pr-1 custom-scroll'>
+                      {recentCommentActivities.map((c) => (
+                        <div key={c.commentId} className='p-3 border rounded-lg bg-white/60 backdrop-blur-sm'>
+                          <div className='flex items-center justify-between'>
+                            <p className='font-medium text-sm'>{c.taskTitle}</p>
+                            <span className='inline-flex items-center gap-1 text-[11px] text-gray-500'>
+                              <MessageSquare className='h-3.5 w-3.5' /> {fmt(c.createdAt)}
+                            </span>
+                          </div>
+                          <p className='text-xs text-gray-700 mt-1 line-clamp-3'>{c.content}</p>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

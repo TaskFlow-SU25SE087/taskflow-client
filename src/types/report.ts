@@ -1,0 +1,83 @@
+export interface ProjectReportResponse {
+  code: number
+  message: string
+  data: ProjectReport
+}
+
+export interface ProjectReport {
+  projectId: string
+  projectTitle: string
+  reportGeneratedAt: string
+  startDate: string
+  endDate: string
+  memberActivities: MemberActivity[]
+  summary: ProjectReportSummary
+}
+
+export interface MemberActivity {
+  userId: string
+  projectMemberId: string
+  fullName: string
+  avatar?: string
+  email: string
+  role: string
+  taskStats: {
+    totalAssigned: number
+    totalCompleted: number
+    totalInProgress: number
+    totalTodo: number
+    totalOverdue: number
+    completionRate: number
+    highPriorityTasks: number
+    mediumPriorityTasks: number
+    lowPriorityTasks: number
+    urgentPriorityTasks: number
+  }
+  commentStats: {
+    totalComments: number
+    commentsThisWeek: number
+    commentsThisMonth: number
+    lastCommentDate?: string
+    averageCommentsPerTask: number
+  }
+  taskActivities: Array<{
+    taskId: string
+    taskTitle: string
+    priority: 'Low' | 'Medium' | 'High' | 'Urgent' | string
+    status: string
+    assignedAt?: string
+    completedAt?: string
+    deadline?: string
+    isOverdue?: boolean
+    sprintName?: string
+  }>
+  commentActivities: Array<{
+    commentId: string
+    taskId: string
+    taskTitle: string
+    content: string
+    createdAt: string
+    lastUpdatedAt?: string
+    attachmentUrls?: string[]
+  }>
+}
+
+export interface ProjectReportSummary {
+  totalMembers: number
+  totalTasks: number
+  totalCompletedTasks: number
+  totalInProgressTasks: number
+  totalTodoTasks: number
+  totalOverdueTasks: number
+  totalComments: number
+  overallCompletionRate: number
+  averageTasksPerMember: number
+  averageCommentsPerTask: number
+  topContributors: Array<{
+    userId: string
+    fullName: string
+    completedTasks: number
+    totalComments: number
+    contributionScore: number
+  }>
+}
