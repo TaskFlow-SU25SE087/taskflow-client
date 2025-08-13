@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ProjectReport } from '@/types/report'
 import { teamActivityReportApi, TeamActivityReportQuery } from '@/api/teamActivityReport'
 
@@ -26,6 +26,17 @@ export const useTeamActivityReport = (
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState<TeamActivityReportQuery>({ ...defaultQuery, ...initialQuery })
+
+  const lastProjectIdRef = useRef<string | undefined>(projectId)
+
+  // When project changes, clear previous data immediately to avoid showing stale content
+  useEffect(() => {
+    if (lastProjectIdRef.current !== projectId) {
+      lastProjectIdRef.current = projectId
+      setReport(null)
+      if (projectId) setLoading(true)
+    }
+  }, [projectId])
 
   const fetchReport = useCallback(
     async (override?: TeamActivityReportQuery) => {
