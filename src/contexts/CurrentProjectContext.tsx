@@ -1,10 +1,10 @@
 import { projectApi } from '@/api/projects'
+import { useAuth } from '@/hooks/useAuth'
+import { clearLastProjectForUser, setLastProjectIdForUser } from '@/lib/utils'
+import type { Project } from '@/types/project'
 import Cookies from 'js-cookie'
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import type { Project } from '@/types/project'
-import { useAuth } from '@/hooks/useAuth'
-import { setLastProjectIdForUser, clearLastProjectForUser } from '@/lib/utils'
 
 type Ctx = {
   currentProject: Project | null
@@ -98,11 +98,12 @@ export const CurrentProjectProvider: React.FC<{ children: React.ReactNode }> = (
       return
     }
 
-    // If no project in URL, only auto-redirect on legacy project routes or home
+    // Handle legacy routes more intelligently
+    // Instead of auto-redirecting, we'll try to set a current project if available
+    // but won't force navigation away from the current page
     const legacyProjectRoutes = new Set([
-      // '/' is intentionally excluded so the landing page doesn't auto-redirect
       '/timeline',
-      '/backlog',
+      '/backlog', 
       '/board',
       '/members',
       '/reports',
@@ -112,11 +113,19 @@ export const CurrentProjectProvider: React.FC<{ children: React.ReactNode }> = (
       '/sprint-meetings'
     ])
 
-    // Only auto-redirect on legacy routes when user is authenticated
     if (legacyProjectRoutes.has(location.pathname) && isAuthenticated) {
+      // Try to get a saved project ID but don't redirect
       const saved = Cookies.get(CURRENT_PROJECT_COOKIE) || localStorage.getItem(CURRENT_PROJECT_LOCAL) || undefined
       if (saved) {
-        navigate(`/projects/${saved}/board`)
+        // Set the project context without navigating away
+        // This allows the legacy route pages to work properly
+        fetchProject(saved)
+        return
+      } else {
+        // If no saved project and user is on a legacy route that requires a project,
+        // redirect to projects list so they can select one
+        console.log('[CurrentProjectProvider] No saved project found for legacy route, redirecting to projects list')
+        navigate('/projects', { replace: true })
         return
       }
     }
