@@ -15,6 +15,14 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -36,6 +44,7 @@ export default function ProjectMembers() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [pendingRemove, setPendingRemove] = useState<string | null>(null) // stores userId
   const [isInviteOpen, setIsInviteOpen] = useState<boolean>(false)
+  const [isConfirmLeaveDialogOpen, setIsConfirmLeaveDialogOpen] = useState(false)
   const { user } = useAuth()
   const { showToast } = useToastContext()
   const { leaveProject, removeMember } = useProjectMembers()
@@ -115,8 +124,11 @@ export default function ProjectMembers() {
 
   const handleLeave = async () => {
     if (!currentProject?.id) return
-    const ok = window.confirm('Are you sure you want to leave this project?')
-    if (!ok) return
+    setIsConfirmLeaveDialogOpen(true)
+  }
+
+  const handleConfirmLeave = async () => {
+    if (!currentProject?.id) return
     try {
       await leaveProject(currentProject.id)
       navigate('/projects')
@@ -313,6 +325,25 @@ export default function ProjectMembers() {
             </AlertDialogContent>
           </AlertDialog>
         )}
+
+        <Dialog open={isConfirmLeaveDialogOpen} onOpenChange={setIsConfirmLeaveDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Leave Project</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to leave this project? This action cannot be undone.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant='outline' onClick={() => setIsConfirmLeaveDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button variant='destructive' onClick={handleConfirmLeave}>
+                Leave Project
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

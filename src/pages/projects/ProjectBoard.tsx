@@ -13,36 +13,42 @@ import TaskBoardCreateMenu from '@/components/tasks/TaskBoardCreateMenu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { useBoards } from '@/hooks/useBoards'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
-import { useProjectMembers } from '@/hooks/useProjectMembers'
 import { useSprints } from '@/hooks/useSprints'
 import { useTasks } from '@/hooks/useTasks'
 import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import {
-  arrayMove,
-  horizontalListSortingStrategy,
-  SortableContext,
-  verticalListSortingStrategy
+    arrayMove,
+    horizontalListSortingStrategy,
+    SortableContext,
+    verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import {
-  CheckCircle,
-  ChevronDown,
-  Clock,
-  Filter,
-  Link2,
-  Pencil,
-  Plus,
-  Search,
-  Settings,
-  TrendingUp
+    CheckCircle,
+    ChevronDown,
+    Clock,
+    Filter,
+    Link2,
+    Pencil,
+    Plus,
+    Search,
+    Settings,
+    TrendingUp
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -225,9 +231,11 @@ export default function ProjectBoard() {
   const [lockAll, setLockAll] = useState(false)
   const [movingTaskId, setMovingTaskId] = useState<string | null>(null)
   const [showStatsCards, setShowStatsCards] = useState(false)
+  const [isConfirmLeaveDialogOpen, setIsConfirmLeaveDialogOpen] = useState(false)
 
   const { showToast } = useToastContext()
-  const { leaveProject, loading: memberLoading, error: memberError } = useProjectMembers()
+  // const { leaveProject, loading: memberLoading, error: memberError } = useProjectMembers()
+  const [isLeavingProject, setIsLeavingProject] = useState(false)
 
   // Function to refresh both boards and sprint tasks
   const refreshBoardsAndSprintTasks = async () => {
@@ -332,19 +340,34 @@ export default function ProjectBoard() {
 
   const handleLeaveProject = async () => {
     if (!currentProject?.id) return
+    
+    setIsConfirmLeaveDialogOpen(true)
+  }
+
+  const handleConfirmLeaveProject = async () => {
+    if (!currentProject?.id) return
+    
+    setIsLeavingProject(true)
     try {
-      await leaveProject(currentProject.id)
+      console.log('🔄 Attempting to leave project:', currentProject.id)
+      const response = await projectMemberApi.leaveProject(currentProject.id)
+      console.log('✅ Leave project response:', response)
+      
       showToast({
         title: 'Left project successfully',
         description: 'You have left this project.'
       })
       navigate('/projects')
-    } catch (err) {
+    } catch (err: any) {
+      console.error('❌ Error leaving project:', err)
+      const errorMessage = err?.response?.data?.message || err?.message || 'Could not leave the project'
       showToast({
         title: 'Error',
-        description: memberError || 'Could not leave the project',
+        description: errorMessage,
         variant: 'destructive'
       })
+    } finally {
+      setIsLeavingProject(false)
     }
   }
 
@@ -865,9 +888,9 @@ export default function ProjectBoard() {
                   variant='outline'
                   className='text-red-600 border-red-200 hover:bg-red-50'
                   onClick={handleLeaveProject}
-                  disabled={memberLoading}
+                  disabled={isLeavingProject}
                 >
-                  {memberLoading ? 'Leaving...' : 'Leave Project'}
+                  {isLeavingProject ? 'Leaving...' : 'Leave Project'}
                 </Button>
                 <MemberAvatarGroup members={projectMembers} />
               </div>
@@ -1126,6 +1149,24 @@ export default function ProjectBoard() {
               Close
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm Leave Dialog */}
+      <Dialog open={isConfirmLeaveDialogOpen} onOpenChange={setIsConfirmLeaveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Leave Project</DialogTitle>
+            <DialogDescription>Are you sure you want to leave this project? This action cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant='outline' onClick={() => setIsConfirmLeaveDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant='destructive' onClick={handleConfirmLeaveProject}>
+              Leave Project
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
