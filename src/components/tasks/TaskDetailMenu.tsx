@@ -85,6 +85,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const [editTitle, setEditTitle] = useState(task.title)
   const [editDescription, setEditDescription] = useState(task.description)
   const [editPriority, setEditPriority] = useState<number>(normalizePriority(task.priority))
+  const [editDeadline, setEditDeadline] = useState<string>(task.deadline ? task.deadline.split('T')[0] : '')
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false)
 
   // State cho edit mode
@@ -596,6 +597,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setEditTitle(task.title)
     setEditDescription(task.description)
     setEditPriority(normalizePriority(task.priority))
+    setEditDeadline(task.deadline ? task.deadline.split('T')[0] : '')
     setLocalTaskData(task)
     // Task data updated
   }, [task])
@@ -605,6 +607,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setEditTitle(localTaskData.title)
     setEditDescription(localTaskData.description)
     setEditPriority(normalizePriority(localTaskData.priority))
+    setEditDeadline(localTaskData.deadline ? localTaskData.deadline.split('T')[0] : '')
   }, [localTaskData])
 
   const handleUpdateTask = async () => {
@@ -614,7 +617,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       const res = await taskApi.updateTask(currentProject.id, task.id, {
         title: editTitle,
         description: editDescription,
-        priority: editPriority.toString()
+        priority: editPriority.toString(),
+        deadline: editDeadline || null
       })
       if (typeof res === 'object' && res !== null && 'code' in res && 'message' in res) {
         showToast({
@@ -1184,9 +1188,28 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           </div>
           <div className='flex items-center gap-2 mt-1'>
             <Calendar className='h-3 w-3 text-gray-400' />
-            <span className='text-xs text-gray-600'>
-              Deadline: {localTaskData.deadline ? new Date(localTaskData.deadline).toLocaleDateString('vi-VN') : 'N/A'}
-            </span>
+            <span className='text-xs text-gray-600'>Deadline:</span>
+            <input
+              type='date'
+              className='border rounded px-1 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-lavender-400'
+              value={editDeadline}
+              onChange={(e) => setEditDeadline(e.target.value)}
+              disabled={isUpdating}
+            />
+            {localTaskData.deadline && !editDeadline && (
+              <button
+                type='button'
+                onClick={() => setEditDeadline(localTaskData.deadline ? localTaskData.deadline.split('T')[0] : '')}
+                className='text-[10px] text-blue-500 underline'
+              >
+                revert
+              </button>
+            )}
+            {editDeadline && (
+              <button type='button' onClick={() => setEditDeadline('')} className='text-[10px] text-red-500 underline'>
+                clear
+              </button>
+            )}
           </div>
           <div className='mt-2 text-gray-600'>
             <div className='relative'>
@@ -1222,7 +1245,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               disabled={
                 isUpdating ||
                 !editTitle.trim() ||
-                (editTitle === task.title && editDescription === task.description && editPriority === task.priority)
+                (editTitle === task.title &&
+                  editDescription === task.description &&
+                  editPriority === task.priority &&
+                  (task.deadline ? task.deadline.split('T')[0] : '') === editDeadline)
               }
               className='px-4 py-1.5 bg-lavender-500 hover:bg-lavender-700 text-white font-semibold border-0 text-sm'
               style={{ boxShadow: 'none' }}
