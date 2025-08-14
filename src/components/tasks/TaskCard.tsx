@@ -351,7 +351,7 @@ export const TaskCard = ({
           <div className='p-4 relative'>
             {/* Tags */}
             {task.tags && task.tags.length > 0 && (
-              <div className='flex gap-2 mb-3 flex-wrap'>
+              <div className='flex gap-2 mb-2 flex-wrap'>
                 {task.tags.map((tag: { id: string; name: string; color?: string }, index: number) => (
                   <span
                     key={tag.id || index}

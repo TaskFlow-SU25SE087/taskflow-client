@@ -83,9 +83,10 @@ export const boardApi = {
     }
   },
 
-  deleteBoard: async (projectId: string, boardId: string): Promise<boolean> => {
+  deleteBoard: async (projectId: string, boardId: string): Promise<any> => {
+    // Return full response shape so caller can inspect code/message
     const response = await axiosClient.delete(`/projects/${projectId}/boards/${boardId}`)
-    return response.data.data
+    return response.data
   },
 
   updateBoardOrder: async (projectId: string, boards: { id: string; order: number }[]): Promise<boolean> => {

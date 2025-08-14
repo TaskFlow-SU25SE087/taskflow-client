@@ -125,6 +125,7 @@ export function TaskColumn({
                 projectId={currentProject.id}
                 boardId={boardId}
                 onDeleted={onTaskCreated}
+                tasks={tasks}
                 trigger={
                   <button
                     type='button'
