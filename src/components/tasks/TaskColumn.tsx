@@ -56,7 +56,11 @@ export function TaskColumn({
     <div className='flex flex-col items-center justify-center py-12 text-gray-400'>
       <Inbox className='w-16 h-16 mb-4 stroke-1' />
       <p className='text-lg font-medium'>Nothing here yet!</p>
-      <p className='text-sm text-gray-300 mt-1'>Click + to add your first task</p>
+      {canCreate === false ? (
+        <p className='text-sm text-gray-300 mt-1'>Start a sprint to begin adding tasks</p>
+      ) : (
+        <p className='text-sm text-gray-300 mt-1'>Click + to add your first task</p>
+      )}
     </div>
   )
 
@@ -80,7 +84,7 @@ export function TaskColumn({
               isHovered ? 'opacity-100' : 'opacity-0'
             }`}
           >
-            {currentProject && (
+            {currentProject && canCreate !== false && (
               <TaskCreateMenuForBoard
                 isOpen={isAddingTask}
                 onOpenChange={setIsAddingTask}
@@ -90,15 +94,10 @@ export function TaskColumn({
                 trigger={
                   <button
                     type='button'
-                    disabled={canCreate === false}
-                    className={`w-8 h-8 p-0 flex items-center justify-center rounded-xl transition-colors duration-150 shadow-none border-none focus:outline-none ${
-                      canCreate === false
-                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                        : 'bg-lavender-100 hover:bg-lavender-200'
-                    }`}
-                    title={canCreate === false ? 'Start a sprint to add tasks' : 'Add task'}
+                    className='w-8 h-8 p-0 flex items-center justify-center rounded-xl transition-colors duration-150 shadow-none border-none focus:outline-none bg-lavender-100 hover:bg-lavender-200'
+                    title='Add task'
                   >
-                    <Plus className={`h-4 w-4 ${canCreate === false ? 'text-gray-300' : 'text-lavender-600'}`} />
+                    <Plus className='h-4 w-4 text-lavender-600' />
                   </button>
                 }
               />

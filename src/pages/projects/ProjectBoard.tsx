@@ -873,25 +873,13 @@ export default function ProjectBoard() {
                   <Settings className='h-5 w-5 text-lavender-600' />
                 </Button>
 
-                {canCreateInBoard ? (
-                  <TaskBoardCreateMenu
-                    isOpen={isBoardDialogOpen}
-                    onOpenChange={setIsBoardDialogOpen}
-                    projectId={currentProject.id}
-                    onBoardCreated={refreshBoards}
-                  />
-                ) : (
-                  <Button
-                    type='button'
-                    disabled
-                    className='bg-lavender-100 text-lavender-400 cursor-not-allowed rounded-lg p-2 shadow-none border-none'
-                    style={{ minWidth: 0, minHeight: 0, height: '36px', width: 'auto' }}
-                    title='Start a sprint from the backlog to add boards'
-                  >
-                    <Plus className='h-4 w-4 mr-1' />
-                    Create Board
-                  </Button>
-                )}
+                {/* Board creation is now always allowed, regardless of sprint status */}
+                <TaskBoardCreateMenu
+                  isOpen={isBoardDialogOpen}
+                  onOpenChange={setIsBoardDialogOpen}
+                  projectId={currentProject.id}
+                  onBoardCreated={refreshBoards}
+                />
 
                 <Button
                   variant='ghost'
