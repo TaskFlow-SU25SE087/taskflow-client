@@ -1,15 +1,15 @@
 import { boardApi } from '@/api/boards'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from '@/components/ui/alert-dialog'
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { Trash2 } from 'lucide-react'
 import { useState } from 'react'
@@ -49,8 +49,8 @@ export function BoardDeleteButton({ projectId, boardId, onDeleted, trigger }: Bo
   }
 
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
+    <Dialog>
+      <DialogTrigger asChild>
         {trigger ? (
           trigger
         ) : (
@@ -61,21 +61,25 @@ export function BoardDeleteButton({ projectId, boardId, onDeleted, trigger }: Bo
             <Trash2 className='h-4 w-4 text-red-600' />
           </button>
         )}
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete Board?</AlertDialogTitle>
-          <AlertDialogDescription>
+      </DialogTrigger>
+      <DialogContent className='max-w-sm'>
+        <DialogHeader>
+          <DialogTitle>Delete Board?</DialogTitle>
+          <DialogDescription>
             Are you sure you want to delete this board? This action cannot be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleDelete} disabled={loading} className='bg-red-500 hover:bg-red-600'>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant='outline' disabled={loading} data-autofocus>
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button onClick={handleDelete} disabled={loading} className='bg-red-500 hover:bg-red-600'>
             {loading ? 'Deleting...' : 'Delete'}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
