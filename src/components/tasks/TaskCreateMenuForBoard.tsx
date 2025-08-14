@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+// Removed sprint select UI (auto-detect running sprint)
 import { useToastContext } from '@/components/ui/ToastContext'
 import { useBoards } from '@/hooks/useBoards'
 import { useTags } from '@/hooks/useTags'
@@ -44,8 +44,8 @@ export default function TaskCreateMenuForBoard({
   const { refreshTasks } = useTasks()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [title, setTitle] = useState('')
-  const [sprints, setSprints] = useState<Sprint[]>([])
-  const [selectedSprintId, setSelectedSprintId] = useState<string>('')
+  const [activeSprintId, setActiveSprintId] = useState<string>('')
+  const [, setActiveSprint] = useState<Sprint | null>(null)
   const { tags } = useTags()
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
   const [priority, setPriority] = useState('Medium')
@@ -63,28 +63,54 @@ export default function TaskCreateMenuForBoard({
   }, [boards, boardId])
 
   useEffect(() => {
-    const fetchSprints = async () => {
+    const detectActiveSprint = async () => {
       try {
-        const fetchedSprints = await sprintApi.getAllSprintByProjectId(projectId)
-        console.log('Fetched sprints:', fetchedSprints)
-        const runningSprints = fetchedSprints.filter(
-          (sprint) => sprint.startDate && sprint.startDate !== null && sprint.endDate && sprint.endDate !== null
-        )
-        console.log('Running sprints:', runningSprints)
-        setSprints(runningSprints)
-        if (runningSprints.length > 0) {
-          setSelectedSprintId(runningSprints[0].id)
+        // 1. Try dedicated endpoint
+        const current = await sprintApi.getCurrentSprint(projectId)
+        if (current && current.id) {
+          setActiveSprint(current)
+          setActiveSprintId(current.id)
+          return
         }
-      } catch (error) {
-        console.error('Failed to fetch sprints:', error)
-        showToast({ title: 'Error', description: 'Failed to fetch sprints', variant: 'destructive' })
+      } catch (err) {
+        // Swallow and fallback
+        // console.warn('getCurrentSprint failed, fallback to manual detection', err)
+      }
+      try {
+        // 2. Fallback: load all and infer
+        const all = await sprintApi.getAllSprintByProjectId(projectId)
+        const now = new Date()
+        // Heuristic: status===1 likely IN_PROGRESS (0:not started,1:in progress,2:completed,3:cancelled)
+        const inProgress = all.filter(
+          (s) =>
+            s.status === 1 && s.startDate && s.endDate && new Date(s.startDate) <= now && new Date(s.endDate) >= now
+        )
+        // If multiple, choose one ending soonest
+        const candidate = inProgress.sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime())[0]
+        if (candidate) {
+          setActiveSprint(candidate)
+          setActiveSprintId(candidate.id)
+          return
+        }
+        // 3. Last resort: any sprint whose date range includes now
+        const runningByDate = all
+          .filter((s) => s.startDate && s.endDate && new Date(s.startDate) <= now && new Date(s.endDate) >= now)
+          .sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime())[0]
+        if (runningByDate) {
+          setActiveSprint(runningByDate)
+          setActiveSprintId(runningByDate.id)
+        } else {
+          setActiveSprint(null)
+          setActiveSprintId('')
+        }
+      } catch (err2) {
+        console.error('Failed to infer active sprint:', err2)
+        setActiveSprint(null)
+        setActiveSprintId('')
       }
     }
-
-    if (isOpen) {
-      fetchSprints()
-    }
-  }, [isOpen, projectId, showToast])
+    if (isOpen) detectActiveSprint()
+  }, [isOpen, projectId])
 
   const handleTagChange = (tagId: string) => {
     setSelectedTagIds((prev) => (prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]))
@@ -95,10 +121,7 @@ export default function TaskCreateMenuForBoard({
       showToast({ title: 'Validation Error', description: 'Please enter a task title', variant: 'destructive' })
       return
     }
-    if (!selectedSprintId) {
-      showToast({ title: 'Validation Error', description: 'Please select a sprint', variant: 'destructive' })
-      return
-    }
+    // Sprint selection removed: silently allow no active sprint, task will be backlog if none running
     if (!board) {
       showToast({ title: 'Error', description: 'Board not found', variant: 'destructive' })
       return
@@ -115,7 +138,7 @@ export default function TaskCreateMenuForBoard({
       formData.append('Priority', priority)
       formData.append('Deadline', deadline)
       if (file) formData.append('File', file)
-      formData.append('SprintId', selectedSprintId)
+      if (activeSprintId) formData.append('SprintId', activeSprintId)
       // Hint backend to put task on the clicked board (best-effort; server may ignore)
       if (boardId) formData.append('BoardId', boardId)
       selectedTagIds.forEach((tagId) => formData.append('TagIds', tagId))
@@ -131,9 +154,9 @@ export default function TaskCreateMenuForBoard({
         const createdTask = tasks.find((t) => t.title === title && t.description === description)
         if (createdTask) {
           // Ensure sprint assignment (in case backend ignored SprintId)
-          if (selectedSprintId && createdTask.sprintId !== selectedSprintId) {
+          if (activeSprintId && createdTask.sprintId !== activeSprintId) {
             try {
-              await sprintApi.assignTasksToSprint(projectId, selectedSprintId, [createdTask.id])
+              await sprintApi.assignTasksToSprint(projectId, activeSprintId, [createdTask.id])
             } catch {
               /* ignore, best-effort */
             }
@@ -184,7 +207,7 @@ export default function TaskCreateMenuForBoard({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{trigger || defaultTrigger}</DialogTrigger>
-      <DialogContent className='sm:max-w-md'>
+      <DialogContent className='sm:max-w-md' data-prevent-dnd>
         <DialogHeader>
           <DialogTitle className='text-center'>
             <div className='flex flex-col items-center gap-4'>
@@ -218,35 +241,6 @@ export default function TaskCreateMenuForBoard({
           </div>
 
           <div>
-            <Label htmlFor='sprint' className='text-sm font-medium'>
-              Select sprint
-            </Label>
-            <Select value={selectedSprintId} onValueChange={setSelectedSprintId}>
-              <SelectTrigger className='h-11 border-0 border-b-2 border-gray-200 rounded-none px-0 focus:ring-0 focus:ring-offset-0 focus:outline-none focus:border-lavender-700'>
-                <SelectValue placeholder='Select a sprint' />
-              </SelectTrigger>
-              <SelectContent>
-                {sprints.map((sprint) => (
-                  <SelectItem key={sprint.id} value={sprint.id}>
-                    {sprint.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {selectedSprintId &&
-              (() => {
-                const sprint = sprints.find((s) => s.id === selectedSprintId)
-                if (!sprint) return null
-                return (
-                  <div className='text-xs text-gray-500 mt-1'>
-                    Time: {sprint.startDate ? new Date(sprint.startDate).toLocaleDateString('en-GB') : '...'} -{' '}
-                    {sprint.endDate ? new Date(sprint.endDate).toLocaleDateString('en-GB') : '...'}
-                  </div>
-                )
-              })()}
-          </div>
-
-          <div>
             <Label className='text-sm font-medium'>Tags</Label>
             <div className='flex flex-wrap gap-2'>
               {tags.map((tag) => (
@@ -256,7 +250,9 @@ export default function TaskCreateMenuForBoard({
                     checked={selectedTagIds.includes(tag.id)}
                     onChange={() => handleTagChange(tag.id)}
                   />
-                  <span style={{ color: tag.color }}>{tag.name}</span>
+                  <span style={{ color: tag.color }} className='text-xs font-medium'>
+                    {tag.name}
+                  </span>
                 </label>
               ))}
             </div>
@@ -266,16 +262,16 @@ export default function TaskCreateMenuForBoard({
             <Label htmlFor='priority' className='text-sm font-medium'>
               Priority
             </Label>
-            <Select value={priority} onValueChange={setPriority}>
-              <SelectTrigger className='h-11 border-0 border-b-2 border-gray-200 rounded-none px-0 focus:ring-0 focus:ring-offset-0 focus:outline-none focus:border-lavender-700'>
-                <SelectValue placeholder='Select priority' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='Low'>Low</SelectItem>
-                <SelectItem value='Medium'>Medium</SelectItem>
-                <SelectItem value='High'>High</SelectItem>
-              </SelectContent>
-            </Select>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+              className='h-10 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lavender-600'
+            >
+              <option value='Low'>Low</option>
+              <option value='Medium'>Medium</option>
+              <option value='High'>High</option>
+              <option value='Urgent'>Urgent</option>
+            </select>
           </div>
 
           <div>
@@ -287,7 +283,7 @@ export default function TaskCreateMenuForBoard({
               type='date'
               value={deadline}
               onChange={(e) => setDeadline(e.target.value)}
-              className='w-full bg-transparent text-foreground placeholder-gray-400 text-lg border-b-2 border-gray-200 focus:border-lavender-700 transition-colors duration-300 focus:outline-none focus:ring-0'
+              className='w-full h-10 rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-lavender-600'
             />
           </div>
 

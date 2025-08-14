@@ -31,7 +31,8 @@ import { useSprints } from '@/hooks/useSprints'
 import { useTasks } from '@/hooks/useTasks'
 import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
-import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import { closestCenter, DndContext, useSensor, useSensors } from '@dnd-kit/core'
+import { NoDragPointerSensor } from '@/components/dnd/NoDragPointerSensor'
 import {
   arrayMove,
   horizontalListSortingStrategy,
@@ -582,7 +583,8 @@ export default function ProjectBoard() {
     console.log('[DnD] Không phải kéo board hoặc task hợp lệ', { active, over })
   }
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+  // Use custom pointer sensor that ignores drag activation from elements marked with data-prevent-dnd
+  const sensors = useSensors(useSensor(NoDragPointerSensor, { activationConstraint: { distance: 5 } }))
 
   const handleDragStart = () => {
     console.log('[TIMING] 🎬 Drag start at:', new Date().toISOString())

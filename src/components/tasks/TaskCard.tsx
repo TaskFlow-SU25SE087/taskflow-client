@@ -369,6 +369,14 @@ export const TaskCard = ({
               <h3 className='font-bold text-lg text-gray-900 leading-snug flex-1'>{task.title}</h3>
               <div
                 className={`flex items-center gap-1.5 ${priorityConfig.color} ${priorityConfig.bg} px-2.5 py-1 rounded-md text-xs font-semibold border ${priorityConfig.border} shrink-0`}
+                onPointerDown={(e) => {
+                  // Prevent drag activation when clicking priority chip
+                  e.stopPropagation()
+                }}
+                onClick={(e) => {
+                  // Click shouldn't bubble to open details if user only wants to select text
+                  e.stopPropagation()
+                }}
               >
                 {priorityConfig.icon}
                 <span>{priorityConfig.text}</span>

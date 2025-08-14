@@ -145,7 +145,7 @@ export default function TaskCreateMenu({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{trigger || defaultTrigger}</DialogTrigger>
-      <DialogContent className='sm:max-w-[425px]'>
+      <DialogContent className='sm:max-w-[425px]' data-prevent-dnd>
         <DialogHeader>
           <DialogTitle className='text-2xl font-semibold'>Create New Task</DialogTitle>
         </DialogHeader>
@@ -157,7 +157,7 @@ export default function TaskCreateMenu({
             <Input
               id='title'
               placeholder='Enter task title'
-              className='h-11'
+              className='h-11 text-sm placeholder:text-neutral-500'
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onKeyDown={(e) => {
@@ -211,7 +211,7 @@ export default function TaskCreateMenu({
               Priority
             </Label>
             <Select value={priority} onValueChange={setPriority}>
-              <SelectTrigger className='h-11'>
+              <SelectTrigger className='h-11 text-sm placeholder:text-neutral-500'>
                 <SelectValue placeholder='Select priority' />
               </SelectTrigger>
               <SelectContent>
@@ -233,7 +233,7 @@ export default function TaskCreateMenu({
                 onChange={(date: Date | null) => setDeadline(date)}
                 dateFormat='dd/MM/yy'
                 placeholderText='dd/mm/yy'
-                className='w-full h-11 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-lavender-400 transition-all text-base bg-gray-50'
+                className='w-full h-11 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-lavender-400 transition-all text-sm placeholder:text-neutral-500 bg-gray-50'
                 required
               />
             </div>
@@ -242,7 +242,12 @@ export default function TaskCreateMenu({
             <Label htmlFor='file' className='text-sm font-medium'>
               Attachment
             </Label>
-            <Input id='file' type='file' className='h-11' onChange={(e) => setFile(e.target.files?.[0] || null)} />
+            <Input
+              id='file'
+              type='file'
+              className='h-11 text-sm'
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+            />
           </div>
           {/* XÓA: <div className='space-y-2'>
             <label className='text-sm font-medium'>Assignee</label>
