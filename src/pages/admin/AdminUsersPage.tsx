@@ -101,6 +101,7 @@ export default function AdminUsersPage() {
   }
 
   const handleFileUpload = async (file: File, onProgress?: (progress: number) => void) => {
+    console.log('🚀 Starting file upload...')
     try {
       let result: boolean | undefined
       
@@ -132,14 +133,14 @@ export default function AdminUsersPage() {
         result = await importUsers(file)
       }
       
+      console.log('🔍 Upload result:', result, 'Type:', typeof result)
+      
       if (result === false) {
-        // Upload timeout - hiển thị thông báo đặc biệt
-        setUploadTimeout(true)
-        showToast({
-          title: 'Upload Timeout',
-          description: 'File upload timed out, but may still be processing. Please refresh the page to see updated data.',
-          variant: 'warning'
-        })
+        // Upload thất bại hoặc timeout
+        console.log('❌ Upload failed or timeout...')
+        
+        // Upload thất bại
+        console.log('❌ Upload failed, no toast shown as requested.')
         
         // Clear cache vì dữ liệu có thể đã thay đổi
         clearCache()
@@ -147,12 +148,17 @@ export default function AdminUsersPage() {
         // Lưu trạng thái để hiện dialog sau khi refresh
         localStorage.setItem('showFileUploadAfterRefresh', 'true')
         
-        // Refresh trang ngay lập tức
-        window.location.reload()
+        // Đợi toast hiển thị xong rồi mới refresh
+        console.log('⏰ Waiting 3 seconds before refresh...')
+        setTimeout(() => {
+          console.log('🔄 Refreshing page...')
+          window.location.reload()
+        }, 3000)
         
-      } else {
-        // Upload thành công
+      } else if (result === true) {
+        // Upload thành công (result === true)
         setUploadTimeout(false)
+        console.log('🚀 Upload successful! Showing success toast...')
         showToast({
           title: 'Upload Successful',
           description: 'File uploaded and users imported successfully! Refreshing page to show new data...',
@@ -165,16 +171,47 @@ export default function AdminUsersPage() {
         // Lưu trạng thái để hiện dialog sau khi refresh
         localStorage.setItem('showFileUploadAfterRefresh', 'true')
         
-        // Refresh trang ngay lập tức
-        window.location.reload()
+        // Đợi toast hiển thị xong rồi mới refresh
+        console.log('⏰ Waiting 3 seconds before refresh...')
+        setTimeout(() => {
+          console.log('🔄 Refreshing page...')
+          window.location.reload()
+        }, 3000)
+        
+      } else {
+        // Upload thành công (result === undefined hoặc truthy khác)
+        setUploadTimeout(false)
+        console.log('🚀 Upload successful (undefined/truthy)! Showing success toast...')
+        showToast({
+          title: 'Upload Successful',
+          description: 'File uploaded and users imported successfully! Refreshing page to show new data...',
+          variant: 'success'
+        })
+        
+        // Clear cache vì dữ liệu đã thay đổi
+        clearCache()
+        
+        // Lưu trạng thái để hiện dialog sau khi refresh
+        localStorage.setItem('showFileUploadAfterRefresh', 'true')
+        
+        // Đợi toast hiển thị xong rồi mới refresh
+        console.log('⏰ Waiting 3 seconds before refresh...')
+        setTimeout(() => {
+          console.log('🔄 Refreshing page...')
+          window.location.reload()
+        }, 3000)
       }
       
       // Đóng dialog upload
+      console.log('✅ Upload completed, closing dialog...')
       setShowFileUpload(false)
       
     } catch (error) {
       console.error('Error uploading file:', error)
       // Error đã được xử lý trong useAdmin hook
+      
+             // Không hiển thị toast lỗi theo yêu cầu
+       console.log('❌ Upload error caught, no toast shown as requested.')
       
       // Clear cache vì có thể có lỗi
       clearCache()
@@ -182,8 +219,12 @@ export default function AdminUsersPage() {
       // Lưu trạng thái để hiện dialog sau khi refresh
       localStorage.setItem('showFileUploadAfterRefresh', 'true')
       
-      // Refresh trang ngay lập tức
-      window.location.reload()
+      // Đợi một chút rồi mới refresh để user có thể thấy error
+      console.log('⏰ Waiting 2 seconds before refresh...')
+      setTimeout(() => {
+        console.log('🔄 Refreshing page...')
+        window.location.reload()
+      }, 2000)
     }
   }
 

@@ -30,20 +30,22 @@ export const useAdmin = () => {
         })
       } else {
         setError(response.message || 'Failed to fetch users')
-        showToast({
-          title: 'Error',
-          description: response.message || 'Failed to fetch users',
-          variant: 'destructive'
-        })
+        // Không gọi showToast ở đây để tránh duplicate
+        // showToast({
+        //   title: 'Error',
+        //   description: response.message || 'Failed to fetch users',
+        //   variant: 'destructive'
+        // })
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch users'
       setError(errorMessage)
-      showToast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive'
-      })
+      // Không gọi showToast ở đây để tránh duplicate
+      // showToast({
+      //   title: 'Error',
+      //   description: errorMessage,
+      //   variant: 'destructive'
+      // })
     } finally {
       setLoading(false)
     }
@@ -52,11 +54,8 @@ export const useAdmin = () => {
   const importUsers = async (file: File) => {
     try {
       const result = await adminApi.importUsers(file)
-      showToast({
-        title: 'Success',
-        description: 'File uploaded successfully. Users will be imported.',
-        variant: 'success'
-      })
+      console.log('✅ Upload API response:', result)
+      // Không gọi showToast ở đây để tránh duplicate với AdminUsersPage
       await fetchUsers(1)
       return result
     } catch (err: any) {
@@ -65,11 +64,12 @@ export const useAdmin = () => {
       // Xử lý các loại lỗi khác nhau
       if (err.isTimeout) {
         errorMessage = 'Upload timeout. File might still be processing on server. Please check the user list in a few minutes.'
-        showToast({
-          title: 'Upload Timeout',
-          description: errorMessage,
-          variant: 'warning'
-        })
+        // Không gọi showToast ở đây để tránh duplicate với AdminUsersPage
+        // showToast({
+        //   title: 'Upload Timeout',
+        //   description: errorMessage,
+        //   variant: 'warning'
+        // })
         
         // Vẫn refresh danh sách users để kiểm tra xem có thành công không
         try {
@@ -86,12 +86,9 @@ export const useAdmin = () => {
         errorMessage = err.message
       }
       
-      showToast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive'
-      })
-      throw err
+      // Thay vì throw error, trả về false để AdminUsersPage xử lý
+      console.log('❌ Upload failed:', errorMessage)
+      return false
     }
   }
 
@@ -112,25 +109,27 @@ export const useAdmin = () => {
           totalPages = response.data.totalPages
           page++
           if (page > maxLoop) break // Prevent infinite loop
-        } else {
-          setError(response.message || 'Failed to fetch users')
-          showToast({
-            title: 'Error',
-            description: response.message || 'Failed to fetch users',
-            variant: 'destructive'
-          })
-          break
-        }
+              } else {
+        setError(response.message || 'Failed to fetch users')
+        // Không gọi showToast ở đây để tránh duplicate
+        // showToast({
+        //   title: 'Error',
+        //   description: response.message || 'Failed to fetch users',
+        //   variant: 'destructive'
+        // })
+        break
+      }
       } while (page <= totalPages)
       return allUsers
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch users'
       setError(errorMessage)
-      showToast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive'
-      })
+      // Không gọi showToast ở đây để tránh duplicate
+      // showToast({
+      //   title: 'Error',
+      //   description: errorMessage,
+      //   variant: 'destructive'
+      // })
       return []
     } finally {
       setLoading(false)

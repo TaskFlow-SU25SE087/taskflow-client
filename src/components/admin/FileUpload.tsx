@@ -307,7 +307,7 @@ export default function FileUpload({
           {isUploading ? (
             <>
               <Loader2 className='h-4 w-4 animate-spin mr-2' />
-              {uploadProgress > 0 ? `Uploading... ${uploadProgress}%` : 'Uploading...'}
+              {uploadProgress > 0 ? `Progressing... ${uploadProgress}%` : 'Progressing...'}
             </>
           ) : (
             <>
@@ -353,7 +353,7 @@ export default function FileUpload({
         {isUploading && (
           <div className='text-center text-sm text-muted-foreground'>
             {uploadProgress === 0 ? 'Preparing upload...' : 
-             uploadProgress < 100 ? `Uploading... ${uploadProgress}%` : 
+             uploadProgress < 100 ? `Progressing... ${uploadProgress}%` : 
              'Finalizing upload...'}
           </div>
         )}
