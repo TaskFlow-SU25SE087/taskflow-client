@@ -126,17 +126,13 @@ export default function TaskCreateMenuForBoard({
       showToast({ title: 'Error', description: 'Board not found', variant: 'destructive' })
       return
     }
-    if (!deadline) {
-      showToast({ title: 'Validation Error', description: 'Please select a deadline', variant: 'destructive' })
-      return
-    }
     setIsSubmitting(true)
     try {
       const formData = new FormData()
       formData.append('Title', title)
       formData.append('Description', description)
       formData.append('Priority', priority)
-      formData.append('Deadline', deadline)
+      if (deadline) formData.append('Deadline', deadline) // Deadline now optional
       if (file) formData.append('File', file)
       if (activeSprintId) formData.append('SprintId', activeSprintId)
       // Hint backend to put task on the clicked board (best-effort; server may ignore)
@@ -276,7 +272,7 @@ export default function TaskCreateMenuForBoard({
 
           <div>
             <Label htmlFor='deadline' className='text-sm font-medium'>
-              Deadline
+              Deadline (optional)
             </Label>
             <input
               id='deadline'
