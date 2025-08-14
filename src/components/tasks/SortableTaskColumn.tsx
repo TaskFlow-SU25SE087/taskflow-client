@@ -16,6 +16,7 @@ interface SortableTaskColumnProps {
   boardId: string
   movingTaskId?: string | null
   type?: string
+  canCreate?: boolean
 }
 
 export function SortableTaskColumn(props: SortableTaskColumnProps) {

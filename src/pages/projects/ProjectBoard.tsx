@@ -14,12 +14,12 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -33,22 +33,22 @@ import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { closestCenter, DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import {
-    arrayMove,
-    horizontalListSortingStrategy,
-    SortableContext,
-    verticalListSortingStrategy
+  arrayMove,
+  horizontalListSortingStrategy,
+  SortableContext,
+  verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import {
-    CheckCircle,
-    ChevronDown,
-    Clock,
-    Filter,
-    Link2,
-    Pencil,
-    Plus,
-    Search,
-    Settings,
-    TrendingUp
+  CheckCircle,
+  ChevronDown,
+  Clock,
+  Filter,
+  Link2,
+  Pencil,
+  Plus,
+  Search,
+  Settings,
+  TrendingUp
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -340,19 +340,19 @@ export default function ProjectBoard() {
 
   const handleLeaveProject = async () => {
     if (!currentProject?.id) return
-    
+
     setIsConfirmLeaveDialogOpen(true)
   }
 
   const handleConfirmLeaveProject = async () => {
     if (!currentProject?.id) return
-    
+
     setIsLeavingProject(true)
     try {
       console.log('🔄 Attempting to leave project:', currentProject.id)
       const response = await projectMemberApi.leaveProject(currentProject.id)
       console.log('✅ Leave project response:', response)
-      
+
       showToast({
         title: 'Left project successfully',
         description: 'You have left this project.'
@@ -655,6 +655,10 @@ export default function ProjectBoard() {
     )
   }
 
+  // Determine ability to create boards / tasks (must have an active sprint)
+  const canCreateInBoard = isSprintActive(selectedSprintId)
+  const backlogPath = currentProject?.id ? `/projects/${currentProject.id}/backlog` : '/backlog/'
+
   const handleToggleColumnLock = (boardId: string) => {
     setLockedColumns((prev) => (prev.includes(boardId) ? prev.filter((id) => id !== boardId) : [...prev, boardId]))
   }
@@ -869,12 +873,25 @@ export default function ProjectBoard() {
                   <Settings className='h-5 w-5 text-lavender-600' />
                 </Button>
 
-                <TaskBoardCreateMenu
-                  isOpen={isBoardDialogOpen}
-                  onOpenChange={setIsBoardDialogOpen}
-                  projectId={currentProject.id}
-                  onBoardCreated={refreshBoards}
-                />
+                {canCreateInBoard ? (
+                  <TaskBoardCreateMenu
+                    isOpen={isBoardDialogOpen}
+                    onOpenChange={setIsBoardDialogOpen}
+                    projectId={currentProject.id}
+                    onBoardCreated={refreshBoards}
+                  />
+                ) : (
+                  <Button
+                    type='button'
+                    disabled
+                    className='bg-lavender-100 text-lavender-400 cursor-not-allowed rounded-lg p-2 shadow-none border-none'
+                    style={{ minWidth: 0, minHeight: 0, height: '36px', width: 'auto' }}
+                    title='Start a sprint from the backlog to add boards'
+                  >
+                    <Plus className='h-4 w-4 mr-1' />
+                    Create Board
+                  </Button>
+                )}
 
                 <Button
                   variant='ghost'
@@ -1090,6 +1107,7 @@ export default function ProjectBoard() {
                                 boardId={board.id}
                                 movingTaskId={movingTaskId}
                                 type={board.type}
+                                canCreate={canCreateInBoard}
                               />
                             </SortableContext>
                           </DroppableBoard>
@@ -1107,6 +1125,25 @@ export default function ProjectBoard() {
                   </div>
                 </SortableContext>
               </DndContext>
+              {!canCreateInBoard && (
+                <div className='px-6 pb-4 mt-6 w-full'>
+                  <div className='max-w-3xl mx-auto border border-dashed border-lavender-300 bg-white rounded-xl p-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center shadow-sm'>
+                    <div className='flex-1'>
+                      <h3 className='text-lg font-semibold text-gray-900'>Kick things off from your backlog</h3>
+                      <p className='text-sm text-gray-600 mt-1'>
+                        There&apos;s no sprint running yet. Plan or start a sprint in the backlog before creating boards
+                        or tasks here.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => navigate(backlogPath)}
+                      className='bg-lavender-600 hover:bg-lavender-700 text-white whitespace-nowrap'
+                    >
+                      Go to Backlog
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1157,7 +1194,9 @@ export default function ProjectBoard() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirm Leave Project</DialogTitle>
-            <DialogDescription>Are you sure you want to leave this project? This action cannot be undone.</DialogDescription>
+            <DialogDescription>
+              Are you sure you want to leave this project? This action cannot be undone.
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant='outline' onClick={() => setIsConfirmLeaveDialogOpen(false)}>

@@ -17,6 +17,7 @@ interface TaskColumnProps {
   boardId: string
   movingTaskId?: string | null
   type?: string
+  canCreate?: boolean
 }
 
 // Color mapping aligned with project board colors and API types
@@ -41,7 +42,8 @@ export function TaskColumn({
   onTaskUpdated,
   boardId,
   movingTaskId,
-  type
+  type,
+  canCreate
 }: TaskColumnProps) {
   const [isAddingTask, setIsAddingTask] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
@@ -88,9 +90,15 @@ export function TaskColumn({
                 trigger={
                   <button
                     type='button'
-                    className='w-8 h-8 p-0 flex items-center justify-center bg-lavender-100 hover:bg-lavender-200 rounded-xl transition-colors duration-150 shadow-none border-none focus:outline-none'
+                    disabled={canCreate === false}
+                    className={`w-8 h-8 p-0 flex items-center justify-center rounded-xl transition-colors duration-150 shadow-none border-none focus:outline-none ${
+                      canCreate === false
+                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                        : 'bg-lavender-100 hover:bg-lavender-200'
+                    }`}
+                    title={canCreate === false ? 'Start a sprint to add tasks' : 'Add task'}
                   >
-                    <Plus className='h-4 w-4 text-lavender-600' />
+                    <Plus className={`h-4 w-4 ${canCreate === false ? 'text-gray-300' : 'text-lavender-600'}`} />
                   </button>
                 }
               />
