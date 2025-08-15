@@ -39,7 +39,6 @@ export default function ProjectGitHub() {
   const [success, setSuccess] = useState<string | null>(null)
   
   // UI States
-  const [showCreatePart, setShowCreatePart] = useState(false)
   const [newPart, setNewPart] = useState({ name: '', programmingLanguage: '', framework: '' })
   const [creatingPart, setCreatingPart] = useState(false)
   const [selectedRepo, setSelectedRepo] = useState<string>('')
@@ -131,9 +130,8 @@ export default function ProjectGitHub() {
         setParts(prevParts => [tempPart, ...prevParts])
         
         const partName = newPart.name // Store the name before resetting
-        setNewPart({ name: '', programmingLanguage: '', framework: '' })
-        setShowCreatePart(false)
-        showToast({ title: 'Success', description: 'Project part created successfully!' })
+              setNewPart({ name: '', programmingLanguage: '', framework: '' })
+      showToast({ title: 'Success', description: 'Project part created successfully!' })
         
         // Auto-select the newly created part
         setSelectedPart(tempPart.id)
@@ -146,7 +144,6 @@ export default function ProjectGitHub() {
         
         // Fetch fresh data in background to get the real part ID
         setTimeout(async () => {
-          const oldParts = parts // Store current parts before fetch
           await fetchData()
           // After fetching, try to find the newly created part by name
           const realPart = parts.find(part => part.name === partName && !part.id.startsWith('temp-'))
@@ -185,7 +182,6 @@ export default function ProjectGitHub() {
       
       const partName = newPart.name // Store the name before resetting
       setNewPart({ name: '', programmingLanguage: '', framework: '' })
-      setShowCreatePart(false)
       showToast({ title: 'Success', description: 'Project part created successfully!' })
       
       // Auto-select the newly created part
@@ -199,7 +195,6 @@ export default function ProjectGitHub() {
       
       // Fetch fresh data in background to ensure consistency
       setTimeout(async () => {
-        const oldParts = parts // Store current parts before fetch
         await fetchData()
         // After fetching, try to find the newly created part by name
         const realPart = parts.find(part => part.name === partName && !part.id.startsWith('temp-'))

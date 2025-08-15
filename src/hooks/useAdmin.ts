@@ -1,5 +1,5 @@
 import { adminApi } from '@/api/admin'
-import { useToastContext } from '@/components/ui/ToastContext'
+
 import { AdminUser, AdminUsersResponse } from '@/types/admin'
 import { useEffect, useState } from 'react'
 
@@ -13,7 +13,7 @@ export const useAdmin = () => {
     pageNumber: 1,
     pageSize: 0
   })
-  const { showToast } = useToastContext()
+
 
   const fetchUsers = async (page: number = 1, pageSize: number = 10) => {
     setLoading(true)
