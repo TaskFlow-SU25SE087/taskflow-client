@@ -26,6 +26,10 @@ interface NavbarProps {
   toggleSidebar: () => void
 }
 
+let cachedUserProfile: any | null = null
+let cachedAvatarUrl: string | undefined = undefined
+let avatarPreviouslyLoaded = false
+
 export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
   const { projects } = useProjects()
   const { currentProject, setCurrentProjectId } = useCurrentProject()
@@ -33,24 +37,33 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
   const { logout } = useAuth()
   const { user } = useAuth()
   const [isTutorialOpen, setIsTutorialOpen] = useState(false)
-  const [userProfile, setUserProfile] = useState<any>(null)
+  // Initialize from cache so we don't blank out while routing
+  const [userProfile, setUserProfile] = useState<any>(cachedUserProfile)
 
   console.log('user in Navbar:', user)
 
-  // Fetch full user profile including avatar
+  // Fetch full user profile including avatar (only if not already cached)
   useEffect(() => {
+    let cancelled = false
     const fetchUserProfile = async () => {
-      if (user?.id) {
-        try {
-          const response = await axiosClient.get(`/user/${user.id}`)
-          setUserProfile(response.data.data)
-        } catch (error) {
-          console.error('Failed to fetch user profile:', error)
+      if (!user?.id) return
+      if (cachedUserProfile && cachedUserProfile.id === user.id) return // already cached
+      try {
+        const response = await axiosClient.get(`/user/${user.id}`)
+        if (cancelled) return
+        setUserProfile(response.data.data)
+        cachedUserProfile = response.data.data
+        if (response.data.data?.avatar) {
+          cachedAvatarUrl = response.data.data.avatar
         }
+      } catch (error) {
+        if (!cancelled) console.error('Failed to fetch user profile:', error)
       }
     }
-
     fetchUserProfile()
+    return () => {
+      cancelled = true
+    }
   }, [user?.id])
 
   const handleProjectSelect = (projectId: string) => {
@@ -61,6 +74,16 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
     logout()
     navigate('/')
   }
+
+  const avatarUrl = userProfile?.avatar || (user as any)?.avatar || cachedAvatarUrl
+  const [avatarLoaded, setAvatarLoaded] = useState(() => avatarPreviouslyLoaded && !!avatarUrl)
+
+  // If we already have a cached avatar and it matches current, ensure loaded flag stays true
+  useEffect(() => {
+    if (avatarPreviouslyLoaded && avatarUrl === cachedAvatarUrl && !avatarLoaded) {
+      setAvatarLoaded(true)
+    }
+  }, [avatarUrl, avatarLoaded])
 
   return (
     <div className='sticky top-0 z-[9990] w-full bg-white border-b border-gray-300'>
@@ -161,16 +184,28 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <div className='cursor-pointer relative h-8 w-fit flex items-center gap-1 sm:gap-2 px-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'>
-                {userProfile?.avatar ? (
-                  <img src={userProfile.avatar} alt='avatar' className='w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover' />
-                ) : (
-                  <img src='/logo.png' alt='default avatar' className='w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover' />
-                )}
-                {/* Ẩn tên và mũi tên */}
-                {/* <span className='hidden sm:block ml-2 font-medium text-black text-sm'>
-                  {user?.fullName || user?.email || 'No name'}
-                </span>
-                <ChevronDown className='hidden sm:block h-4 w-4 text-gray-500' /> */}
+                <div className='h-7 w-7 sm:h-8 sm:w-8 rounded-full overflow-hidden ring-2 ring-white shadow-sm bg-gray-100'>
+                  {avatarUrl && (
+                    <img
+                      src={avatarUrl}
+                      alt='avatar'
+                      // Skip fade if already loaded once in this session
+                      className={`h-full w-full object-cover ${avatarLoaded ? 'opacity-100' : 'opacity-0'} ${avatarPreviouslyLoaded ? 'transition-none' : 'transition-opacity duration-200'}`}
+                      onLoad={() => {
+                        if (!avatarLoaded) {
+                          setAvatarLoaded(true)
+                          avatarPreviouslyLoaded = true
+                          cachedAvatarUrl = avatarUrl
+                        }
+                      }}
+                      draggable={false}
+                      referrerPolicy='no-referrer'
+                      decoding='async'
+                      loading='eager'
+                      crossOrigin='anonymous'
+                    />
+                  )}
+                </div>
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent className='w-56' align='end'>
