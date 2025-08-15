@@ -52,8 +52,10 @@ export function SprintBacklog({
   }
 
   return (
-    <div className='bg-white border border-gray-200 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md'>
-      <div className='p-4 flex items-center justify-between border-b border-gray-200 rounded-t-lg bg-white'>
+    <div className='bg-white/95 border border-gray-200 border-l-4 border-l-lavender-300/80 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md hover:border-lavender-400/90 relative overflow-hidden'>
+      {/* subtle backdrop tint */}
+      <div className='absolute inset-0 pointer-events-none opacity-[0.35] bg-[radial-gradient(circle_at_20%_15%,rgba(139,92,246,0.08),transparent_60%),radial-gradient(circle_at_85%_40%,rgba(139,92,246,0.05),transparent_55%)]' />
+      <div className='relative p-4 flex items-center justify-between border-b border-gray-200 rounded-t-lg bg-gradient-to-r from-white via-white to-lavender-50/70 backdrop-blur-[1px]'>
         <div className='flex items-center gap-2'>
           <Button
             variant='ghost'
@@ -65,7 +67,7 @@ export function SprintBacklog({
           </Button>
           <div>
             <div className='flex items-center gap-2'>
-              <h3 className='font-semibold text-lg text-gray-900'>Backlog</h3>
+              <h3 className='font-semibold text-lg text-gray-900 tracking-wide'>Backlog</h3>
               {sprint && (
                 <span className='ml-2 text-xs rounded px-2 py-1 bg-lavender-100 text-lavender-700 border border-lavender-200'>
                   {SprintStatusMap[sprint.status] || sprint.status}
@@ -75,6 +77,7 @@ export function SprintBacklog({
                 {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
               </span>
             </div>
+            <div className='text-xs font-medium uppercase tracking-wider text-lavender-600/80 mt-0.5'>Unplanned Work</div>
             <div className='text-sm text-gray-500'>Tasks not assigned to any sprint</div>
           </div>
         </div>
@@ -100,10 +103,10 @@ export function SprintBacklog({
         </div>
       </div>
       {isExpanded && (
-        <div className='overflow-x-auto transition-all duration-200 bg-white rounded-b-lg'>
+        <div className='overflow-x-auto transition-all duration-200 bg-white/95 rounded-b-lg'>
           {/* Column header for consistency with rows */}
           <div className='px-4 pt-4'>
-            <div className='grid grid-cols-[24px,1fr,140px,84px,60px,60px,100px,auto] items-center gap-1 text-[11px] font-medium text-gray-500 bg-gray-50 px-2 py-2 border-y border-gray-100'>
+            <div className='grid grid-cols-[24px,1fr,140px,84px,60px,60px,100px,auto] items-center gap-1 text-[11px] font-medium text-gray-600 bg-lavender-50/60 px-2 py-2 border-y border-lavender-100/70 shadow-[inset_0_0_0_1px_rgba(139,92,246,0.05)]'>
               <div className='text-center'>{/* checkbox column */}</div>
               <div className='pl-1'>Task</div>
               <div className='text-center'>Status</div>
