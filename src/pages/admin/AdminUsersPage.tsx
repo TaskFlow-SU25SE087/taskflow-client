@@ -9,7 +9,7 @@ import { useToastContext } from '@/components/ui/ToastContext'
 import { useAdmin } from '@/hooks/useAdmin'
 import { useAdminTerm } from '@/hooks/useAdminTerm'
 import { debounce } from 'lodash'
-import { Loader2, RefreshCw, Users } from 'lucide-react'
+import { Loader2, RefreshCw, Shield, ShieldOff, Users } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import * as XLSX from 'xlsx'
 
@@ -24,6 +24,8 @@ export default function AdminUsersPage() {
   const [uploadTimeout, setUploadTimeout] = useState(false)
   const [cachedUsers, setCachedUsers] = useState<any[]>([])
   const [lastFetchTime, setLastFetchTime] = useState<number>(0)
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
+  const [selectAll, setSelectAll] = useState(false)
   const pageSize = 10
   const { showToast } = useToastContext()
 
@@ -275,21 +277,175 @@ export default function AdminUsersPage() {
   }
 
   const handleBanUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to ban this user? They will not be able to access the system.')) {
+      return
+    }
     try {
       await adminApi.banUser(userId)
+      showToast({
+        title: 'User Banned',
+        description: 'User has been successfully banned from the system.',
+        variant: 'success'
+      })
       await fetchUsers(pagination.pageNumber, pageSize)
     } catch (err) {
       console.error('Ban user failed', err)
+      showToast({
+        title: 'Ban Failed',
+        description: 'Failed to ban user. Please try again.',
+        variant: 'destructive'
+      })
     }
   }
 
   const handleUnbanUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to unban this user? They will be able to access the system again.')) {
+      return
+    }
     try {
       await adminApi.unbanUser(userId)
+      showToast({
+        title: 'User Unbanned',
+        description: 'User has been successfully unbanned and can access the system again.',
+        variant: 'success'
+      })
       await fetchUsers(pagination.pageNumber, pageSize)
     } catch (err) {
       console.error('Unban user failed', err)
+      showToast({
+        title: 'Unban Failed',
+        description: 'Failed to unban user. Please try again.',
+        variant: 'destructive'
+      })
     }
+  }
+
+  // Multi-select functions
+  const handleSelectUser = (userId: string) => {
+    const newSelected = new Set(selectedUsers)
+    if (newSelected.has(userId)) {
+      newSelected.delete(userId)
+    } else {
+      newSelected.add(userId)
+    }
+    setSelectedUsers(newSelected)
+    setSelectAll(newSelected.size === filteredUsers.length)
+  }
+
+  const handleSelectAll = () => {
+    if (selectAll) {
+      setSelectedUsers(new Set())
+      setSelectAll(false)
+    } else {
+      setSelectedUsers(new Set(filteredUsers.map(user => user.id)))
+      setSelectAll(true)
+    }
+  }
+
+  const handleBulkBan = async () => {
+    if (selectedUsers.size === 0) return
+    
+    const { activeUsers } = getSelectedUsersByStatus()
+    if (activeUsers.length === 0) {
+      showToast({
+        title: 'No Active Users',
+        description: 'No active users selected to ban.',
+        variant: 'destructive'
+      })
+      return
+    }
+    
+    const userCount = activeUsers.length
+    if (!confirm(`Are you sure you want to ban ${userCount} active user${userCount > 1 ? 's' : ''}? They will not be able to access the system.`)) {
+      return
+    }
+
+    try {
+      const promises = activeUsers.map(userId => adminApi.banUser(userId))
+      await Promise.all(promises)
+      
+      showToast({
+        title: 'Bulk Ban Successful',
+        description: `${userCount} active user${userCount > 1 ? 's have' : ' has'} been successfully banned from the system.`,
+        variant: 'success'
+      })
+      
+      setSelectedUsers(new Set())
+      setSelectAll(false)
+      await fetchUsers(pagination.pageNumber, pageSize)
+    } catch (err) {
+      console.error('Bulk ban failed', err)
+      showToast({
+        title: 'Bulk Ban Failed',
+        description: 'Failed to ban some users. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handleBulkUnban = async () => {
+    if (selectedUsers.size === 0) return
+    
+    const { inactiveUsers } = getSelectedUsersByStatus()
+    if (inactiveUsers.length === 0) {
+      showToast({
+        title: 'No Inactive Users',
+        description: 'No inactive users selected to unban.',
+        variant: 'destructive'
+      })
+      return
+    }
+    
+    const userCount = inactiveUsers.length
+    if (!confirm(`Are you sure you want to unban ${userCount} inactive user${userCount > 1 ? 's' : ''}? They will be able to access the system again.`)) {
+      return
+    }
+
+    try {
+      const promises = inactiveUsers.map(userId => adminApi.unbanUser(userId))
+      await Promise.all(promises)
+      
+      showToast({
+        title: 'Bulk Unban Successful',
+        description: `${userCount} inactive user${userCount > 1 ? 's have' : ' has'} been successfully unbanned and can access the system again.`,
+        variant: 'success'
+      })
+      
+      setSelectedUsers(new Set())
+      setSelectAll(false)
+      await fetchUsers(pagination.pageNumber, pageSize)
+    } catch (err) {
+      console.error('Bulk unban failed', err)
+      showToast({
+        title: 'Bulk Unban Failed',
+        description: 'Failed to unban some users. Please try again.',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const clearSelection = () => {
+    setSelectedUsers(new Set())
+    setSelectAll(false)
+  }
+
+  // Phân loại users đã chọn theo trạng thái
+  const getSelectedUsersByStatus = () => {
+    const activeUsers: string[] = []
+    const inactiveUsers: string[] = []
+    
+    selectedUsers.forEach(userId => {
+      const user = filteredUsers.find(u => u.id === userId)
+      if (user) {
+        if (user.isActive) {
+          activeUsers.push(userId)
+        } else {
+          inactiveUsers.push(userId)
+        }
+      }
+    })
+    
+    return { activeUsers, inactiveUsers }
   }
 
   const filteredUsers = users.filter((user) => {
@@ -461,6 +617,118 @@ export default function AdminUsersPage() {
         </div>
       )}
       
+      {/* Bulk Actions */}
+      {selectedUsers.size > 0 && (
+        <div className='mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg'>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center space-x-3'>
+              <div className='p-2 bg-blue-100 rounded-full'>
+                <Users className='w-5 h-5 text-blue-600' />
+              </div>
+              <div>
+                <h3 className='text-lg font-semibold text-blue-900'>Bulk Actions</h3>
+                <div className='text-blue-700 space-y-1'>
+                  <p>{selectedUsers.size} user{selectedUsers.size > 1 ? 's' : ''} selected</p>
+                  {(() => {
+                    const { activeUsers, inactiveUsers } = getSelectedUsersByStatus()
+                    return (
+                      <div className='text-sm space-y-1'>
+                        {activeUsers.length > 0 && (
+                          <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200'>
+                            🟢 {activeUsers.length} Active user{activeUsers.length > 1 ? 's' : ''}
+                          </span>
+                        )}
+                        {inactiveUsers.length > 0 && (
+                          <span className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200 ml-2'>
+                            🔴 {inactiveUsers.length} Inactive user{inactiveUsers.length > 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })()}
+                </div>
+              </div>
+            </div>
+            <div className='flex items-center space-x-3'>
+              <Button 
+                variant='outline' 
+                size='sm'
+                onClick={clearSelection}
+                className='text-gray-600 hover:text-gray-800'
+              >
+                Clear Selection
+              </Button>
+              {(() => {
+                const { activeUsers, inactiveUsers } = getSelectedUsersByStatus()
+                return (
+                  <>
+                    {activeUsers.length > 0 && (
+                      <Button 
+                        variant='destructive' 
+                        size='sm'
+                        onClick={handleBulkBan}
+                        className='flex items-center gap-2'
+                        title={`Ban ${activeUsers.length} active user${activeUsers.length > 1 ? 's' : ''}`}
+                      >
+                        <ShieldOff className='h-4 w-4' />
+                        Ban Active ({activeUsers.length})
+                      </Button>
+                    )}
+                    {inactiveUsers.length > 0 && (
+                      <Button 
+                        variant='default' 
+                        size='sm'
+                        onClick={handleBulkUnban}
+                        className='flex items-center gap-2 bg-green-600 hover:bg-green-700'
+                        title={`Unban ${inactiveUsers.length} inactive user${inactiveUsers.length > 1 ? 's' : ''}`}
+                      >
+                        <Shield className='h-4 w-4' />
+                        Unban Inactive ({inactiveUsers.length})
+                      </Button>
+                    )}
+                  </>
+                )
+              })()}
+            </div>
+          </div>
+          
+          {/* Warning if mixed status */}
+          {(() => {
+            const { activeUsers, inactiveUsers } = getSelectedUsersByStatus()
+            if (activeUsers.length > 0 && inactiveUsers.length > 0) {
+              return (
+                <div className='mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg'>
+                  <div className='flex items-center space-x-2 text-sm text-yellow-800'>
+                    <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z' />
+                    </svg>
+                    <span>
+                      <strong>Mixed Status Detected:</strong> You have selected both active and inactive users. 
+                      Use "Ban Active" to ban active users and "Unban Inactive" to unban inactive users.
+                    </span>
+                  </div>
+                </div>
+              )
+            }
+            return null
+          })()}
+        </div>
+      )}
+
+      {/* Multi-select Info */}
+      {selectedUsers.size === 0 && (
+        <div className='mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg'>
+          <div className='flex items-center space-x-2 text-sm text-gray-600'>
+            <Users className='h-4 w-4' />
+            <span>
+              💡 <strong>Tip:</strong> Use checkboxes to select multiple users for bulk actions. 
+              The system will automatically categorize selected users by status and show appropriate actions.
+              Click the header checkbox to select all users on this page.
+            </span>
+          </div>
+        </div>
+      )}
+      
       {/* Timeout Warning */}
       {uploadTimeout && (
         <div className='mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg'>
@@ -519,6 +787,14 @@ export default function AdminUsersPage() {
           <table className='min-w-full divide-y divide-gray-200 bg-white'>
             <thead className='bg-gray-50'>
               <tr>
+                <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>
+                  <input
+                    type='checkbox'
+                    checked={selectAll}
+                    onChange={handleSelectAll}
+                    className='rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+                  />
+                </th>
                 <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Avatar</th>
                 <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Full Name</th>
                 <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Email</th>
@@ -534,7 +810,12 @@ export default function AdminUsersPage() {
                 </th>
                 <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Status</th>
                 <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Role</th>
-                <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Action</th>
+                <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>
+                  <div className='flex items-center space-x-1'>
+                    <Shield className='w-4 h-4' />
+                    <span>Ban/Unban</span>
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody className='divide-y divide-gray-200'>
@@ -543,7 +824,15 @@ export default function AdminUsersPage() {
                   ? `${user.termSeason} ${user.termYear}`
                   : user.pastTerms || 'Not provided'
                 return (
-                  <tr key={user.id}>
+                  <tr key={user.id} className={selectedUsers.has(user.id) ? 'bg-blue-50' : ''}>
+                    <td className='px-4 py-2'>
+                      <input
+                        type='checkbox'
+                        checked={selectedUsers.has(user.id)}
+                        onChange={() => handleSelectUser(user.id)}
+                        className='rounded border-gray-300 text-blue-600 focus:ring-blue-500'
+                      />
+                    </td>
                     <td className='px-4 py-2'>
                       <img src={user.avatar} alt={user.fullName} className='h-10 w-10 rounded-full object-cover' />
                     </td>
@@ -572,15 +861,28 @@ export default function AdminUsersPage() {
                     </td>
                     <td className='px-4 py-2'>{user.role}</td>
                     <td className='px-4 py-2'>
-                      {user.isActive ? (
-                        <Button size='sm' variant='destructive' onClick={() => handleBanUser(user.id)}>
-                          Ban
-                        </Button>
-                      ) : (
-                        <Button size='sm' variant='default' onClick={() => handleUnbanUser(user.id)}>
-                          Unban
-                        </Button>
-                      )}
+                      <Button 
+                        size='sm' 
+                        variant={user.isActive ? 'outline' : 'default'}
+                        onClick={() => user.isActive ? handleBanUser(user.id) : handleUnbanUser(user.id)}
+                        className={`flex items-center gap-2 transition-all duration-200 ${
+                          user.isActive 
+                            ? 'text-red-600 border-red-300 hover:bg-red-50 hover:border-red-400' 
+                            : 'text-green-600 bg-green-100 hover:bg-green-200'
+                        }`}
+                      >
+                        {user.isActive ? (
+                          <>
+                            <ShieldOff className='h-4 w-4' />
+                            Ban User
+                          </>
+                        ) : (
+                          <>
+                            <Shield className='h-4 w-4' />
+                            Unban User
+                          </>
+                        )}
+                      </Button>
                     </td>
                   </tr>
                 )
