@@ -5,14 +5,14 @@ import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { Board } from '@/types/board'
 import { TaskP } from '@/types/task'
 import {
-    AlertCircle,
-    Calendar,
-    CheckCircle,
-    ChevronDown,
-    Circle,
-    FileText,
-    MessageSquare,
-    PlayCircle
+  AlertCircle,
+  Calendar,
+  CheckCircle,
+  ChevronDown,
+  Circle,
+  FileText,
+  MessageSquare,
+  PlayCircle
 } from 'lucide-react'
 import React, { useState } from 'react'
 import { TaskDetailMenu } from '../tasks/TaskDetailMenu'
@@ -178,11 +178,13 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
       ? task.commnets.reduce((acc, c) => acc + (Array.isArray(c.attachmentUrls) ? c.attachmentUrls.length : 0), 0)
       : 0)
 
-  // Deadline: deadline -> updatedAt -> createdAt -> N/A
-  const rawDeadline: string | null = task.deadline ?? task.updatedAt ?? task.createdAt ?? null
-  const deadline = rawDeadline ? new Date(rawDeadline).toLocaleDateString('en-GB') : 'N/A'
-  const deadlineColor = getDeadlineColor(rawDeadline)
-  const DeadlineIcon = getDeadlineIcon(rawDeadline)
+  // Deadline handling: ONLY show an actual deadline. Previously we fell back to updatedAt/createdAt,
+  // which made tasks without a real deadline appear to have one. That confused users.
+  const hasRealDeadline = Boolean(task.deadline)
+  const deadlineDisplay = hasRealDeadline && task.deadline ? new Date(task.deadline).toLocaleDateString('en-GB') : 'N/A'
+  // Pass only the real deadline (or null) to color/icon helpers so styling reflects absence.
+  const deadlineColor = getDeadlineColor(hasRealDeadline ? task.deadline! : null)
+  const DeadlineIcon = getDeadlineIcon(hasRealDeadline ? task.deadline! : null)
 
   const TagPill: React.FC<{ name: string; color?: string }> = ({ name, color }) => (
     <span
@@ -370,11 +372,11 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
               <Tooltip>
                 <TooltipTrigger>
                   <div className={`w-24 flex items-center justify-center ${deadlineColor}`}>
-                    <DeadlineIcon className='w-4 h-4 mr-1' /> {deadline}
+                    <DeadlineIcon className='w-4 h-4 mr-1' /> {deadlineDisplay}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Deadline: {deadline}</p>
+                  <p>{hasRealDeadline ? `Deadline: ${deadlineDisplay}` : 'No deadline set'}</p>
                 </TooltipContent>
               </Tooltip>
             </>
