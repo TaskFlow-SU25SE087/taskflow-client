@@ -23,30 +23,79 @@ interface BoardDeleteButtonProps {
   boardId: string
   onDeleted: () => void
   trigger?: React.ReactNode
-  tasks?: TaskP[] // tasks currently in the board so we can move them
+  tasks?: TaskP[] // tasks currently passed from board (may be filtered by sprint/view)
 }
 
-export function BoardDeleteButton({ projectId, boardId, onDeleted, trigger, tasks = [] }: BoardDeleteButtonProps) {
+export function BoardDeleteButton({
+  projectId,
+  boardId,
+  onDeleted,
+  trigger,
+  tasks: passedTasks = []
+}: BoardDeleteButtonProps) {
   const { showToast } = useToastContext()
   const [loading, setLoading] = useState(false)
   const [boards, setBoards] = useState<Board[]>([])
   const [destinationBoardId, setDestinationBoardId] = useState<string>('')
   const [open, setOpen] = useState(false)
   const [movedCount, setMovedCount] = useState(0)
+  // Internal state so we can fetch hidden tasks (e.g., when no active sprint / backlog filtering hides them)
+  const [boardTasks, setBoardTasks] = useState<TaskP[]>(passedTasks)
 
-  const hasTasks = (tasks || []).length > 0
+  // Merge any newly passed tasks (e.g., prop change after re-render) into internal list
+  useEffect(() => {
+    if (passedTasks.length) {
+      setBoardTasks((prev) => {
+        const existingIds = new Set(prev.map((t) => t.id))
+        const merged = [...prev]
+        passedTasks.forEach((t) => {
+          if (!existingIds.has(t.id)) merged.push(t)
+        })
+        return merged
+      })
+    }
+  }, [passedTasks])
+
+  const hasTasks = boardTasks.length > 0
   const selectableBoards = useMemo(() => boards.filter((b) => b.id !== boardId), [boards, boardId])
 
   // Preselect first board if any when opening (for convenience)
   useEffect(() => {
-    if (open) {
-      // Fetch boards when dialog opens
-      boardApi
-        .getAllBoardsByProjectId(projectId)
-        .then((res) => setBoards(res))
-        .catch((err) => console.error('[BoardDeleteButton] Failed to load boards', err))
+    if (!open) return
+
+    // Fetch boards & all tasks (to ensure we capture tasks hidden by sprint filters)
+    let cancelled = false
+
+    const load = async () => {
+      try {
+        const [boardList, allProjectTasks] = await Promise.all([
+          boardApi.getAllBoardsByProjectId(projectId),
+          // Always fetch all tasks so we also capture tasks not in active sprint / backlog, etc.
+          taskApi.getAllTasks(projectId).catch((e) => {
+            console.warn('[BoardDeleteButton] Failed to fetch all tasks; proceeding with passed tasks', e)
+            return [] as TaskP[]
+          })
+        ])
+        if (cancelled) return
+        setBoards(boardList)
+        const currentBoardTasks = allProjectTasks.filter((t) => t.boardId === boardId)
+        setBoardTasks((prev) => {
+          // Prefer freshly fetched tasks for authoritative data; merge any not returned (unlikely)
+          const mergedIds = new Set(currentBoardTasks.map((t) => t.id))
+          prev.forEach((t) => {
+            if (t.boardId === boardId && !mergedIds.has(t.id)) currentBoardTasks.push(t)
+          })
+          return currentBoardTasks
+        })
+      } catch (err) {
+        console.error('[BoardDeleteButton] Failed initial data load', err)
+      }
     }
-  }, [open, projectId])
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [open, projectId, boardId])
 
   useEffect(() => {
     if (!destinationBoardId && selectableBoards.length > 0) {
@@ -56,9 +105,9 @@ export function BoardDeleteButton({ projectId, boardId, onDeleted, trigger, task
 
   const moveAllTasks = async (targetBoardId: string) => {
     if (!hasTasks) return
-    // Sequentially move tasks; could be optimized later.
-    for (let i = 0; i < tasks.length; i++) {
-      const t = tasks[i]
+    // Sequential move; if needed optimize with Promise.allSettled respecting order.
+    for (let i = 0; i < boardTasks.length; i++) {
+      const t = boardTasks[i]
       try {
         await taskApi.moveTaskToBoard(projectId, t.id, targetBoardId)
         setMovedCount(i + 1)
@@ -91,7 +140,7 @@ export function BoardDeleteButton({ projectId, boardId, onDeleted, trigger, task
         showToast({
           title: 'Board deleted',
           description: hasTasks
-            ? `Moved ${tasks.length} task${tasks.length !== 1 ? 's' : ''} then deleted board.`
+            ? `Moved ${boardTasks.length} task${boardTasks.length !== 1 ? 's' : ''} then deleted board.`
             : res?.message || 'Board deleted successfully.',
           variant: 'success'
         })
@@ -160,7 +209,7 @@ export function BoardDeleteButton({ projectId, boardId, onDeleted, trigger, task
 
           {hasTasks && (
             <div className='mt-6 space-y-4'>
-              <TaskPreview tasks={tasks} movedCount={movedCount} loading={loading} />
+              <TaskPreview tasks={boardTasks} movedCount={movedCount} loading={loading} />
               <div className='space-y-2'>
                 <label className='text-xs font-semibold uppercase tracking-wide text-gray-600'>Destination Board</label>
                 <Select
@@ -187,13 +236,13 @@ export function BoardDeleteButton({ projectId, boardId, onDeleted, trigger, task
                     <div className='flex justify-between text-[11px] font-medium text-gray-500'>
                       <span>Moving tasks</span>
                       <span>
-                        {movedCount}/{tasks.length}
+                        {movedCount}/{boardTasks.length}
                       </span>
                     </div>
                     <div className='h-1.5 w-full rounded-full bg-gray-200 overflow-hidden'>
                       <div
                         className='h-full bg-red-500 transition-all duration-300'
-                        style={{ width: `${(movedCount / Math.max(tasks.length, 1)) * 100}%` }}
+                        style={{ width: `${(movedCount / Math.max(boardTasks.length, 1)) * 100}%` }}
                       />
                     </div>
                   </div>
@@ -221,7 +270,7 @@ export function BoardDeleteButton({ projectId, boardId, onDeleted, trigger, task
             {loading ? (
               <>
                 <Loader2 className='h-4 w-4 animate-spin' />
-                {hasTasks && movedCount < tasks.length ? 'Moving tasks…' : 'Deleting…'}
+                {hasTasks && movedCount < boardTasks.length ? 'Moving tasks…' : 'Deleting…'}
               </>
             ) : (
               <>
