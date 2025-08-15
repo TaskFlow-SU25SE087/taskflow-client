@@ -11,7 +11,7 @@ import axiosClient from '@/configs/axiosClient'
 import { useGitHubStatus } from '@/contexts/GitHubStatusContext'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { extractPartId, processPartsData, validatePartId, type ProjectPart } from '@/utils/partIdHelper'
-import { CheckCircle, Github, XCircle } from 'lucide-react'
+import { ArrowRight, CheckCircle, Github, Plus, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
@@ -27,7 +27,6 @@ export default function ProjectGitHub() {
   const { showToast } = useToastContext()
   const { updateConnectionStatus } = useGitHubStatus()
 
-  // Use projectId from URL if available, otherwise use currentProject.id
   const projectId = urlProjectId || currentProject?.id
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
@@ -38,21 +37,16 @@ export default function ProjectGitHub() {
   const [oauthLoading, setOauthLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const [refreshingParts, setRefreshingParts] = useState(false)
   
-  
-  
-
-  // For creating a new part
+  // UI States
   const [showCreatePart, setShowCreatePart] = useState(false)
   const [newPart, setNewPart] = useState({ name: '', programmingLanguage: '', framework: '' })
   const [creatingPart, setCreatingPart] = useState(false)
-
-  // For connecting repo to part
   const [selectedRepo, setSelectedRepo] = useState<string>('')
   const [selectedPart, setSelectedPart] = useState<string>('')
   const [connecting, setConnecting] = useState(false)
-  // const [focusRepoDropdown, setFocusRepoDropdown] = useState(false)
+  const [currentStep, setCurrentStep] = useState<'select' | 'create' | 'connect'>('select')
+  const [newlyCreatedPartId, setNewlyCreatedPartId] = useState<string | null>(null)
 
   const fetchData = async () => {
     setLoading(true)
@@ -60,22 +54,18 @@ export default function ProjectGitHub() {
       const res = await axiosClient.get('/api/github/connection-status')
       const status = res.data.data
       setConnectionStatus(status)
-      // Cập nhật trạng thái toàn cục
       updateConnectionStatus(status)
       
       if (status) {
         const repoRes = await axiosClient.get('/api/github/repos')
         setRepos(repoRes.data.data)
       }
-      // Lấy parts từ backend nếu có API
+      
       if (projectId) {
         try {
           const partsRes = await axiosClient.get(`/projects/${projectId}/parts`)
-          
-          // Sử dụng utility function để xử lý dữ liệu parts
           let partsData = partsRes.data.data || partsRes.data || []
           const processedParts = processPartsData(partsData)
-          
           setParts(processedParts)
         } catch (err) {
           setParts([])
@@ -86,26 +76,6 @@ export default function ProjectGitHub() {
       updateConnectionStatus(null)
     } finally {
       setLoading(false)
-    }
-  }
-
-  // Function để refresh lại danh sách parts
-  const refreshPartsList = async () => {
-    if (!projectId) return
-    
-    setRefreshingParts(true)
-    try {
-      const partsRes = await axiosClient.get(`/projects/${projectId}/parts`)
-      
-      // Sử dụng utility function để xử lý dữ liệu parts
-      let partsData = partsRes.data.data || partsRes.data || []
-      const processedParts = processPartsData(partsData)
-      
-      setParts(processedParts)
-    } catch (err) {
-      // Không hiển thị error toast khi refresh để tránh làm phiền user
-    } finally {
-      setRefreshingParts(false)
     }
   }
 
@@ -127,122 +97,129 @@ export default function ProjectGitHub() {
   }
 
   const handleCreatePart = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault()
     if (!newPart.name.trim()) {
-      showToast({ title: 'Error', description: 'Please fill in all fields (Name is required)', variant: 'destructive' });
-      return;
+      showToast({ title: 'Error', description: 'Please fill in all fields (Name is required)', variant: 'destructive' })
+      return
     }
-    setCreatingPart(true);
-    setError(null);
+    
+    setCreatingPart(true)
+    setError(null)
     try {
       const response = await createProjectPart(projectId!, {
         name: newPart.name,
         programmingLanguage: newPart.programmingLanguage || 'None',
         framework: newPart.framework || 'None',
-      });
+      })
       
-      // Sử dụng utility function để lấy id chính xác
-      const partId = extractPartId(response.data);
+      const partId = extractPartId(response.data)
       
-      // If backend returns success message instead of UUID, treat it as success
       if (!partId && response.data && typeof response.data === 'string' && response.data.includes('successfully')) {
-        // Backend returned success message, treat as successful creation
-        // Generate a temporary ID for frontend use
-        // const tempId = `temp-${Date.now()}`;
+        // Success case - create a temporary part object to show immediately
+        const tempPart: ProjectPart = {
+          id: `temp-${Date.now()}`, // Temporary ID
+          name: newPart.name,
+          programmingLanguage: newPart.programmingLanguage || 'None',
+          framework: newPart.framework || 'None',
+          repoUrl: '',
+          ownerId: '',
+          ownerName: '',
+          avatrarUrl: ''
+        }
         
-        // const newPartWithId = {
-        //   id: tempId,
-        //   name: newPart.name,
-        //   programmingLanguage: newPart.programmingLanguage,
-        //   framework: newPart.framework
-        // };
+        // Add to parts state immediately
+        setParts(prevParts => [tempPart, ...prevParts])
         
-        // Reset form and close dialog
-        setNewPart({ name: '', programmingLanguage: '', framework: '' });
-        setShowCreatePart(false);
+        const partName = newPart.name // Store the name before resetting
+        setNewPart({ name: '', programmingLanguage: '', framework: '' })
+        setShowCreatePart(false)
+        showToast({ title: 'Success', description: 'Project part created successfully!' })
         
-        // Show success message
-        showToast({ title: 'Project Part Created', description: 'Project part created successfully!' });
+        // Auto-select the newly created part
+        setSelectedPart(tempPart.id)
+            setCurrentStep('connect')
         
-        // Refresh the page data to get updated parts list
-        await fetchData();
+        // Mark this part as newly created
+        setNewlyCreatedPartId(tempPart.id)
         
-        // Auto-select the newly created part for repository connection
-        setTimeout(() => {
-          const createdPart = parts.find(part => part.name === newPart.name);
-          if (createdPart) {
-            setSelectedPart(createdPart.id);
+        setSuccess(`✅ Project part "${partName}" created successfully! Now connect a repository.`)
+        
+        // Fetch fresh data in background to get the real part ID
+        setTimeout(async () => {
+          const oldParts = parts // Store current parts before fetch
+          await fetchData()
+          // After fetching, try to find the newly created part by name
+          const realPart = parts.find(part => part.name === partName && !part.id.startsWith('temp-'))
+          if (realPart) {
+            setNewlyCreatedPartId(realPart.id)
+            // Remove temporary part and add real part
+            setParts(prevParts => prevParts.filter(p => p.id !== tempPart.id).map(p => p.id === realPart.id ? realPart : p))
+          } else {
+            // Keep temporary part if real part not found
           }
-        }, 200);
+        }, 500)
         
-        // Show success message and guide user to next step
-        setSuccess('✅ Project part created successfully! Now connect a repository to this part.');
-        
-        // Auto-focus repository dropdown after a short delay
-        setTimeout(() => {
-          const repoSelect = document.querySelector('select[value=""]') as HTMLSelectElement;
-          if (repoSelect) {
-            repoSelect.focus();
-          }
-        }, 100);
-        
-        return;
+        return
       }
       
       if (!partId) {
-        // Simple error message without backend details
-        setError('Failed to create project part. Please try again.');
-        
-        // Clear any previous success messages
-        setSuccess(null);
-        return;
+        setError('Failed to create project part. Please try again.')
+        setSuccess(null)
+        return
       }
       
-      // const newPartWithId = {
-      //   id: partId,
-      //   name: newPart.name,
-      //   programmingLanguage: newPart.programmingLanguage,
-      //   framework: newPart.framework
-      // };
+      // Success with valid partId - create a temporary part object
+      const tempPart: ProjectPart = {
+        id: partId,
+        name: newPart.name,
+        programmingLanguage: newPart.programmingLanguage || 'None',
+        framework: newPart.framework || 'None',
+        repoUrl: '',
+        ownerId: '',
+        ownerName: '',
+        avatrarUrl: ''
+      }
       
-      // Reset form and close dialog
-      setNewPart({ name: '', programmingLanguage: '', framework: '' });
-      setShowCreatePart(false);
+      // Add to parts state immediately
+      setParts(prevParts => [tempPart, ...prevParts])
       
-      // Show success message
-      showToast({ title: 'Project Part Created', description: 'Project part created successfully!' });
+      const partName = newPart.name // Store the name before resetting
+      setNewPart({ name: '', programmingLanguage: '', framework: '' })
+      setShowCreatePart(false)
+      showToast({ title: 'Success', description: 'Project part created successfully!' })
       
-      // Refresh the page data to get updated parts list
-      await fetchData();
+      // Auto-select the newly created part
+      setSelectedPart(tempPart.id)
+          setCurrentStep('connect')
       
-      // Auto-select the newly created part for repository connection
-      // Wait a bit for the data to be updated, then select the part
-      setTimeout(() => {
-        const createdPart = parts.find(part => part.name === newPart.name);
-        if (createdPart) {
-          setSelectedPart(createdPart.id);
+      // Mark this part as newly created
+      setNewlyCreatedPartId(tempPart.id)
+      
+      setSuccess(`✅ Project part "${partName}" created successfully! Now connect a repository.`)
+      
+      // Fetch fresh data in background to ensure consistency
+      setTimeout(async () => {
+        const oldParts = parts // Store current parts before fetch
+        await fetchData()
+        // After fetching, try to find the newly created part by name
+        const realPart = parts.find(part => part.name === partName && !part.id.startsWith('temp-'))
+        if (realPart) {
+          setNewlyCreatedPartId(realPart.id)
+          // Remove temporary part and add real part
+          setParts(prevParts => prevParts.filter(p => p.id !== tempPart.id).map(p => p.id === realPart.id ? realPart : p))
+        } else {
+          // Keep temporary part if real part not found
         }
-      }, 200);
-      
-      // Show success message and guide user to next step
-      setSuccess('✅ Project part created successfully! Now connect a repository to this part.');
-      
-      // Auto-focus repository dropdown after a short delay
-      setTimeout(() => {
-        const repoSelect = document.querySelector('select[value=""]') as HTMLSelectElement;
-        if (repoSelect) {
-          repoSelect.focus();
-        }
-      }, 100);
+      }, 500)
       
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 
                           err.response?.data?.error || 
                           err.message || 
-                          'Error creating project part';
-      setError(`Error creating project part: ${errorMessage}`);
+                          'Error creating project part'
+      setError(`Error creating project part: ${errorMessage}`)
     } finally {
-      setCreatingPart(false);
+      setCreatingPart(false)
     }
   }
 
@@ -252,20 +229,16 @@ export default function ProjectGitHub() {
       return
     }
     
-    // Additional validation: Check if selectedPart is a valid UUID
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     if (!uuidRegex.test(selectedPart)) {
-      setError('Invalid project part ID format. Please select a valid project part.');
-      return;
+      setError('Invalid project part ID format. Please select a valid project part.')
+      return
     }
     
-    // Sử dụng utility function để validate part ID
     if (!validatePartId(selectedPart, parts)) {
       setError('Invalid project part selected. Please try again.')
       return
     }
-    
-    // const selectedPartObj = parts.find(part => part.id === selectedPart)!
     
     setConnecting(true)
     setError(null)
@@ -275,15 +248,15 @@ export default function ProjectGitHub() {
         repoUrl: selectedRepo
       })
       
-      // Cập nhật trạng thái thành công
-      setSuccess('Repository connected to Project Part successfully! Parts list updated.')
-      
-      // Reset form
+      setSuccess('Repository connected successfully!')
       setSelectedRepo('')
       setSelectedPart('')
+      setCurrentStep('select')
       
-      // Refresh lại danh sách parts để cập nhật dropdown realtime
-      await refreshPartsList()
+      // Reset newly created part ID after successful connection
+      setNewlyCreatedPartId(null)
+      
+      await fetchData()
       
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 
@@ -342,463 +315,875 @@ export default function ProjectGitHub() {
       <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
       <div className='flex-1 flex flex-col overflow-hidden'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-        <div className='flex-1 overflow-y-auto flex flex-col items-center justify-center p-6'>
-          <div className='mb-8 w-full max-w-2xl'>
-            <h1 className='text-4xl font-extrabold text-lavender-700 flex items-center gap-4 justify-center mb-2 drop-shadow'>
-              <Github className='h-10 w-10 text-lavender-500' />
-              GitHub Integration
-            </h1>
-            <p className='text-blue-700 text-center text-lg font-medium'>
-              Connect your GitHub account to integrate repositories with your project.
-            </p>
-          </div>
-          {error && (
-            <div className='text-red-500 mb-4 text-center w-full max-w-2xl shadow rounded p-2 bg-red-50'>{error}</div>
-          )}
-          {success && (
-            <div className='text-green-600 mb-4 text-center w-full max-w-2xl shadow rounded p-2 bg-green-50'>
-              {success}
-              {/* Show next steps guide */}
-              {success.includes('Now connect a repository') && (
-                <div className='mt-2 text-sm text-green-700'>
-                  <strong>Next steps:</strong> Select a repository above and click "Connect Repository to Project Part"
-                </div>
-              )}
+        <div className='flex-1 overflow-y-auto p-6'>
+          <div className='max-w-4xl mx-auto'>
+            {/* Header */}
+            <div className='text-center mb-8'>
+              <h1 className='text-3xl font-bold text-gray-900 mb-2 flex items-center justify-center gap-3'>
+                <Github className='h-8 w-8 text-gray-600' />
+                GitHub Integration
+              </h1>
+              <p className='text-gray-600'>Connect your GitHub repositories with project parts</p>
             </div>
-          )}
 
-          {/* Success Animation - Shows when part is created */}
-          {selectedPart && !showCreatePart && (
-            <div className='mb-6 w-full max-w-2xl'>
-              <div className='bg-gradient-to-r from-green-50 to-blue-50 border-2 border-green-200 rounded-2xl p-6 text-center animate-pulse'>
-                <div className='flex items-center justify-center gap-3 mb-3'>
-                  <div className='w-12 h-12 bg-green-100 rounded-full flex items-center justify-center'>
-                    <span className='text-2xl'>✅</span>
-                  </div>
-                  <div>
-                    <h3 className='text-xl font-bold text-green-700'>Project Part Ready!</h3>
-                    <p className='text-green-600'>Now connect a repository to continue</p>
-                  </div>
-                </div>
-                <div className='bg-white rounded-xl p-3 border border-green-200'>
-                  <p className='text-sm text-gray-600 mb-1'>Created Part:</p>
-                  <p className='font-semibold text-lg text-gray-800'>
-                    {parts.find(p => p.id === selectedPart)?.name}
-                  </p>
-                  <p className='text-sm text-gray-500'>
-                    {parts.find(p => p.id === selectedPart)?.programmingLanguage} • {parts.find(p => p.id === selectedPart)?.framework}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-          <Card className='w-full max-w-2xl mb-8 shadow-2xl border-0 bg-white/95 rounded-2xl'>
-            <CardHeader className='flex flex-col items-center pb-0'>
-              {connectionStatus ? (
-                <span className='flex items-center gap-2 text-green-600 font-bold text-xl mb-2'>
-                  <CheckCircle className='h-6 w-6' /> Connected to GitHub
-                </span>
-              ) : (
-                <span className='flex items-center gap-2 text-lavender-400 font-bold text-xl mb-2'>
-                  <XCircle className='h-6 w-6' /> Not Connected
-                </span>
-              )}
-              <p className='text-lavender-700 mt-1 text-center text-base font-medium'>
-                {connectionStatus
-                  ? 'You are connected to GitHub. Select a repository to integrate with your project.'
-                  : 'Connect your GitHub account to start integrating repositories.'}
-              </p>
-            </CardHeader>
-            <CardContent className='pt-4 pb-6'>
-              {!connectionStatus ? (
-                <Button
-                  onClick={handleConnectGitHub}
-                  disabled={oauthLoading}
-                  className='w-full mt-4 py-3 text-lg font-semibold'
-                  size='lg'
-                >
-                  <Github className='h-5 w-5 mr-2' />
-                  {oauthLoading ? 'Redirecting...' : 'Connect GitHub'}
-                </Button>
-              ) : repos.length === 0 ? (
-                <div className='text-lavender-400 text-center py-8 text-lg font-semibold'>
-                  No repositories found in your GitHub account.
-                </div>
-              ) : (
-                <>
-                  
-                  {/* Only show main connection form when no part is selected for dedicated connection */}
-                  {!selectedPart && (
-                    <>
-                      <div className='mb-6 space-y-4'>
-                        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                          <div>
-                            <label className='block font-semibold mb-2 text-lavender-700'>Select Repository</label>
-                            <select
-                              className='w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl px-4 py-3 text-base text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300 shadow-none'
-                              value={selectedRepo}
-                              onChange={(e) => setSelectedRepo(e.target.value)}
-                              // onFocus={() => setFocusRepoDropdown(true)}
-                              // onBlur={() => setFocusRepoDropdown(false)}
-                            >
-                              <option value=''>-- Select a repository --</option>
-                              {repos.map((repo) => (
-                                <option key={repo.fullName} value={repo.htmlUrl} className='text-blue-700'>
-                                  {repo.fullName}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className='block font-semibold mb-2 text-lavender-700'>Select Project Part</label>
-                            <select
-                              className='w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl px-4 py-4 text-base text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300 shadow-none'
-                              value={selectedPart}
-                              onChange={(e) => setSelectedPart(e.target.value)}
-                              disabled={refreshingParts}
-                            >
-                              <option value=''>-- Select a part --</option>
-                              {refreshingParts ? (
-                                <option value='' disabled className='text-gray-400'>
-                                  🔄 Refreshing parts...
-                                </option>
-                              ) : parts.length === 0 ? (
-                                <option value='' disabled className='text-gray-400'>
-                                  No project parts available
-                                </option>
-                              ) : (
-                                parts
-                                  .filter((part) => !(part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl))
-                                  .map((part) => (
-                                    <option key={part.id} value={part.id} className='text-purple-700'>
-                                      {part.name} ({part.programmingLanguage}, {part.framework})
-                                      {selectedPart === part.id ? ' 🎯 (Newly Created)' : ''}
-                                    </option>
-                                  ))
-                              )}
-                            </select>
-                            
-                            {/* Show guidance when part is selected */}
-                            {selectedPart && (
-                              <div className='mt-2 text-sm text-blue-600 bg-blue-50 p-2 rounded'>
-                                <span className='font-semibold'>✓ Part selected:</span> {parts.find(p => p.id === selectedPart)?.name}
+            {/* Status Messages */}
+            {error && (
+              <div className='bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6'>{error}</div>
+            )}
+            {success && (
+              <div className='bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6'>{success}</div>
+            )}
+
+            {/* Recently Created Project Part */}
+            {success && success.includes('created successfully') && (() => {
+              // Extract project part name from success message
+              const match = success.match(/Project part "([^"]+)" created successfully/)
+              const projectPartName = match ? match[1] : null
+              
+              if (!projectPartName) {
+                return null
+              }
+              
+              // Find the project part by name (either temporary or real)
+              const foundPart = parts.find(part => part.name === projectPartName)
+              
+              return (
+                <Card className='mb-6 border-green-200 bg-green-50'>
+                  <CardHeader>
+                    <CardTitle className='flex items-center gap-2 text-green-800'>
+                      <span className='bg-green-200 text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold'>🎉</span>
+                      Recently Created Project Part
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {foundPart ? (
+                      // Found the part, display it
+                      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+                        <div key={foundPart.id} className='p-4 bg-white rounded-lg border-2 border-green-300 shadow-sm'>
+                          <div className='flex items-start gap-3'>
+                            <div className='w-12 h-12 bg-green-200 rounded-lg flex items-center justify-center flex-shrink-0'>
+                              <span className='text-2xl'>📁</span>
+                            </div>
+                            <div className='flex-1 min-w-0'>
+                              <h4 className='font-bold text-green-900 text-lg mb-2 truncate max-w-full' title={foundPart.name}>{foundPart.name}</h4>
+                              <div className='space-y-2'>
+                                {foundPart.programmingLanguage !== 'None' && (
+                                  <div className='flex items-center gap-2'>
+                                    <span className='text-sm text-gray-600 flex items-center gap-2'>
+                                      {foundPart.programmingLanguage === 'Java' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" alt="Java" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.programmingLanguage === 'Csharp' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg" alt="C#" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.programmingLanguage === 'JavaScript' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg" alt="JavaScript" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.programmingLanguage === 'TypeScript' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg" alt="TypeScript" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.programmingLanguage === 'Python' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" alt="Python" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.programmingLanguage === 'PHP' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg" alt="PHP" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.programmingLanguage === 'Go' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg" alt="Go" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.programmingLanguage === 'Ruby' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg" alt="Ruby" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.programmingLanguage === 'CPlusPlus' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg" alt="C++" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.programmingLanguage === 'Swift' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg" alt="Swift" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.programmingLanguage === 'Kotlin' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg" alt="Kotlin" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.programmingLanguage}
+                                    </span>
+                                  </div>
+                                )}
+                                {foundPart.framework !== 'None' && (
+                                  <div className='flex items-center gap-2'>
+                                    <span className='text-sm text-gray-600 flex items-center gap-2'>
+                                      {foundPart.framework === 'React' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg" alt="React" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.framework === 'Angular' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg" alt="Angular" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.framework === 'VueJs' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg" alt="Vue.js" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.framework === 'DotNetCore' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg" alt=".NET Core" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.framework === 'SpringBoot' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg" alt="Spring Boot" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.framework === 'Django' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg" alt="Django" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.framework === 'ExpressJs' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg" alt="Express.js" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.framework === 'Laravel' && (
+                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg" alt="Laravel" className='w-4 h-4' />
+                                      )}
+                                      {foundPart.framework}
+                                    </span>
+                                  </div>
+                                )}
+                                <div className='pt-2'>
+                                  <Button
+                                    size='sm'
+                                    onClick={() => {
+                                      setSelectedPart(foundPart.id)
+                                      setCurrentStep('connect')
+                                    }}
+                                    className='bg-green-600 hover:bg-green-700 text-white w-full'
+                                  >
+                                    <span className='flex items-center gap-2'>
+                                      <span className='text-sm'>🔗</span>
+                                      <span className='truncate'>Connect Repository</span>
+                                    </span>
+                                  </Button>
+                                </div>
                               </div>
-                            )}
-                            
-                            <Button
-                              variant='link'
-                              className='mt-2 p-0 text-blue-600 text-base font-semibold'
-                              onClick={() => setShowCreatePart(true)}
-                            >
-                              + Create new part
-                            </Button>
+                            </div>
                           </div>
-                        </div>
-                        <div>
-                          {/* Đã xoá input accessToken ở đây */}
                         </div>
                       </div>
-                      <Button
-                        onClick={handleConnectRepo}
-                        disabled={!selectedRepo || !selectedPart || connecting}
-                        className='w-full py-4 text-lg font-bold bg-gradient-to-r from-lavender-500 to-blue-400 hover:from-lavender-600 hover:to-blue-500 text-white shadow-lg rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed mt-4'
-                        size='lg'
-                      >
-                        {connecting ? (
-                          <>
-                            <Loader className='mr-2 h-5 w-5 animate-spin' />
-                            Connecting...
-                          </>
-                        ) : (
-                          'Connect Repository to Project Part'
-                        )}
-                      </Button>
+                    ) : (
+                      // Part not found yet, show loading state with extracted name
+                      <div className='text-center py-8 text-gray-500'>
+                        <div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3'>
+                          <span className='text-2xl'>⏳</span>
+                        </div>
+                        <p className='text-sm'>Loading project part: <strong className='truncate block max-w-full' title={projectPartName}>{projectPartName}</strong></p>
+                        <p className='text-xs text-gray-400 mt-1'>Please wait while we fetch the latest data</p>
+                        <div className='mt-4 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700'>
+                          <p>⏳ Project part name: <span className='truncate block max-w-full' title={projectPartName}>{projectPartName}</span></p>
+                          <p>⏳ Waiting for server response...</p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })()}
+
+            {/* GitHub Connection Status */}
+            <Card className='mb-6'>
+              <CardHeader>
+                <CardTitle className='flex items-center gap-2'>
+                  {connectionStatus ? (
+                    <>
+                      <CheckCircle className='h-5 w-5 text-green-600' />
+                      Connected to GitHub
+                    </>
+                  ) : (
+                    <>
+                      <XCircle className='h-5 w-5 text-red-600' />
+                      Not Connected
                     </>
                   )}
-                  
-                  {/* Show create part button when no part is selected */}
-                  {!selectedPart && (
-                    <div className='text-center mt-6'>
-                      <Button
-                        variant='outline'
-                        className='text-lavender-700 border-lavender-300 hover:bg-lavender-50 hover:border-lavender-400 transition-colors'
-                        onClick={() => setShowCreatePart(true)}
-                      >
-                        <span className='mr-2'>➕</span>
-                        Create New Project Part
-                      </Button>
-                      {refreshingParts && (
-                        <div className='mt-3 text-sm text-gray-500 flex items-center justify-center gap-2'>
-                          <Loader className='h-4 w-4 animate-spin' />
-                          Refreshing project parts...
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>
-          {showCreatePart && (
-            <Card className='w-full max-w-xl mb-8 shadow-2xl border-0 bg-white/95 rounded-2xl animate-fade-in'>
-              <CardHeader>
-                <CardTitle className='text-2xl font-extrabold text-lavender-700 mb-2 drop-shadow'>Create Project Part</CardTitle>
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handleCreatePart} className='space-y-6'>
-                  <div>
-                    <label className='block font-semibold mb-1 text-lavender-700'>Name</label>
-                    <Input
-                      value={newPart.name}
-                      onChange={(e) => setNewPart({ ...newPart, name: e.target.value })}
-                      required
-                      placeholder='Enter part name...'
-                      className='py-3 px-4 text-base bg-lavender-50 border-2 border-lavender-200 rounded-xl focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300 text-lavender-700 font-medium'
-                    />
-                  </div>
-                  <div>
-                    <label className='block font-semibold mb-1 text-lavender-700'>Programming Language</label>
-                    <Select value={newPart.programmingLanguage} onValueChange={(value) => setNewPart({ ...newPart, programmingLanguage: value })}>
-                      <SelectTrigger className='py-3 px-4 text-base w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400'>
-                        <SelectValue placeholder="Select programming language" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white rounded-xl shadow-lg">
-                        <SelectItem value="None">None</SelectItem>
-                        <SelectItem value="Java">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" alt="Java" className='w-5 h-5' />
-                            <span>Java</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Csharp">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg" alt="C#" className='w-5 h-5' />
-                            <span>C#</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="JavaScript">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg" alt="JavaScript" className='w-5 h-5' />
-                            <span>JavaScript</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="TypeScript">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg" alt="TypeScript" className='w-5 h-5' />
-                            <span>TypeScript</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Python">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" alt="Python" className='w-5 h-5' />
-                            <span>Python</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="PHP">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg" alt="PHP" className='w-5 h-5' />
-                            <span>PHP</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Go">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg" alt="Go" className='w-5 h-5' />
-                            <span>Go</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Ruby">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg" alt="Ruby" className='w-5 h-5' />
-                            <span>Ruby</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="CPlusPlus">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg" alt="C++" className='w-5 h-5' />
-                            <span>C++</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Swift">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg" alt="Swift" className='w-5 h-5' />
-                            <span>Swift</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Kotlin">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg" alt="Kotlin" className='w-5 h-5' />
-                            <span>Kotlin</span>
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <label className='block font-semibold mb-1 text-lavender-700'>Framework</label>
-                    <Select value={newPart.framework} onValueChange={(value) => setNewPart({ ...newPart, framework: value })}>
-                      <SelectTrigger className='py-3 px-4 text-base w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400'>
-                        <SelectValue placeholder="Select framework" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white rounded-xl shadow-lg">
-                        <SelectItem value="None">None</SelectItem>
-                        <SelectItem value="React">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg" alt="React" className='w-5 h-5' />
-                            <span>React</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Angular">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg" alt="Angular" className='w-5 h-5' />
-                            <span>Angular</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="VueJs">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg" alt="Vue.js" className='w-5 h-5' />
-                            <span>Vue.js</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="DotNetCore">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg" alt=".NET Core" className='w-5 h-5' />
-                            <span>.NET Core</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="SpringBoot">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg" alt="Spring Boot" className='w-5 h-5' />
-                            <span>Spring Boot</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Django">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg" alt="Django" className='w-5 h-5' />
-                            <span>Django</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="ExpressJs">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg" alt="Express.js" className='w-5 h-5' />
-                            <span>Express.js</span>
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="Laravel">
-                          <div className='flex items-center gap-2'>
-                            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg" alt="Laravel" className='w-5 h-5' />
-                            <span>Laravel</span>
-                          </div>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className='flex gap-4 justify-end mt-6'>
-                    <button
-                      type='button'
-                      onClick={() => setShowCreatePart(false)}
-                      className='text-blue-600 hover:underline font-semibold text-base bg-transparent border-0 shadow-none px-0'
-                    >
-                      Cancel
-                    </button>
+                {!connectionStatus ? (
+                  <div className='text-center'>
+                    <p className='text-gray-600 mb-4'>Connect your GitHub account to start integrating repositories.</p>
                     <Button
-                      type='submit'
-                      disabled={creatingPart}
-                      className='px-8 py-3 text-lg font-bold bg-gradient-to-r from-lavender-500 to-blue-400 hover:from-lavender-600 hover:to-blue-500 text-white shadow-lg rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed'
+                      onClick={handleConnectGitHub}
+                      disabled={oauthLoading}
+                      className='bg-gray-900 hover:bg-gray-800'
                     >
-                      {creatingPart ? 'Creating...' : 'Create Part'}
+                      <Github className='h-4 w-4 mr-2' />
+                      {oauthLoading ? 'Connecting...' : 'Connect GitHub'}
                     </Button>
                   </div>
-                </form>
+                ) : (
+                  <p className='text-green-600 font-medium'>✅ You are connected to GitHub</p>
+                )}
               </CardContent>
             </Card>
-          )}
 
-          {/* Repository Connection Section - Appears after creating a part */}
-          {selectedPart && !showCreatePart && (
-            <Card className='w-full max-w-3xl mb-8 shadow-2xl border-0 bg-gradient-to-br from-white to-blue-50 rounded-2xl animate-fade-in'>
-              <CardHeader className='flex flex-col items-center pb-0'>
-                <CardTitle className='text-3xl font-extrabold text-lavender-700 mb-2 drop-shadow flex items-center gap-3'>
-                  <Github className='h-10 w-10 text-lavender-500' />
-                  Connect Repository to Project Part
-                </CardTitle>
-                <p className='text-lavender-600 text-center text-lg'>
-                  Connect a GitHub repository to: <strong className='text-lavender-800'>{parts.find(p => p.id === selectedPart)?.name}</strong>
-                </p>
-              </CardHeader>
-              <CardContent className='pt-6 pb-8'>
-                <div className='space-y-6'>
-                  <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-                    <div className='space-y-3'>
-                      <label className='block font-semibold text-lg text-lavender-700'>Select Repository</label>
-                      <select
-                        className='w-full bg-white border-2 border-lavender-200 rounded-xl px-4 py-4 text-base text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300 shadow-sm hover:border-lavender-300 transition-colors'
-                        value={selectedRepo}
-                        onChange={(e) => setSelectedRepo(e.target.value)}
-                      >
-                        <option value=''>-- Select a repository --</option>
-                        {repos.map((repo) => (
-                          <option key={repo.fullName} value={repo.htmlUrl} className='text-blue-700'>
-                            {repo.fullName}
-                          </option>
-                        ))}
-                      </select>
-                      <p className='text-sm text-gray-500'>Choose the GitHub repository you want to connect</p>
-                    </div>
-                    <div className='space-y-3'>
-                      <label className='block font-semibold text-lg text-lavender-700'>Selected Project Part</label>
-                      <div className='w-full bg-white border-2 border-lavender-200 rounded-xl px-4 py-4 text-base text-lavender-700 font-medium shadow-sm'>
-                        <div className='flex items-center gap-3'>
-                          <span className='text-2xl'>📁</span>
+            {/* Main Content - Only show when GitHub is connected */}
+            {connectionStatus && (
+              <>
+                {/* Step 1: Select or Create Project Part */}
+                {currentStep === 'select' && (
+                  <Card className='mb-6'>
+                    <CardHeader>
+                      <CardTitle className='flex items-center gap-2'>
+                        <span className='bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold'>1</span>
+                        Select or Create Project Part
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className='space-y-6'>
+                      {parts.length > 0 && (
+                        <div>
+                          <label className='block text-sm font-medium text-gray-700 mb-3'>Existing Project Parts</label>
+                          <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3'>
+                            {parts
+                              .filter((part) => !(part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl))
+                              .map((part) => (
+                                <button
+                                  key={part.id}
+                                  onClick={() => {
+                                    setSelectedPart(part.id)
+                                    setCurrentStep('connect')
+                                  }}
+                                  className='p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all text-left group'
+                                >
+                                  <div className='flex items-start gap-3'>
+                                    <div className='w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0'>
+                                      <span className='text-blue-600 text-lg font-bold'>📁</span>
+                                    </div>
+                                    <div className='flex-1 min-w-0 overflow-hidden'>
+                                      <h4 className='font-medium text-gray-900 group-hover:text-blue-700 transition-colors truncate max-w-full' title={part.name}>
+                                        {part.name}
+                                      </h4>
+                                      <p className='text-sm text-gray-500 mt-1'>
+                                        {part.programmingLanguage !== 'None' && (
+                                          <span className='flex items-center gap-1'>
+                                            {part.programmingLanguage === 'Java' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" alt="Java" className='w-3 h-3' />
+                                            )}
+                                            {part.programmingLanguage === 'Csharp' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg" alt="C#" className='w-3 h-3' />
+                                            )}
+                                            {part.programmingLanguage === 'JavaScript' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg" alt="JavaScript" className='w-3 h-3' />
+                                            )}
+                                            {part.programmingLanguage === 'TypeScript' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg" alt="TypeScript" className='w-3 h-3' />
+                                            )}
+                                            {part.programmingLanguage === 'Python' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" alt="Python" className='w-3 h-3' />
+                                            )}
+                                            {part.programmingLanguage === 'PHP' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg" alt="PHP" className='w-3 h-3' />
+                                            )}
+                                            {part.programmingLanguage === 'Go' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg" alt="Go" className='w-3 h-3' />
+                                            )}
+                                            {part.programmingLanguage === 'Ruby' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg" alt="Ruby" className='w-3 h-3' />
+                                            )}
+                                            {part.programmingLanguage === 'CPlusPlus' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg" alt="C++" className='w-3 h-3' />
+                                            )}
+                                            {part.programmingLanguage === 'Swift' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg" alt="Swift" className='w-3 h-3' />
+                                            )}
+                                            {part.programmingLanguage === 'Kotlin' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg" alt="Kotlin" className='w-3 h-3' />
+                                            )}
+                                            {part.programmingLanguage}
+                                          </span>
+                                        )}
+                                        {part.programmingLanguage !== 'None' && part.framework !== 'None' && ' • '}
+                                        {part.framework !== 'None' && (
+                                          <span className='flex items-center gap-1'>
+                                            {part.framework === 'React' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg" alt="React" className='w-3 h-3' />
+                                            )}
+                                            {part.framework === 'Angular' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg" alt="Angular" className='w-3 h-3' />
+                                            )}
+                                            {part.framework === 'VueJs' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg" alt="Vue.js" className='w-3 h-3' />
+                                            )}
+                                            {part.framework === 'DotNetCore' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg" alt=".NET Core" className='w-3 h-3' />
+                                            )}
+                                            {part.framework === 'SpringBoot' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg" alt="Spring Boot" className='w-3 h-3' />
+                                            )}
+                                            {part.framework === 'Django' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg" alt="Django" className='w-3 h-3' />
+                                            )}
+                                            {part.framework === 'ExpressJs' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg" alt="Express.js" className='w-3 h-3' />
+                                            )}
+                                            {part.framework === 'Laravel' && (
+                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg" alt="Laravel" className='w-3 h-3' />
+                                            )}
+                                            {part.framework}
+                                          </span>
+                                        )}
+                                        {(part.programmingLanguage === 'None' && part.framework === 'None') && 'No tech stack specified'}
+                                      </p>
+                                    </div>
+                                    <ArrowRight className='w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors flex-shrink-0' />
+                                  </div>
+                                </button>
+                              ))}
+                          </div>
+                          {parts.filter((part) => !(part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl)).length === 0 && (
+                            <div className='text-center py-8 text-gray-500'>
+                              <div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3'>
+                                <span className='text-2xl'>📂</span>
+                              </div>
+                              <p className='text-sm'>No project parts available</p>
+                              <p className='text-xs text-gray-400 mt-1'>Create your first project part to get started</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      <div className='text-center pt-4 border-t border-gray-200'>
+                        <Button
+                          onClick={() => setCurrentStep('create')}
+                          className='bg-blue-600 hover:bg-blue-700 px-6 py-3'
+                        >
+                          <Plus className='h-5 w-5 mr-2' />
+                          Create New Project Part
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Step 2: Create Project Part */}
+                {currentStep === 'create' && (
+                  <Card className='mb-6'>
+                    <CardHeader>
+                      <CardTitle className='flex items-center gap-2'>
+                        <span className='bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold'>2</span>
+                        Create New Project Part
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <form onSubmit={handleCreatePart} className='space-y-4'>
+                        <div>
+                          <label className='block text-sm font-medium text-gray-700 mb-1'>Name *</label>
+                          <Input
+                            value={newPart.name}
+                            onChange={(e) => setNewPart({ ...newPart, name: e.target.value })}
+                            required
+                            placeholder='Enter part name...'
+                            className='w-full'
+                          />
+                        </div>
+                        
+                        <div className='grid grid-cols-2 gap-4'>
                           <div>
-                            <div className='font-semibold text-lg text-lavender-800'>
-                              {parts.find(p => p.id === selectedPart)?.name}
-                            </div>
-                            <div className='text-sm text-lavender-500'>
-                              {parts.find(p => p.id === selectedPart)?.programmingLanguage} • {parts.find(p => p.id === selectedPart)?.framework}
-                            </div>
+                            <label className='block text-sm font-medium text-gray-700 mb-1'>Programming Language</label>
+                            <Select value={newPart.programmingLanguage} onValueChange={(value) => setNewPart({ ...newPart, programmingLanguage: value })}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select language" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="None">None</SelectItem>
+                                <SelectItem value="Java">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" alt="Java" className='w-5 h-5' />
+                                    <span>Java</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="Csharp">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg" alt="C#" className='w-5 h-5' />
+                                    <span>C#</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="JavaScript">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg" alt="JavaScript" className='w-5 h-5' />
+                                    <span>JavaScript</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="TypeScript">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg" alt="TypeScript" className='w-5 h-5' />
+                                    <span>TypeScript</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="Python">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" alt="Python" className='w-5 h-5' />
+                                    <span>Python</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="PHP">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg" alt="PHP" className='w-5 h-5' />
+                                    <span>PHP</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="Go">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg" alt="Go" className='w-5 h-5' />
+                                    <span>Go</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="Ruby">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg" alt="Ruby" className='w-5 h-5' />
+                                    <span>Ruby</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="CPlusPlus">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg" alt="C++" className='w-5 h-5' />
+                                    <span>C++</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="Swift">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg" alt="Swift" className='w-5 h-5' />
+                                    <span>Swift</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="Kotlin">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg" alt="Kotlin" className='w-5 h-5' />
+                                    <span>Kotlin</span>
+                                  </div>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          <div>
+                            <label className='block text-sm font-medium text-gray-700 mb-1'>Framework</label>
+                            <Select value={newPart.framework} onValueChange={(value) => setNewPart({ ...newPart, framework: value })}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select framework" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="None">None</SelectItem>
+                                <SelectItem value="React">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg" alt="React" className='w-5 h-5' />
+                                    <span>React</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="Angular">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg" alt="Angular" className='w-5 h-5' />
+                                    <span>Angular</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="VueJs">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg" alt="Vue.js" className='w-5 h-5' />
+                                    <span>Vue.js</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="DotNetCore">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg" alt=".NET Core" className='w-5 h-5' />
+                                    <span>.NET Core</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="SpringBoot">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg" alt="Spring Boot" className='w-5 h-5' />
+                                    <span>Spring Boot</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="Django">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg" alt="Django" className='w-5 h-5' />
+                                    <span>Django</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="ExpressJs">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg" alt="Express.js" className='w-5 h-5' />
+                                    <span>Express.js</span>
+                                  </div>
+                                </SelectItem>
+                                <SelectItem value="Laravel">
+                                  <div className='flex items-center gap-2'>
+                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg" alt="Laravel" className='w-5 h-5' />
+                                    <span>Laravel</span>
+                                  </div>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
                           </div>
                         </div>
+                        
+                        <div className='flex gap-3 justify-end pt-4'>
+                          <Button
+                            type='button'
+                            variant='outline'
+                            onClick={() => setCurrentStep('select')}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            type='submit'
+                            disabled={creatingPart}
+                            className='bg-blue-600 hover:bg-blue-700'
+                          >
+                            {creatingPart ? 'Creating...' : 'Create Part'}
+                          </Button>
+                        </div>
+                      </form>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Step 3: Connect Repository */}
+                {currentStep === 'connect' && (
+                  <Card className='mb-6'>
+                    <CardHeader>
+                      <CardTitle className='flex items-center gap-2'>
+                        <span className='bg-green-100 text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold'>3</span>
+                        Connect Repository
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className='space-y-4'>
+                      {/* Selected Part Info */}
+                      {selectedPart && (() => {
+                        const selectedPartData = parts.find(p => p.id === selectedPart)
+                        if (!selectedPartData) return null
+                        
+                        return (
+                        <div className='bg-gray-50 p-4 rounded-lg'>
+                          <h4 className='font-medium text-gray-900 mb-2'>Selected Project Part:</h4>
+                            <div className='text-gray-700 space-y-2'>
+                              <p><strong>Name:</strong> {selectedPartData.name}</p>
+                              {selectedPartData.programmingLanguage !== 'None' && (
+                                <p className='flex items-center gap-2'>
+                                  <strong>Language:</strong> 
+                                  <span className='flex items-center gap-2'>
+                                    {selectedPartData.programmingLanguage === 'Java' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" alt="Java" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.programmingLanguage === 'Csharp' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg" alt="C#" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.programmingLanguage === 'JavaScript' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg" alt="JavaScript" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.programmingLanguage === 'TypeScript' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg" alt="TypeScript" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.programmingLanguage === 'Python' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" alt="Python" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.programmingLanguage === 'PHP' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg" alt="PHP" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.programmingLanguage === 'Go' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg" alt="Go" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.programmingLanguage === 'Ruby' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg" alt="Ruby" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.programmingLanguage === 'CPlusPlus' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg" alt="C++" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.programmingLanguage === 'Swift' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg" alt="Swift" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.programmingLanguage === 'Kotlin' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg" alt="Kotlin" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.programmingLanguage}
+                                  </span>
+                                </p>
+                              )}
+                              {selectedPartData.framework !== 'None' && (
+                                <p className='flex items-center gap-2'>
+                                  <strong>Framework:</strong> 
+                                  <span className='flex items-center gap-2'>
+                                    {selectedPartData.framework === 'React' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg" alt="React" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.framework === 'Angular' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg" alt="Angular" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.framework === 'VueJs' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg" alt="Vue.js" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.framework === 'DotNetCore' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg" alt=".NET Core" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.framework === 'SpringBoot' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg" alt="Spring Boot" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.framework === 'Django' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg" alt="Django" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.framework === 'ExpressJs' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg" alt="Express.js" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.framework === 'Laravel' && (
+                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg" alt="Laravel" className='w-4 h-4' />
+                                    )}
+                                    {selectedPartData.framework}
+                                  </span>
+                                </p>
+                              )}
+                          </div>
+                        </div>
+                        )
+                      })()}
+                      
+                      {/* Repository Selection */}
+                      <div>
+                        <label className='block text-sm font-medium text-gray-700 mb-2'>Select Repository *</label>
+                        <select
+                          className='w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500'
+                          value={selectedRepo}
+                          onChange={(e) => setSelectedRepo(e.target.value)}
+                        >
+                          <option value=''>-- Select a repository --</option>
+                          {repos.map((repo) => (
+                            <option key={repo.fullName} value={repo.htmlUrl}>
+                              {repo.fullName}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                      <p className='text-sm text-gray-500'>This is the part you just created</p>
-                    </div>
-                  </div>
-                  
-                  <div className='text-center space-y-4'>
-                    <Button
-                      onClick={handleConnectRepo}
-                      disabled={!selectedRepo || connecting}
-                      className='w-full max-w-md py-5 text-xl font-bold bg-gradient-to-r from-lavender-500 to-blue-400 hover:from-lavender-600 hover:to-blue-500 text-white shadow-lg rounded-2xl disabled:opacity-60 disabled:cursor-not-allowed transform hover:scale-105 transition-all'
-                      size='lg'
-                    >
-                      {connecting ? (
-                        <>
-                          <Loader className='mr-3 h-6 w-6 animate-spin' />
-                          Connecting Repository...
-                        </>
-                      ) : (
-                        <>
-                          <Github className='mr-3 h-6 w-6' />
-                          Connect Repository to Project Part
-                        </>
+                      
+                      {/* Action Buttons */}
+                      <div className='flex gap-3 justify-between pt-4'>
+                        <Button
+                          variant='outline'
+                          onClick={() => {
+                            setCurrentStep('select')
+                            setSelectedPart('')
+                            setSelectedRepo('')
+                          }}
+                        >
+                          ← Back to Selection
+                        </Button>
+                        
+                        <Button
+                          onClick={handleConnectRepo}
+                          disabled={!selectedRepo || connecting}
+                          className='bg-green-600 hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200'
+                        >
+                          {connecting ? (
+                            <div className='flex items-center gap-2'>
+                              <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
+                              <span>Connecting...</span>
+                            </div>
+                          ) : (
+                            <>
+                              <ArrowRight className='h-4 w-4 mr-2' />
+                              Connect Repository
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Connected Parts Summary */}
+                {parts.filter(part => part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl).length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Connected Parts</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className='space-y-3'>
+                        {parts
+                          .filter(part => part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl)
+                          .map((part) => (
+                            <div key={part.id} className='flex items-center justify-between p-3 bg-green-50 rounded-lg'>
+                              <div>
+                                <p className='font-medium text-gray-900'>{part.name}</p>
+                                <p className='text-sm text-gray-600'>{part.repoUrl}</p>
+                              </div>
+                              <span className='text-green-600 text-sm font-medium'>✓ Connected</span>
+                            </div>
+                          ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* All Project Parts - Show after creation */}
+                {parts.length > 0 && (
+                  <Card className='mt-6'>
+                    <CardHeader>
+                      <CardTitle className='flex items-center gap-2'>
+                        <span className='bg-purple-100 text-purple-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold'>📋</span>
+                        All Project Parts ({parts.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+                        {parts.map((part, index) => (
+                          <div key={part.id} className={`p-4 rounded-lg border transition-all ${
+                            part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl
+                              ? 'bg-green-50 border-green-200'
+                              : 'bg-blue-50 border-blue-200 hover:border-blue-300'
+                          } ${index === parts.length - 1 ? 'ring-2 ring-green-300 ring-opacity-50' : ''}`}>
+                            <div className='flex items-start gap-3'>
+                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                                part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl
+                                  ? 'bg-green-100'
+                                  : 'bg-blue-100'
+                              }`}>
+                                <span className={`text-lg ${
+                                  part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl
+                                    ? 'text-green-600'
+                                    : 'text-blue-600'
+                                }`}>
+                                  {part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl ? '🔗' : '📁'}
+                                </span>
+                              </div>
+                              <div className='flex-1 min-w-0 overflow-hidden'>
+                                <div className='flex items-center gap-2 mb-1'>
+                                  <h4 className='font-medium text-gray-900 truncate max-w-full' title={part.name}>{part.name}</h4>
+                                  {newlyCreatedPartId === part.id && (
+                                    <span className='bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium flex-shrink-0'>
+                                      NEW
+                                    </span>
+                                  )}
+                                </div>
+                                <div className='space-y-1'>
+                                  {part.programmingLanguage !== 'None' && (
+                                    <div className='flex items-center gap-2'>
+                                      <span className='text-sm text-gray-600 flex items-center gap-2'>
+                                        {part.programmingLanguage === 'Java' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" alt="Java" className='w-4 h-4' />
+                                        )}
+                                        {part.programmingLanguage === 'Csharp' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg" alt="C#" className='w-4 h-4' />
+                                        )}
+                                        {part.programmingLanguage === 'JavaScript' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg" alt="JavaScript" className='w-4 h-4' />
+                                        )}
+                                        {part.programmingLanguage === 'TypeScript' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg" alt="TypeScript" className='w-4 h-4' />
+                                        )}
+                                        {part.programmingLanguage === 'Python' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" alt="Python" className='w-4 h-4' />
+                                        )}
+                                        {part.programmingLanguage === 'PHP' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg" alt="PHP" className='w-4 h-4' />
+                                        )}
+                                        {part.programmingLanguage === 'Go' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg" alt="Go" className='w-4 h-4' />
+                                        )}
+                                        {part.programmingLanguage === 'Ruby' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg" alt="Ruby" className='w-4 h-4' />
+                                        )}
+                                        {part.programmingLanguage === 'CPlusPlus' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg" alt="C++" className='w-4 h-4' />
+                                        )}
+                                        {part.programmingLanguage === 'Swift' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg" alt="Swift" className='w-4 h-4' />
+                                        )}
+                                        {part.programmingLanguage === 'Kotlin' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg" alt="Kotlin" className='w-4 h-4' />
+                                        )}
+                                        {part.programmingLanguage}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {part.framework !== 'None' && (
+                                    <div className='flex items-center gap-2'>
+                                      <span className='text-sm text-gray-600 flex items-center gap-2'>
+                                        {part.framework === 'React' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg" alt="React" className='w-4 h-4' />
+                                        )}
+                                        {part.framework === 'Angular' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg" alt="Angular" className='w-4 h-4' />
+                                        )}
+                                        {part.framework === 'VueJs' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg" alt="Vue.js" className='w-4 h-4' />
+                                        )}
+                                        {part.framework === 'DotNetCore' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg" alt=".NET Core" className='w-4 h-4' />
+                                        )}
+                                        {part.framework === 'SpringBoot' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg" alt="Spring Boot" className='w-4 h-4' />
+                                        )}
+                                        {part.framework === 'Django' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg" alt="Django" className='w-4 h-4' />
+                                        )}
+                                        {part.framework === 'ExpressJs' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg" alt="Express.js" className='w-4 h-4' />
+                                        )}
+                                        {part.framework === 'Laravel' && (
+                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg" alt="Laravel" className='w-4 h-4' />
+                                        )}
+                                        {part.framework}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {part.repoUrl && (
+                                    <p className='text-sm text-green-600 font-medium'>
+                                      ✓ Connected to GitHub
+                                    </p>
+                                  )}
+                                  {!part.repoUrl && (
+                                    <p className='text-sm text-blue-600 font-medium'>
+                                      ⚠️ Not connected
+                                    </p>
+                                  )}
+                                </div>
+                                {part.repoUrl && (
+                                  <a 
+                                    href={part.repoUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className='text-xs text-blue-600 hover:text-blue-800 underline truncate block mt-2'
+                                    title={part.repoUrl}
+                                  >
+                                    🔗 {part.repoUrl}
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {!part.repoUrl && (
+                              <div className='mt-3 pt-3 border-t border-blue-200'>
+                                <Button
+                                  size='sm'
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    setSelectedPart(part.id)
+                                    setCurrentStep('connect')
+                                  }}
+                                  className='w-full bg-blue-600 hover:bg-blue-700 text-white cursor-pointer'
+                                  type='button'
+                                >
+                                  <span className='flex items-center gap-2'>
+                                    <span className='text-sm'>🔗</span>
+                                    <span className='truncate'>Connect Repository</span>
+                                  </span>
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {parts.length === 0 && (
+                        <div className='text-center py-8 text-gray-500'>
+                          <div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3'>
+                            <span className='text-2xl'>📂</span>
+                          </div>
+                          <p className='text-sm'>No project parts available</p>
+                          <p className='text-xs text-gray-400 mt-1'>Create your first project part to get started</p>
+                        </div>
                       )}
-                    </Button>
-                    
-                    <Button
-                      variant='link'
-                      className='text-blue-600 text-base font-semibold hover:text-blue-800'
-                      onClick={() => {
-                        setSelectedPart('');
-                        setSelectedRepo('');
-                        setSuccess(null);
-                      }}
-                    >
-                      ← Back to Repository Selection
-                    </Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
