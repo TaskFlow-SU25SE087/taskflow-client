@@ -22,6 +22,25 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent
+} from '@/components/ui/chart'
+import {
+  BarChart as ReBarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  PieChart,
+  Pie,
+  LineChart,
+  Line,
+  Cell
+} from 'recharts'
 
 const ProjectReports: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>()
@@ -100,6 +119,78 @@ const ProjectReports: React.FC = () => {
   // For this page we want a full-page skeleton any time loading to avoid showing stale or partial UI
   const showSkeleton = loading
   const s = report?.summary
+
+  // -------- Chart Data Computations --------
+  const taskStatusData = useMemo(() => {
+    if (!s) return []
+    return [
+      { key: 'completed', label: 'Completed', value: s.totalCompletedTasks },
+      { key: 'inProgress', label: 'In Progress', value: s.totalInProgressTasks },
+      { key: 'todo', label: 'Todo', value: s.totalTodoTasks },
+      { key: 'overdue', label: 'Overdue', value: s.totalOverdueTasks }
+    ]
+  }, [s])
+
+  const priorityDistribution = useMemo(() => {
+    if (!report?.memberActivities?.length) return []
+    const totals = report.memberActivities.reduce(
+      (acc, m) => {
+        acc.high += m.taskStats.highPriorityTasks
+        acc.medium += m.taskStats.mediumPriorityTasks
+        acc.low += m.taskStats.lowPriorityTasks
+        acc.urgent += m.taskStats.urgentPriorityTasks
+        return acc
+      },
+      { high: 0, medium: 0, low: 0, urgent: 0 }
+    )
+    const entries = [
+      { key: 'urgent', label: 'Urgent', value: totals.urgent },
+      { key: 'high', label: 'High', value: totals.high },
+      { key: 'medium', label: 'Medium', value: totals.medium },
+      { key: 'low', label: 'Low', value: totals.low }
+    ]
+    return entries.filter((e) => e.value > 0)
+  }, [report])
+
+  const topContribChartData = useMemo(() => {
+    if (!s?.topContributors) return []
+    return s.topContributors.map((c) => ({
+      key: c.userId,
+      name: c.fullName,
+      completed: c.completedTasks,
+      comments: c.totalComments
+    }))
+  }, [s])
+
+  const dailyCompletions = useMemo(() => {
+    if (!report?.memberActivities) return []
+    const map = new Map<string, number>()
+    for (const m of report.memberActivities) {
+      for (const t of m.taskActivities) {
+        if (t.completedAt) {
+          const d = new Date(t.completedAt).toISOString().slice(0, 10) // YYYY-MM-DD
+          map.set(d, (map.get(d) || 0) + 1)
+        }
+      }
+    }
+    const arr = Array.from(map.entries())
+      .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+      .map(([date, count]) => ({ date, count }))
+    // Limit points for readability (keep last 30)
+    return arr.slice(-30)
+  }, [report])
+
+  const chartConfig = {
+    completed: { label: 'Completed', color: '#16a34a' },
+    inProgress: { label: 'In Progress', color: '#6366f1' },
+    todo: { label: 'Todo', color: '#94a3b8' },
+    overdue: { label: 'Overdue', color: '#dc2626' },
+    high: { label: 'High', color: '#dc2626' },
+    medium: { label: 'Medium', color: '#f59e0b' },
+    low: { label: 'Low', color: '#60a5fa' },
+    urgent: { label: 'Urgent', color: '#7c3aed' },
+    comments: { label: 'Comments', color: '#9333ea' }
+  }
 
   return (
     <div className='flex h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50 relative'>
@@ -315,6 +406,156 @@ const ProjectReports: React.FC = () => {
                       </CardContent>
                     </Card>
                   ))}
+            </div>
+
+            {/* Visual Analytics */}
+            <div className='p-6 pt-2'>
+              <div className='grid grid-cols-1 xl:grid-cols-4 gap-6'>
+                {/* Task Status Bar */}
+                <Card className='xl:col-span-2 rounded-xl border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
+                  <CardHeader className='pb-2'>
+                    {showSkeleton ? (
+                      <Skeleton className='h-4 w-40' />
+                    ) : (
+                      <CardTitle className='text-sm font-semibold'>Task Status Distribution</CardTitle>
+                    )}
+                  </CardHeader>
+                  <CardContent className='h-[260px]'>
+                    {showSkeleton ? (
+                      <Skeleton className='h-full w-full rounded-lg' />
+                    ) : taskStatusData.length ? (
+                      <ChartContainer config={chartConfig} className='aspect-auto h-full'>
+                        <ReBarChart data={taskStatusData}>
+                          <CartesianGrid strokeDasharray='3 3' vertical={false} />
+                          <XAxis dataKey='label' tickLine={false} axisLine={false} />
+                          <YAxis allowDecimals={false} width={30} />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Bar dataKey='value' radius={[4, 4, 0, 0]}>
+                            {taskStatusData.map((entry) => (
+                              <Cell key={entry.key} fill={`var(--color-${entry.key})`} />
+                            ))}
+                          </Bar>
+                          <ChartLegend content={<ChartLegendContent />} />
+                        </ReBarChart>
+                      </ChartContainer>
+                    ) : (
+                      <p className='text-xs text-gray-500'>No status data</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Priority Pie */}
+                <Card className='rounded-xl border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
+                  <CardHeader className='pb-2'>
+                    {showSkeleton ? (
+                      <Skeleton className='h-4 w-32' />
+                    ) : (
+                      <CardTitle className='text-sm font-semibold'>Priority Breakdown</CardTitle>
+                    )}
+                  </CardHeader>
+                  <CardContent className='h-[260px]'>
+                    {showSkeleton ? (
+                      <Skeleton className='h-full w-full rounded-lg' />
+                    ) : priorityDistribution.length ? (
+                      <ChartContainer config={chartConfig} className='aspect-auto h-full'>
+                        <PieChart>
+                          <Pie
+                            data={priorityDistribution}
+                            dataKey='value'
+                            nameKey='label'
+                            innerRadius={45}
+                            outerRadius={80}
+                            paddingAngle={3}
+                          >
+                            {priorityDistribution.map((p) => (
+                              <Cell key={p.key} fill={`var(--color-${p.key})`} />
+                            ))}
+                          </Pie>
+                          <ChartTooltip content={<ChartTooltipContent nameKey='label' />} />
+                          <ChartLegend content={<ChartLegendContent />} />
+                        </PieChart>
+                      </ChartContainer>
+                    ) : (
+                      <p className='text-xs text-gray-500'>No priority data</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Daily Completions Line */}
+                <Card className='rounded-xl border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
+                  <CardHeader className='pb-2'>
+                    {showSkeleton ? (
+                      <Skeleton className='h-4 w-44' />
+                    ) : (
+                      <CardTitle className='text-sm font-semibold'>Daily Task Completions</CardTitle>
+                    )}
+                  </CardHeader>
+                  <CardContent className='h-[260px]'>
+                    {showSkeleton ? (
+                      <Skeleton className='h-full w-full rounded-lg' />
+                    ) : dailyCompletions.length ? (
+                      <ChartContainer config={chartConfig} className='aspect-auto h-full'>
+                        <LineChart data={dailyCompletions}>
+                          <CartesianGrid strokeDasharray='3 3' />
+                          <XAxis dataKey='date' tickLine={false} axisLine={false} tickFormatter={(d) => d.slice(5)} />
+                          <YAxis allowDecimals={false} width={30} />
+                          <ChartTooltip content={<ChartTooltipContent labelKey='date' />} />
+                          <Line
+                            type='monotone'
+                            dataKey='count'
+                            stroke='var(--color-completed)'
+                            strokeWidth={2}
+                            dot={false}
+                            activeDot={{ r: 4 }}
+                          />
+                        </LineChart>
+                      </ChartContainer>
+                    ) : (
+                      <p className='text-xs text-gray-500'>No completion activity</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Top Contributors Stacked Bar */}
+              <div className='mt-6'>
+                <Card className='rounded-xl border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
+                  <CardHeader className='pb-2'>
+                    {showSkeleton ? (
+                      <Skeleton className='h-4 w-48' />
+                    ) : (
+                      <CardTitle className='text-sm font-semibold'>Top Contributors (Tasks vs Comments)</CardTitle>
+                    )}
+                  </CardHeader>
+                  <CardContent className='h-[320px]'>
+                    {showSkeleton ? (
+                      <Skeleton className='h-full w-full rounded-lg' />
+                    ) : topContribChartData.length ? (
+                      <ChartContainer config={chartConfig} className='aspect-auto h-full'>
+                        <ReBarChart data={topContribChartData}>
+                          <CartesianGrid strokeDasharray='3 3' vertical={false} />
+                          <XAxis
+                            dataKey='name'
+                            tickLine={false}
+                            axisLine={false}
+                            interval={0}
+                            angle={-20}
+                            dy={10}
+                            height={60}
+                          />
+                          <YAxis allowDecimals={false} width={30} />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Bar dataKey='completed' stackId='a' fill='var(--color-completed)' radius={[4, 4, 0, 0]} />
+                          <Bar dataKey='comments' stackId='a' fill='var(--color-comments)' radius={[4, 4, 0, 0]} />
+                          <ChartLegend content={<ChartLegendContent />} />
+                        </ReBarChart>
+                      </ChartContainer>
+                    ) : (
+                      <p className='text-xs text-gray-500'>No contributor data</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             {/* Main Content */}
