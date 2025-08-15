@@ -4,6 +4,14 @@ import AdminPagination from '@/components/admin/AdminPagination'
 import FileUpload from '@/components/admin/FileUpload'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { useAdmin } from '@/hooks/useAdmin'
@@ -34,6 +42,15 @@ export default function AdminUsersPage() {
 
   // Lấy danh sách semester (term) từ API
   const { terms, loading: loadingTerms } = useAdminTerm(1, 0)
+
+  // Add dialog state
+  const [showBanDialog, setShowBanDialog] = useState(false)
+  const [showUnbanDialog, setShowUnbanDialog] = useState(false)
+  const [pendingAction, setPendingAction] = useState<{
+    type: 'ban' | 'unban'
+    userCount: number
+    users: string[]
+  } | null>(null)
 
   const handlePageChange = (page: number) => {
     fetchUsers(page, pageSize)
@@ -277,47 +294,21 @@ export default function AdminUsersPage() {
   }
 
   const handleBanUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to ban this user? They will not be able to access the system.')) {
-      return
-    }
-    try {
-      await adminApi.banUser(userId)
-      showToast({
-        title: 'User Banned',
-        description: 'User has been successfully banned from the system.',
-        variant: 'success'
-      })
-      await fetchUsers(pagination.pageNumber, pageSize)
-    } catch (err) {
-      console.error('Ban user failed', err)
-      showToast({
-        title: 'Ban Failed',
-        description: 'Failed to ban user. Please try again.',
-        variant: 'destructive'
-      })
-    }
+    setPendingAction({
+      type: 'ban',
+      userCount: 1,
+      users: [userId]
+    })
+    setShowBanDialog(true)
   }
 
   const handleUnbanUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to unban this user? They will be able to access the system again.')) {
-      return
-    }
-    try {
-      await adminApi.unbanUser(userId)
-      showToast({
-        title: 'User Unbanned',
-        description: 'User has been successfully unbanned and can access the system again.',
-        variant: 'success'
-      })
-      await fetchUsers(pagination.pageNumber, pageSize)
-    } catch (err) {
-      console.error('Unban user failed', err)
-      showToast({
-        title: 'Unban Failed',
-        description: 'Failed to unban user. Please try again.',
-        variant: 'destructive'
-      })
-    }
+    setPendingAction({
+      type: 'unban',
+      userCount: 1,
+      users: [userId]
+    })
+    setShowUnbanDialog(true)
   }
 
   // Multi-select functions
@@ -356,30 +347,49 @@ export default function AdminUsersPage() {
     }
     
     const userCount = activeUsers.length
-    if (!confirm(`Are you sure you want to ban ${userCount} active user${userCount > 1 ? 's' : ''}? They will not be able to access the system.`)) {
-      return
-    }
+    setPendingAction({
+      type: 'ban',
+      userCount,
+      users: activeUsers
+    })
+    setShowBanDialog(true)
+  }
 
+  const confirmBulkBan = async () => {
+    if (!pendingAction) return
+    
     try {
-      const promises = activeUsers.map(userId => adminApi.banUser(userId))
+      const promises = pendingAction.users.map(userId => adminApi.banUser(userId))
       await Promise.all(promises)
       
+      const actionText = pendingAction.userCount > 1 ? 'Bulk Ban' : 'Ban'
+      const userText = pendingAction.userCount > 1 ? 'users' : 'user'
+      const haveText = pendingAction.userCount > 1 ? 'have' : 'has'
+      
       showToast({
-        title: 'Bulk Ban Successful',
-        description: `${userCount} active user${userCount > 1 ? 's have' : ' has'} been successfully banned from the system.`,
+        title: `${actionText} Successful`,
+        description: `${pendingAction.userCount} active ${userText} ${haveText} been successfully banned from the system.`,
         variant: 'success'
       })
       
-      setSelectedUsers(new Set())
-      setSelectAll(false)
+      // Clear selection if it was a bulk action
+      if (pendingAction.userCount > 1) {
+        setSelectedUsers(new Set())
+        setSelectAll(false)
+      }
+      
       await fetchUsers(pagination.pageNumber, pageSize)
     } catch (err) {
-      console.error('Bulk ban failed', err)
+      console.error('Ban failed', err)
+      const actionText = pendingAction.userCount > 1 ? 'Bulk Ban' : 'Ban'
       showToast({
-        title: 'Bulk Ban Failed',
-        description: 'Failed to ban some users. Please try again.',
+        title: `${actionText} Failed`,
+        description: 'Failed to ban user(s). Please try again.',
         variant: 'destructive'
       })
+    } finally {
+      setShowBanDialog(false)
+      setPendingAction(null)
     }
   }
 
@@ -397,30 +407,49 @@ export default function AdminUsersPage() {
     }
     
     const userCount = inactiveUsers.length
-    if (!confirm(`Are you sure you want to unban ${userCount} inactive user${userCount > 1 ? 's' : ''}? They will be able to access the system again.`)) {
-      return
-    }
+    setPendingAction({
+      type: 'unban',
+      userCount,
+      users: inactiveUsers
+    })
+    setShowUnbanDialog(true)
+  }
 
+  const confirmBulkUnban = async () => {
+    if (!pendingAction) return
+    
     try {
-      const promises = inactiveUsers.map(userId => adminApi.unbanUser(userId))
+      const promises = pendingAction.users.map(userId => adminApi.unbanUser(userId))
       await Promise.all(promises)
       
+      const actionText = pendingAction.userCount > 1 ? 'Bulk Unban' : 'Unban'
+      const userText = pendingAction.userCount > 1 ? 'users' : 'user'
+      const haveText = pendingAction.userCount > 1 ? 'have' : 'has'
+      
       showToast({
-        title: 'Bulk Unban Successful',
-        description: `${userCount} inactive user${userCount > 1 ? 's have' : ' has'} been successfully unbanned and can access the system again.`,
+        title: `${actionText} Successful`,
+        description: `${pendingAction.userCount} inactive ${userText} ${haveText} been successfully unbanned and can access the system again.`,
         variant: 'success'
       })
       
-      setSelectedUsers(new Set())
-      setSelectAll(false)
+      // Clear selection if it was a bulk action
+      if (pendingAction.userCount > 1) {
+        setSelectedUsers(new Set())
+        setSelectAll(false)
+      }
+      
       await fetchUsers(pagination.pageNumber, pageSize)
     } catch (err) {
-      console.error('Bulk unban failed', err)
+      console.error('Unban failed', err)
+      const actionText = pendingAction.userCount > 1 ? 'Bulk Unban' : 'Unban'
       showToast({
-        title: 'Bulk Unban Failed',
-        description: 'Failed to unban some users. Please try again.',
+        title: `${actionText} Failed`,
+        description: 'Failed to unban user(s). Please try again.',
         variant: 'destructive'
       })
+    } finally {
+      setShowUnbanDialog(false)
+      setPendingAction(null)
     }
   }
 
@@ -900,6 +929,56 @@ export default function AdminUsersPage() {
           />
         </div>
       )}
+      
+             {/* Confirmation Dialogs */}
+       <Dialog open={showBanDialog} onOpenChange={setShowBanDialog}>
+         <DialogContent>
+           <DialogHeader>
+             <DialogTitle>
+               {pendingAction?.userCount && pendingAction.userCount > 1 ? 'Confirm Ban Users' : 'Confirm Ban User'}
+             </DialogTitle>
+             <DialogDescription>
+               Are you sure you want to ban {pendingAction?.userCount} active user{pendingAction?.userCount && pendingAction.userCount > 1 ? 's' : ''}? They will not be able to access the system.
+             </DialogDescription>
+           </DialogHeader>
+           <DialogFooter>
+             <Button variant="outline" onClick={() => setShowBanDialog(false)}>
+               Cancel
+             </Button>
+             <Button 
+               variant="destructive" 
+               onClick={confirmBulkBan}
+               className="bg-red-600 hover:bg-red-700"
+             >
+               {pendingAction?.userCount && pendingAction.userCount > 1 ? 'Ban Users' : 'Ban User'}
+             </Button>
+           </DialogFooter>
+         </DialogContent>
+       </Dialog>
+
+             <Dialog open={showUnbanDialog} onOpenChange={setShowUnbanDialog}>
+         <DialogContent>
+           <DialogHeader>
+             <DialogTitle>
+               {pendingAction?.userCount && pendingAction.userCount > 1 ? 'Confirm Unban Users' : 'Confirm Unban User'}
+             </DialogTitle>
+             <DialogDescription>
+               Are you sure you want to unban {pendingAction?.userCount} inactive user{pendingAction?.userCount && pendingAction.userCount > 1 ? 's' : ''}? They will be able to access the system again.
+             </DialogDescription>
+           </DialogHeader>
+           <DialogFooter>
+             <Button variant="outline" onClick={() => setShowUnbanDialog(false)}>
+               Cancel
+             </Button>
+             <Button 
+               onClick={confirmBulkUnban}
+               className="bg-green-600 hover:bg-green-700"
+             >
+               {pendingAction?.userCount && pendingAction.userCount > 1 ? 'Unban Users' : 'Unban User'}
+             </Button>
+           </DialogFooter>
+         </DialogContent>
+       </Dialog>
     </AdminLayout>
   )
 }
