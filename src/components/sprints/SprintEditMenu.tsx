@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 
 interface SprintEditMenuProps {
   sprint: {
@@ -18,14 +18,14 @@ interface SprintEditMenuProps {
     description: string
     startDate: string
     endDate: string
-    status: number
+    status: number | string
   }
   onUpdateSprint: (data: {
     name: string
     description: string
     startDate: string
     endDate: string
-    status: number
+    status: string // canonical: NotStarted | InProgress | Completed
   }) => Promise<void>
 }
 
@@ -35,7 +35,34 @@ export function SprintEditMenu({ sprint, onUpdateSprint }: SprintEditMenuProps) 
   const [description, setDescription] = useState(sprint.description)
   const [startDate, setStartDate] = useState(sprint.startDate?.slice(0, 10) || '')
   const [endDate, setEndDate] = useState(sprint.endDate?.slice(0, 10) || '')
-  const [status, setStatus] = useState(String(sprint.status))
+  // Map any incoming numeric / string code to canonical status
+  const mapToCanonical = (raw: string | number): string => {
+    const val = String(raw)
+    const numeric = Number(val)
+    // Numeric codes used elsewhere map to canonical
+    if (val === 'NotStarted' || val === 'NOT_STARTED' || numeric === 0) return 'NotStarted'
+    if (val === 'InProgress' || val === 'IN_PROGRESS' || numeric === 10000 || numeric === 1) return 'InProgress'
+    if (val === 'Completed' || val === 'COMPLETED' || numeric === 20000 || numeric === 2) return 'Completed'
+    // Fallback
+    return 'NotStarted'
+  }
+  const [status, setStatus] = useState<string>(mapToCanonical(sprint.status))
+
+  // When opening the dialog, always refresh local state from latest sprint props
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      setIsOpen(open)
+      if (open) {
+        // Re-sync all editable fields with the current sprint prop to avoid stale values
+        setName(sprint.name)
+        setDescription(sprint.description)
+        setStartDate(sprint.startDate?.slice(0, 10) || '')
+        setEndDate(sprint.endDate?.slice(0, 10) || '')
+        setStatus(mapToCanonical(sprint.status))
+      }
+    },
+    [sprint]
+  )
 
   const toISOString = (date: string) => {
     if (!date) return ''
@@ -45,19 +72,19 @@ export function SprintEditMenu({ sprint, onUpdateSprint }: SprintEditMenuProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
-    
+
     await onUpdateSprint({
       name,
       description,
       startDate: toISOString(startDate),
       endDate: toISOString(endDate),
-      status: Number(status)
+      status // send canonical textual status
     })
     setIsOpen(false)
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant='outline' size='sm'>
           Edit
@@ -98,11 +125,10 @@ export function SprintEditMenu({ sprint, onUpdateSprint }: SprintEditMenuProps) 
               value={status}
               onChange={(e) => setStatus(e.target.value)}
               className='w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-lavender-500'
-              required
             >
-              <option value='10000'>In Progress</option>
-              <option value='20000'>Completed</option>
-              <option value='30000'>On Hold</option>
+              <option value='NotStarted'>Not Started</option>
+              <option value='InProgress'>In Progress</option>
+              <option value='Completed'>Completed</option>
             </select>
           </div>
           <div className='flex justify-end gap-2'>

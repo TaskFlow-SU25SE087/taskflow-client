@@ -90,7 +90,18 @@ export const useSprints = () => {
     if (!currentProject || !currentProject.id) return false
     setIsLoading(true)
     try {
-      const ok = await sprintApi.updateSprint(currentProject.id, sprintId, sprint)
+      // Map canonical textual statuses to backend compatible codes if backend still expects numeric or same string.
+      const mapStatus = (val: string): string => {
+        const v = String(val)
+        const map: Record<string, string> = {
+          NotStarted: '0',
+          InProgress: '10000',
+          Completed: '20000'
+        }
+        return map[v] || v
+      }
+      const payload = { ...sprint, status: mapStatus(sprint.status) }
+      const ok = await sprintApi.updateSprint(currentProject.id, sprintId, payload)
       if (ok) await fetchSprints()
       return ok
     } catch (err) {

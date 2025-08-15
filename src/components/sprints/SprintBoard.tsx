@@ -102,10 +102,17 @@ export function SprintBoard({
                   description: sprint.description || '',
                   startDate: sprint.startDate || '',
                   endDate: sprint.endDate || '',
-                  status: typeof sprint.status === 'number' ? sprint.status : Number(sprint.status) || 0
+                  status: sprint.status
                 }}
                 onUpdateSprint={async (data) => {
-                  await updateSprint(sprint.id, { ...data, status: String(data.status) })
+                  // Update: pass canonical textual status; updateSprint expects string status
+                  await updateSprint(sprint.id, {
+                    name: data.name,
+                    description: data.description,
+                    startDate: data.startDate,
+                    endDate: data.endDate,
+                    status: data.status
+                  })
                   onSprintUpdate()
                 }}
               />
