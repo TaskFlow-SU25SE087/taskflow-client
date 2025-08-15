@@ -12,18 +12,7 @@ import { cn } from '@/lib/utils'
 import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
 import { addMonths, eachDayOfInterval, endOfMonth, format, startOfMonth } from 'date-fns'
-import {
-    Calendar,
-    CheckCircle,
-    ChevronLeft,
-    ChevronRight,
-    Clock,
-    PlayCircle,
-    Search,
-    Target,
-    TrendingUp,
-    Users
-} from 'lucide-react'
+import { Calendar, ChevronLeft, ChevronRight, Clock, Search, Target, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -49,113 +38,6 @@ const calculateSprintProgress = (tasks: TaskP[]) => {
     notStarted,
     completionPercentage
   }
-}
-
-// Statistics overview component
-function StatisticsOverview({ sprintsWithTasks }: { sprintsWithTasks: SprintWithTasks[] }) {
-  const allTasks = sprintsWithTasks.flatMap((sprint) => sprint.tasks)
-  const stats = calculateSprintProgress(allTasks)
-  const averageProgress =
-    sprintsWithTasks.length > 0
-      ? Math.round(
-          sprintsWithTasks.reduce((sum, sprint) => {
-            const sprintStats = calculateSprintProgress(sprint.tasks)
-            return sum + sprintStats.completionPercentage
-          }, 0) / sprintsWithTasks.length
-        )
-      : 0
-
-  return (
-    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6'>
-      {/* Total Tasks Card - Clean white design */}
-      <div className='bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow'>
-        <div className='flex items-center justify-between'>
-          <div>
-            <p className='text-gray-600 text-sm font-medium'>Total Tasks</p>
-            <p className='text-2xl font-bold text-gray-900'>{stats.total}</p>
-          </div>
-          <div className='p-3 bg-blue-50 rounded-lg'>
-            <Target className='h-6 w-6 text-blue-600' />
-          </div>
-        </div>
-        <div className='mt-3 flex items-center gap-2'>
-          <div className='flex-1 bg-gray-200 rounded-full h-2'>
-            <div
-              className='bg-blue-500 rounded-full h-2 transition-all duration-500'
-              style={{ width: `${stats.total > 0 ? 100 : 0}%` }}
-            />
-          </div>
-          <span className='text-xs text-gray-500'>Active</span>
-        </div>
-      </div>
-
-      {/* Completed Card - Clean white design */}
-      <div className='bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow'>
-        <div className='flex items-center justify-between'>
-          <div>
-            <p className='text-gray-600 text-sm font-medium'>Completed</p>
-            <p className='text-2xl font-bold text-gray-900'>{stats.completed}</p>
-          </div>
-          <div className='p-3 bg-green-50 rounded-lg'>
-            <CheckCircle className='h-6 w-6 text-green-600' />
-          </div>
-        </div>
-        <div className='mt-3 flex items-center gap-2'>
-          <div className='flex-1 bg-gray-200 rounded-full h-2'>
-            <div
-              className='bg-green-500 rounded-full h-2 transition-all duration-500'
-              style={{ width: `${stats.completionPercentage}%` }}
-            />
-          </div>
-          <span className='text-xs text-gray-500'>{stats.completionPercentage}%</span>
-        </div>
-      </div>
-
-      {/* In Progress Card - Clean white design */}
-      <div className='bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow'>
-        <div className='flex items-center justify-between'>
-          <div>
-            <p className='text-gray-600 text-sm font-medium'>In Progress</p>
-            <p className='text-2xl font-bold text-gray-900'>{stats.inProgress}</p>
-          </div>
-          <div className='p-3 bg-orange-50 rounded-lg'>
-            <PlayCircle className='h-6 w-6 text-orange-600' />
-          </div>
-        </div>
-        <div className='mt-3 flex items-center gap-2'>
-          <div className='flex-1 bg-gray-200 rounded-full h-2'>
-            <div
-              className='bg-orange-500 rounded-full h-2 transition-all duration-500'
-              style={{ width: `${stats.total > 0 ? (stats.inProgress / stats.total) * 100 : 0}%` }}
-            />
-          </div>
-          <span className='text-xs text-gray-500'>Active</span>
-        </div>
-      </div>
-
-      {/* Average Progress Card - Clean white design */}
-      <div className='bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow'>
-        <div className='flex items-center justify-between'>
-          <div>
-            <p className='text-gray-600 text-sm font-medium'>Avg Progress</p>
-            <p className='text-2xl font-bold text-gray-900'>{averageProgress}%</p>
-          </div>
-          <div className='p-3 bg-gray-50 rounded-lg'>
-            <TrendingUp className='h-6 w-6 text-gray-600' />
-          </div>
-        </div>
-        <div className='mt-3 flex items-center gap-2'>
-          <div className='flex-1 bg-gray-200 rounded-full h-2'>
-            <div
-              className='bg-gray-500 rounded-full h-2 transition-all duration-500'
-              style={{ width: `${averageProgress}%` }}
-            />
-          </div>
-          <span className='text-xs text-gray-500'>Overall</span>
-        </div>
-      </div>
-    </div>
-  )
 }
 
 function TimelineHeader({
@@ -589,7 +471,7 @@ export default function ProjectTimeline() {
   // Cập nhật selectedTask khi tasks thay đổi để hiển thị màu sắc tags realtime
   useEffect(() => {
     if (selectedTask && tasks.length > 0) {
-      const updatedTask = tasks.find(t => t.id === selectedTask.id)
+      const updatedTask = tasks.find((t) => t.id === selectedTask.id)
       if (updatedTask) {
         setSelectedTask(updatedTask)
       }
@@ -679,23 +561,7 @@ export default function ProjectTimeline() {
                 </div>
               </div>
 
-              {/* Statistics Overview skeleton */}
-              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6'>
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className='bg-white rounded-lg p-4 border border-gray-200 shadow-sm'>
-                    <div className='flex items-center justify-between'>
-                      <div className='space-y-2'>
-                        <Skeleton className='h-4 w-24' />
-                        <Skeleton className='h-6 w-16' />
-                      </div>
-                      <Skeleton className='h-10 w-10 rounded-lg' />
-                    </div>
-                    <div className='mt-3'>
-                      <Skeleton className='h-2 w-full rounded-full' />
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {/* (Removed statistics overview cards) */}
             </div>
 
             {/* Timeline skeleton */}
@@ -724,10 +590,7 @@ export default function ProjectTimeline() {
                 {/* Sprint rows skeleton */}
                 <div className='relative'>
                   {Array.from({ length: 3 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className='grid grid-cols-[240px,1fr] min-h-[200px] border-b border-gray-200'
-                    >
+                    <div key={i} className='grid grid-cols-[240px,1fr] min-h-[200px] border-b border-gray-200'>
                       <div className='p-6 bg-white border-r border-gray-200'>
                         <div className='space-y-3'>
                           <div className='flex items-center gap-2'>
@@ -777,10 +640,10 @@ export default function ProjectTimeline() {
         currentProject={currentProject || ({ id: effectiveProjectId } as any)}
       />
 
-      <div className='flex-1 flex flex-col overflow-hidden'>
+      <div className='flex-1 flex flex-col overflow-hidden min-h-0'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
-        <div className='flex flex-col h-full bg-white'>
+        <div className='flex flex-col h-full bg-white min-h-0'>
           <div className='flex-none w-full p-6 pb-4'>
             <div className='flex items-center justify-between mb-6'>
               <div className='flex items-center gap-4'>
@@ -814,17 +677,16 @@ export default function ProjectTimeline() {
               </div>
             </div>
 
-            {/* Statistics Overview */}
-            <StatisticsOverview sprintsWithTasks={sprintsWithTasks} />
+            {/* (Removed statistics overview cards) */}
           </div>
 
-          <div className='flex-1 overflow-hidden bg-white rounded-t-lg shadow-sm border border-gray-200'>
-            <div className='min-w-[1200px] relative h-full'>
+          <div className='flex-1 overflow-hidden bg-white rounded-t-lg shadow-sm border border-gray-200 min-h-0'>
+            <div className='min-w-[1200px] relative h-full flex flex-col min-h-0'>
               <TimelineHeader currentDate={currentDate} onNavigate={handleNavigate} />
               <CurrentTimeIndicator currentDate={currentDate} />
               <div
                 ref={timelineScrollRef}
-                className='relative overflow-x-auto overflow-y-auto h-full cursor-grab select-none'
+                className='relative overflow-x-auto overflow-y-auto flex-1 cursor-grab select-none pb-8'
                 onMouseDown={handleMouseDown}
                 onMouseLeave={handleMouseLeave}
                 onMouseUp={handleMouseUp}
