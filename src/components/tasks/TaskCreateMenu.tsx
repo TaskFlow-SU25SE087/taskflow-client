@@ -68,10 +68,6 @@ export default function TaskCreateMenu({
       showToast({ title: 'Validation Error', description: 'Please select a priority', variant: 'destructive' })
       return
     }
-    if (!deadline) {
-      showToast({ title: 'Validation Error', description: 'Please select a deadline', variant: 'destructive' })
-      return
-    }
     setIsSubmitting(true)
     try {
       const formData = new FormData()
@@ -232,9 +228,8 @@ export default function TaskCreateMenu({
                 selected={deadline}
                 onChange={(date: Date | null) => setDeadline(date)}
                 dateFormat='dd/MM/yy'
-                placeholderText='dd/mm/yy'
+                placeholderText='dd/mm/yy (optional)'
                 className='w-full h-11 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-lavender-400 transition-all text-sm placeholder:text-neutral-500 bg-gray-50'
-                required
               />
             </div>
           </div>
