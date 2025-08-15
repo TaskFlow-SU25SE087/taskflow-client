@@ -225,7 +225,10 @@ export default function ProjectBoard() {
   const { tasks } = useTasks()
   const [sprintTasks, setSprintTasks] = useState<TaskP[]>([])
   const [selectedSprintId, setSelectedSprintId] = useState<string | null>(null)
+  // Internal sprint loading (only for first paint gating)
   const [isSprintLoading, setIsSprintLoading] = useState<boolean>(true)
+  // One-time hydration flag to avoid flicker when background refresh flags toggle
+  const [hasHydrated, setHasHydrated] = useState(false)
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [isLockDialogOpen, setIsLockDialogOpen] = useState(false)
   const [lockedColumns, setLockedColumns] = useState<string[]>([])
@@ -276,7 +279,8 @@ export default function ProjectBoard() {
         setIsSprintLoading(false)
         return
       }
-      setIsSprintLoading(true)
+      // Only show sprint loading spinner during the very first hydration for this project
+      if (!hasHydrated) setIsSprintLoading(true)
       try {
         await fetchCurrentSprintAndTasks(currentProject.id, setSelectedSprintId, setSprintTasks)
       } finally {
@@ -287,7 +291,22 @@ export default function ProjectBoard() {
     return () => {
       cancelled = true
     }
-  }, [currentProject])
+  }, [currentProject, hasHydrated])
+
+  // Determine when initial page data has fully hydrated (project + boards + sprint)
+  useEffect(() => {
+    if (!hasHydrated && currentProject && !isLoading && !isBoardLoading && !isSprintLoading) {
+      setHasHydrated(true)
+    }
+  }, [hasHydrated, currentProject, isLoading, isBoardLoading, isSprintLoading])
+
+  // Reset hydration flag when navigating to a different project
+  useEffect(() => {
+    // If project id in URL changes (or currentProject becomes null during navigation), allow re-hydration
+    if (hasHydrated && !isLoading && currentProject?.id !== urlProjectId) {
+      setHasHydrated(false)
+    }
+  }, [urlProjectId, currentProject?.id, hasHydrated, isLoading])
 
   useEffect(() => {
     if (!currentProject || !currentProject.id) return
@@ -689,7 +708,7 @@ export default function ProjectBoard() {
     localStorage.setItem('board_locked_columns', JSON.stringify({ lockedColumns, lockAll }))
   }, [lockedColumns, lockAll])
 
-  if (isLoading || isBoardLoading || isSprintLoading || !currentProject) {
+  if (!hasHydrated) {
     return (
       <div className='flex h-screen bg-gray-50'>
         <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
@@ -834,7 +853,7 @@ export default function ProjectBoard() {
                 </div>
                 <div>
                   <h1 className='text-3xl font-bold text-gray-900'>Board</h1>
-                  <p className='text-sm text-gray-600'>Project: {currentProject.title}</p>
+                  {currentProject && <p className='text-sm text-gray-600'>Project: {currentProject.title}</p>}
                 </div>
                 <div className='ml-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-full px-3 py-1 border border-gray-200'>
                   {boards.length} {boards.length === 1 ? 'board' : 'boards'}
@@ -842,20 +861,22 @@ export default function ProjectBoard() {
               </div>
 
               <div className='flex items-center gap-2 lg:gap-3'>
-                <ProjectEditMenu
-                  project={currentProject}
-                  onProjectUpdated={refreshBoards}
-                  trigger={
-                    <Button
-                      type='button'
-                      className='bg-lavender-100 hover:bg-lavender-200 rounded-lg p-2 shadow-none border-none'
-                      style={{ minWidth: 0, minHeight: 0, height: '36px', width: '36px' }}
-                      title='Edit project'
-                    >
-                      <Pencil className='h-5 w-5 text-lavender-600' />
-                    </Button>
-                  }
-                />
+                {currentProject && (
+                  <ProjectEditMenu
+                    project={currentProject}
+                    onProjectUpdated={refreshBoards}
+                    trigger={
+                      <Button
+                        type='button'
+                        className='bg-lavender-100 hover:bg-lavender-200 rounded-lg p-2 shadow-none border-none'
+                        style={{ minWidth: 0, minHeight: 0, height: '36px', width: '36px' }}
+                        title='Edit project'
+                      >
+                        <Pencil className='h-5 w-5 text-lavender-600' />
+                      </Button>
+                    }
+                  />
+                )}
                 <Button
                   type='button'
                   className='bg-lavender-100 hover:bg-lavender-200 rounded-lg p-2 shadow-none border-none'
@@ -876,12 +897,14 @@ export default function ProjectBoard() {
                 </Button>
 
                 {/* Board creation is now always allowed, regardless of sprint status */}
-                <TaskBoardCreateMenu
-                  isOpen={isBoardDialogOpen}
-                  onOpenChange={setIsBoardDialogOpen}
-                  projectId={currentProject.id}
-                  onBoardCreated={refreshBoards}
-                />
+                {currentProject && (
+                  <TaskBoardCreateMenu
+                    isOpen={isBoardDialogOpen}
+                    onOpenChange={setIsBoardDialogOpen}
+                    projectId={currentProject.id}
+                    onBoardCreated={refreshBoards}
+                  />
+                )}
 
                 <Button
                   variant='ghost'
@@ -1139,12 +1162,14 @@ export default function ProjectBoard() {
         </div>
       </div>
 
-      <ProjectInviteDialog
-        isOpen={isInviteOpen}
-        onClose={() => setIsInviteOpen(false)}
-        projectId={currentProject.id}
-        onMemberAdded={handleMemberAdded}
-      />
+      {currentProject && (
+        <ProjectInviteDialog
+          isOpen={isInviteOpen}
+          onClose={() => setIsInviteOpen(false)}
+          projectId={currentProject.id}
+          onMemberAdded={handleMemberAdded}
+        />
+      )}
 
       {/* Lock dialog */}
       <Dialog open={isLockDialogOpen} onOpenChange={setIsLockDialogOpen}>
