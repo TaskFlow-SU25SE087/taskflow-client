@@ -3,16 +3,7 @@ import { Navbar } from '@/components/Navbar'
 
 import { ProjectInviteDialog } from '@/components/projects/ProjectInviteDialog'
 import { Sidebar } from '@/components/Sidebar'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
-} from '@/components/ui/alert-dialog'
+
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
@@ -298,19 +289,24 @@ export default function ProjectMembers() {
         />
 
         {pendingRemove && (
-          <AlertDialog open={!!pendingRemove} onOpenChange={(open) => !open && setPendingRemove(null)}>
-            <AlertDialogContent className='rounded-2xl border border-violet-100 shadow-2xl'>
-              <AlertDialogHeader>
-                <AlertDialogTitle className='text-violet-700'>Confirm member removal</AlertDialogTitle>
-                <AlertDialogDescription className='text-gray-600'>
+          <Dialog open={!!pendingRemove} onOpenChange={(open) => !open && setPendingRemove(null)}>
+            <DialogContent className='rounded-2xl border border-violet-100 shadow-2xl'>
+              <DialogHeader>
+                <DialogTitle className='text-violet-700'>Confirm member removal</DialogTitle>
+                <DialogDescription className='text-gray-600'>
                   Are you sure you want to remove this member from the project?
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel className='border border-violet-200 text-violet-700 hover:bg-violet-50 font-semibold rounded-lg px-4 py-2 transition'>
+                </DialogDescription>
+              </DialogHeader>
+              <div className='flex justify-end gap-3 mt-6'>
+                <Button
+                  variant='outline'
+                  className='border border-violet-200 text-violet-700 hover:bg-violet-50 font-semibold rounded-lg px-4 py-2 transition'
+                  onClick={() => setPendingRemove(null)}
+                >
                   Cancel
-                </AlertDialogCancel>
-                <AlertDialogAction
+                </Button>
+                <Button
+                  variant='destructive'
                   className='bg-red-100 hover:bg-red-200 text-red-700 font-semibold rounded-lg px-4 py-2 transition border-none shadow-none'
                   onClick={async () => {
                     if (pendingRemove) {
@@ -320,10 +316,10 @@ export default function ProjectMembers() {
                   }}
                 >
                   Remove
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         )}
 
         <Dialog open={isConfirmLeaveDialogOpen} onOpenChange={setIsConfirmLeaveDialogOpen}>
