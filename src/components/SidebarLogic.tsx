@@ -108,13 +108,6 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
         section: 2,
         path: '/all-parts'
       },
-      {
-        id: 'codequality',
-        icon: <FiBarChart2 className='h-5 w-5' />,
-        label: 'Code Quality',
-        section: 2,
-        path: '/code-quality-commits'
-      },
       { id: 'settings', icon: <FiSettings className='h-5 w-5' />, label: 'Settings', section: 3, path: '/settings' }
     ],
     [activeProjectId]
@@ -147,7 +140,6 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
         const pathEnd = path.split('/').pop() || ''
         // Map special slugs to ids
         const slugToId: Record<string, string> = {
-          'code-quality-commits': 'codequality',
           'all-parts': 'allparts'
         }
         const candidateId = slugToId[pathEnd] ?? pathEnd
