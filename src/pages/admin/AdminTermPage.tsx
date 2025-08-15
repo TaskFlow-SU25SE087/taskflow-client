@@ -25,11 +25,6 @@ export default function AdminTermPage() {
   const [editEndDate, setEditEndDate] = useState('')
   const [editLoading, setEditLoading] = useState(false)
 
-  // State for detail modal
-  const [detailId, setDetailId] = useState<string | null>(null)
-  const [detail, setDetail] = useState<any>(null)
-  const [detailLoading, setDetailLoading] = useState(false)
-
   // State for delete dialog
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleteSeason, setDeleteSeason] = useState<string>('')
@@ -48,18 +43,18 @@ export default function AdminTermPage() {
   const validateYear = (yearValue: string): string | null => {
     const yearNum = parseInt(yearValue)
     const currentYear = new Date().getFullYear()
-    
+
     if (!yearValue || isNaN(yearNum)) {
       return 'Year is required and must be a number'
     }
-    
+
     // Không cho phép nhập năm từ quá khứ
     if (yearNum < currentYear) {
       return `Year cannot be in the past. Please enter ${currentYear} or a future year`
     }
-    
+
     // Không giới hạn năm tương lai - cho phép nhập bất kỳ năm nào trong tương lai
-    
+
     return null
   }
 
@@ -67,19 +62,19 @@ export default function AdminTermPage() {
     if (!dateValue) {
       return `${fieldName} is required`
     }
-    
+
     const date = new Date(dateValue)
     if (isNaN(date.getTime())) {
       return `${fieldName} must be a valid date`
     }
-    
+
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    
+
     if (date < today && fieldName === 'Start Date') {
       return 'Start date cannot be in the past'
     }
-    
+
     return null
   }
 
@@ -87,26 +82,27 @@ export default function AdminTermPage() {
     if (!startDateValue || !endDateValue) {
       return null // Individual validation will handle this
     }
-    
+
     const startDate = new Date(startDateValue)
     const endDate = new Date(endDateValue)
-    
+
     if (startDate >= endDate) {
       return 'End date must be after start date'
     }
-    
+
     // Check if term duration is reasonable (between 1 day and 2 years)
     const diffTime = Math.abs(endDate.getTime() - startDate.getTime())
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    
+
     if (diffDays < 1) {
       return 'Term must be at least 1 day long'
     }
-    
-    if (diffDays > 730) { // 2 years
+
+    if (diffDays > 730) {
+      // 2 years
       return 'Term cannot be longer than 2 years'
     }
-    
+
     return null
   }
 
@@ -114,11 +110,11 @@ export default function AdminTermPage() {
     if (!seasonValue.trim()) {
       return 'Season is required'
     }
-    
+
     if (seasonValue.length < 2 || seasonValue.length > 20) {
       return 'Season must be between 2 and 20 characters'
     }
-    
+
     return null
   }
 
@@ -126,16 +122,16 @@ export default function AdminTermPage() {
     if (!startDateValue || !endDateValue) {
       return null
     }
-    
+
     const newStart = new Date(startDateValue)
     const newEnd = new Date(endDateValue)
-    
+
     for (const term of terms) {
       if (excludeId && term.id === excludeId) continue
-      
+
       const existingStart = new Date(term.startDate)
       const existingEnd = new Date(term.endDate)
-      
+
       // Check for overlap: new term overlaps with existing term
       if (
         (newStart >= existingStart && newStart < existingEnd) ||
@@ -145,7 +141,7 @@ export default function AdminTermPage() {
         return `Term overlaps with existing term: ${term.season} ${term.year} (${formatDate(term.startDate)} - ${formatDate(term.endDate)})`
       }
     }
-    
+
     return null
   }
 
@@ -156,40 +152,40 @@ export default function AdminTermPage() {
       startDate?: string
       endDate?: string
     } = {}
-    
+
     // Validate individual fields
     const seasonError = validateSeason(season)
     const yearError = validateYear(year)
     const startDateError = validateDate(startDate, 'Start Date')
     const endDateError = validateDate(endDate, 'End Date')
-    
+
     if (seasonError) errors.season = seasonError
     if (yearError) errors.year = yearError
     if (startDateError) errors.startDate = startDateError
     if (endDateError) errors.endDate = endDateError
-    
+
     // Validate date range
     const dateRangeError = validateDateRange(startDate, endDate)
     if (dateRangeError) {
       errors.endDate = dateRangeError
     }
-    
+
     // Validate business rules
     const businessRuleError = validateBusinessRules(startDate, endDate)
     if (businessRuleError) {
       errors.endDate = businessRuleError
     }
-    
+
     // Check for term overlap
     const overlapError = checkTermOverlap(startDate, endDate)
     if (overlapError) {
       errors.endDate = overlapError
     }
-    
+
     setValidationErrors(errors)
-    
+
     // Return true if no errors
-    return !Object.values(errors).some(error => error !== undefined)
+    return !Object.values(errors).some((error) => error !== undefined)
   }
 
   const validateEditForm = (): boolean => {
@@ -199,40 +195,40 @@ export default function AdminTermPage() {
       startDate?: string
       endDate?: string
     } = {}
-    
+
     // Validate individual fields
     const seasonError = validateSeason(editSeason)
     const yearError = validateYear(editYear)
     const startDateError = validateDate(editStartDate, 'Start Date')
     const endDateError = validateDate(editEndDate, 'End Date')
-    
+
     if (seasonError) errors.season = seasonError
     if (yearError) errors.year = yearError
     if (startDateError) errors.startDate = startDateError
     if (endDateError) errors.endDate = endDateError
-    
+
     // Validate date range
     const dateRangeError = validateDateRange(editStartDate, editEndDate)
     if (dateRangeError) {
       errors.endDate = dateRangeError
     }
-    
+
     // Validate business rules
     const businessRuleError = validateBusinessRules(editStartDate, editEndDate)
     if (businessRuleError) {
       errors.endDate = businessRuleError
     }
-    
+
     // Check for term overlap (exclude current term being edited)
     const overlapError = checkTermOverlap(editStartDate, editEndDate, editingId || undefined)
     if (overlapError) {
       errors.endDate = overlapError
     }
-    
+
     setValidationErrors(errors)
-    
+
     // Return true if no errors
-    return !Object.values(errors).some(error => error !== undefined)
+    return !Object.values(errors).some((error) => error !== undefined)
   }
 
   // Clear validation errors when form changes
@@ -244,7 +240,7 @@ export default function AdminTermPage() {
   // Real-time validation for better UX
   const validateFieldInRealTime = (field: keyof typeof validationErrors, value: string) => {
     let error: string | null = null
-    
+
     switch (field) {
       case 'season':
         error = validateSeason(value)
@@ -268,8 +264,8 @@ export default function AdminTermPage() {
         }
         break
     }
-    
-    setValidationErrors(prev => ({
+
+    setValidationErrors((prev) => ({
       ...prev,
       [field]: error || undefined
     }))
@@ -278,38 +274,44 @@ export default function AdminTermPage() {
   // Enhanced date validation with business rules
   const validateBusinessRules = (startDateValue: string, endDateValue: string): string | null => {
     if (!startDateValue || !endDateValue) return null
-    
+
     const startDate = new Date(startDateValue)
     const endDate = new Date(endDateValue)
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    
+
     // Bỏ giới hạn 5 năm trong tương lai - cho phép start date xa hơn
-    
+
     // Check for reasonable term duration (academic terms are usually 3-6 months)
     const diffTime = Math.abs(endDate.getTime() - startDate.getTime())
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    
-    if (diffDays < 30) { // Less than 1 month
+
+    if (diffDays < 30) {
+      // Less than 1 month
       return 'Term should be at least 1 month long for academic purposes'
     }
-    
-    if (diffDays > 365) { // More than 1 year
+
+    if (diffDays > 365) {
+      // More than 1 year
       return 'Term should not exceed 1 year for academic purposes'
     }
-    
+
     return null
   }
 
   // Create term
   const handleCreateTerm = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!validateCreateForm()) {
-      showToast({ title: 'Validation Error', description: 'Please fix the errors before submitting', variant: 'destructive' })
+      showToast({
+        title: 'Validation Error',
+        description: 'Please fix the errors before submitting',
+        variant: 'destructive'
+      })
       return
     }
-    
+
     setCreating(true)
     setCreateError(null)
     try {
@@ -344,13 +346,17 @@ export default function AdminTermPage() {
     setEditEndDate(term.endDate.slice(0, 10))
     clearValidationErrors()
   }
-  
+
   const handleEditSave = async (id: string) => {
     if (!validateEditForm()) {
-      showToast({ title: 'Validation Error', description: 'Please fix the errors before submitting', variant: 'destructive' })
+      showToast({
+        title: 'Validation Error',
+        description: 'Please fix the errors before submitting',
+        variant: 'destructive'
+      })
       return
     }
-    
+
     setEditLoading(true)
     try {
       await adminApi.updateTerm(id, {
@@ -391,7 +397,7 @@ export default function AdminTermPage() {
   // Execute delete
   const handleDeleteConfirm = async () => {
     if (!deleteId) return
-    
+
     setDeleteLoading(true)
     try {
       await adminApi.deleteTerm(deleteId)
@@ -413,37 +419,7 @@ export default function AdminTermPage() {
     setDeleteYear('')
   }
 
-  // Lock term
-  const handleLock = async (id: string) => {
-    if (!window.confirm('Are you sure you want to lock this term?')) return
-    try {
-      await adminApi.lockTerm(id)
-      setPage(1)
-      setReloadFlag((f) => f + 1)
-              showToast({ title: 'Success', description: 'Term locked!', variant: 'success' })
-    } catch (err: any) {
-      showToast({ title: 'Error', description: 'Failed to lock term!', variant: 'destructive' })
-    }
-  }
-
-  // Show term detail
-  const handleShowDetail = async (id: string) => {
-    setDetailLoading(true)
-    setDetailId(id)
-    try {
-      const res = await adminApi.getTermDetail(id)
-      setDetail(res.data.data)
-    } catch (err) {
-      setDetail(null)
-      showToast({ title: 'Error', description: 'Failed to fetch term detail!', variant: 'destructive' })
-    } finally {
-      setDetailLoading(false)
-    }
-  }
-  const handleCloseDetail = () => {
-    setDetailId(null)
-    setDetail(null)
-  }
+  // Lock & detail functionality removed per request
 
   // Filtering
   const [filterSeason, setFilterSeason] = useState('')
@@ -503,11 +479,11 @@ export default function AdminTermPage() {
               }}
               onBlur={(e) => validateFieldInRealTime('season', e.target.value)}
               required
-              style={{ 
-                padding: 6, 
-                borderRadius: 4, 
-                border: validationErrors.season ? '1px solid #ef4444' : '1px solid #ccc', 
-                width: 100 
+              style={{
+                padding: 6,
+                borderRadius: 4,
+                border: validationErrors.season ? '1px solid #ef4444' : '1px solid #ccc',
+                width: 100
               }}
             />
             {validationErrors.season && (
@@ -525,11 +501,11 @@ export default function AdminTermPage() {
               }}
               onBlur={(e) => validateFieldInRealTime('year', e.target.value)}
               required
-              style={{ 
-                padding: 6, 
-                borderRadius: 4, 
-                border: validationErrors.year ? '1px solid #ef4444' : '1px solid #ccc', 
-                width: 80 
+              style={{
+                padding: 6,
+                borderRadius: 4,
+                border: validationErrors.year ? '1px solid #ef4444' : '1px solid #ccc',
+                width: 80
               }}
             />
             {validationErrors.year && (
@@ -548,9 +524,9 @@ export default function AdminTermPage() {
               onBlur={(e) => validateFieldInRealTime('startDate', e.target.value)}
               min={getCurrentDateString()}
               required
-              style={{ 
-                padding: 6, 
-                borderRadius: 4, 
+              style={{
+                padding: 6,
+                borderRadius: 4,
                 border: validationErrors.startDate ? '1px solid #ef4444' : '1px solid #ccc'
               }}
             />
@@ -570,9 +546,9 @@ export default function AdminTermPage() {
               onBlur={(e) => validateFieldInRealTime('endDate', e.target.value)}
               min={startDate}
               required
-              style={{ 
-                padding: 6, 
-                borderRadius: 4, 
+              style={{
+                padding: 6,
+                borderRadius: 4,
                 border: validationErrors.endDate ? '1px solid #ef4444' : '1px solid #ccc'
               }}
             />
@@ -596,17 +572,19 @@ export default function AdminTermPage() {
           </button>
           {createError && <span style={{ color: 'red', marginLeft: 8 }}>{createError}</span>}
         </form>
-        
+
         {/* Validation Summary */}
-        {Object.values(validationErrors).some(error => error) && (
-          <div style={{
-            marginBottom: 16,
-            padding: 12,
-            background: '#fef2f2',
-            border: '1px solid #fecaca',
-            borderRadius: 6,
-            color: '#dc2626'
-          }}>
+        {Object.values(validationErrors).some((error) => error) && (
+          <div
+            style={{
+              marginBottom: 16,
+              padding: 12,
+              background: '#fef2f2',
+              border: '1px solid #fecaca',
+              borderRadius: 6,
+              color: '#dc2626'
+            }}
+          >
             <div style={{ fontWeight: 600, marginBottom: 8 }}>Please fix the following errors:</div>
             <ul style={{ margin: 0, paddingLeft: 20 }}>
               {validationErrors.season && <li>{validationErrors.season}</li>}
@@ -616,8 +594,7 @@ export default function AdminTermPage() {
             </ul>
           </div>
         )}
-        
-      
+
         <div style={{ marginBottom: 16, display: 'flex', gap: 12 }}>
           <input
             placeholder='Filter by season'
@@ -659,7 +636,12 @@ export default function AdminTermPage() {
                             validateFieldInRealTime('season', e.target.value)
                           }}
                           onBlur={(e) => validateFieldInRealTime('season', e.target.value)}
-                          style={{ padding: 4, borderRadius: 4, border: validationErrors.season ? '1px solid #ef4444' : '1px solid #ccc', width: 80 }}
+                          style={{
+                            padding: 4,
+                            borderRadius: 4,
+                            border: validationErrors.season ? '1px solid #ef4444' : '1px solid #ccc',
+                            width: 80
+                          }}
                         />
                         {validationErrors.season && (
                           <span style={{ color: '#ef4444', fontSize: '12px' }}>{validationErrors.season}</span>
@@ -674,7 +656,12 @@ export default function AdminTermPage() {
                             validateFieldInRealTime('year', e.target.value)
                           }}
                           onBlur={(e) => validateFieldInRealTime('year', e.target.value)}
-                          style={{ padding: 4, borderRadius: 4, border: validationErrors.year ? '1px solid #ef4444' : '1px solid #ccc', width: 60 }}
+                          style={{
+                            padding: 4,
+                            borderRadius: 4,
+                            border: validationErrors.year ? '1px solid #ef4444' : '1px solid #ccc',
+                            width: 60
+                          }}
                         />
                         {validationErrors.year && (
                           <span style={{ color: '#ef4444', fontSize: '12px' }}>{validationErrors.year}</span>
@@ -690,7 +677,11 @@ export default function AdminTermPage() {
                           }}
                           onBlur={(e) => validateFieldInRealTime('startDate', e.target.value)}
                           min={getCurrentDateString()}
-                          style={{ padding: 4, borderRadius: 4, border: validationErrors.startDate ? '1px solid #ef4444' : '1px solid #ccc' }}
+                          style={{
+                            padding: 4,
+                            borderRadius: 4,
+                            border: validationErrors.startDate ? '1px solid #ef4444' : '1px solid #ccc'
+                          }}
                         />
                         {validationErrors.startDate && (
                           <span style={{ color: '#ef4444', fontSize: '12px' }}>{validationErrors.startDate}</span>
@@ -706,7 +697,11 @@ export default function AdminTermPage() {
                           }}
                           onBlur={(e) => validateFieldInRealTime('endDate', e.target.value)}
                           min={editStartDate}
-                          style={{ padding: 4, borderRadius: 4, border: validationErrors.endDate ? '1px solid #ef4444' : '1px solid #ccc' }}
+                          style={{
+                            padding: 4,
+                            borderRadius: 4,
+                            border: validationErrors.endDate ? '1px solid #ef4444' : '1px solid #ccc'
+                          }}
                         />
                         {validationErrors.endDate && (
                           <span style={{ color: '#ef4444', fontSize: '12px' }}>{validationErrors.endDate}</span>
@@ -785,33 +780,7 @@ export default function AdminTermPage() {
                         >
                           Delete
                         </button>
-                        <button
-                          onClick={() => handleLock(term.id)}
-                          style={{
-                            padding: '4px 10px',
-                            borderRadius: 4,
-                            background: '#6366f1',
-                            color: '#fff',
-                            border: 'none',
-                            fontWeight: 600,
-                            marginRight: 4
-                          }}
-                        >
-                          Lock
-                        </button>
-                        <button
-                          onClick={() => handleShowDetail(term.id)}
-                          style={{
-                            padding: '4px 10px',
-                            borderRadius: 4,
-                            background: '#2563eb',
-                            color: '#fff',
-                            border: 'none',
-                            fontWeight: 600
-                          }}
-                        >
-                          Detail
-                        </button>
+                        {/* Lock & Detail buttons removed as requested */}
                       </td>
                     </>
                   )}
@@ -836,60 +805,7 @@ export default function AdminTermPage() {
             Next
           </button>
         </div>
-        {/* Detail Modal */}
-        {detailId && (
-          <div
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100vw',
-              height: '100vh',
-              background: 'rgba(0,0,0,0.2)',
-              zIndex: 1000,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <div
-              style={{
-                background: '#fff',
-                padding: 24,
-                borderRadius: 8,
-                minWidth: 320,
-                maxWidth: 600,
-                maxHeight: '80vh',
-                overflowY: 'auto'
-              }}
-            >
-              <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 12 }}>Term Detail</h2>
-              {detailLoading ? (
-                <div>Loading...</div>
-              ) : detail ? (
-                <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', fontSize: 15 }}>
-                  {JSON.stringify(detail, null, 2)}
-                </pre>
-              ) : (
-                <div>No data</div>
-              )}
-              <button
-                onClick={handleCloseDetail}
-                style={{
-                  marginTop: 16,
-                  padding: '6px 16px',
-                  borderRadius: 4,
-                  background: '#2563eb',
-                  color: '#fff',
-                  border: 'none',
-                  fontWeight: 600
-                }}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Detail modal removed */}
         {/* Delete Confirmation Dialog */}
         {deleteId && (
           <div
@@ -919,8 +835,7 @@ export default function AdminTermPage() {
             >
               <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Confirm Deletion</h2>
               <p style={{ marginBottom: 16 }}>
-                Are you sure you want to delete the term: {deleteSeason} {deleteYear}?
-                This action cannot be undone.
+                Are you sure you want to delete the term: {deleteSeason} {deleteYear}? This action cannot be undone.
               </p>
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
                 <button
