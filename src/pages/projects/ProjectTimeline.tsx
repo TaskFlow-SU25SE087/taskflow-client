@@ -40,6 +40,9 @@ const calculateSprintProgress = (tasks: TaskP[]) => {
   }
 }
 
+// Width per day column (px)
+const DAY_WIDTH = 56
+
 function TimelineHeader({
   currentDate,
   onNavigate
@@ -51,15 +54,17 @@ function TimelineHeader({
     start: startOfMonth(currentDate),
     end: endOfMonth(currentDate)
   })
-
   const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const isWeekend = (date: Date) => {
     const dayOfWeek = date.getDay()
     return dayOfWeek === 0 || dayOfWeek === 6
   }
-
+  const totalWidth = 240 + days.length * DAY_WIDTH
   return (
-    <div className='sticky top-0 z-10 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200'>
+    <div
+      className='sticky top-0 z-10 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200'
+      style={{ width: totalWidth }}
+    >
       <div className='flex items-center justify-between px-6 py-4'>
         <div className='flex items-center gap-4'>
           <div className='flex items-center gap-2'>
@@ -90,20 +95,20 @@ function TimelineHeader({
           <span>Timeline View</span>
         </div>
       </div>
-
       <div className='grid grid-cols-[240px,1fr] border-t border-gray-200 bg-gray-50'>
         <div className='p-4 font-semibold text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center gap-2'>
           <Users className='h-4 w-4' />
           <span>Sprints</span>
         </div>
-        <div className='grid grid-cols-31 border-l border-gray-200 overflow-hidden'>
-          {days.map((day, _index) => (
+        <div className='flex border-l border-gray-200' style={{ width: days.length * DAY_WIDTH }}>
+          {days.map((day) => (
             <div
               key={day.toString()}
               className={cn(
-                'px-1 py-2 text-center text-xs border-r border-gray-200 transition-colors',
+                'px-1 py-2 text-center text-xs border-r border-gray-200 transition-colors flex-shrink-0',
                 isWeekend(day) ? 'bg-red-50 text-red-600' : 'bg-white text-gray-700 hover:bg-gray-50'
               )}
+              style={{ width: DAY_WIDTH }}
             >
               <div className='font-bold text-sm mb-1'>{format(day, 'd')}</div>
               <div className='text-xs opacity-75'>{weekdays[day.getDay() === 0 ? 6 : day.getDay() - 1]}</div>
@@ -142,16 +147,12 @@ function CurrentTimeIndicator({ currentDate }: { currentDate: Date }) {
   }
 
   const dayOfMonth = now.getDate() - 1
-  const totalDays = endOfMonth(currentDate).getDate()
   const hoursProgress = (now.getHours() + now.getMinutes() / 60) / 24
-  const percentage = ((dayOfMonth + hoursProgress) / totalDays) * 100
-
+  const leftPx = 240 + (dayOfMonth + hoursProgress) * DAY_WIDTH
   return (
     <div
       className='absolute top-0 bottom-0 w-1 bg-gradient-to-b from-lavender-400 to-lavender-600 shadow-lg shadow-lavender-400/40 z-20 rounded-full animate-pulse'
-      style={{
-        left: `calc(240px + (100% - 240px) * ${percentage / 100})`
-      }}
+      style={{ left: leftPx }}
     >
       <div className='w-4 h-4 rounded-full bg-lavender-500 border-2 border-white -translate-x-1/2 shadow-lg shadow-lavender-400/40 animate-bounce-subtle' />
       <div className='absolute -top-8 left-1/2 -translate-x-1/2 bg-lavender-600 text-white px-2 py-1 rounded-lg text-xs font-medium shadow-lg z-20'>
@@ -318,8 +319,13 @@ function SprintRow({
 
   const sprintColor = getSprintColor(index)
 
+  const totalWidth = 240 + totalDays * DAY_WIDTH
+
   return (
-    <div className='grid grid-cols-[240px,1fr] min-h-[200px] border-b border-gray-200 hover:bg-gray-50 transition-colors'>
+    <div
+      className='grid grid-cols-[240px,1fr] min-h-[200px] border-b border-gray-200 hover:bg-gray-50 transition-colors'
+      style={{ width: totalWidth }}
+    >
       <div className='p-6 bg-white border-r border-gray-200'>
         <div className='flex items-center gap-2 mb-3'>
           <div className={`w-3 h-3 rounded-full ${sprintColor.accent}`} />
@@ -363,7 +369,7 @@ function SprintRow({
       </div>
 
       <div className='relative border-l border-gray-200 bg-gray-50'>
-        <div className='grid grid-cols-31 h-full absolute inset-0'>
+        <div className='flex h-full absolute inset-0'>
           {days.map((day) => (
             <div
               key={day.toString()}
@@ -371,17 +377,17 @@ function SprintRow({
                 'border-r border-gray-200',
                 format(day, 'eee') === 'Sat' || format(day, 'eee') === 'Sun' ? 'bg-red-50' : ''
               )}
+              style={{ width: DAY_WIDTH, flex: '0 0 auto' }}
             />
           ))}
         </div>
-
         {startOffset < totalDays && visibleDuration > 0 && (
           <div
             className={`absolute top-3 bottom-3 rounded-lg border ${sprintColor.border} ${sprintColor.bg} shadow-md hover:shadow-lg transition-shadow`}
             style={{
-              left: `${(startOffset / totalDays) * 100}%`,
-              width: `${(visibleDuration / totalDays) * 100}%`,
-              minWidth: '220px'
+              left: startOffset * DAY_WIDTH,
+              width: visibleDuration * DAY_WIDTH,
+              minWidth: 220
             }}
           >
             <div className='p-4 space-y-3 h-full overflow-y-auto'>
@@ -682,8 +688,6 @@ export default function ProjectTimeline() {
 
           <div className='flex-1 overflow-hidden bg-white rounded-t-lg shadow-sm border border-gray-200 min-h-0'>
             <div className='min-w-[1200px] relative h-full flex flex-col min-h-0'>
-              <TimelineHeader currentDate={currentDate} onNavigate={handleNavigate} />
-              <CurrentTimeIndicator currentDate={currentDate} />
               <div
                 ref={timelineScrollRef}
                 className='relative overflow-x-auto overflow-y-auto flex-1 cursor-grab select-none pb-8'
@@ -692,6 +696,8 @@ export default function ProjectTimeline() {
                 onMouseUp={handleMouseUp}
                 onMouseMove={handleMouseMove}
               >
+                <TimelineHeader currentDate={currentDate} onNavigate={handleNavigate} />
+                <CurrentTimeIndicator currentDate={currentDate} />
                 {sprintsWithTasks.map((sprint, idx) => (
                   <SprintRow
                     key={sprint.id}
