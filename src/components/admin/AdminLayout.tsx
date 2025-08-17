@@ -22,18 +22,28 @@ export default function AdminLayout({ children, title, description, stats }: Adm
   const { logout } = useAuth()
   const navigate = useNavigate()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
   const handleLogout = () => {
     logout()
     navigate('/login')
   }
 
+  const toggleSidebarCollapse = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed)
+  }
+
   return (
     <div className='min-h-screen bg-gray-50 flex'>
-      <AdminSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      <div className='flex-1 flex flex-col lg:ml-0'>
+      <AdminSidebar 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={toggleSidebarCollapse}
+      />
+      <div className={`flex-1 flex flex-col lg:ml-0 min-h-screen transition-all duration-300 ease-in-out`}>
         {/* Header */}
-        <header className='bg-white border-b border-gray-200'>
+        <header className='bg-white border-b border-gray-200 sticky top-0 z-10'>
           <div className='container mx-auto px-4 sm:px-6 py-3 sm:py-4'>
             <div className='flex items-center justify-between'>
               <div className='flex items-center space-x-2 sm:space-x-4'>
@@ -76,7 +86,7 @@ export default function AdminLayout({ children, title, description, stats }: Adm
             </div>
           </div>
         </header>
-        <div className='container mx-auto px-4 sm:px-6 py-4 sm:py-6 flex-1'>
+        <main className='flex-1 container mx-auto px-4 sm:px-6 py-4 sm:py-6'>
           {/* Page Header */}
           <div className='mb-6 sm:mb-8'>
             <h2 className='text-2xl sm:text-3xl font-bold text-gray-900'>{title}</h2>
@@ -103,8 +113,10 @@ export default function AdminLayout({ children, title, description, stats }: Adm
           )}
 
           {/* Main Content */}
-          <main>{children}</main>
-        </div>
+          <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6'>
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   )
