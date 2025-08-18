@@ -43,15 +43,16 @@ import React from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 const AuthRedirect = ({ children }: { children: React.ReactNode }) => {
-  const { isAuthenticated, authLoading } = useAuth()
+  const { isAuthenticated, authLoading, user } = useAuth() as any
   const location = useLocation()
 
   // Wait for auth to hydrate to avoid flicker/mis-route
   if (authLoading) return <></>
 
-  // If authenticated and on public landing or login, send to projects
+  // If authenticated and on public landing or login, send admins to dashboard, others to projects
   if (isAuthenticated && (location.pathname === '/' || location.pathname === '/login')) {
-    return <Navigate to='/projects' state={{ from: location }} replace />
+    const isAdmin = user && (user.role === 0 || user.role === '0' || user.role === 'Admin' || user.role === 'admin')
+    return <Navigate to={isAdmin ? '/admin/dashboard' : '/projects'} state={{ from: location }} replace />
   }
 
   return children

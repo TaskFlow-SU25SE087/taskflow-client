@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useAuth } from '@/hooks/useAuth'
-import { Home, LogOut, Menu, Shield } from 'lucide-react'
+import { LogOut, Menu, Shield } from 'lucide-react'
 import { ReactNode, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -64,15 +64,6 @@ export default function AdminLayout({ children, title, description, stats }: Adm
                 </Badge>
               </div>
               <div className='flex items-center space-x-2 sm:space-x-4'>
-                <Button
-                  variant='ghost'
-                  onClick={() => navigate('/projects')}
-                  className='flex items-center space-x-1 sm:space-x-2 text-sm sm:text-base h-8 sm:h-10 px-2 sm:px-4'
-                >
-                  <Home className='h-4 w-4' />
-                  <span className='hidden sm:inline'>Back to App</span>
-                  <span className='sm:hidden'>App</span>
-                </Button>
                 <Button
                   variant='outline'
                   onClick={handleLogout}

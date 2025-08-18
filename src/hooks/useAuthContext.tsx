@@ -191,7 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             currentUser.role === 'admin')
 
         if (isAdmin) {
-          navigate('/admin/users', { replace: true })
+          navigate('/admin/dashboard', { replace: true })
           return
         }
 
@@ -338,7 +338,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             updatedUser.role === 'Admin' ||
             updatedUser.role === 'admin')
         ) {
-          navigate('/admin/users', { replace: true })
+          navigate('/admin/dashboard', { replace: true })
         } else {
           navigate('/projects/new', { replace: true })
         }
