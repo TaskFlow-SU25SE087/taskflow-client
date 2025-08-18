@@ -1,16 +1,19 @@
 import { projectMemberApi } from '@/api/projectMembers'
+import { projectApi } from '@/api/projects'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { ProjectListItem, ProjectMember } from '@/types/project'
 import Avatar from 'boring-avatars'
-import { Archive, Clock, Edit, ExternalLink, LayoutDashboard, MoreHorizontal, Trash2 } from 'lucide-react'
+import { Archive, Clock, Edit, ExternalLink, LayoutDashboard, Loader2, MoreHorizontal, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { ProjectEditMenu } from './ProjectEditMenu'
 
@@ -22,6 +25,9 @@ interface ProjectCardProps {
 
 export default function ProjectCard({ project, onSelect, onProjectUpdated }: ProjectCardProps) {
   const [projectLeader, setProjectLeader] = useState<ProjectMember | null>(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const { showToast } = useToastContext()
 
   useEffect(() => {
     const fetchProjectMembers = async () => {
@@ -124,7 +130,7 @@ export default function ProjectCard({ project, onSelect, onProjectUpdated }: Pro
                 <DropdownMenuSeparator className='my-1 bg-gray-200' />
                 <DropdownMenuItem className='text-red-600 hover:!text-red-500 hover:bg-gray-100 rounded-sm'>
                   <Trash2 className='mr-2 h-4 w-4' />
-                  <span>Delete</span>
+                  <span onClick={() => setDeleteOpen(true)}>Delete</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -176,6 +182,55 @@ export default function ProjectCard({ project, onSelect, onProjectUpdated }: Pro
           </div>
         )}
       </CardContent>
+      <Dialog open={deleteOpen} onOpenChange={(v) => !deleting && setDeleteOpen(v)}>
+        <DialogContent className='sm:max-w-[420px]'>
+          <DialogHeader>
+            <DialogTitle>Delete Project</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. This will permanently delete the project
+              "{project.title}" and remove its data.
+            </DialogDescription>
+          </DialogHeader>
+          <div className='flex justify-end gap-2 pt-2'>
+            <Button variant='outline' disabled={deleting} onClick={() => setDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              className='bg-red-600 hover:bg-red-700 text-white'
+              disabled={deleting}
+              onClick={async () => {
+                if (deleting) return
+                setDeleting(true)
+                try {
+                  const ok = await projectApi.deleteProject(project.id)
+                  if (ok) {
+                    showToast({ title: 'Project deleted', description: 'The project was removed successfully.', variant: 'success' })
+                    setDeleteOpen(false)
+                    onProjectUpdated && onProjectUpdated()
+                  } else {
+                    showToast({ title: 'Error', description: 'Failed to delete project.', variant: 'destructive' })
+                  }
+                } catch (e: any) {
+                  const msg = e?.response?.data?.message || e?.message || 'Failed to delete project.'
+                  showToast({ title: 'Error', description: msg, variant: 'destructive' })
+                } finally {
+                  setDeleting(false)
+                }
+              }}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' /> Deleting…
+                </>
+              ) : (
+                <>
+                  <Trash2 className='mr-2 h-4 w-4' /> Delete
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }
