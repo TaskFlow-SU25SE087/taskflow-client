@@ -77,5 +77,16 @@ export const adminApi = {
 
   getTermDetail: (id: string) => axiosClient.get(`/admin/term/${id}`),
 
-  lockTerm: (id: string) => axiosClient.delete(`/admin/term/lock/${id}`)
+  lockTerm: (id: string) => axiosClient.delete(`/admin/term/lock/${id}`),
+
+  // Admin Projects
+  getAllProjects: async () => {
+    const response = await axiosClient.get('/project/admin/all')
+    return response.data
+  },
+
+  getProjectsByTerm: async (termId: string) => {
+    const response = await axiosClient.get(`/project/admin/term/${termId}`)
+    return response.data
+  }
 }

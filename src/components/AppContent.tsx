@@ -3,6 +3,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { useAuth } from '@/hooks/useAuth'
 import { useNavigationError } from '@/hooks/useNavigationError'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
+import AdminProjectsPage from '@/pages/admin/AdminProjectsPage'
 import AdminTermPage from '@/pages/admin/AdminTermPage'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import CodeQualityCommits from '@/pages/github/CodeQualityCommits'
@@ -377,6 +378,15 @@ const AppContent: React.FC = () => {
           element={
             <AdminProtectedRoute>
               <AdminTermPage />
+            </AdminProtectedRoute>
+          }
+        />
+
+        <Route
+          path='/admin/projects'
+          element={
+            <AdminProtectedRoute>
+              <AdminProjectsPage />
             </AdminProtectedRoute>
           }
         />

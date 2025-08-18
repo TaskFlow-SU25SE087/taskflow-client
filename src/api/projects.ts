@@ -3,6 +3,25 @@ import { Project, Tag } from '@/types/project'
 
 const ENDPOINT = '/project'
 
+interface AdminProjectListItem {
+  id: string
+  title: string
+  description: string
+  lastUpdate: string
+  role: string | null
+  semester: string
+  termId: string
+  termName: string
+  createdAt: string
+  isActive: boolean
+}
+
+interface AdminProjectListResponse {
+  code: number
+  message: string
+  data: AdminProjectListItem[]
+}
+
 interface ProjectCreateResponse {
   code: number
   message: string
