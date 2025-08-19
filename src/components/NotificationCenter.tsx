@@ -2,7 +2,7 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Bell, Check, RefreshCw, Trash, X, CheckCheck, Clock, AlertCircle } from 'lucide-react'
+import { AlertCircle, Bell, Check, CheckCheck, Clock, RefreshCw, Trash, X } from 'lucide-react'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useSignalR } from '@/contexts/SignalRContext'
@@ -353,7 +353,7 @@ const NotificationCenter: React.FC = () => {
                 </div>
               ) : (
                 <div className='p-2'>
-                  {notifications.map((notification, index) => (
+                  {notifications.map((notification) => (
                     <div
                       key={notification.id}
                       className={cn(
