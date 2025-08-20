@@ -18,7 +18,7 @@ export function useGitMembers() {
         setGitMembers(response.data.data)
         return response.data.data
       } else {
-        throw new Error(response.message || 'Failed to fetch git members')
+        throw new Error(response.data?.message || 'Failed to fetch git members')
       }
     } catch (err: any) {
       setGitMembers([])
@@ -75,10 +75,9 @@ export function useGitMembers() {
   return {
     loading,
     error,
-    gitMembers,
-  fetchGitMembers,
-  addGitMember,
-  updateGitMember,
-  gitMembers: gitMembers as GitMemberFull[]
+    gitMembers: gitMembers as GitMemberFull[],
+    fetchGitMembers,
+    addGitMember,
+    updateGitMember
   }
 } 

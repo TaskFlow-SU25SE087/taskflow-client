@@ -114,48 +114,14 @@ export default function ProjectGitHub() {
       const partId = extractPartId(response.data)
       
       if (!partId && response.data && typeof response.data === 'string' && response.data.includes('successfully')) {
-        // Success case - create a temporary part object to show immediately
-        const tempPart: ProjectPart = {
-          id: `temp-${Date.now()}`, // Temporary ID
-          name: newPart.name,
-          programmingLanguage: newPart.programmingLanguage,
-          framework: 'None',
-          repoUrl: '',
-          ownerId: '',
-          ownerName: '',
-          avatrarUrl: ''
-        }
+        // Success case - refresh data to get the latest parts list
+        showToast({ title: 'Success', description: 'Project part created successfully!' })
+        setNewPart({ name: '', programmingLanguage: '' })
         
-        // Add to parts state immediately
-        setParts(prevParts => [tempPart, ...prevParts])
+        // Fetch fresh data to get the newly created part
+        await fetchData()
         
-        const partName = newPart.name // Store the name before resetting
-              setNewPart({ name: '', programmingLanguage: '' })
-      showToast({ title: 'Success', description: 'Project part created successfully!' })
-        
-        // Auto-select the newly created part
-        setSelectedPart(tempPart.id)
-            setCurrentStep('connect')
-        
-        // Mark this part as newly created
-        setNewlyCreatedPartId(tempPart.id)
-        
-        setSuccess(`✅ Project part "${partName}" created successfully! Now connect a repository.`)
-        
-        // Fetch fresh data in background to get the real part ID
-        setTimeout(async () => {
-          await fetchData()
-          // After fetching, try to find the newly created part by name
-          const realPart = parts.find(part => part.name === partName && !part.id.startsWith('temp-'))
-          if (realPart) {
-            setNewlyCreatedPartId(realPart.id)
-            // Remove temporary part and add real part
-            setParts(prevParts => prevParts.filter(p => p.id !== tempPart.id).map(p => p.id === realPart.id ? realPart : p))
-          } else {
-            // Keep temporary part if real part not found
-          }
-        }, 500)
-        
+        setSuccess(`✅ Project part "${newPart.name}" created successfully!`)
         return
       }
       
@@ -165,47 +131,14 @@ export default function ProjectGitHub() {
         return
       }
       
-      // Success with valid partId - create a temporary part object
-      const tempPart: ProjectPart = {
-        id: partId,
-        name: newPart.name,
-        programmingLanguage: newPart.programmingLanguage,
-        framework: 'None',
-        repoUrl: '',
-        ownerId: '',
-        ownerName: '',
-        avatrarUrl: ''
-      }
-      
-      // Add to parts state immediately
-      setParts(prevParts => [tempPart, ...prevParts])
-      
-      const partName = newPart.name // Store the name before resetting
+      // Success with valid partId
+      const partName = newPart.name
       setNewPart({ name: '', programmingLanguage: '' })
       showToast({ title: 'Success', description: 'Project part created successfully!' })
+      setSuccess(`✅ Project part "${partName}" created successfully!`)
       
-      // Auto-select the newly created part
-      setSelectedPart(tempPart.id)
-          setCurrentStep('connect')
-      
-      // Mark this part as newly created
-      setNewlyCreatedPartId(tempPart.id)
-      
-      setSuccess(`✅ Project part "${partName}" created successfully! Now connect a repository.`)
-      
-      // Fetch fresh data in background to ensure consistency
-      setTimeout(async () => {
-        await fetchData()
-        // After fetching, try to find the newly created part by name
-        const realPart = parts.find(part => part.name === partName && !part.id.startsWith('temp-'))
-        if (realPart) {
-          setNewlyCreatedPartId(realPart.id)
-          // Remove temporary part and add real part
-          setParts(prevParts => prevParts.filter(p => p.id !== tempPart.id).map(p => p.id === realPart.id ? realPart : p))
-        } else {
-          // Keep temporary part if real part not found
-        }
-      }, 500)
+      // Fetch fresh data to ensure consistency
+      await fetchData()
       
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || 

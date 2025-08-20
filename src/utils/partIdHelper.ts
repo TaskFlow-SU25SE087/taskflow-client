@@ -27,7 +27,8 @@ export function extractPartId(response: any): string {
     if (uuidRegex.test(response)) {
       return response;
     } else {
-      console.error('Response is a string but not a valid UUID:', response);
+      // If it's a success message, return empty string (will be handled by caller)
+      console.warn('Response is a success message, not a UUID:', response);
       return '';
     }
   }

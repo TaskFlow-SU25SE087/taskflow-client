@@ -37,26 +37,22 @@ export interface ProjectMember {
 
 
 export interface GitMemberLocal {
-  id: string;
-  projectPartId: string;
-  userId: string;
-  role: string;
-  createdAt?: string;
-  updatedAt?: string;
+  id: string
+  projectPartId: string
+  userId: string
+  role: string
+  createdAt?: string
+  updatedAt?: string
 }
 
 // Extended type for full git member info
 export interface GitMemberFull extends GitMemberLocal {
-  gitName: string;
-  gitEmail: string;
-  gitAvatarUrl: string;
-}
-
-// Extended type for full git member info
-export interface GitMemberFull extends GitMemberLocal {
-  gitName: string;
-  gitEmail: string;
-  gitAvatarUrl: string;
+  gitName: string
+  gitEmail: string
+  gitAvatarUrl: string
+  nameLocal: string
+  emailLocal: string
+  projectMemberId: string | null
 }
 
 export interface ProjectListItem {

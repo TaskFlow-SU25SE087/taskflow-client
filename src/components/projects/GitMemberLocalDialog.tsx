@@ -158,7 +158,7 @@ export function GitMemberLocalDialog({
                     onChange={(e) => setSelectedMemberId(e.target.value)}
                     className="w-full p-3 border border-green-200 rounded-lg bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
                   >
-                    <option value="">-- Select a member --</option>
+                    <option key="default" value="">-- Select a member --</option>
                     {membersWithoutGitLocal.map((member) => (
                       <option key={member.userId} value={member.id || member.userId}>
                         {member.fullName || member.email} ({member.role})
@@ -250,7 +250,7 @@ export function GitMemberLocalDialog({
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {gitMembers.map((gitMember) => {
-                  const projectMember = getProjectMemberById(gitMember.projectMemberId)
+                  const projectMember = gitMember.projectMemberId ? getProjectMemberById(gitMember.projectMemberId) : null
                   const isEditing = editingMember?.id === gitMember.id
 
                   return (
