@@ -1,7 +1,7 @@
 import { projectApi } from '@/api/projects'
 import { useGitHubStatus } from '@/contexts/GitHubStatusContext'
 import gsap from 'gsap'
-import { LucideLayoutDashboard } from 'lucide-react'
+import { CheckCircle, LucideLayoutDashboard, Loader2, XCircle } from 'lucide-react'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   FiAlertCircle,
@@ -15,7 +15,6 @@ import {
   FiUsers
 } from 'react-icons/fi'
 import { useLocation, useNavigate } from 'react-router-dom'
-import GitHubSidebarItem from './github/GitHubSidebarItem'
 
 export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
   const navigate = useNavigate()
@@ -26,12 +25,12 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
   const lastHoveredTabRef = useRef<string | null>(null)
   const initializedRef = useRef(false)
 
-  // Sử dụng hook để lấy trạng thái GitHub toàn cục
+  // Use hook to get global GitHub status
   const { connectionStatus, isLoading } = useGitHubStatus()
 
   // Extract project ID from URL to ensure we always have it when on project routes
   const currentPath = location.pathname
-  const projectIdMatch = currentPath.match(/\/projects\/([^\/]+)/)
+  const projectIdMatch = currentPath.match(/\/projects\/([^/]+)/)
   const urlProjectId = projectIdMatch ? projectIdMatch[1] : null
   const activeProjectId = projectId || urlProjectId
 
@@ -167,6 +166,7 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
       // Keep highlight in sync when no derivation possible (e.g., /projects root)
       updateHighlightPosition(activeTab)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, location.search, activeProjectId, navItems])
 
   const updateHighlightPosition = (tabId: string, opts?: { animate?: boolean }) => {
@@ -285,6 +285,43 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
     }
   }
 
+  // GitHub status badge component that matches your sidebar styling
+  const GitHubStatusBadge = () => {
+    if (isLoading) {
+      return (
+        <div className='ml-auto flex items-center gap-1'>
+          <Loader2 className='h-4 w-4 animate-spin text-gray-500' />
+          <span className='text-xs text-gray-500 font-normal'>Checking</span>
+        </div>
+      )
+    }
+
+    if (connectionStatus === true) {
+      return (
+        <div className='ml-auto flex items-center gap-1 bg-green-50 px-2 py-1 rounded-full border border-green-200'>
+          <CheckCircle className='h-4 w-4 text-green-600' />
+          <span className='text-xs text-green-700 font-medium'>Connected</span>
+        </div>
+      )
+    }
+
+    if (connectionStatus === false) {
+      return (
+        <div className='ml-auto flex items-center gap-1 bg-orange-50 px-2 py-1 rounded-full border border-orange-200'>
+          <XCircle className='h-4 w-4 text-orange-600' />
+          <span className='text-xs text-orange-700 font-medium'>Unlinked</span>
+        </div>
+      )
+    }
+
+    // connectionStatus === null
+    return (
+      <div className='ml-auto flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-full border border-gray-200'>
+        <span className='text-xs text-gray-600 font-medium'>Unknown</span>
+      </div>
+    )
+  }
+
   const renderSection = (sectionNumber: number) => {
     const sectionItems = navItems.filter((item) => item.section === sectionNumber)
     console.log(
@@ -295,32 +332,11 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
     return (
       <div className='relative' onMouseMove={handleMouseMove}>
         {sectionItems.map((item) => {
-          // Show all items normally - let them navigate even without project
-
-          // Special handling for GitHub item
-          if (item.id === 'github') {
-            return (
-              <div
-                key={item.id}
-                data-tab-id={item.id}
-                className={`relative flex items-center gap-3 px-2 py-3 cursor-pointer rounded-md transition-colors duration-200 ${getTabStyles(item.id).text}`}
-                onClick={() => {
-                  console.log('[SidebarLogic] GitHub item clicked')
-                  handleClick(item.id)
-                }}
-              >
-                <GitHubSidebarItem connectionStatus={connectionStatus} isLoading={isLoading} />
-              </div>
-            )
-          }
-
-          // Regular items
           return (
             <div
               key={item.id}
               data-tab-id={item.id}
-              className={`relative flex items-center gap-3 px-2 py-3 cursor-pointer rounded-md transition-colors duration-200
-                ${getTabStyles(item.id).text}`}
+              className={`relative flex items-center gap-3 px-2 py-3 cursor-pointer rounded-md transition-colors duration-200 ${getTabStyles(item.id).text}`}
               onClick={() => {
                 console.log(`[SidebarLogic] ${item.id} item clicked`)
                 handleClick(item.id)
@@ -328,6 +344,8 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
             >
               <div className={`transition-colors duration-200 ${getTabStyles(item.id).icon}`}>{item.icon}</div>
               <span className='font-medium'>{item.label}</span>
+              {/* Add GitHub status badge only for GitHub item */}
+              {item.id === 'github' && <GitHubStatusBadge />}
             </div>
           )
         })}
