@@ -69,21 +69,7 @@ export default function ProjectPartManager({ projectId }: { projectId: string })
     return iconMap[language] || ''
   }
 
-  // Function để lấy icon URL cho framework
-  const getFrameworkIconUrl = (framework: string) => {
-    const iconMap: { [key: string]: string } = {
-      'None': '',
-      'React': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg',
-      'Vue': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg',
-      'Angular': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg',
-      '.NET': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg',
-      'Spring Boot': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg',
-      'Django': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg',
-      'Express': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg',
-      'Laravel': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg'
-    }
-    return iconMap[framework] || ''
-  }
+  // ...existing code...
 
   // Programming language options
   const programmingLanguageOptions = [
@@ -100,18 +86,7 @@ export default function ProjectPartManager({ projectId }: { projectId: string })
     { value: 'Kotlin', label: 'Kotlin' }
   ]
 
-  // Framework options
-  const frameworkOptions = [
-    { value: 'None', label: 'None' },
-    { value: 'React', label: 'React' },
-    { value: 'Vue', label: 'Vue' },
-    { value: 'Angular', label: 'Angular' },
-    { value: '.NET', label: '.NET' },
-    { value: 'Spring Boot', label: 'Spring Boot' },
-    { value: 'Django', label: 'Django' },
-    { value: 'Express', label: 'Express' },
-    { value: 'Laravel', label: 'Laravel' }
-  ]
+  // ...existing code...
 
   // Kết nối repo
   const handleConnectRepo = async () => {

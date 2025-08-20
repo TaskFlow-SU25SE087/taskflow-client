@@ -1,3 +1,4 @@
+import { getGitMembers } from '@/api/gitmembers';
 import { getProjectParts } from '@/api/projectParts';
 import { projectApi } from '@/api/projects';
 import { Navbar } from '@/components/Navbar';
@@ -7,8 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader } from '@/components/ui/loader';
 import { ProjectMember } from '@/types/project';
-import { Code2, GitBranch, Github, Users, Zap } from 'lucide-react';
+import { Code2, Github, Users, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
+
+import { GitMemberFull } from '@/types/project';
+
+type GitMember = GitMemberFull;
 
 interface ProjectPart {
   id: string;
@@ -18,6 +23,7 @@ interface ProjectPart {
   repoUrl?: string;
   isConnected?: boolean;
   projectId: string;
+  gitMembers?: GitMember[];
 }
 
 export default function AllProjectParts() {
@@ -35,16 +41,22 @@ export default function AllProjectParts() {
         // Lấy danh sách tất cả projects
         const projectsRes = await projectApi.getProjects();
         const projects = projectsRes.data || [];
-        
         // Lấy parts của từng project
         const allParts: ProjectPart[] = [];
         for (const project of projects) {
           try {
             const partsRes = await getProjectParts(project.id);
             const partsData = partsRes.data || [];
-            // Thêm projectId vào mỗi part
             for (const part of partsData) {
-              allParts.push({ ...part, projectId: project.id });
+              // Lấy git members cho từng part
+              let gitMembers: GitMember[] = [];
+              try {
+                const gitRes = await getGitMembers(project.id, part.id);
+                gitMembers = gitRes.data.data || [];
+              } catch {
+                gitMembers = [];
+              }
+              allParts.push({ ...part, projectId: project.id, gitMembers });
             }
           } catch (err) {
             // Bỏ qua lỗi từng project
@@ -156,7 +168,7 @@ export default function AllProjectParts() {
             </div>
             
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-blue-100 rounded-lg">
@@ -168,21 +180,6 @@ export default function AllProjectParts() {
                   </div>
                 </div>
               </div>
-              
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <GitBranch className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Connected</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {parts.filter(p => p.isConnected).length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
               <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-purple-100 rounded-lg">
@@ -196,7 +193,6 @@ export default function AllProjectParts() {
                   </div>
                 </div>
               </div>
-              
               <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-orange-100 rounded-lg">
@@ -296,10 +292,34 @@ export default function AllProjectParts() {
                     </div>
                     
                     <div className="pt-4 border-t border-gray-100">
+                      <div className="mb-2 font-semibold text-gray-700 flex items-center gap-2">
+                        <Users className="h-4 w-4" /> Git Members
+                      </div>
+                      {part.gitMembers && part.gitMembers.length > 0 ? (
+                        <ul className="mb-2 space-y-1">
+                          {part.gitMembers.map((member) => (
+                            <li key={member.id} className="flex items-center gap-3 text-sm text-gray-700 py-2 border-b last:border-b-0">
+                              {member.gitAvatarUrl ? (
+                                <img src={member.gitAvatarUrl} alt="avatar" className="w-9 h-9 rounded-full border-2 border-blue-300 shadow" />
+                              ) : (
+                                <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 font-bold border-2 border-gray-200">?</div>
+                              )}
+                              <div className="flex flex-col">
+                                <span className="font-semibold">{member.gitName || member.nameLocal || '-'}</span>
+                                {member.gitEmail && <span className="text-xs text-gray-500">Git Email: {member.gitEmail}</span>}
+                                {member.nameLocal && <span className="text-xs text-gray-500">Local Name: {member.nameLocal}</span>}
+                                {member.emailLocal && <span className="text-xs text-gray-500">Local Email: {member.emailLocal}</span>}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <div className="text-gray-400 text-sm italic">No Git Members Configured</div>
+                      )}
                       <Button
                         variant="outline"
                         size="sm"
-                        className="w-full bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 hover:from-blue-100 hover:to-purple-100 hover:border-blue-300 transition-all duration-200"
+                        className="w-full bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200 hover:from-blue-100 hover:to-purple-100 hover:border-blue-300 transition-all duration-200 mt-2"
                         onClick={() => handleOpenGitMemberDialog(part)}
                       >
                         <Users className="h-4 w-4 mr-2" />
