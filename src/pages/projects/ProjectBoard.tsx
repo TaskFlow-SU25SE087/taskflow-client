@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { boardApi } from '@/api/boards'
 import { projectMemberApi } from '@/api/projectMembers'
 import { sprintApi } from '@/api/sprints'
@@ -418,7 +419,7 @@ export default function ProjectBoard() {
         return
       }
 
-      let oldIndex = boards.findIndex((b) => b.id === active.id)
+      const oldIndex = boards.findIndex((b) => b.id === active.id)
       let newIndex
       if (over.id === '__dropzone_start__') {
         newIndex = 0
@@ -700,7 +701,9 @@ export default function ProjectBoard() {
         const { lockedColumns, lockAll } = JSON.parse(data)
         setLockedColumns(lockedColumns || [])
         setLockAll(lockAll || false)
-      } catch {}
+      } catch {
+        /* empty */
+      }
     }
   }, [])
 
