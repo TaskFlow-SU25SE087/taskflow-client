@@ -6,6 +6,7 @@ import AdminDashboard from '@/pages/admin/AdminDashboard'
 import AdminProjectsPage from '@/pages/admin/AdminProjectsPage'
 import AdminTermPage from '@/pages/admin/AdminTermPage'
 import AdminUsersPage from '@/pages/admin/AdminUsersPage'
+import AdminTeamsPage from '@/pages/admin/AdminTeamsPage'
 import CodeQualityCommits from '@/pages/github/CodeQualityCommits'
 import GitCommits from '@/pages/github/GitCommits'
 import GitHubOAuthCallback from '@/pages/github/GitHubOAuthCallback'
@@ -388,6 +389,15 @@ const AppContent: React.FC = () => {
           element={
             <AdminProtectedRoute>
               <AdminProjectsPage />
+            </AdminProtectedRoute>
+          }
+        />
+
+        <Route
+          path='/admin/teams'
+          element={
+            <AdminProtectedRoute>
+              <AdminTeamsPage />
             </AdminProtectedRoute>
           }
         />

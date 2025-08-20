@@ -89,4 +89,15 @@ export const adminApi = {
     const response = await axiosClient.get(`/project/admin/term/${termId}`)
     return response.data
   }
+  ,
+  // Admin Teams
+  getTeams: async () => {
+    const response = await axiosClient.get('/admin/teams')
+    return response.data
+  },
+
+  getTeamById: async (projectId: string) => {
+    const response = await axiosClient.get(`/admin/teams/${projectId}`)
+    return response.data
+  }
 }
