@@ -10,7 +10,26 @@ import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useIssues } from '@/hooks/useIssues'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
-import { AlertCircle, ArrowRight, Bug, Calendar, ChevronDown, Clock, FileText, Filter, GitBranch, GitCommit, GitPullRequest, Lightbulb, MessageSquare, RefreshCw, Search, Tag, User, Users } from 'lucide-react'
+import {
+  AlertCircle,
+  ArrowRight,
+  Bug,
+  Calendar,
+  ChevronDown,
+  Clock,
+  FileText,
+  Filter,
+  GitBranch,
+  GitCommit,
+  GitPullRequest,
+  Lightbulb,
+  MessageSquare,
+  RefreshCw,
+  Search,
+  Tag,
+  User,
+  Users
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
@@ -45,6 +64,7 @@ interface GitHubIssue {
   explanation?: string
   example?: string
   issueAttachmentUrls?: string[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   taskAssignees?: any[]
 }
 
@@ -56,7 +76,7 @@ function IssueCard({ issue }: IssueCardProps) {
   // Handle both API data and mock data structure
   const authorName = issue.author?.name || issue.nameCreate || 'Unknown'
   const assigneeName = issue.assignee?.name || 'Unassigned'
-  
+
   const authorInitials = authorName
     .split(' ')
     .map((n) => n[0])
@@ -127,7 +147,10 @@ function IssueCard({ issue }: IssueCardProps) {
           {/* Hiển thị tên task nếu có */}
           {issue.titleTask && (
             <div className='mb-2'>
-              <Badge variant='outline' className='text-xs bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1 w-fit'>
+              <Badge
+                variant='outline'
+                className='text-xs bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1 w-fit'
+              >
                 <GitBranch className='w-3 h-3' />
                 Task: {issue.titleTask}
               </Badge>
@@ -164,12 +187,13 @@ function IssueCard({ issue }: IssueCardProps) {
           </div>
 
           <div className='flex items-center gap-2 mt-3'>
-            {issue.labels && issue.labels.map((label) => (
-              <Badge key={label} variant='secondary' className='text-xs flex items-center gap-1'>
-                <Tag className='h-3 w-3' />
-                {label}
-              </Badge>
-            ))}
+            {issue.labels &&
+              issue.labels.map((label) => (
+                <Badge key={label} variant='secondary' className='text-xs flex items-center gap-1'>
+                  <Tag className='h-3 w-3' />
+                  {label}
+                </Badge>
+              ))}
             {issue.milestone && (
               <Badge variant='outline' className='text-xs flex items-center gap-1'>
                 <Clock className='h-3 w-3' />
@@ -224,15 +248,15 @@ export default function GitIssues() {
       if (projectId) {
         try {
           console.log('🔄 Loading issues for project:', projectId)
-          
+
           // Set a timeout to show loading timeout message after 15 seconds
           const timeoutId = setTimeout(() => {
             setLoadingTimeout(true)
           }, 15000)
-          
+
           const projectIssues = await getProjectIssues(projectId)
           console.log('✅ Issues loaded:', projectIssues)
-          
+
           clearTimeout(timeoutId)
           setLoadingTimeout(false)
           setIssues(projectIssues || [])
@@ -254,9 +278,10 @@ export default function GitIssues() {
     if (!searchQuery.trim()) {
       setFilteredIssues(issues)
     } else {
-      const filtered = issues.filter(issue => 
-        (issue.title || issue.titleTask || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (issue.description || issue.explanation || '').toLowerCase().includes(searchQuery.toLowerCase())
+      const filtered = issues.filter(
+        (issue) =>
+          (issue.title || issue.titleTask || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (issue.description || issue.explanation || '').toLowerCase().includes(searchQuery.toLowerCase())
       )
       setFilteredIssues(filtered)
     }
@@ -298,7 +323,10 @@ export default function GitIssues() {
 
           <div className='pb-8 flex items-center justify-between'>
             <div className='flex items-center gap-4 bg-white/80 rounded-2xl shadow-md px-6 py-3'>
-              <Button variant='outline' className='bg-lavender-50 hover:bg-lavender-100 text-lavender-700 border-0 font-semibold rounded-lg'>
+              <Button
+                variant='outline'
+                className='bg-lavender-50 hover:bg-lavender-100 text-lavender-700 border-0 font-semibold rounded-lg'
+              >
                 <Filter className='mr-2 h-4 w-4 text-blue-400' />
                 Filter
                 <ChevronDown className='ml-2 h-4 w-4 text-blue-400' />
@@ -312,8 +340,8 @@ export default function GitIssues() {
                   className='w-[280px] pl-10 bg-lavender-50 border-0 rounded-lg text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400'
                 />
               </div>
-              <Button 
-                variant='outline' 
+              <Button
+                variant='outline'
                 className='bg-blue-50 hover:bg-blue-100 text-blue-700 border-0 font-semibold rounded-lg'
                 onClick={handleRefresh}
                 disabled={issuesLoading}
@@ -323,7 +351,10 @@ export default function GitIssues() {
               </Button>
             </div>
             <div className='flex gap-2 bg-white/80 rounded-2xl shadow-md px-6 py-3'>
-              <Button variant='outline' className='bg-blue-50 hover:bg-blue-100 text-blue-700 border-0 font-semibold rounded-lg'>
+              <Button
+                variant='outline'
+                className='bg-blue-50 hover:bg-blue-100 text-blue-700 border-0 font-semibold rounded-lg'
+              >
                 <Calendar className='mr-2 h-4 w-4 text-purple-400' />
                 Time Range
               </Button>
@@ -355,9 +386,7 @@ export default function GitIssues() {
                 )}
               </div>
             ) : filteredIssues.length > 0 ? (
-              filteredIssues.map((issue: GitHubIssue) => (
-                <IssueCard key={issue.id} issue={issue} />
-              ))
+              filteredIssues.map((issue: GitHubIssue) => <IssueCard key={issue.id} issue={issue} />)
             ) : (
               <div className='text-center py-12 text-lavender-400 text-xl font-semibold flex flex-col items-center'>
                 <div className='w-16 h-16 mb-4 opacity-60 flex items-center justify-center'>
