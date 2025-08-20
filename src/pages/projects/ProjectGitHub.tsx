@@ -39,7 +39,7 @@ export default function ProjectGitHub() {
   const [success, setSuccess] = useState<string | null>(null)
   
   // UI States
-  const [newPart, setNewPart] = useState({ name: '', programmingLanguage: '', framework: '' })
+  const [newPart, setNewPart] = useState({ name: '', programmingLanguage: '' })
   const [creatingPart, setCreatingPart] = useState(false)
   const [selectedRepo, setSelectedRepo] = useState<string>('')
   const [selectedPart, setSelectedPart] = useState<string>('')
@@ -97,8 +97,8 @@ export default function ProjectGitHub() {
 
   const handleCreatePart = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newPart.name.trim()) {
-      showToast({ title: 'Error', description: 'Please fill in all fields (Name is required)', variant: 'destructive' })
+    if (!newPart.name.trim() || !newPart.programmingLanguage) {
+      showToast({ title: 'Error', description: 'Please fill in all required fields (Name and Programming Language)', variant: 'destructive' })
       return
     }
     
@@ -107,8 +107,8 @@ export default function ProjectGitHub() {
     try {
       const response = await createProjectPart(projectId!, {
         name: newPart.name,
-        programmingLanguage: newPart.programmingLanguage || 'None',
-        framework: newPart.framework || 'None',
+        programmingLanguage: newPart.programmingLanguage,
+        framework: 'None',
       })
       
       const partId = extractPartId(response.data)
@@ -118,8 +118,8 @@ export default function ProjectGitHub() {
         const tempPart: ProjectPart = {
           id: `temp-${Date.now()}`, // Temporary ID
           name: newPart.name,
-          programmingLanguage: newPart.programmingLanguage || 'None',
-          framework: newPart.framework || 'None',
+          programmingLanguage: newPart.programmingLanguage,
+          framework: 'None',
           repoUrl: '',
           ownerId: '',
           ownerName: '',
@@ -130,7 +130,7 @@ export default function ProjectGitHub() {
         setParts(prevParts => [tempPart, ...prevParts])
         
         const partName = newPart.name // Store the name before resetting
-              setNewPart({ name: '', programmingLanguage: '', framework: '' })
+              setNewPart({ name: '', programmingLanguage: '' })
       showToast({ title: 'Success', description: 'Project part created successfully!' })
         
         // Auto-select the newly created part
@@ -169,8 +169,8 @@ export default function ProjectGitHub() {
       const tempPart: ProjectPart = {
         id: partId,
         name: newPart.name,
-        programmingLanguage: newPart.programmingLanguage || 'None',
-        framework: newPart.framework || 'None',
+        programmingLanguage: newPart.programmingLanguage,
+        framework: 'None',
         repoUrl: '',
         ownerId: '',
         ownerName: '',
@@ -181,7 +181,7 @@ export default function ProjectGitHub() {
       setParts(prevParts => [tempPart, ...prevParts])
       
       const partName = newPart.name // Store the name before resetting
-      setNewPart({ name: '', programmingLanguage: '', framework: '' })
+      setNewPart({ name: '', programmingLanguage: '' })
       showToast({ title: 'Success', description: 'Project part created successfully!' })
       
       // Auto-select the newly created part
@@ -676,7 +676,6 @@ export default function ProjectGitHub() {
                                 <SelectValue placeholder="Select language" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="None">None</SelectItem>
                                 <SelectItem value="Java">
                                   <div className='flex items-center gap-2'>
                                     <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" alt="Java" className='w-5 h-5' />
@@ -741,66 +740,6 @@ export default function ProjectGitHub() {
                                   <div className='flex items-center gap-2'>
                                     <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg" alt="Kotlin" className='w-5 h-5' />
                                     <span>Kotlin</span>
-                                  </div>
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          
-                          <div>
-                            <label className='block text-sm font-medium text-gray-700 mb-1'>Framework</label>
-                            <Select value={newPart.framework} onValueChange={(value) => setNewPart({ ...newPart, framework: value })}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select framework" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="None">None</SelectItem>
-                                <SelectItem value="React">
-                                  <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg" alt="React" className='w-5 h-5' />
-                                    <span>React</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="Angular">
-                                  <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg" alt="Angular" className='w-5 h-5' />
-                                    <span>Angular</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="VueJs">
-                                  <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg" alt="Vue.js" className='w-5 h-5' />
-                                    <span>Vue.js</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="DotNetCore">
-                                  <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg" alt=".NET Core" className='w-5 h-5' />
-                                    <span>.NET Core</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="SpringBoot">
-                                  <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg" alt="Spring Boot" className='w-5 h-5' />
-                                    <span>Spring Boot</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="Django">
-                                  <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg" alt="Django" className='w-5 h-5' />
-                                    <span>Django</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="ExpressJs">
-                                  <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg" alt="Express.js" className='w-5 h-5' />
-                                    <span>Express.js</span>
-                                  </div>
-                                </SelectItem>
-                                <SelectItem value="Laravel">
-                                  <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg" alt="Laravel" className='w-5 h-5' />
-                                    <span>Laravel</span>
                                   </div>
                                 </SelectItem>
                               </SelectContent>

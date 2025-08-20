@@ -43,8 +43,7 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
   const [showCreatePartDialog, setShowCreatePartDialog] = useState(false)
   const [newPartData, setNewPartData] = useState({
     name: '',
-    programmingLanguage: '',
-    framework: ''
+    programmingLanguage: ''
   })
 
   // Use refs to avoid dependency loops
@@ -113,26 +112,29 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
 
   // Handle creating new project part
   const handleCreatePart = async () => {
-    if (!newPartData.name || !newPartData.programmingLanguage || !newPartData.framework) {
+    if (!newPartData.name || !newPartData.programmingLanguage) {
       return
     }
 
     try {
-      const result = await createNewProjectPart(projectId, newPartData)
+      const result = await createNewProjectPart(projectId, {
+        ...newPartData,
+        framework: 'None'
+      })
       if (result) {
         // Add the new part to the local state
         const newPart = {
           id: result.id || `part-${Date.now()}`,
           name: newPartData.name,
           programmingLanguage: newPartData.programmingLanguage,
-          framework: newPartData.framework,
+          framework: 'None',
           isConnected: false
         }
         setProjectPartsData([...projectParts, newPart])
         setSelectedPart(newPart.id)
 
         // Reset form
-        setNewPartData({ name: '', programmingLanguage: '', framework: '' })
+        setNewPartData({ name: '', programmingLanguage: '' })
         setShowCreatePartDialog(false)
       }
     } catch (error) {
@@ -233,7 +235,7 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
                   {mappedProjectParts.map((part) => (
                     <SelectItem key={part.id} value={part.id} className="hover:bg-purple-50 text-purple-700 font-semibold">
                       <BarChart3 className="inline-block mr-2 text-blue-400" />
-                      {part.name} ({part.programmingLanguage}, {part.framework})
+                      {part.name} ({part.programmingLanguage})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -280,7 +282,6 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
                   <SelectValue placeholder="Select programming language" />
                 </SelectTrigger>
                 <SelectContent className="bg-white rounded-xl shadow-lg" position="popper">
-                  <SelectItem value="">None</SelectItem>
                   <SelectItem value="Java">
                     <div className='flex items-center gap-2'>
                       <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" alt="Java" className='w-5 h-5' />
@@ -326,65 +327,6 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label htmlFor='framework' className="text-lavender-700 font-semibold mb-1 block">Framework</Label>
-              <Select value={newPartData.framework} onValueChange={(value) => setNewPartData((prev) => ({ ...prev, framework: value }))}>
-                <SelectTrigger className="w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400">
-                  <SelectValue placeholder="Select framework" />
-                </SelectTrigger>
-                <SelectContent className="bg-white rounded-xl shadow-lg" position="popper">
-                  <SelectItem value="">None</SelectItem>
-                  <SelectItem value="React">
-                    <div className='flex items-center gap-2'>
-                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg" alt="React" className='w-5 h-5' />
-                      <span>React</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="Vue">
-                    <div className='flex items-center gap-2'>
-                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg" alt="Vue" className='w-5 h-5' />
-                      <span>Vue</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="Angular">
-                    <div className='flex items-center gap-2'>
-                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg" alt="Angular" className='w-5 h-5' />
-                      <span>Angular</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value=".NET">
-                    <div className='flex items-center gap-2'>
-                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg" alt=".NET" className='w-5 h-5' />
-                      <span>.NET</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="Spring">
-                    <div className='flex items-center gap-2'>
-                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg" alt="Spring" className='w-5 h-5' />
-                      <span>Spring</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="Django">
-                    <div className='flex items-center gap-2'>
-                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg" alt="Django" className='w-5 h-5' />
-                      <span>Django</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="Express">
-                    <div className='flex items-center gap-2'>
-                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg" alt="Express" className='w-5 h-5' />
-                      <span>Express</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="Laravel">
-                    <div className='flex items-center gap-2'>
-                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg" alt="Laravel" className='w-5 h-5' />
-                      <span>Laravel</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
             <div className="flex items-center justify-end gap-4 mt-6">
               <button
                 type="button"
@@ -395,7 +337,7 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
               </button>
               <Button
                 onClick={handleCreatePart}
-                disabled={creatingPart || !newPartData.name || !newPartData.programmingLanguage || !newPartData.framework}
+                disabled={creatingPart || !newPartData.name || !newPartData.programmingLanguage}
                 className="bg-gradient-to-r from-lavender-500 to-blue-400 hover:from-lavender-600 hover:to-blue-500 text-white font-bold shadow-lg rounded-2xl px-8 py-3 text-lg disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {creatingPart ? 'Creating...' : 'Create Part'}

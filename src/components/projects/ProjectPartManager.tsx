@@ -17,8 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 export default function ProjectPartManager({ projectId }: { projectId: string }) {
   const { createPart, connectRepo, loading, error, result } = useProjectParts()
   const [name, setName] = useState('')
-  const [programmingLanguage, setProgrammingLanguage] = useState('None')
-  const [framework, setFramework] = useState('None')
+  const [programmingLanguage, setProgrammingLanguage] = useState('')
   const [partId, setPartId] = useState('')
   const [repoUrl, setRepoUrl] = useState('')
   const [accessToken, setAccessToken] = useState('')
@@ -27,16 +26,16 @@ export default function ProjectPartManager({ projectId }: { projectId: string })
 
   // Tạo Project Part
   const handleCreatePart = async () => {
-    console.log('Create Part Clicked:', { name, programmingLanguage, framework });
-    if (!name.trim()) {
-      showToast({ title: 'Error', description: 'Please fill in all fields (Name is required)', variant: 'destructive' });
+    console.log('Create Part Clicked:', { name, programmingLanguage });
+    if (!name.trim() || !programmingLanguage) {
+      showToast({ title: 'Error', description: 'Please fill in all required fields (Name and Programming Language)', variant: 'destructive' });
       return;
     }
     try {
       const res = await createPart(projectId, {
         name: name.trim(),
-        programmingLanguage: programmingLanguage || 'None',
-        framework: framework || 'None',
+        programmingLanguage: programmingLanguage,
+        framework: 'None',
       })
       if (res?.code === 200) {
         setPartId(res.data)
@@ -49,7 +48,7 @@ export default function ProjectPartManager({ projectId }: { projectId: string })
     }
   }
 
-  console.log('ProjectPartManager render', { name, programmingLanguage, framework });
+  console.log('ProjectPartManager render', { name, programmingLanguage });
 
   // Function để lấy icon URL cho programming language
   const getProgrammingLanguageIconUrl = (language: string) => {
@@ -88,7 +87,6 @@ export default function ProjectPartManager({ projectId }: { projectId: string })
 
   // Programming language options
   const programmingLanguageOptions = [
-    { value: 'None', label: 'None' },
     { value: 'Java', label: 'Java' },
     { value: 'C#', label: 'C#' },
     { value: 'JavaScript', label: 'JavaScript' },
@@ -221,44 +219,9 @@ export default function ProjectPartManager({ projectId }: { projectId: string })
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label htmlFor='framework'>Framework</Label>
-                  <Select value={framework} onValueChange={setFramework}>
-                    <SelectTrigger>
-                                             <SelectValue>
-                         <div className='flex items-center gap-2'>
-                           {getFrameworkIconUrl(framework) && (
-                             <img 
-                               src={getFrameworkIconUrl(framework)} 
-                               alt={framework}
-                               className='w-5 h-5'
-                             />
-                           )}
-                           <span>{framework}</span>
-                         </div>
-                       </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                                             {frameworkOptions.map((option) => (
-                         <SelectItem key={option.value} value={option.value}>
-                           <div className='flex items-center gap-2'>
-                             {getFrameworkIconUrl(option.value) && (
-                               <img 
-                                 src={getFrameworkIconUrl(option.value)} 
-                                 alt={option.label}
-                                 className='w-5 h-5'
-                               />
-                             )}
-                             <span>{option.label}</span>
-                           </div>
-                         </SelectItem>
-                       ))}
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
 
-              <Button onClick={handleCreatePart} disabled={loading || !name.trim()} className='w-full md:w-auto'>
+              <Button onClick={handleCreatePart} disabled={loading || !name.trim() || !programmingLanguage} className='w-full md:w-auto'>
                 {loading ? 'Creating...' : 'Create Part'}
               </Button>
             </CardContent>
