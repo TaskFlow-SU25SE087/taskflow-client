@@ -52,7 +52,7 @@ export function SprintBacklog({
   }
 
   return (
-    <div className='bg-white/95 border border-gray-200 border-l-4 border-l-lavender-300/80 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md hover:border-lavender-400/90 relative overflow-hidden'>
+    <div className='bg-white/95 border border-gray-200 border-l-4 border-l-lavender-300/80 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md hover:border-lavender-400/90 relative'>
       {/* subtle backdrop tint */}
       <div className='absolute inset-0 pointer-events-none opacity-[0.35] bg-[radial-gradient(circle_at_20%_15%,rgba(139,92,246,0.08),transparent_60%),radial-gradient(circle_at_85%_40%,rgba(139,92,246,0.05),transparent_55%)]' />
       <div className='relative p-4 flex items-center justify-between border-b border-gray-200 rounded-t-lg bg-gradient-to-r from-white via-white to-lavender-50/70 backdrop-blur-[1px]'>
@@ -77,7 +77,9 @@ export function SprintBacklog({
                 {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'}
               </span>
             </div>
-            <div className='text-xs font-medium uppercase tracking-wider text-lavender-600/80 mt-0.5'>Unplanned Work</div>
+            <div className='text-xs font-medium uppercase tracking-wider text-lavender-600/80 mt-0.5'>
+              Unplanned Work
+            </div>
             <div className='text-sm text-gray-500'>Tasks not assigned to any sprint</div>
           </div>
         </div>
@@ -138,7 +140,11 @@ export function SprintBacklog({
                           variant: r.code === 200 ? 'success' : 'destructive'
                         })
                       } else if (res && typeof res === 'object' && 'data' in res && res.data === true) {
-                        showToast({ title: 'Success', description: 'Tasks moved to sprint successfully!', variant: 'success' })
+                        showToast({
+                          title: 'Success',
+                          description: 'Tasks moved to sprint successfully!',
+                          variant: 'success'
+                        })
                       } else {
                         showToast({ title: 'Error', description: 'Failed to move tasks', variant: 'destructive' })
                       }
