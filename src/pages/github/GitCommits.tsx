@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjectParts } from '@/hooks/useProjectParts'
+import { useToast } from '@/hooks/use-toast'
 import { CommitDetail, CommitListItem, ProjectPart } from '@/types/commits'
 import { format } from 'date-fns'
 import {
@@ -135,6 +136,180 @@ function IssueCard({ item }: IssueCardProps) {
   )
 }
 
+// Helper functions for status handling
+const getStatusColor = (status: string) => {
+  switch (status?.toLowerCase()) {
+    case 'done':
+      return 'bg-green-100 text-green-700 border-green-200'
+    case 'processing':
+    case 'scanning':
+      return 'bg-yellow-100 text-yellow-700 border-yellow-200'
+    case 'pending':
+    case 'queued':
+      return 'bg-blue-100 text-blue-700 border-blue-200'
+    case 'failed':
+    case 'error':
+      return 'bg-red-100 text-red-700 border-red-200'
+    default:
+      return 'bg-gray-100 text-gray-700 border-gray-200'
+  }
+}
+
+const getStatusIcon = (status: string) => {
+  switch (status?.toLowerCase()) {
+    case 'done':
+      return '✅'
+    case 'processing':
+    case 'scanning':
+      return '⏳'
+    case 'pending':
+    case 'queued':
+      return '⏱️'
+    case 'failed':
+    case 'error':
+      return '❌'
+    default:
+      return '❓'
+  }
+}
+
+const SkeletonBadge = () => (
+  <div className='h-6 w-16 bg-gray-200 rounded animate-pulse'></div>
+)
+
+const renderQualityScoreSection = (commit: CommitListItem) => {
+  const isPending = commit.status?.toLowerCase() === 'pending' || commit.status?.toLowerCase() === 'queued'
+  const isProcessing = commit.status?.toLowerCase() === 'processing' || commit.status?.toLowerCase() === 'scanning'
+  const isDone = commit.status?.toLowerCase() === 'done'
+
+  if (isPending) {
+    return (
+      <div className='flex items-center gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-200'>
+        <div className='flex items-center gap-2'>
+          <div className='w-3 h-3 rounded-full bg-blue-500 animate-pulse'></div>
+          <span className='text-sm font-medium text-gray-700'>Status:</span>
+          <span className='text-lg font-bold text-blue-600'>Queued for Scanning</span>
+        </div>
+        <div className='text-xs text-blue-600'>
+          <div className='flex items-center gap-1'>
+            <Clock className='h-3 w-3' />
+            <span>Waiting for quality scan...</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (isProcessing) {
+    return (
+      <div className='flex items-center gap-4 bg-gradient-to-r from-yellow-50 to-orange-50 p-3 rounded-lg border border-yellow-200'>
+        <div className='flex items-center gap-2'>
+          <div className='w-3 h-3 rounded-full bg-yellow-500 relative'>
+            <div className='w-full h-full rounded-full bg-yellow-500 animate-ping absolute'></div>
+          </div>
+          <span className='text-sm font-medium text-gray-700'>Status:</span>
+          <span className='text-lg font-bold text-yellow-600'>Scanning in Progress</span>
+        </div>
+        <div className='text-xs text-yellow-600'>
+          <div className='flex items-center gap-1'>
+            <RefreshCw className='h-3 w-3 animate-spin' />
+            <span>Quality analysis running...</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (isDone && commit.qualityScore !== undefined) {
+    return (
+      <div className='flex items-center gap-4 bg-gradient-to-r from-emerald-50 to-green-50 p-3 rounded-lg border border-emerald-200'>
+        <div className='flex items-center gap-2'>
+          <div
+            className={`w-3 h-3 rounded-full ${
+              commit.qualityScore >= 8
+                ? 'bg-green-500'
+                : commit.qualityScore >= 7
+                  ? 'bg-yellow-500'
+                  : 'bg-red-500'
+            }`}
+          ></div>
+          <span className='text-sm font-medium text-gray-700'>Quality Score:</span>
+          <span
+            className={`text-2xl font-bold ${
+              commit.qualityScore >= 8
+                ? 'text-green-600'
+                : commit.qualityScore >= 7
+                  ? 'text-yellow-600'
+                  : 'text-red-600'
+            }`}
+          >
+            {commit.qualityScore}/10
+          </span>
+        </div>
+        <div className='text-xs text-gray-500'>
+          Gate:{' '}
+          <span
+            className={`font-medium ${
+              commit.qualityGateStatus === 'OK' ? 'text-green-600' : 'text-red-600'
+            }`}
+          >
+            {commit.qualityGateStatus}
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className='flex items-center gap-4 bg-gradient-to-r from-gray-50 to-slate-50 p-3 rounded-lg border border-gray-200'>
+      <div className='flex items-center gap-2'>
+        <div className='w-3 h-3 rounded-full bg-gray-400'></div>
+        <span className='text-sm font-medium text-gray-700'>Quality Score:</span>
+        <span className='text-lg font-medium text-gray-500'>Pending</span>
+      </div>
+    </div>
+  )
+}
+
+const renderBadges = (commit: CommitListItem) => {
+  const isDone = commit.status?.toLowerCase() === 'done'
+
+  if (!isDone) {
+    return (
+      <div className='flex flex-wrap gap-2 text-sm'>
+        <Badge className={`${getStatusColor(commit.status)} border-0 flex items-center gap-1`}>
+          <span>{getStatusIcon(commit.status)}</span>
+          Status: {commit.status}
+        </Badge>
+        <SkeletonBadge />
+        <SkeletonBadge />
+        <SkeletonBadge />
+        <span className='text-xs text-gray-500 italic'>Quality metrics will appear after scan completes...</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className='flex flex-wrap gap-2 text-sm'>
+      <Badge className={`${getStatusColor(commit.status)} border-0 flex items-center gap-1`}>
+        <span>{getStatusIcon(commit.status)}</span>
+        Status: {commit.status}
+      </Badge>
+      <Badge className='bg-green-100 text-green-700 border-0'>Quality: {commit.qualityGateStatus}</Badge>
+      <Badge className='bg-yellow-100 text-yellow-700 border-0'>Bugs: {commit.bugs}</Badge>
+      <Badge className='bg-red-100 text-red-700 border-0'>Vuln: {commit.vulnerabilities}</Badge>
+      <Badge className='bg-gray-100 text-gray-700 border-0'>Code Smells: {commit.codeSmells}</Badge>
+      <Badge className='bg-orange-100 text-orange-700 border-0'>Security Hotspots: {commit.securityHotspots}</Badge>
+      <Badge className='bg-purple-100 text-purple-700 border-0'>Dup Lines: {commit.duplicatedLines}</Badge>
+      <Badge className='bg-pink-100 text-pink-700 border-0'>Dup Blocks: {commit.duplicatedBlocks}</Badge>
+      <Badge className='bg-cyan-100 text-cyan-700 border-0'>Coverage: {commit.coverage}%</Badge>
+      <Badge className='bg-indigo-100 text-indigo-700 border-0'>Dup Density: {commit.duplicatedLinesDensity}%</Badge>
+      <Badge className='bg-emerald-100 text-emerald-700 border-0'>Quality Score: {commit.qualityScore}</Badge>
+      <Badge className='bg-teal-100 text-teal-700 border-0'>Duration: {commit.scanDuration}</Badge>
+    </div>
+  )
+}
+
 export default function GitCommits() {
   console.log('[GitCommits] Component rendered')
 
@@ -163,6 +338,8 @@ export default function GitCommits() {
   const [selectedCommit, setSelectedCommit] = useState<CommitListItem | null>(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
+  const [completedCommits, setCompletedCommits] = useState<Set<string>>(new Set())
+  const { toast } = useToast()
 
   // Debug state changes
   useEffect(() => {
@@ -218,18 +395,47 @@ export default function GitCommits() {
     }
   }, [currentProject?.id, memoizedFetchParts])
 
-  // Auto-refresh commits every 30 seconds
+  // Auto-refresh commits with smart intervals
   useEffect(() => {
-    if (!autoRefresh || !currentProject?.id || !selectedPartId) return
+    if (!currentProject?.id || !selectedPartId) return
+
+    // Check if there are any pending or processing commits
+    const hasPendingCommits = commits.some((commit) =>
+      ['pending', 'queued', 'processing', 'scanning'].includes(commit.status?.toLowerCase() || '')
+    )
+
+    if (!autoRefresh && !hasPendingCommits) return
+
+    // Use faster refresh (10s) if there are pending commits, otherwise 30s
+    const refreshInterval = hasPendingCommits ? 10000 : 30000
 
     const interval = setInterval(() => {
-      console.log('[GitCommits] Auto-refreshing commits...')
+      console.log('[GitCommits] Auto-refreshing commits...', hasPendingCommits ? '(10s interval)' : '(30s interval)')
       fetchCommits()
       setLastRefresh(new Date())
-    }, 30000)
+    }, refreshInterval)
 
     return () => clearInterval(interval)
-  }, [autoRefresh, currentProject?.id, selectedPartId, fetchCommits])
+  }, [autoRefresh, currentProject?.id, selectedPartId, fetchCommits, commits])
+
+  // Detect newly completed commits and show notifications
+  useEffect(() => {
+    const newlyCompleted = commits.filter(
+      (commit) => commit.status?.toLowerCase() === 'done' && !completedCommits.has(commit.commitId)
+    )
+
+    if (newlyCompleted.length > 0) {
+      newlyCompleted.forEach((commit) => {
+        toast({
+          title: 'Quality scan completed!',
+          description: `${commit.commitMessage.substring(0, 50)}... - Score: ${commit.qualityScore}/10`,
+          duration: 5000
+        })
+      })
+
+      setCompletedCommits((prev) => new Set([...prev, ...newlyCompleted.map((c) => c.commitId)]))
+    }
+  }, [commits, completedCommits, toast, setCompletedCommits])
 
   useEffect(() => {
     console.log(
@@ -339,6 +545,32 @@ export default function GitCommits() {
             </div>
 
             <div className='flex items-center gap-4'>
+              {/* Status Indicators */}
+              {(() => {
+                const pendingCount = commits.filter((commit) =>
+                  ['pending', 'queued'].includes(commit.status?.toLowerCase() || '')
+                ).length
+                const processingCount = commits.filter((commit) =>
+                  ['processing', 'scanning'].includes(commit.status?.toLowerCase() || '')
+                ).length
+
+                if (pendingCount > 0 || processingCount > 0) {
+                  return (
+                    <div className='flex items-center gap-3 px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg'>
+                      <div className='flex items-center gap-2'>
+                        <RefreshCw className='h-4 w-4 text-yellow-600 animate-spin' />
+                        <span className='text-sm font-medium text-yellow-700'>
+                          {processingCount > 0 && `${processingCount} scanning`}
+                          {processingCount > 0 && pendingCount > 0 && ', '}
+                          {pendingCount > 0 && `${pendingCount} queued`}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                }
+                return null
+              })()}
+
               <div className='flex items-center gap-2'>
                 <input
                   type='checkbox'
@@ -348,7 +580,12 @@ export default function GitCommits() {
                   className='rounded border-gray-300 text-lavender-600 focus:ring-lavender-500'
                 />
                 <label htmlFor='autoRefresh' className='text-sm font-medium text-gray-700'>
-                  Auto-refresh (30s)
+                  Auto-refresh ({(() => {
+                    const hasPendingCommits = commits.some((commit) =>
+                      ['pending', 'queued', 'processing', 'scanning'].includes(commit.status?.toLowerCase() || '')
+                    )
+                    return hasPendingCommits ? '10s' : '30s'
+                  })()})
                 </label>
               </div>
 
@@ -419,69 +656,12 @@ export default function GitCommits() {
                     </div>
                     <div className='text-gray-900 font-medium text-lg'>{commit.commitMessage}</div>
 
-                    {/* Quality Score Highlight */}
-                    <div className='flex items-center gap-4 bg-gradient-to-r from-emerald-50 to-green-50 p-3 rounded-lg border border-emerald-200'>
-                      <div className='flex items-center gap-2'>
-                        <div
-                          className={`w-3 h-3 rounded-full ${
-                            commit.qualityScore >= 8
-                              ? 'bg-green-500'
-                              : commit.qualityScore >= 7
-                                ? 'bg-yellow-500'
-                                : 'bg-red-500'
-                          }`}
-                        ></div>
-                        <span className='text-sm font-medium text-gray-700'>Quality Score:</span>
-                        <span
-                          className={`text-2xl font-bold ${
-                            commit.qualityScore >= 8
-                              ? 'text-green-600'
-                              : commit.qualityScore >= 7
-                                ? 'text-yellow-600'
-                                : 'text-red-600'
-                          }`}
-                        >
-                          {commit.qualityScore}/10
-                        </span>
-                      </div>
-                      <div className='text-xs text-gray-500'>
-                        Gate:{' '}
-                        <span
-                          className={`font-medium ${
-                            commit.qualityGateStatus === 'OK' ? 'text-green-600' : 'text-red-600'
-                          }`}
-                        >
-                          {commit.qualityGateStatus}
-                        </span>
-                      </div>
-                    </div>
+                    {/* Quality Score Section */}
+                    {renderQualityScoreSection(commit)}
 
-                    <div className='flex flex-wrap gap-2 text-sm'>
-                      <Badge className='bg-blue-100 text-blue-700 border-0'>Status: {commit.status}</Badge>
-                      <Badge className='bg-green-100 text-green-700 border-0'>
-                        Quality: {commit.qualityGateStatus}
-                      </Badge>
-                      <Badge className='bg-yellow-100 text-yellow-700 border-0'>Bugs: {commit.bugs}</Badge>
-                      <Badge className='bg-red-100 text-red-700 border-0'>Vuln: {commit.vulnerabilities}</Badge>
-                      <Badge className='bg-gray-100 text-gray-700 border-0'>Code Smells: {commit.codeSmells}</Badge>
-                      <Badge className='bg-orange-100 text-orange-700 border-0'>
-                        Security Hotspots: {commit.securityHotspots}
-                      </Badge>
-                      <Badge className='bg-purple-100 text-purple-700 border-0'>
-                        Dup Lines: {commit.duplicatedLines}
-                      </Badge>
-                      <Badge className='bg-pink-100 text-pink-700 border-0'>
-                        Dup Blocks: {commit.duplicatedBlocks}
-                      </Badge>
-                      <Badge className='bg-cyan-100 text-cyan-700 border-0'>Coverage: {commit.coverage}%</Badge>
-                      <Badge className='bg-indigo-100 text-indigo-700 border-0'>
-                        Dup Density: {commit.duplicatedLinesDensity}%
-                      </Badge>
-                      <Badge className='bg-emerald-100 text-emerald-700 border-0'>
-                        Quality Score: {commit.qualityScore}
-                      </Badge>
-                      <Badge className='bg-teal-100 text-teal-700 border-0'>Duration: {commit.scanDuration}</Badge>
-                    </div>
+                    {/* Badges Section */}
+                    {renderBadges(commit)}
+                    
                     <div className='flex flex-col gap-1 text-sm text-gray-600 italic mt-2'>
                       <div>Result: {commit.resultSummary}</div>
                       <div>
@@ -503,15 +683,24 @@ export default function GitCommits() {
                         </div>
                       )}
                     </div>
-                    {/* View Detail Button */}
+                    
+                    {/* View Detail Button - conditional based on status */}
                     <div className='mt-2'>
-                      <Button
-                        size='sm'
-                        onClick={() => handleShowDetail(commit)}
-                        className='bg-lavender-600 hover:bg-lavender-700 text-white'
-                      >
-                        View Detail
-                      </Button>
+                      {commit.status?.toLowerCase() === 'done' ? (
+                        <Button
+                          size='sm'
+                          onClick={() => handleShowDetail(commit)}
+                          className='bg-lavender-600 hover:bg-lavender-700 text-white'
+                        >
+                          View Detail
+                        </Button>
+                      ) : (
+                        <Button size='sm' disabled className='bg-gray-300 text-gray-500 cursor-not-allowed'>
+                          {commit.status?.toLowerCase() === 'processing' || commit.status?.toLowerCase() === 'scanning'
+                            ? 'Scanning...'
+                            : 'Queued'}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
