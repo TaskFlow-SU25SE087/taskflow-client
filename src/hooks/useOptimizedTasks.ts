@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { taskApi } from '@/api/tasks'
 import { TaskP } from '@/types/task'
 import { useCallback, useEffect, useState } from 'react'
@@ -74,7 +75,8 @@ export const useOptimizedTasks = () => {
           projectId: typeof task.projectId === 'undefined' ? '' : task.projectId,
           sprintId: task.sprintId,
           sprintName: task.sprint?.name,
-          sprint: task.sprint
+          sprint: task.sprint,
+          taskAssignees: Array.isArray(task.taskAssignees) ? task.taskAssignees : []
         }))
       setTasks(optimizedTasks)
       setError(null)
