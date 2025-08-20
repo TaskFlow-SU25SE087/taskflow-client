@@ -135,6 +135,95 @@ function IssueCard({ item }: IssueCardProps) {
   )
 }
 
+// Helper functions for status handling
+const renderQualityScoreSection = (commit: CommitListItem) => {
+  const isPending = ['pending', 'queued'].includes(commit.status?.toLowerCase() || '')
+  const isProcessing = ['processing', 'scanning', 'checking'].includes(commit.status?.toLowerCase() || '')
+  const isDone = commit.status?.toLowerCase() === 'done'
+
+  if (isPending) {
+    return (
+      <div className='flex items-center gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-lg border border-blue-200'>
+        <div className='flex items-center gap-2'>
+          <div className='w-3 h-3 rounded-full bg-blue-500 animate-pulse'></div>
+          <span className='text-sm font-medium text-gray-700'>Status:</span>
+          <span className='text-lg font-bold text-blue-600'>Queued for Scanning</span>
+        </div>
+        <div className='text-xs text-blue-600'>
+          <div className='flex items-center gap-1'>
+            <Clock className='h-3 w-3' />
+            <span>Waiting for quality scan...</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (isProcessing) {
+    return (
+      <div className='flex items-center gap-4 bg-gradient-to-r from-yellow-50 to-orange-50 p-3 rounded-lg border border-yellow-200'>
+        <div className='flex items-center gap-2'>
+          <div className='w-3 h-3 rounded-full bg-yellow-500 relative'>
+            <div className='w-full h-full rounded-full bg-yellow-500 animate-ping absolute'></div>
+          </div>
+          <span className='text-sm font-medium text-gray-700'>Status:</span>
+          <span className='text-lg font-bold text-yellow-600'>
+            {commit.status === 'Checking' ? 'Code Quality Checking...' : 'Scanning in Progress...'}
+          </span>
+        </div>
+        <div className='text-xs text-yellow-600'>
+          <div className='flex items-center gap-1'>
+            <RefreshCw className='h-3 w-3 animate-spin' />
+            <span>Quality analysis running...</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (isDone && commit.qualityScore !== undefined) {
+    return (
+      <div className='flex items-center gap-4 bg-gradient-to-r from-emerald-50 to-green-50 p-3 rounded-lg border border-emerald-200'>
+        <div className='flex items-center gap-2'>
+          <div
+            className={`w-3 h-3 rounded-full ${
+              commit.qualityScore >= 8 ? 'bg-green-500' : commit.qualityScore >= 7 ? 'bg-yellow-500' : 'bg-red-500'
+            }`}
+          ></div>
+          <span className='text-sm font-medium text-gray-700'>Quality Score:</span>
+          <span
+            className={`text-2xl font-bold ${
+              commit.qualityScore >= 8
+                ? 'text-green-600'
+                : commit.qualityScore >= 7
+                  ? 'text-yellow-600'
+                  : 'text-red-600'
+            }`}
+          >
+            {commit.qualityScore}/10
+          </span>
+        </div>
+        <div className='text-xs text-gray-500'>
+          {'Gate: '}
+          <span className={`font-medium ${commit.qualityGateStatus === 'OK' ? 'text-green-600' : 'text-red-600'}`}>
+            {commit.qualityGateStatus}
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className='flex items-center gap-4 bg-gradient-to-r from-gray-50 to-slate-50 p-3 rounded-lg border border-gray-200'>
+      <div className='flex items-center gap-2'>
+        <div className='w-3 h-3 rounded-full bg-gray-400'></div>
+        <span className='text-sm font-medium text-gray-700'>Quality Score:</span>
+        <span className='text-lg font-medium text-gray-500'>Pending</span>
+      </div>
+    </div>
+  )
+}
+
 export default function GitCommits() {
   console.log('[GitCommits] Component rendered')
 
@@ -218,18 +307,31 @@ export default function GitCommits() {
     }
   }, [currentProject?.id, memoizedFetchParts])
 
-  // Auto-refresh commits every 30 seconds
+  // Smart auto-refresh based on commit status
   useEffect(() => {
     if (!autoRefresh || !currentProject?.id || !selectedPartId) return
 
-    const interval = setInterval(() => {
+    // Check if any commits are pending or processing
+    const hasPendingOrProcessing = commits.some((commit) => {
+      const status = commit.status?.toLowerCase() || ''
+      return ['pending', 'queued', 'processing', 'scanning', 'checking'].includes(status)
+    })
+
+    // Use shorter interval (10s) if there are pending/processing commits, longer (30s) otherwise
+    const interval = hasPendingOrProcessing ? 10000 : 30000
+
+    console.log(
+      `[GitCommits] Auto-refresh setup - hasPendingOrProcessing: ${hasPendingOrProcessing}, interval: ${interval}ms`
+    )
+
+    const refreshInterval = setInterval(() => {
       console.log('[GitCommits] Auto-refreshing commits...')
       fetchCommits()
       setLastRefresh(new Date())
-    }, 30000)
+    }, interval)
 
-    return () => clearInterval(interval)
-  }, [autoRefresh, currentProject?.id, selectedPartId, fetchCommits])
+    return () => clearInterval(refreshInterval)
+  }, [autoRefresh, currentProject?.id, selectedPartId, fetchCommits, commits])
 
   useEffect(() => {
     console.log(
@@ -339,6 +441,40 @@ export default function GitCommits() {
             </div>
 
             <div className='flex items-center gap-4'>
+              {/* Status Indicator */}
+              {(() => {
+                const pendingCount = commits.filter((c) =>
+                  ['pending', 'queued'].includes(c.status?.toLowerCase() || '')
+                ).length
+                const processingCount = commits.filter((c) =>
+                  ['processing', 'scanning', 'checking'].includes(c.status?.toLowerCase() || '')
+                ).length
+
+                if (processingCount > 0) {
+                  return (
+                    <div className='flex items-center gap-2 bg-yellow-50 border border-yellow-200 px-3 py-2 rounded-lg'>
+                      <div className='w-2 h-2 rounded-full bg-yellow-500 animate-pulse'></div>
+                      <span className='text-sm font-medium text-yellow-700'>
+                        {processingCount} commit{processingCount > 1 ? 's' : ''} scanning...
+                      </span>
+                    </div>
+                  )
+                }
+
+                if (pendingCount > 0) {
+                  return (
+                    <div className='flex items-center gap-2 bg-blue-50 border border-blue-200 px-3 py-2 rounded-lg'>
+                      <Clock className='h-4 w-4 text-blue-500' />
+                      <span className='text-sm font-medium text-blue-700'>
+                        {pendingCount} commit{pendingCount > 1 ? 's' : ''} in queue
+                      </span>
+                    </div>
+                  )
+                }
+
+                return null
+              })()}
+
               <div className='flex items-center gap-2'>
                 <input
                   type='checkbox'
@@ -348,7 +484,7 @@ export default function GitCommits() {
                   className='rounded border-gray-300 text-lavender-600 focus:ring-lavender-500'
                 />
                 <label htmlFor='autoRefresh' className='text-sm font-medium text-gray-700'>
-                  Auto-refresh (30s)
+                  Auto-refresh (Smart)
                 </label>
               </div>
 
@@ -419,42 +555,8 @@ export default function GitCommits() {
                     </div>
                     <div className='text-gray-900 font-medium text-lg'>{commit.commitMessage}</div>
 
-                    {/* Quality Score Highlight */}
-                    <div className='flex items-center gap-4 bg-gradient-to-r from-emerald-50 to-green-50 p-3 rounded-lg border border-emerald-200'>
-                      <div className='flex items-center gap-2'>
-                        <div
-                          className={`w-3 h-3 rounded-full ${
-                            commit.qualityScore >= 8
-                              ? 'bg-green-500'
-                              : commit.qualityScore >= 7
-                                ? 'bg-yellow-500'
-                                : 'bg-red-500'
-                          }`}
-                        ></div>
-                        <span className='text-sm font-medium text-gray-700'>Quality Score:</span>
-                        <span
-                          className={`text-2xl font-bold ${
-                            commit.qualityScore >= 8
-                              ? 'text-green-600'
-                              : commit.qualityScore >= 7
-                                ? 'text-yellow-600'
-                                : 'text-red-600'
-                          }`}
-                        >
-                          {commit.qualityScore}/10
-                        </span>
-                      </div>
-                      <div className='text-xs text-gray-500'>
-                        Gate:{' '}
-                        <span
-                          className={`font-medium ${
-                            commit.qualityGateStatus === 'OK' ? 'text-green-600' : 'text-red-600'
-                          }`}
-                        >
-                          {commit.qualityGateStatus}
-                        </span>
-                      </div>
-                    </div>
+                    {/* Quality Score Section */}
+                    {renderQualityScoreSection(commit)}
 
                     <div className='flex flex-wrap gap-2 text-sm'>
                       <Badge className='bg-blue-100 text-blue-700 border-0'>Status: {commit.status}</Badge>
