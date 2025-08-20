@@ -24,6 +24,7 @@ import ResetPasswordPage from '@/pages/home/ResetPasswordPage'
 import UserProfilePage from '@/pages/home/UserProfilePage'
 import VerifyEmailPage from '@/pages/home/VerifyEmailPage'
 import NotFoundPage from '@/pages/NotFoundPage'
+import AdminNotFoundPage from '@/pages/admin/AdminNotFoundPage'
 import AllProjectParts from '@/pages/projects/AllProjectParts'
 import LegacyProjectMemberVerify from '@/pages/projects/LegacyProjectMemberVerify'
 import ProjectBacklog from '@/pages/projects/ProjectBacklog'
@@ -423,11 +424,15 @@ const AppContent: React.FC = () => {
           }
         />
 
-        {/* 404 page route */}
-        <Route path='/404' element={<NotFoundPage />} />
+  {/* 404 page route for admin */}
+  <Route path='/admin/*' element={<AdminProtectedRoute><AdminNotFoundPage /></AdminProtectedRoute>} />
 
-        {/* Catch all route - must be last */}
-        <Route path='*' element={<NotFoundPage />} />
+  {/* 404 page route for non-admin */}
+  <Route path='/404' element={<NotFoundPage />} />
+
+  {/* Catch all route - must be last */}
+  <Route path='*' element={<NotFoundPage />} />
+import AdminNotFoundPage from '@/pages/admin/AdminNotFoundPage'
       </Routes>
     </>
   )

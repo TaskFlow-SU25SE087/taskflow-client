@@ -118,11 +118,9 @@ export default function AdminProjectsPage() {
   const stats = useMemo(() => {
     const total = filteredAndSortedProjects.length
     const active = filteredAndSortedProjects.filter((p) => p.isActive).length
-    const inactive = total - active
     return [
       { label: 'Total Projects', value: total },
-      { label: 'Active', value: active },
-      { label: 'Inactive', value: inactive }
+      { label: 'Active', value: active }
     ]
   }, [filteredAndSortedProjects])
 

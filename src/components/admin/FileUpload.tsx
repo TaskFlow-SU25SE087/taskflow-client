@@ -185,8 +185,21 @@ export default function FileUpload({
   }
 
   const handleRemoveFile = () => {
+    // Cancel upload and reset all state
+    setIsUploading(false)
     setSelectedFile(null)
     setError(null)
+    setUploadProgress(0)
+    setStuckProgress(null)
+    setStuckStartTime(null)
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+    if (stuckCheckRef.current) {
+      clearTimeout(stuckCheckRef.current)
+      stuckCheckRef.current = null
+    }
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -291,15 +304,6 @@ export default function FileUpload({
             <div className='flex-1'>
               <p className='text-sm text-red-700'>{error}</p>
             </div>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={handleRetry}
-              className='text-red-700 border-red-300 hover:bg-red-100'
-            >
-              <RefreshCw className='h-4 w-4 mr-2' />
-              Retry
-            </Button>
           </div>
         )}
 
@@ -320,12 +324,12 @@ export default function FileUpload({
         {/* Cancel button for stuck uploads */}
         {isUploading && stuckProgress !== null && (
           <Button 
-            onClick={handleAutoRetry} 
+            onClick={handleRemoveFile} 
             variant='destructive' 
             className='w-full'
           >
-            <RefreshCw className='h-4 w-4 mr-2' />
-            🚨 Cancel Upload & Retry
+            <X className='h-4 w-4 mr-2' />
+            🚨 Cancel Upload
           </Button>
         )}
 

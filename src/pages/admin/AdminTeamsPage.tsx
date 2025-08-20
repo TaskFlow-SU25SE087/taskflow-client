@@ -82,7 +82,7 @@ export default function AdminTeamsPage() {
     <AdminLayout title='Teams Management' description='Manage project teams and members'>
       <div className='p-6 space-y-6'>
         {/* Header with Stats */}
-        <div className='grid grid-cols-1 md:grid-cols-4 gap-4 mb-6'>
+  <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-6'>
           <div className='bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-xl shadow-lg'>
             <div className='flex items-center justify-between'>
               <div>
@@ -108,17 +108,6 @@ export default function AdminTeamsPage() {
                 <p className='text-2xl font-bold'>{semesters.length}</p>
               </div>
               <Calendar className='h-8 w-8 text-purple-200' />
-            </div>
-          </div>
-          <div className='bg-gradient-to-r from-orange-500 to-orange-600 text-white p-6 rounded-xl shadow-lg'>
-            <div className='flex items-center justify-between'>
-              <div>
-                <p className='text-orange-100 text-sm font-medium'>Avg Team Size</p>
-                <p className='text-2xl font-bold'>
-                  {teams.length > 0 ? Math.round(teams.reduce((sum, team) => sum + (team.totalMembers || 0), 0) / teams.length) : 0}
-                </p>
-              </div>
-              <Users className='h-8 w-8 text-orange-200' />
             </div>
           </div>
         </div>
