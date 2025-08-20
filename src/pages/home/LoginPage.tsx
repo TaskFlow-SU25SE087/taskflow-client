@@ -14,7 +14,7 @@ import { Link } from 'react-router-dom'
 
 export default function LoginPage() {
   const { login, error } = useAuth()
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -24,8 +24,8 @@ export default function LoginPage() {
 
   // Auto-fill email if saved
   useEffect(() => {
-    const savedEmail = localStorage.getItem('rememberedEmail')
-    if (savedEmail) setUsername(savedEmail)
+  const savedEmail = localStorage.getItem('rememberedEmail')
+  if (savedEmail) setEmail(savedEmail)
   }, [])
 
   useEffect(() => {
@@ -66,10 +66,10 @@ export default function LoginPage() {
     localStorage.setItem('rememberMe', rememberMe ? 'true' : 'false')
 
     try {
-      await login(username, password)
+      await login(email, password)
       // Only handle success case for remember me
       if (rememberMe) {
-        localStorage.setItem('rememberedEmail', username)
+        localStorage.setItem('rememberedEmail', email)
       } else {
         localStorage.removeItem('rememberedEmail')
       }
@@ -175,18 +175,18 @@ export default function LoginPage() {
             )}
 
             <div className='form-field space-y-2'>
-              <Label htmlFor='username' className='text-sm font-medium text-gray-700'>
-                Username
+              <Label htmlFor='email' className='text-sm font-medium text-gray-700'>
+                Email
               </Label>
               <Input
-                id='username'
-                type='text'
-                placeholder='Enter your username'
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                id='email'
+                type='email'
+                placeholder='Enter your email'
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isSubmitting}
-                autoComplete='username'
+                autoComplete='email'
                 className='w-full p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-lavender-600 focus:border-transparent transition-all'
               />
             </div>
