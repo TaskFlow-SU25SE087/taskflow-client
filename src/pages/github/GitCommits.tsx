@@ -418,6 +418,44 @@ export default function GitCommits() {
                       </span>
                     </div>
                     <div className='text-gray-900 font-medium text-lg'>{commit.commitMessage}</div>
+
+                    {/* Quality Score Highlight */}
+                    <div className='flex items-center gap-4 bg-gradient-to-r from-emerald-50 to-green-50 p-3 rounded-lg border border-emerald-200'>
+                      <div className='flex items-center gap-2'>
+                        <div
+                          className={`w-3 h-3 rounded-full ${
+                            commit.qualityScore >= 8
+                              ? 'bg-green-500'
+                              : commit.qualityScore >= 7
+                                ? 'bg-yellow-500'
+                                : 'bg-red-500'
+                          }`}
+                        ></div>
+                        <span className='text-sm font-medium text-gray-700'>Quality Score:</span>
+                        <span
+                          className={`text-2xl font-bold ${
+                            commit.qualityScore >= 8
+                              ? 'text-green-600'
+                              : commit.qualityScore >= 7
+                                ? 'text-yellow-600'
+                                : 'text-red-600'
+                          }`}
+                        >
+                          {commit.qualityScore}/10
+                        </span>
+                      </div>
+                      <div className='text-xs text-gray-500'>
+                        Gate:{' '}
+                        <span
+                          className={`font-medium ${
+                            commit.qualityGateStatus === 'OK' ? 'text-green-600' : 'text-red-600'
+                          }`}
+                        >
+                          {commit.qualityGateStatus}
+                        </span>
+                      </div>
+                    </div>
+
                     <div className='flex flex-wrap gap-2 text-sm'>
                       <Badge className='bg-blue-100 text-blue-700 border-0'>Status: {commit.status}</Badge>
                       <Badge className='bg-green-100 text-green-700 border-0'>
@@ -426,12 +464,45 @@ export default function GitCommits() {
                       <Badge className='bg-yellow-100 text-yellow-700 border-0'>Bugs: {commit.bugs}</Badge>
                       <Badge className='bg-red-100 text-red-700 border-0'>Vuln: {commit.vulnerabilities}</Badge>
                       <Badge className='bg-gray-100 text-gray-700 border-0'>Code Smells: {commit.codeSmells}</Badge>
+                      <Badge className='bg-orange-100 text-orange-700 border-0'>
+                        Security Hotspots: {commit.securityHotspots}
+                      </Badge>
                       <Badge className='bg-purple-100 text-purple-700 border-0'>
                         Dup Lines: {commit.duplicatedLines}
                       </Badge>
+                      <Badge className='bg-pink-100 text-pink-700 border-0'>
+                        Dup Blocks: {commit.duplicatedBlocks}
+                      </Badge>
                       <Badge className='bg-cyan-100 text-cyan-700 border-0'>Coverage: {commit.coverage}%</Badge>
+                      <Badge className='bg-indigo-100 text-indigo-700 border-0'>
+                        Dup Density: {commit.duplicatedLinesDensity}%
+                      </Badge>
+                      <Badge className='bg-emerald-100 text-emerald-700 border-0'>
+                        Quality Score: {commit.qualityScore}
+                      </Badge>
+                      <Badge className='bg-teal-100 text-teal-700 border-0'>Duration: {commit.scanDuration}</Badge>
                     </div>
-                    <div className='text-sm text-gray-600 italic'>Result: {commit.resultSummary}</div>
+                    <div className='flex flex-col gap-1 text-sm text-gray-600 italic mt-2'>
+                      <div>Result: {commit.resultSummary}</div>
+                      <div>
+                        Expected Finish:{' '}
+                        {commit.expectedFinishAt
+                          ? format(new Date(commit.expectedFinishAt), 'MMM d, yyyy HH:mm')
+                          : 'N/A'}
+                      </div>
+                      {commit.commitUrl && (
+                        <div>
+                          <a
+                            href={commit.commitUrl}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='text-blue-600 hover:underline'
+                          >
+                            View on GitHub
+                          </a>
+                        </div>
+                      )}
+                    </div>
                     {/* View Detail Button */}
                     <div className='mt-2'>
                       <Button

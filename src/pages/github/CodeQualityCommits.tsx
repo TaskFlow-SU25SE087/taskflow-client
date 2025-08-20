@@ -1,27 +1,28 @@
-import { getProjectPartCommitsV2 } from '@/api/webhooks';
-import { Navbar } from '@/components/Navbar';
-import { Sidebar } from '@/components/Sidebar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Loader } from '@/components/ui/loader';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCurrentProject } from '@/hooks/useCurrentProject';
-import { useProjectParts } from '@/hooks/useProjectParts';
-import { format } from 'date-fns';
-import { Calendar, ChevronDown, Filter, Search } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { getProjectPartCommitsV2 } from '@/api/webhooks'
+import { Navbar } from '@/components/Navbar'
+import { Sidebar } from '@/components/Sidebar'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Loader } from '@/components/ui/loader'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useCurrentProject } from '@/hooks/useCurrentProject'
+import { useProjectParts } from '@/hooks/useProjectParts'
+import { CommitListItem, ProjectPart } from '@/types/commits'
+import { format } from 'date-fns'
+import { Calendar, ChevronDown, Filter, Search } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 export default function CodeQualityCommits() {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const { currentProject, isLoading } = useCurrentProject();
-  const { fetchParts } = useProjectParts();
-  const [parts, setParts] = useState<any[]>([]);
-  const [selectedPartId, setSelectedPartId] = useState<string>('');
-  const [commits, setCommits] = useState<any[]>([]);
-  const [loadingCommits, setLoadingCommits] = useState(false);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const { currentProject, isLoading } = useCurrentProject()
+  const { fetchParts } = useProjectParts()
+  const [parts, setParts] = useState<ProjectPart[]>([])
+  const [selectedPartId, setSelectedPartId] = useState<string>('')
+  const [commits, setCommits] = useState<CommitListItem[]>([])
+  const [loadingCommits, setLoadingCommits] = useState(false)
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
 
   useEffect(() => {
     if (currentProject?.id) {
@@ -122,24 +123,105 @@ export default function CodeQualityCommits() {
             ) : filteredCommits.length > 0 ? (
               filteredCommits.map((commit) => (
                 <div key={commit.commitId} className='bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:border-lavender-200 transition-colors'>
-                  <div className='flex flex-col gap-2'>
-                    <div className='flex items-center gap-2'>
-                      <span className='font-medium text-gray-900'>{commit.pusher}</span>
-                      <span className='text-gray-500'>committed</span>
-                      <span className='text-sm text-gray-500'>{commit.pushedAt ? format(new Date(commit.pushedAt), 'MMM d, yyyy') : ''}</span>
+                    <div className='flex flex-col gap-2'>
+                      <div className='flex items-center gap-2'>
+                        <span className='font-medium text-gray-900'>{commit.pusher}</span>
+                        <span className='text-gray-500'>committed</span>
+                        <span className='text-sm text-gray-500'>
+                          {commit.pushedAt ? format(new Date(commit.pushedAt), 'MMM d, yyyy') : ''}
+                        </span>
+                      </div>
+                      <div className='text-gray-900 font-medium'>{commit.commitMessage}</div>
+
+                      {/* Quality Score Highlight */}
+                      <div className='flex items-center gap-3 bg-gradient-to-r from-emerald-50 to-green-50 p-2 rounded-lg border border-emerald-200 my-2'>
+                        <div className='flex items-center gap-2'>
+                          <div
+                            className={`w-2 h-2 rounded-full ${
+                              commit.qualityScore >= 8
+                                ? 'bg-green-500'
+                                : commit.qualityScore >= 7
+                                  ? 'bg-yellow-500'
+                                  : 'bg-red-500'
+                            }`}
+                          ></div>
+                          <span className='text-xs font-medium text-gray-700'>Quality Score:</span>
+                          <span
+                            className={`text-lg font-bold ${
+                              commit.qualityScore >= 8
+                                ? 'text-green-600'
+                                : commit.qualityScore >= 7
+                                  ? 'text-yellow-600'
+                                  : 'text-red-600'
+                            }`}
+                          >
+                            {commit.qualityScore}/10
+                          </span>
+                        </div>
+                        <div className='text-xs text-gray-500'>
+                          Gate:{' '}
+                          <span
+                            className={`font-medium ${
+                              commit.qualityGateStatus === 'OK' ? 'text-green-600' : 'text-red-600'
+                            }`}
+                          >
+                            {commit.qualityGateStatus}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className='flex flex-wrap gap-2 text-xs'>
+                        <span className='bg-blue-100 text-blue-700 px-2 py-1 rounded'>Status: {commit.status}</span>
+                        <span className='bg-green-100 text-green-700 px-2 py-1 rounded'>
+                          Quality: {commit.qualityGateStatus}
+                        </span>
+                        <span className='bg-yellow-100 text-yellow-700 px-2 py-1 rounded'>
+                          Bugs: {commit.bugs}
+                        </span>
+                        <span className='bg-red-100 text-red-700 px-2 py-1 rounded'>Vuln: {commit.vulnerabilities}</span>
+                        <span className='bg-gray-100 text-gray-700 px-2 py-1 rounded'>
+                          Code Smells: {commit.codeSmells}
+                        </span>
+                        <span className='bg-orange-100 text-orange-700 px-2 py-1 rounded'>
+                          Security Hotspots: {commit.securityHotspots}
+                        </span>
+                        <span className='bg-purple-100 text-purple-700 px-2 py-1 rounded'>
+                          Dup Lines: {commit.duplicatedLines}
+                        </span>
+                        <span className='bg-pink-100 text-pink-700 px-2 py-1 rounded'>
+                          Dup Blocks: {commit.duplicatedBlocks}
+                        </span>
+                        <span className='bg-cyan-100 text-cyan-700 px-2 py-1 rounded'>Coverage: {commit.coverage}%</span>
+                        <span className='bg-indigo-100 text-indigo-700 px-2 py-1 rounded'>
+                          Dup Density: {commit.duplicatedLinesDensity}%
+                        </span>
+                        <span className='bg-emerald-100 text-emerald-700 px-2 py-1 rounded'>
+                          Quality Score: {commit.qualityScore}
+                        </span>
+                        <span className='bg-teal-100 text-teal-700 px-2 py-1 rounded'>Duration: {commit.scanDuration}</span>
+                      </div>
+                      <div className='flex flex-col gap-1 text-xs text-gray-500 mt-2'>
+                        <div>Result: {commit.resultSummary}</div>
+                        <div>
+                          Expected Finish:{' '}
+                          {commit.expectedFinishAt
+                            ? format(new Date(commit.expectedFinishAt), 'MMM d, yyyy HH:mm')
+                            : 'N/A'}
+                        </div>
+                        {commit.commitUrl && (
+                          <div>
+                            <a
+                              href={commit.commitUrl}
+                              target='_blank'
+                              rel='noopener noreferrer'
+                              className='text-blue-600 hover:underline'
+                            >
+                              View on GitHub
+                            </a>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className='text-gray-900 font-medium'>{commit.commitMessage}</div>
-                    <div className='flex flex-wrap gap-2 text-xs'>
-                      <span className='bg-blue-100 text-blue-700 px-2 py-1 rounded'>Status: {commit.status}</span>
-                      <span className='bg-green-100 text-green-700 px-2 py-1 rounded'>Quality: {commit.qualityGateStatus}</span>
-                      <span className='bg-yellow-100 text-yellow-700 px-2 py-1 rounded'>Bugs: {commit.bugs}</span>
-                      <span className='bg-red-100 text-red-700 px-2 py-1 rounded'>Vuln: {commit.vulnerabilities}</span>
-                      <span className='bg-gray-100 text-gray-700 px-2 py-1 rounded'>Code Smells: {commit.codeSmells}</span>
-                      <span className='bg-purple-100 text-purple-700 px-2 py-1 rounded'>Dup Lines: {commit.duplicatedLines}</span>
-                      <span className='bg-cyan-100 text-cyan-700 px-2 py-1 rounded'>Coverage: {commit.coverage}%</span>
-                    </div>
-                    <div className='text-xs text-gray-500'>Result: {commit.resultSummary}</div>
-                  </div>
                 </div>
               ))
             ) : (

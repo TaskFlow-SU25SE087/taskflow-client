@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { FileText, Loader2, RefreshCw, Upload, X } from 'lucide-react'
+import { FileText, Loader2, Upload, X } from 'lucide-react'
 import { useRef, useState } from 'react'
 
 interface FileUploadProps {
@@ -202,13 +202,6 @@ export default function FileUpload({
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
-    }
-  }
-
-  const handleRetry = () => {
-    setError(null)
-    if (selectedFile) {
-      handleUpload()
     }
   }
 

@@ -18,6 +18,14 @@ export interface CommitListItem {
   duplicatedLines: number
   coverage: number
   resultSummary: string
+  commitUrl?: string
+  expectedFinishAt?: string
+  securityHotspots: number
+  duplicatedBlocks: number
+  duplicatedLinesDensity: number
+  scanDuration: string
+  qualityScore: number
+  result: boolean
 }
 
 export interface CommitDetail {
