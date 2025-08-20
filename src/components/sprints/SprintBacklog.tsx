@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { sprintApi } from '@/api/sprints'
 import { taskApi } from '@/api/tasks'
 import { Button } from '@/components/ui/button'
@@ -11,7 +12,7 @@ import { useState } from 'react'
 import TaskCreateMenu from '../tasks/TaskCreateMenu'
 import { BacklogTaskRowSkeleton } from './BacklogTaskRowSkeleton'
 import { SprintSelector } from './SprintSelector'
-import { VirtualizedTaskList } from './VirtualizedTaskList'
+import { BacklogTaskRow } from './BacklogTaskRow'
 
 interface SprintBacklogProps {
   tasks: TaskP[]
@@ -34,8 +35,6 @@ export function SprintBacklog({
   onTaskUpdate,
   sprint,
   isLoading = false,
-  onLoadMore,
-  hasMore,
   boards,
   refreshBoards
 }: SprintBacklogProps) {
@@ -215,18 +214,18 @@ export function SprintBacklog({
             </div>
           ) : tasks.length > 0 ? (
             <div className='p-4'>
-              <VirtualizedTaskList
-                tasks={tasks}
-                showMeta={true}
-                selectedTaskIds={selectedTaskIds}
-                onCheck={handleCheck}
-                onTaskUpdate={onTaskUpdate}
-                boards={boards}
-                refreshBoards={refreshBoards}
-                height={Math.min(tasks.length * 44, 400)} // Dynamic height based on task count
-                onLoadMore={onLoadMore}
-                hasMore={hasMore}
-              />
+              {tasks.map((task) => (
+                <BacklogTaskRow
+                  key={task.id}
+                  task={task}
+                  showMeta={true}
+                  checked={selectedTaskIds.includes(task.id)}
+                  onCheck={handleCheck}
+                  onTaskUpdate={onTaskUpdate}
+                  boards={boards}
+                  refreshBoards={refreshBoards}
+                />
+              ))}
             </div>
           ) : (
             <div className='p-4 text-center text-gray-500'>No tasks in backlog</div>
