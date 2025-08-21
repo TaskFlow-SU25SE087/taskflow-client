@@ -66,12 +66,11 @@ export const SprintMeetingList: React.FC<SprintMeetingListProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => onViewDetail(meeting.id)}
-                  disabled={!canUpdate}
                 >
                   {canUpdate ? 'View Details' : (
                     <>
                       <Lock className="h-4 w-4 mr-2" />
-                      View Only
+                      View Details
                     </>
                   )}
                 </Button>

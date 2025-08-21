@@ -1,5 +1,5 @@
 import { sprintApi } from '@/api/sprints'
-import { useToast } from '@/hooks/use-toast'
+import { useToastContext } from '@/components/ui/ToastContext'
 import { SprintMeeting, SprintMeetingDetail, SprintMeetingUpdateRequest, TaskUpdate } from '@/types/sprint'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -8,7 +8,7 @@ export const useSprintMeetings = (projectId: string) => {
   const [taskUpdates, setTaskUpdates] = useState<TaskUpdate[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { toast } = useToast()
+  const { showToast } = useToastContext()
 
   // Fetch sprint meetings
   const fetchSprintMeetings = useCallback(async () => {
@@ -22,14 +22,15 @@ export const useSprintMeetings = (projectId: string) => {
       setSprintMeetings(data)
     } catch (err: any) {
       setError(err.message || 'Failed to fetch sprint meetings')
-      toast({
+      showToast({
         title: 'Error',
-        description: err.message || 'Failed to fetch sprint meetings'
+        description: err.message || 'Failed to fetch sprint meetings',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
     }
-  }, [projectId, toast])
+  }, [projectId, showToast])
 
   // Fetch task updates
   const fetchTaskUpdates = useCallback(async () => {
@@ -43,14 +44,15 @@ export const useSprintMeetings = (projectId: string) => {
       setTaskUpdates(data)
     } catch (err: any) {
       setError(err.message || 'Failed to fetch task updates')
-      toast({
+      showToast({
         title: 'Error',
-        description: err.message || 'Failed to fetch task updates'
+        description: err.message || 'Failed to fetch task updates',
+        variant: 'destructive'
       })
     } finally {
       setLoading(false)
     }
-  }, [projectId, toast])
+  }, [projectId, showToast])
 
   // Get sprint meeting detail
   const getSprintMeetingDetail = useCallback(async (sprintMeetingId: string): Promise<SprintMeetingDetail | null> => {
@@ -60,13 +62,14 @@ export const useSprintMeetings = (projectId: string) => {
       const data = await sprintApi.getSprintMeetingDetail(projectId, sprintMeetingId)
       return data
     } catch (err: any) {
-      toast({
+      showToast({
         title: 'Error',
-        description: err.message || 'Failed to fetch sprint meeting detail'
+        description: err.message || 'Failed to fetch sprint meeting detail',
+        variant: 'destructive'
       })
       return null
     }
-  }, [projectId, toast])
+  }, [projectId, showToast])
 
   // Update sprint meeting task
   const updateSprintMeetingTask = useCallback(async (
@@ -85,43 +88,48 @@ export const useSprintMeetings = (projectId: string) => {
       const result = await sprintApi.updateSprintMeetingTask(projectId, sprintMeetingId, taskId, itemVersion, taskData)
       
       if (result.success) {
-        toast({
+        showToast({
           title: 'Success',
-          description: 'Task reason updated successfully. Note: Title, description, and priority changes are saved locally only.'
+          description: 'Task reason updated successfully. Note: Title, description, and priority changes are saved locally only.',
+          variant: 'success'
         })
         return true
       } else {
         // Handle version conflict
         if (result.message && result.message.includes('Someone has updated')) {
-          toast({
+          showToast({
             title: 'Version Conflict',
-            description: result.message
+            description: result.message,
+            variant: 'warning'
           })
           
           // If we have new item version, we could potentially retry with the new version
           if (result.newItemVersion) {
-            toast({
+            showToast({
               title: 'Info',
-              description: `New version available: ${result.newItemVersion}. Please refresh and try again.`
+              description: `New version available: ${result.newItemVersion}. Please refresh and try again.`,
+              variant: 'info'
             })
           }
         } else {
-          toast({
+          showToast({
             title: 'Warning',
-            description: result.message || 'Task update failed'
+            description: result.message || 'Task update failed',
+            variant: 'warning'
           })
         }
         return false
       }
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to update task'
-      toast({
+      showToast({
         title: 'Error',
-        description: errorMessage
+        description: errorMessage,
+        variant: 'destructive'
       })
       return false
     }
-  }, [projectId, toast])
+  }, [projectId, showToast])
 
   // Update sprint meeting
   const updateSprintMeeting = useCallback(async (
@@ -132,20 +140,18 @@ export const useSprintMeetings = (projectId: string) => {
     
     try {
       await sprintApi.updateSprintMeeting(projectId, sprintMeetingId, data)
-      toast({
-        title: 'Success',
-        description: 'Sprint meeting updated successfully'
-      })
+      // Success toast will be handled by caller page to avoid duplicates
       return true
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to update sprint meeting'
-      toast({
+      showToast({
         title: 'Error',
-        description: errorMessage
+        description: errorMessage,
+        variant: 'destructive'
       })
       return false
     }
-  }, [projectId, toast])
+  }, [projectId, showToast])
 
   // Update next plan
   const updateNextPlan = useCallback(async (
@@ -156,20 +162,18 @@ export const useSprintMeetings = (projectId: string) => {
     
     try {
       await sprintApi.updateNextPlan(projectId, sprintMeetingId, nextPlan)
-      toast({
-        title: 'Success',
-        description: 'Next plan updated successfully'
-      })
+      // Success toast will be handled by caller page to avoid duplicates
       return true
     } catch (err: any) {
       const errorMessage = err.message || 'Failed to update next plan'
-      toast({
+      showToast({
         title: 'Error',
-        description: errorMessage
+        description: errorMessage,
+        variant: 'destructive'
       })
       return false
     }
-  }, [projectId, toast])
+  }, [projectId, showToast])
 
   // Load data on mount
   useEffect(() => {

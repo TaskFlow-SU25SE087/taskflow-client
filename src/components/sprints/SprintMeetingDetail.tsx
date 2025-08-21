@@ -509,14 +509,6 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({ task, onSave, onCancel, upd
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Warning about field updates */}
-      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-        <p className="text-sm text-yellow-800">
-          <strong>Note:</strong> Currently, only the "Reason" field will be updated on the server. 
-          Changes to Title, Description, and Priority will be saved locally and displayed immediately, 
-          but may not persist after page refresh.
-        </p>
-      </div>
       
       <div>
         <Label htmlFor="title">Title</Label>
@@ -525,7 +517,7 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({ task, onSave, onCancel, upd
           value={formData.title}
           onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
           required
-          disabled={updatingTaskId === task.id}
+          disabled
         />
       </div>
       
@@ -536,7 +528,7 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({ task, onSave, onCancel, upd
           value={formData.description}
           onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
           rows={3}
-          disabled={updatingTaskId === task.id}
+          disabled
         />
       </div>
       
@@ -545,7 +537,7 @@ const TaskEditForm: React.FC<TaskEditFormProps> = ({ task, onSave, onCancel, upd
         <Select
           value={formData.priority}
           onValueChange={(value) => setFormData(prev => ({ ...prev, priority: value as any }))}
-          disabled={updatingTaskId === task.id}
+          disabled
         >
           <SelectTrigger>
             <SelectValue />

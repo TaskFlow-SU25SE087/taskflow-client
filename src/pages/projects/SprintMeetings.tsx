@@ -151,20 +151,33 @@ const SprintMeetings: React.FC = () => {
       reason: string
     }
   ) => {
-    if (!selectedMeetingId || !meetingDetail) return false
-
-    // Check if meeting can be updated
-    if (!canUpdateSprintMeeting(meetingDetail)) {
+    // Determine sprintMeetingId source: prefer selected meeting; fallback to taskUpdates mapping
+    let sprintMeetingId: string | null = selectedMeetingId
+    if (!sprintMeetingId) {
+      const task = taskUpdates.find(t => t.id === taskId)
+      sprintMeetingId = task?.sprintMeetingId || null
+    }
+    if (!sprintMeetingId) {
       showToast({
         title: 'Error',
-        description: 'This meeting cannot be updated at this time.',
+        description: 'Could not determine the sprint meeting for this task.',
         variant: 'destructive'
       })
       return false
     }
 
+    // Allow view-only details but restrict edits when meeting is not updatable
+    if (selectedMeetingId && meetingDetail && !canUpdateSprintMeeting(meetingDetail)) {
+      showToast({
+        title: 'Error',
+        description: 'This meeting is read-only. You can only update the reason.',
+        variant: 'destructive'
+      })
+      // Continue anyway as backend only updates reason
+    }
+
     try {
-      const success = await updateSprintMeetingTask(selectedMeetingId, taskId, itemVersion, taskData)
+      const success = await updateSprintMeetingTask(sprintMeetingId, taskId, itemVersion, taskData)
       if (success) {
         // Auto-refresh all data
         await Promise.all([fetchTaskUpdates(), handleRefreshMeetingDetail()])

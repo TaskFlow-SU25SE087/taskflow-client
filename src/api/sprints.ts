@@ -179,9 +179,14 @@ export const sprintApi = {
       throw new Error(response.data.message || 'Failed to update task')
       
     } catch (error: any) {
-      // Handle specific API error codes
-      if (error.response?.data?.code === 9012) {
+      // Prefer server-provided message when available
+      const serverMessage: string | undefined = error?.response?.data?.message
+      const serverCode: number | undefined = error?.response?.data?.code
+      if (serverCode === 9012) {
         throw new Error('Sprint meeting cannot be updated. Please check if the meeting is still active.')
+      }
+      if (serverMessage) {
+        throw new Error(serverMessage)
       }
       throw error
     }
@@ -196,16 +201,21 @@ export const sprintApi = {
     try {
       const response = await axiosClient.put(`/projects/${projectId}/sprint-meetings/${sprintMeetingId}`, data)
       
-      // Check API response code
-      if (response.data.code !== 0) {
+      // Check API response code (treat 0 and 200 as success for backend variants)
+      if (response.data.code !== 0 && response.data.code !== 200) {
         throw new Error(response.data.message || 'Failed to update sprint meeting')
       }
       
       return response.data.data
     } catch (error: any) {
-      // Handle specific API error codes
-      if (error.response?.data?.code === 9012) {
+      // Handle specific API error codes and surface server messages
+      const serverMessage: string | undefined = error?.response?.data?.message
+      const serverCode: number | undefined = error?.response?.data?.code
+      if (serverCode === 9012) {
         throw new Error('Sprint meeting cannot be updated. Please check if the meeting is still active.')
+      }
+      if (serverMessage) {
+        throw new Error(serverMessage)
       }
       throw error
     }
@@ -219,16 +229,21 @@ export const sprintApi = {
         nextPlan
       )
       
-      // Check API response code
-      if (response.data.code !== 0) {
+      // Check API response code (treat 0 and 200 as success for backend variants)
+      if (response.data.code !== 0 && response.data.code !== 200) {
         throw new Error(response.data.message || 'Failed to update next plan')
       }
       
       return response.data.data
     } catch (error: any) {
-      // Handle specific API error codes
-      if (error.response?.data?.code === 9012) {
+      // Handle specific API error codes and surface server messages
+      const serverMessage: string | undefined = error?.response?.data?.message
+      const serverCode: number | undefined = error?.response?.data?.code
+      if (serverCode === 9012) {
         throw new Error('Sprint meeting cannot be updated. Please check if the meeting is still active.')
+      }
+      if (serverMessage) {
+        throw new Error(serverMessage)
       }
       throw error
     }
