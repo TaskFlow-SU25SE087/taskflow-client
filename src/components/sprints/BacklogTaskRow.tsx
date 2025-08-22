@@ -31,7 +31,7 @@ interface BacklogTaskRowProps {
   refreshBoards: () => Promise<void> | (() => Promise<any>) | any
 }
 
-const boardColors: Record<string, string> = {
+const boardTypeColors: Record<string, string> = {
   todo: '#5030E5',
   'to do': '#5030E5',
   ongoing: '#FFA500',
@@ -46,22 +46,37 @@ const boardColors: Record<string, string> = {
   'not started': '#9CA3AF'
 }
 
+// Fallback for legacy name-based color
+const boardNameColors = boardTypeColors
+
 const getBoardColor = (statusOrBoard?: string | Board): string => {
   if (!statusOrBoard) return '#5030E5'
+  // If string, fallback to name-based color
   if (typeof statusOrBoard === 'string') {
-    return boardColors[statusOrBoard.toLowerCase()] || '#5030E5'
+    return boardNameColors[statusOrBoard.toLowerCase()] || '#5030E5'
   }
+  // If Board object, prefer type-based color
+  if (statusOrBoard.type) {
+    const typeKey = statusOrBoard.type.toLowerCase()
+    if (boardTypeColors[typeKey]) return boardTypeColors[typeKey]
+  }
+  // Fallback to name-based color
   const key = (statusOrBoard.name || '').toLowerCase()
-  return boardColors[key] || '#5030E5'
+  return boardNameColors[key] || '#5030E5'
 }
 
-const getStatusIcon = (status: string) => {
+// Accept board as optional param for accurate icon color
+const getStatusIcon = (status: string, board?: Board) => {
   const s = status.toLowerCase()
   const iconClass = 'h-4 w-4 stroke-[2.5px]'
-  const color = getBoardColor(status)
+  const color = getBoardColor(board || status)
   const style = { color }
-  if (s === 'ongoing' || s === 'in progress') return <PlayCircle className={iconClass} style={style} />
-  if (s === 'done' || s === 'completed') return <CheckCircle className={iconClass} style={style} />
+  if (board?.type?.toLowerCase() === 'completed' || s === 'done' || s === 'completed') {
+    return <CheckCircle className={iconClass} style={style} />
+  }
+  if (board?.type?.toLowerCase() === 'in progress' || s === 'ongoing' || s === 'in progress') {
+    return <PlayCircle className={iconClass} style={style} />
+  }
   return <Circle className={iconClass} style={style} />
 }
 
@@ -249,17 +264,29 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
                     }`}
                     style={{
                       backgroundColor: `${getBoardColor(
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        (boards.find((b: Board) => b.id === (task as any).boardId) as Board) || task.status
+                        boards.find((b: Board) => b.id === task.boardId) || task.status
                       )}20`
                     }}
                     disabled={statusLoading}
                   >
-                    {getStatusIcon(task.status)}
-                    <span className='capitalize' style={{ color: getBoardColor(task.status) }}>
+                    {getStatusIcon(
+                      task.status,
+                      boards.find((b: Board) => b.id === task.boardId)
+                    )}
+                    <span
+                      className='capitalize'
+                      style={{
+                        color: getBoardColor(boards.find((b: Board) => b.id === task.boardId) || task.status)
+                      }}
+                    >
                       {task.status}
                     </span>
-                    <ChevronDown className='h-3 w-3 opacity-60' style={{ color: getBoardColor(task.status) }} />
+                    <ChevronDown
+                      className='h-3 w-3 opacity-60'
+                      style={{
+                        color: getBoardColor(boards.find((b: Board) => b.id === task.boardId) || task.status)
+                      }}
+                    />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align='start' className='w-[200px] p-1.5 border-none shadow-lg'>
@@ -290,7 +317,7 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
                         }
                       }}
                     >
-                      {getStatusIcon(board.name || '')}
+                      {getStatusIcon(board.name || '', board)}
                       <span className='capitalize font-medium' style={{ color: getBoardColor(board) }}>
                         {board.name}
                       </span>
@@ -302,9 +329,15 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
               task.status && (
                 <span
                   className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium`}
-                  style={{ backgroundColor: `${getBoardColor(task.status)}20`, color: getBoardColor(task.status) }}
+                  style={{
+                    backgroundColor: `${getBoardColor(boards.find((b: Board) => b.id === task.boardId) || task.status)}20`,
+                    color: getBoardColor(boards.find((b: Board) => b.id === task.boardId) || task.status)
+                  }}
                 >
-                  {getStatusIcon(task.status)}
+                  {getStatusIcon(
+                    task.status,
+                    boards.find((b: Board) => b.id === task.boardId)
+                  )}
                   <span className='capitalize'>{task.status}</span>
                 </span>
               )

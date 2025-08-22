@@ -32,8 +32,6 @@ const ProjectBacklog = () => {
 
   const {
     sprints,
-    // isLoading here can flip during mutations; don't use it for page skeleton after first load
-    isLoading: _sprintsLoading,
     didInitialLoad: sprintsDidInitialLoad,
     createSprint,
     getSprintTasks,
@@ -171,7 +169,7 @@ const ProjectBacklog = () => {
           })
           return false
         }
-      } catch (error: any) {
+      } catch {
         showToast({
           title: 'Error',
           description: 'Failed to create sprint. Please try again.',
@@ -217,7 +215,7 @@ const ProjectBacklog = () => {
       }
       setSelectedTaskId(null)
     },
-    [selectedTaskId, addTaskToSprint, fetchSprints, showToast]
+    [selectedTaskId, addTaskToSprint, fetchSprints, showToast, sprints, getSprintTasks, currentProject?.id]
   )
 
   const handleTaskUpdate = useCallback(async () => {
@@ -420,6 +418,7 @@ const ProjectBacklog = () => {
               />
             ))}
             <SprintBacklog
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               tasks={backlogTasks as any as TaskP[]}
               onMoveTask={setSelectedTaskId}
               projectId={currentProject?.id || ''}
