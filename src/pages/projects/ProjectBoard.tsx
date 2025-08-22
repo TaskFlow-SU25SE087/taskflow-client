@@ -495,21 +495,44 @@ export default function ProjectBoard() {
       console.log('[TIMING] ⚡ Optimistic update starting at:', new Date().toISOString())
 
       if (sprintTasks.length > 0) {
-        setSprintTasks((prevTasks) =>
-          prevTasks.map((task) =>
-            task.id === taskId ? { ...task, boardId: newBoardId, status: boardObj?.name || task.status } : task
-          )
-        )
+        setSprintTasks((prevTasks) => {
+          const idx = prevTasks.findIndex((task) => task.id === taskId)
+          if (idx === -1) return prevTasks
+          const updatedTask = {
+            ...prevTasks[idx],
+            boardId: newBoardId,
+            status: boardObj?.name || prevTasks[idx].status
+          }
+          const newTasks = [...prevTasks]
+          newTasks[idx] = updatedTask
+          return newTasks
+        })
       }
 
-      setBoards((prevBoards) =>
-        prevBoards.map((board) => ({
-          ...board,
-          tasks: (board.tasks || []).map((task) =>
-            task.id === taskId ? { ...task, boardId: newBoardId, status: boardObj?.name || task.status } : task
-          )
-        }))
-      )
+      setBoards((prevBoards) => {
+        // Find the board the task is moving from and to
+        const fromBoardIdx = prevBoards.findIndex((b) => b.tasks.some((t) => t.id === taskId))
+        const toBoardIdx = prevBoards.findIndex((b) => b.id === newBoardId)
+        if (fromBoardIdx === -1 || toBoardIdx === -1) return prevBoards
+        const taskToMove = prevBoards[fromBoardIdx].tasks.find((t) => t.id === taskId)
+        if (!taskToMove) return prevBoards
+        // Remove from old board
+        const newFromBoard = {
+          ...prevBoards[fromBoardIdx],
+          tasks: prevBoards[fromBoardIdx].tasks.filter((t) => t.id !== taskId)
+        }
+        // Add to new board
+        const updatedTask = { ...taskToMove, boardId: newBoardId, status: boardObj?.name || taskToMove.status }
+        const newToBoard = {
+          ...prevBoards[toBoardIdx],
+          tasks: [...prevBoards[toBoardIdx].tasks, updatedTask]
+        }
+        // Build new boards array
+        const newBoards = [...prevBoards]
+        newBoards[fromBoardIdx] = newFromBoard
+        newBoards[toBoardIdx] = newToBoard
+        return newBoards
+      })
 
       const optimisticUpdateEndTime = performance.now()
       const optimisticUpdateDuration = optimisticUpdateEndTime - optimisticUpdateStartTime
@@ -564,25 +587,48 @@ export default function ProjectBoard() {
         console.log('[TIMING] 🔄 Rolling back optimistic update due to API failure')
 
         if (sprintTasks.length > 0) {
-          setSprintTasks((prevTasks) =>
-            prevTasks.map((task) =>
-              task.id === taskId
-                ? { ...task, boardId: taskObj?.boardId || task.boardId, status: taskObj?.status || task.status }
-                : task
-            )
-          )
+          setSprintTasks((prevTasks) => {
+            const idx = prevTasks.findIndex((task) => task.id === taskId)
+            if (idx === -1) return prevTasks
+            const updatedTask = {
+              ...prevTasks[idx],
+              boardId: taskObj?.boardId || prevTasks[idx].boardId,
+              status: taskObj?.status || prevTasks[idx].status
+            }
+            const newTasks = [...prevTasks]
+            newTasks[idx] = updatedTask
+            return newTasks
+          })
         }
 
-        setBoards((prevBoards) =>
-          prevBoards.map((board) => ({
-            ...board,
-            tasks: (board.tasks || []).map((task) =>
-              task.id === taskId
-                ? { ...task, boardId: taskObj?.boardId || task.boardId, status: taskObj?.status || task.status }
-                : task
-            )
-          }))
-        )
+        setBoards((prevBoards) => {
+          // Find the board the task is moving from and to
+          const fromBoardIdx = prevBoards.findIndex((b) => b.tasks.some((t) => t.id === taskId))
+          const toBoardIdx = prevBoards.findIndex((b) => b.id === (taskObj?.boardId || ''))
+          if (fromBoardIdx === -1 || toBoardIdx === -1) return prevBoards
+          const taskToMove = prevBoards[fromBoardIdx].tasks.find((t) => t.id === taskId)
+          if (!taskToMove) return prevBoards
+          // Remove from old board
+          const newFromBoard = {
+            ...prevBoards[fromBoardIdx],
+            tasks: prevBoards[fromBoardIdx].tasks.filter((t) => t.id !== taskId)
+          }
+          // Add to new board
+          const updatedTask = {
+            ...taskToMove,
+            boardId: taskObj?.boardId || taskToMove.boardId,
+            status: taskObj?.status || taskToMove.status
+          }
+          const newToBoard = {
+            ...prevBoards[toBoardIdx],
+            tasks: [...prevBoards[toBoardIdx].tasks, updatedTask]
+          }
+          // Build new boards array
+          const newBoards = [...prevBoards]
+          newBoards[fromBoardIdx] = newFromBoard
+          newBoards[toBoardIdx] = newToBoard
+          return newBoards
+        })
 
         const error = err as any
         if (error.response) {
