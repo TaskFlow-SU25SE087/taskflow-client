@@ -27,14 +27,10 @@ interface BacklogTaskRowProps {
   onCheck?: (taskId: string, checked: boolean) => void
   onTaskUpdate?: () => void
   boards: Board[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   refreshBoards: () => Promise<void> | (() => Promise<any>) | any
 }
 
-// Note: statusColorMap removed in favor of unified getBoardColor-based theming
-
-// (Board type imported from '@/types/board')
-
-// Unified color palette for boards/statuses (consistent across pages)
 const boardColors: Record<string, string> = {
   todo: '#5030E5',
   'to do': '#5030E5',
@@ -69,7 +65,6 @@ const getStatusIcon = (status: string) => {
   return <Circle className={iconClass} style={style} />
 }
 
-// Helper function to get deadline color based on urgency
 const getDeadlineColor = (deadline: string | null) => {
   if (!deadline) return 'text-gray-400'
 
@@ -84,7 +79,6 @@ const getDeadlineColor = (deadline: string | null) => {
   return 'text-gray-400' // Due later
 }
 
-// Helper function to get deadline icon
 const getDeadlineIcon = (deadline: string | null) => {
   if (!deadline) return Calendar
 
@@ -97,7 +91,6 @@ const getDeadlineIcon = (deadline: string | null) => {
   return Calendar
 }
 
-// --- AvatarStack nội bộ cho backlog ---
 const avatarColors = [
   { bg: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%)', text: '#FFFFFF' },
   { bg: 'linear-gradient(135deg, #4ECDC4 0%, #45B7AF 100%)', text: '#FFFFFF' },
@@ -167,10 +160,8 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
   const { currentProject } = useCurrentProject()
   const { showToast } = useToastContext()
 
-  // Comment count
   const commentCount = Array.isArray(task.commnets) ? task.commnets.length : 0
 
-  // File count: attachmentUrl + completionAttachmentUrls + file trong comment
   const fileCount =
     (task.attachmentUrl ? 1 : 0) +
     (Array.isArray(task.completionAttachmentUrls) ? task.completionAttachmentUrls.length : 0) +
@@ -178,11 +169,8 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
       ? task.commnets.reduce((acc, c) => acc + (Array.isArray(c.attachmentUrls) ? c.attachmentUrls.length : 0), 0)
       : 0)
 
-  // Deadline handling: ONLY show an actual deadline. Previously we fell back to updatedAt/createdAt,
-  // which made tasks without a real deadline appear to have one. That confused users.
   const hasRealDeadline = Boolean(task.deadline)
   const deadlineDisplay = hasRealDeadline && task.deadline ? new Date(task.deadline).toLocaleDateString('en-GB') : 'N/A'
-  // Pass only the real deadline (or null) to color/icon helpers so styling reflects absence.
   const deadlineColor = getDeadlineColor(hasRealDeadline ? task.deadline! : null)
   const DeadlineIcon = getDeadlineIcon(hasRealDeadline ? task.deadline! : null)
 
@@ -261,6 +249,7 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
                     }`}
                     style={{
                       backgroundColor: `${getBoardColor(
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         (boards.find((b: Board) => b.id === (task as any).boardId) as Board) || task.status
                       )}20`
                     }}
@@ -285,7 +274,8 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
                             ? `${getBoardColor(board)}20`
                             : 'transparent'
                       }}
-                      onClick={async () => {
+                      onClick={async (e) => {
+                        e.stopPropagation()
                         if (!currentProject?.id || board.id === task.boardId) return
                         setStatusLoading(true)
                         try {
@@ -382,7 +372,7 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
             </>
           )}
 
-          {/* Nút xóa task */}
+          {/* Delete task button */}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
