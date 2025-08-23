@@ -4,9 +4,10 @@ import { useAuth } from '@/hooks/useAuth'
 import { useNavigationError } from '@/hooks/useNavigationError'
 import AdminDashboard from '@/pages/admin/AdminDashboard'
 import AdminProjectsPage from '@/pages/admin/AdminProjectsPage'
-import AdminTermPage from '@/pages/admin/AdminTermPage'
-import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import AdminTeamsPage from '@/pages/admin/AdminTeamsPage'
+import AdminTermPage from '@/pages/admin/AdminTermPage'
+import AdminUserImportPage from '@/pages/admin/AdminUserImportPage'
+import AdminUsersPage from '@/pages/admin/AdminUsersPage'
 import CodeQualityCommits from '@/pages/github/CodeQualityCommits'
 import GitCommits from '@/pages/github/GitCommits'
 import GitHubOAuthCallback from '@/pages/github/GitHubOAuthCallback'
@@ -21,10 +22,10 @@ import LoginPage from '@/pages/home/LoginPage'
 import OtpPage from '@/pages/home/OtpPage'
 import ResetPasswordPage from '@/pages/home/ResetPasswordPage'
 // import SignUpPage from '@/pages/home/SignupPage'
+import AdminNotFoundPage from '@/pages/admin/AdminNotFoundPage'
 import UserProfilePage from '@/pages/home/UserProfilePage'
 import VerifyEmailPage from '@/pages/home/VerifyEmailPage'
 import NotFoundPage from '@/pages/NotFoundPage'
-import AdminNotFoundPage from '@/pages/admin/AdminNotFoundPage'
 import AllProjectParts from '@/pages/projects/AllProjectParts'
 import LegacyProjectMemberVerify from '@/pages/projects/LegacyProjectMemberVerify'
 import ProjectBacklog from '@/pages/projects/ProjectBacklog'
@@ -395,6 +396,15 @@ const AppContent: React.FC = () => {
         />
 
         <Route
+          path='/admin/user-import'
+          element={
+            <AdminProtectedRoute>
+              <AdminUserImportPage />
+            </AdminProtectedRoute>
+          }
+        />
+
+        <Route
           path='/admin/teams'
           element={
             <AdminProtectedRoute>
@@ -424,15 +434,21 @@ const AppContent: React.FC = () => {
           }
         />
 
-  {/* 404 page route for admin */}
-  <Route path='/admin/*' element={<AdminProtectedRoute><AdminNotFoundPage /></AdminProtectedRoute>} />
+        {/* 404 page route for admin */}
+        <Route
+          path='/admin/*'
+          element={
+            <AdminProtectedRoute>
+              <AdminNotFoundPage />
+            </AdminProtectedRoute>
+          }
+        />
 
-  {/* 404 page route for non-admin */}
-  <Route path='/404' element={<NotFoundPage />} />
+        {/* 404 page route for non-admin */}
+        <Route path='/404' element={<NotFoundPage />} />
 
-  {/* Catch all route - must be last */}
-  <Route path='*' element={<NotFoundPage />} />
-import AdminNotFoundPage from '@/pages/admin/AdminNotFoundPage'
+        {/* Catch all route - must be last */}
+        <Route path='*' element={<NotFoundPage />} />
       </Routes>
     </>
   )
