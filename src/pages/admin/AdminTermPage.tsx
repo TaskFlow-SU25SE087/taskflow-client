@@ -49,6 +49,9 @@ export default function TermManagement() {
   const [deleteYear, setDeleteYear] = useState('')
   const [deleteLoading, setDeleteLoading] = useState(false)
 
+  // State for lock/unlock operations
+  const [lockLoading, setLockLoading] = useState<string | null>(null)
+
   // Filtering
   const [filterSeason, setFilterSeason] = useState('')
   const [filterYear, setFilterYear] = useState('')
@@ -297,7 +300,8 @@ export default function TermManagement() {
     }
   }
 
-  const handleDeleteClick = (term: Term): void => {
+  const handleDeleteClick = async (term: Term): Promise<void> => {
+    // Allow deletion for any term without restrictions
     setDeleteId(term.id)
     setDeleteSeason(term.season)
     setDeleteYear(term.year.toString())
@@ -322,13 +326,55 @@ export default function TermManagement() {
       await loadTerms()
       setDeleteId(null)
     } catch (err: any) {
+      console.error('Delete term error:', err)
+      
+      // Provide more specific error messages based on the error
+      let errorMessage = 'Failed to delete term'
+      
+      if (err.response?.status === 500) {
+        errorMessage = 'Server error occurred. The term may be referenced by other entities. Please try again or contact support if the issue persists.'
+      } else if (err.response?.status === 403) {
+        errorMessage = 'Permission denied. You may not have the right to delete this term.'
+      } else if (err.response?.status === 409) {
+        errorMessage = 'Cannot delete term. It may be referenced by projects, users, or other entities.'
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message
+      }
+      
       showToast({ 
         title: 'Error', 
-        description: 'Failed to delete term', 
+        description: errorMessage, 
         variant: 'destructive' 
       })
     } finally {
       setDeleteLoading(false)
+    }
+  }
+
+  const handleLockUnlock = async (term: Term): Promise<void> => {
+    setLockLoading(term.id)
+    
+    try {
+      await adminApi.lockTerm(term.id)
+      
+      showToast({ 
+        title: 'Success', 
+        description: `Term ${term.isLocked ? 'unlocked' : 'locked'} successfully!`, 
+        variant: 'success' 
+      })
+
+      // Reload terms to get updated status
+      await loadTerms()
+    } catch (err: any) {
+      console.error('Lock/Unlock term error:', err)
+      
+      showToast({ 
+        title: 'Error', 
+        description: `Failed to ${term.isLocked ? 'unlock' : 'lock'} term`, 
+        variant: 'destructive' 
+      })
+    } finally {
+      setLockLoading(null)
     }
   }
 
@@ -349,15 +395,21 @@ export default function TermManagement() {
   })
 
   const getStatusColor = (term: Term): string => {
-    if (term.isLocked) return 'text-amber-600 bg-amber-50'
-    if (term.isActive) return 'text-emerald-600 bg-emerald-50'
-    return 'text-slate-600 bg-slate-50'
+    if (term.isLocked) return 'text-amber-600 bg-amber-50 border border-amber-200'
+    if (term.isActive) return 'text-emerald-600 bg-emerald-50 border border-emerald-200'
+    return 'text-slate-600 bg-slate-50 border border-slate-200'
   }
 
   const getStatusIcon = (term: Term) => {
     if (term.isLocked) return <Lock className="w-4 h-4" />
     if (term.isActive) return <CheckCircle className="w-4 h-4" />
     return <Clock className="w-4 h-4" />
+  }
+
+  const getStatusText = (term: Term): string => {
+    if (term.isLocked) return '🔒 Locked'
+    if (term.isActive) return '✅ Active'
+    return '⏸️ Inactive'
   }
 
   return (
@@ -578,6 +630,25 @@ export default function TermManagement() {
 
         {/* Terms Table */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          {/* Info Section */}
+          <div className="bg-blue-50 border-b border-blue-200 p-4">
+            <div className="flex items-start gap-3">
+              <div className="p-1 bg-blue-500 rounded">
+                <Lock className="w-4 h-4 text-white" />
+              </div>
+              <div className="text-sm text-blue-800">
+                <p className="font-medium mb-1">🔒 Term Management Guide</p>
+                <p className="text-blue-700 mb-2">
+                  <strong>Locked terms</strong> are protected from modifications but can still be deleted. 
+                  <strong>Active terms</strong> are currently in use by the system.
+                </p>
+                <p className="text-blue-700">
+                  <strong>Note:</strong> All terms can now be deleted regardless of their status. Use the lock button to toggle protection status.
+                </p>
+              </div>
+            </div>
+          </div>
+          
           <div className="overflow-x-auto">
             {loading ? (
               <div className="p-8 text-center">
@@ -684,7 +755,7 @@ export default function TermManagement() {
                           <td className="px-6 py-4">
                             <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(term)}`}>
                               {getStatusIcon(term)}
-                              {term.isLocked ? 'Locked' : term.isActive ? 'Active' : 'Inactive'}
+                              {getStatusText(term)}
                             </span>
                           </td>
                           <td className="px-6 py-4">
@@ -696,15 +767,40 @@ export default function TermManagement() {
                               >
                                 <Edit2 className="w-4 h-4" />
                               </button>
-                              <button
-                                onClick={() => handleDeleteClick(term)}
-                                className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                title="Delete term"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </td>
+                               
+                               {/* Lock/Unlock Button */}
+                               <button
+                                 onClick={() => handleLockUnlock(term)}
+                                 disabled={lockLoading === term.id}
+                                 className={`p-1 rounded transition-colors ${
+                                   term.isLocked
+                                     ? 'text-green-600 hover:bg-green-50'
+                                     : 'text-blue-600 hover:bg-blue-50'
+                                 }`}
+                                 title={
+                                   term.isLocked
+                                     ? 'Click to unlock term'
+                                     : 'Click to lock term'
+                                 }
+                               >
+                                 {lockLoading === term.id ? (
+                                   <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                                 ) : term.isLocked ? (
+                                   <Lock className="w-4 h-4" />
+                                 ) : (
+                                   <Lock className="w-4 h-4" />
+                                 )}
+                               </button>
+                               
+                               <button
+                                 onClick={() => handleDeleteClick(term)}
+                                 className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                 title="🗑️ Click to delete term"
+                               >
+                                 <Trash2 className="w-4 h-4" />
+                               </button>
+                             </div>
+                           </td>
                         </>
                       )}
                     </tr>
@@ -746,10 +842,25 @@ export default function TermManagement() {
                 <h3 className="text-lg font-semibold text-slate-900">Confirm Deletion</h3>
               </div>
               
-              <p className="text-slate-600 mb-6">
+              <p className="text-slate-600 mb-4">
                 Are you sure you want to delete the term <strong>{deleteSeason} {deleteYear}</strong>? 
                 This action cannot be undone.
               </p>
+              
+              {/* Warning about potential issues */}
+              <div className="mb-6 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm text-amber-800">
+                    <p className="font-medium mb-1">⚠️ Important Notes:</p>
+                    <ul className="list-disc list-inside space-y-1 text-xs">
+                      <li>This term may be referenced by projects, users, or other entities</li>
+                      <li>Deletion may fail if there are active references</li>
+                      <li>Consider deactivating the term instead of deleting it</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
               
               <div className="flex items-center gap-3 justify-end">
                 <button
@@ -778,7 +889,7 @@ export default function TermManagement() {
               </div>
             </div>
           </div>
-                 )}
+        )}
        </div>
      </div>
     </AdminLayout>
