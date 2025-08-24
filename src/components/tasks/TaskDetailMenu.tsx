@@ -36,7 +36,6 @@ import {
   Pencil,
   Plus,
   Settings,
-  Upload,
   UserPlus,
   X
 } from 'lucide-react'
@@ -76,8 +75,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const [isTagSelectOpen, setIsTagSelectOpen] = useState(false)
   const [isPrioritySelectOpen, setIsPrioritySelectOpen] = useState(false)
 
-  const [completeLoading, setCompleteLoading] = useState(false)
-  const [isMovingTask, setIsMovingTask] = useState(false)
+
   const [comment, setComment] = useState('')
   const [commentFiles, setCommentFiles] = useState<File[]>([])
   const [isCommentLoading, setIsCommentLoading] = useState(false)
@@ -531,10 +529,45 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   }
 
   const handleAttach = () => {
-    showToast({
-      title: 'Coming Soon',
-      description: 'File attachments will be available soon!'
-    })
+    // Trigger file input for attachment
+    attachFileInputRef.current?.click()
+  }
+
+  const handleAttachFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!currentProject || !e.target.files || e.target.files.length === 0) return
+    
+    const files = Array.from(e.target.files)
+    setIsUpdating(true)
+    
+    try {
+      const res = await taskApi.completeTaskWithUpload(currentProject.id, task.id, files)
+      showToast({
+        title: res ? 'Success' : 'Error',
+        description: res ? 'Files attached successfully!' : 'Failed to attach files',
+        variant: res ? 'success' : 'destructive'
+      })
+      
+      if (res) {
+        // Refresh task data to show new attachments
+        onTaskUpdated && onTaskUpdated()
+      }
+    } catch (error) {
+      const errorMessage = extractBackendErrorMessage(error)
+      const errorTitle = getErrorTitle(error)
+      const errorVariant = getErrorVariant(error)
+
+      showToast({
+        title: errorTitle,
+        description: errorMessage,
+        variant: errorVariant
+      })
+    } finally {
+      setIsUpdating(false)
+      // Clear the file input
+      if (e.target) {
+        e.target.value = ''
+      }
+    }
   }
 
   const handleTagSelect = async (tagId: string) => {
@@ -684,117 +717,9 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
   const priorityDropdownRef = useRef<HTMLDivElement>(null)
   const tagDropdownRef = useRef<HTMLDivElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [completeFiles, setCompleteFiles] = useState<File[]>([])
+  const attachFileInputRef = useRef<HTMLInputElement>(null)
 
-  // Handle task completion with file upload
-  const handleCompleteTask = async () => {
-    if (!currentProject) return
-    if (!completeFiles.length) {
-      // Open file picker if no files selected
-      fileInputRef.current?.click()
-      return
-    }
-    setCompleteLoading(true)
-    try {
-      const res = await taskApi.completeTaskWithUpload(currentProject.id, task.id, completeFiles)
-      showToast({
-        title: res ? 'Success' : 'Error',
-        description: res ? 'Task marked as complete!' : 'Failed to complete task',
-        variant: res ? 'success' : 'destructive'
-      })
 
-      if (res) {
-        // Find the "complete" or "done" board to move the task to
-        const completeBoard = boards.find(
-          (board) =>
-            board.name.toLowerCase().includes('complete') ||
-            board.name.toLowerCase().includes('done') ||
-            board.name.toLowerCase().includes('finished')
-        )
-
-        if (completeBoard && completeBoard.id !== task.boardId) {
-          try {
-            setIsMovingTask(true)
-            console.log(`🔄 Moving completed task to ${completeBoard.name} board...`)
-            await taskApi.moveTaskToBoard(currentProject.id, task.id, completeBoard.id)
-            console.log(`✅ Task successfully moved to ${completeBoard.name} board`)
-
-            showToast({
-              title: 'Task Moved',
-              description: `Task has been moved to ${completeBoard.name} column`,
-              variant: 'success'
-            })
-
-            // Thêm delay nhỏ để đảm bảo server xử lý xong
-            await new Promise((resolve) => setTimeout(resolve, 100))
-
-            // Notify parent component to refresh the board IMMEDIATELY after move
-            console.log('🔄 Notifying parent to refresh board after task move...')
-            onTaskUpdated()
-
-            // Thêm delay nhỏ nữa để đảm bảo UI được cập nhật
-            await new Promise((resolve) => setTimeout(resolve, 200))
-
-            // Gọi lại onTaskUpdated một lần nữa để đảm bảo board được refresh hoàn toàn
-            console.log('🔄 Final board refresh after task move...')
-            onTaskUpdated()
-
-            // Force refresh boards ngay lập tức để đảm bảo UI được cập nhật
-            console.log('🔄 Force refreshing boards immediately...')
-            await refreshBoards()
-          } catch (moveError) {
-            console.error('❌ Failed to move task to complete board:', moveError)
-            showToast({
-              title: 'Warning',
-              description: 'Task completed but failed to move to complete column. You can move it manually.',
-              variant: 'warning'
-            })
-          } finally {
-            setIsMovingTask(false)
-          }
-        } else {
-          // Nếu không cần chuyển cột, vẫn notify parent để refresh
-          console.log('🔄 Task already in complete column, notifying parent to refresh...')
-          onTaskUpdated()
-        }
-
-        // Refresh data immediately using the optimized function
-        console.log('🔄 Refreshing data after complete task...')
-        await fetchAssigneeAndMembers()
-
-        // Refresh task data from server to show uploaded files
-        await reloadDialogData()
-
-        // Clear the selected files
-        setCompleteFiles([])
-
-        // Final board refresh to ensure everything is updated
-        console.log('🔄 Final board refresh after all data updates...')
-        await new Promise((resolve) => setTimeout(resolve, 300))
-        onTaskUpdated()
-
-        // Show success message that task is completed but dialog remains open
-        showToast({
-          title: 'Task Completed!',
-          description: 'Task has been marked as complete. You can continue viewing details or close when ready.',
-          variant: 'success'
-        })
-      }
-    } catch (error: unknown) {
-      const errorMessage = extractBackendErrorMessage(error)
-      const errorTitle = getErrorTitle(error)
-      const errorVariant = getErrorVariant(error)
-
-      showToast({
-        title: errorTitle,
-        description: errorMessage,
-        variant: errorVariant
-      })
-    } finally {
-      setCompleteLoading(false)
-    }
-  }
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -1380,109 +1305,38 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         <div className='flex flex-wrap gap-2 mb-4'>
           <button
             onClick={handleAttach}
-            className='flex items-center gap-1 px-2 py-1 text-gray-600 rounded-lg border hover:bg-gray-50 text-sm'
+            disabled={isUpdating}
+            className='flex items-center gap-1 px-2 py-1 text-gray-600 rounded-lg border hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed'
           >
-            <Paperclip className='h-3 w-3' />
-            <span>Attach</span>
+            {isUpdating ? (
+              <Loader2 className='h-3 w-3 animate-spin' />
+            ) : (
+              <Paperclip className='h-3 w-3' />
+            )}
+            <span>{isUpdating ? 'Attaching...' : 'Attach'}</span>
           </button>
 
-          {/* File Selection for Task Completion */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className='flex items-center gap-1 px-2 py-1 text-blue-600 rounded-lg border border-blue-300 bg-blue-50 hover:bg-blue-100 text-sm'
-          >
-            <Upload className='h-3 w-3' />
-            <span>Select Files</span>
-          </button>
-
+          {/* Hidden file input for attachments */}
           <input
             type='file'
             multiple
-            ref={fileInputRef}
+            ref={attachFileInputRef}
             style={{ display: 'none' }}
-            onChange={(e) => {
-              if (e.target.files) {
-                setCompleteFiles(Array.from(e.target.files))
-                // Don't auto-complete, let user review files first
-              }
-            }}
+            onChange={handleAttachFileChange}
           />
 
-          {/* Complete Button - Only show when files are selected */}
-          {completeFiles.length > 0 && (
-            <Button
-              onClick={handleCompleteTask}
-              disabled={completeLoading}
-              className='flex items-center gap-1 px-2 py-1 text-green-700 border border-green-300 bg-green-50 hover:bg-green-100 text-sm'
-            >
-              {completeLoading || isMovingTask ? (
-                <>
-                  <Loader2 className='h-3 w-3 animate-spin' />
-                  <span className='hidden sm:inline'>
-                    {completeLoading ? 'Completing...' : 'Moving to Complete Column...'}
-                  </span>
-                  <span className='sm:hidden'>{completeLoading ? 'Completing...' : 'Moving...'}</span>
-                </>
-              ) : (
-                <>
-                  <Check className='h-3 w-3' />
-                  <span className='hidden sm:inline'>Complete Task</span>
-                  <span className='sm:hidden'>Complete</span>
-                </>
-              )}
-            </Button>
-          )}
+
+
+
 
           {currentProject && (
             <IssueCreateMenu projectId={currentProject.id} taskId={task.id} onIssueCreated={onTaskUpdated} />
           )}
         </div>
 
-        {/* Realtime Update Status */}
-        {isMovingTask && (
-          <div className='mb-3 p-2 bg-blue-50 border border-blue-200 rounded-lg'>
-            <div className='flex items-center gap-2 text-blue-700'>
-              <Loader2 className='h-3 w-3 animate-spin' />
-              <span className='text-xs font-medium'>Updating board in real-time...</span>
-            </div>
-            <p className='text-xs text-blue-600 mt-1'>
-              Task is being moved to complete column. The board will update automatically.
-            </p>
-          </div>
-        )}
 
-        {/* Selected Files Display */}
-        {completeFiles.length > 0 && (
-          <div className='mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg'>
-            <h3 className='text-xs font-medium text-blue-800 mb-2 flex items-center gap-2'>
-              <FileText className='h-3 w-3' />
-              Files Selected for Completion ({completeFiles.length})
-            </h3>
-            <div className='space-y-1'>
-              {completeFiles.map((file, index) => (
-                <div key={index} className='flex items-center justify-between p-1.5 bg-white rounded border'>
-                  <div className='flex items-center gap-2'>
-                    <FileText className='h-3 w-3 text-blue-600' />
-                    <span className='text-xs text-gray-700'>{file.name}</span>
-                    <span className='text-xs text-gray-500'>({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setCompleteFiles(completeFiles.filter((_, i) => i !== index))
-                    }}
-                    className='p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded'
-                    title='Remove file'
-                  >
-                    <X className='h-3 w-3' />
-                  </button>
-                </div>
-              ))}
-            </div>
-            <div className='mt-2 text-xs text-blue-600'>
-              Click "Complete Task" above to finish the task with these files.
-            </div>
-          </div>
-        )}
+
+
 
         {/* Assignee and Tags - Layout responsive */}
         <div className='grid grid-cols-1 xl:grid-cols-2 gap-3 lg:gap-4 mb-4'>
