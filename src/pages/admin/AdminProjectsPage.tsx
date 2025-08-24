@@ -47,10 +47,12 @@ export default function AdminProjectsPage() {
   const loadTerms = async () => {
     try {
       const res = await adminApi.getTermList(1)
-      const list = (res.data?.data || []) as Array<{ id: string; season: string; year: number }>
+      const termsData = res?.data?.data
+      const list = Array.isArray(termsData) ? termsData as Array<{ id: string; season: string; year: number }> : []
       setTerms(list)
     } catch (e: any) {
       console.error(e)
+      setTerms([])
     }
   }
 
@@ -187,11 +189,11 @@ export default function AdminProjectsPage() {
                   onChange={(e) => setSelectedTermId(e.target.value)}
                 >
                   <option value=''>✨ All terms</option>
-                  {terms.map((t) => (
+                  {Array.isArray(terms) ? terms.map((t) => (
                     <option key={t.id} value={t.id}>
                       {t.season} {t.year}
                     </option>
-                  ))}
+                  )) : null}
                 </select>
               </div>
               {(searchQuery || selectedTermId) && (
@@ -229,7 +231,7 @@ export default function AdminProjectsPage() {
                   {selectedTermId && (
                     <div className='animate-fadeIn'>
                       <span className='inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-full text-sm font-medium shadow-lg transform hover:scale-105 transition-all duration-200'>
-                        📅 {terms.find(t => t.id === selectedTermId)?.season} {terms.find(t => t.id === selectedTermId)?.year}
+                        📅 {Array.isArray(terms) ? terms.find(t => t.id === selectedTermId)?.season : ''} {Array.isArray(terms) ? terms.find(t => t.id === selectedTermId)?.year : ''}
                         <button onClick={() => setSelectedTermId('')} className='hover:bg-white/20 rounded-full p-1 transition-colors'>
                           <svg className='h-3 w-3' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                             <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M6 18L18 6M6 6l12 12' />

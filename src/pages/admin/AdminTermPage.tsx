@@ -1,7 +1,7 @@
 import { adminApi } from '@/api/admin'
 import AdminLayout from '@/components/admin/AdminLayout'
 import { useToastContext } from '@/components/ui/ToastContext'
-import { AlertCircle, Calendar, CheckCircle, Clock, Edit2, Filter, Lock, Plus, Save, Search, Trash2, X } from 'lucide-react'
+import { AlertCircle, Calendar, CheckCircle, Clock, Edit2, Filter, Lock, Plus, Save, Search, Trash2, Users, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 interface Term {
@@ -12,6 +12,7 @@ interface Term {
   endDate: string
   isActive: boolean
   isLocked: boolean
+  users?: TermUser[]
 }
 
 interface ValidationErrors {
@@ -19,6 +20,18 @@ interface ValidationErrors {
   year?: string
   startDate?: string
   endDate?: string
+}
+
+interface TermUser {
+  id: string
+  avatar: string
+  fullName: string
+  role: string
+  email: string
+  phoneNumber: string | null
+  studentId: string
+  termSeason: string
+  termYear: number
 }
 
 export default function TermManagement() {
@@ -60,6 +73,12 @@ export default function TermManagement() {
   // Validation states
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({})
 
+  // State for users modal
+  const [showUsersModal, setShowUsersModal] = useState(false)
+  const [selectedTermUsers, setSelectedTermUsers] = useState<TermUser[]>([])
+  const [selectedTermInfo, setSelectedTermInfo] = useState<{ season: string; year: number } | null>(null)
+  const [loadingUsers, setLoadingUsers] = useState(false)
+
   const { showToast } = useToastContext()
 
   // Load terms data on component mount
@@ -71,10 +90,30 @@ export default function TermManagement() {
     try {
       setLoading(true)
       setError(null)
+      console.log('Loading terms for page:', page)
       const response = await adminApi.getTermList(page)
-      setTerms(response.data.data || [])
+      console.log('API Response:', response)
+      // Check different possible response structures
+      let termsData = null
+      if (response?.data?.data?.items) {
+        // Structure: { data: { items: [...] } }
+        termsData = response.data.data.items
+      } else if (response?.data?.data) {
+        // Structure: { data: [...] }
+        termsData = response.data.data
+      } else if (response?.data?.items) {
+        // Structure: { items: [...] }
+        termsData = response.data.items
+      } else if (Array.isArray(response?.data)) {
+        // Structure: [...] (direct array)
+        termsData = response.data
+      }
+      console.log('Terms data:', termsData)
+      setTerms(Array.isArray(termsData) ? termsData : [])
     } catch (err: any) {
+      console.error('Error loading terms:', err)
       setError(err.message || 'Failed to load terms')
+      setTerms([])
       showToast({ 
         title: 'Error', 
         description: 'Failed to load terms', 
@@ -82,6 +121,36 @@ export default function TermManagement() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadTermUsers = async (termId: string, termSeason: string, termYear: number) => {
+    try {
+      setLoadingUsers(true)
+      console.log('Loading users for term:', termId)
+      
+      // Find the term in the existing terms list to get users
+      const term = terms.find(t => t.id === termId)
+      if (term && term.users) {
+        console.log('Found term with users:', term)
+        setSelectedTermUsers(term.users)
+        setSelectedTermInfo({ season: termSeason, year: termYear })
+        setShowUsersModal(true)
+      } else {
+        console.log('Term not found or no users property')
+        setSelectedTermUsers([])
+        setSelectedTermInfo({ season: termSeason, year: termYear })
+        setShowUsersModal(true)
+      }
+    } catch (err: any) {
+      console.error('Error loading term users:', err)
+      showToast({ 
+        title: 'Error', 
+        description: 'Failed to load term users', 
+        variant: 'destructive' 
+      })
+    } finally {
+      setLoadingUsers(false)
     }
   }
 
@@ -387,12 +456,12 @@ export default function TermManagement() {
     return `${day}/${month}/${year}`
   }
 
-  const filteredTerms = terms.filter((term: Term) => {
+  const filteredTerms = Array.isArray(terms) ? terms.filter((term: Term) => {
     return (
       (!filterSeason || term.season.toLowerCase().includes(filterSeason.toLowerCase())) &&
       (!filterYear || term.year.toString() === filterYear)
     )
-  })
+  }) : []
 
   const getStatusColor = (term: Term): string => {
     if (term.isLocked) return 'text-amber-600 bg-amber-50 border border-amber-200'
@@ -630,24 +699,7 @@ export default function TermManagement() {
 
         {/* Terms Table */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          {/* Info Section */}
-          <div className="bg-blue-50 border-b border-blue-200 p-4">
-            <div className="flex items-start gap-3">
-              <div className="p-1 bg-blue-500 rounded">
-                <Lock className="w-4 h-4 text-white" />
-              </div>
-              <div className="text-sm text-blue-800">
-                <p className="font-medium mb-1">🔒 Term Management Guide</p>
-                <p className="text-blue-700 mb-2">
-                  <strong>Locked terms</strong> are protected from modifications but can still be deleted. 
-                  <strong>Active terms</strong> are currently in use by the system.
-                </p>
-                <p className="text-blue-700">
-                  <strong>Note:</strong> All terms can now be deleted regardless of their status. Use the lock button to toggle protection status.
-                </p>
-              </div>
-            </div>
-          </div>
+          
           
           <div className="overflow-x-auto">
             {loading ? (
@@ -760,6 +812,14 @@ export default function TermManagement() {
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2">
+                                                             <button
+                                 onClick={() => loadTermUsers(term.id, term.season, term.year)}
+                                 className="p-1 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                 title="👥 View users in this term"
+                               >
+                                 <Users className="w-4 h-4" />
+                               </button>
+                              
                               <button
                                 onClick={() => handleEditClick(term)}
                                 className="p-1 text-amber-600 hover:bg-amber-50 rounded transition-colors"
@@ -792,13 +852,7 @@ export default function TermManagement() {
                                  )}
                                </button>
                                
-                               <button
-                                 onClick={() => handleDeleteClick(term)}
-                                 className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                 title="🗑️ Click to delete term"
-                               >
-                                 <Trash2 className="w-4 h-4" />
-                               </button>
+                               
                              </div>
                            </td>
                         </>
@@ -886,6 +940,90 @@ export default function TermManagement() {
                     </>
                   )}
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Users Modal */}
+        {showUsersModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                                         <div className="p-2 bg-white/20 rounded-lg">
+                       <Users className="w-6 h-6 text-white" />
+                     </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-white">
+                        Users in {selectedTermInfo?.season} {selectedTermInfo?.year}
+                      </h3>
+                      <p className="text-blue-100 text-sm">
+                        {selectedTermUsers.length} user{selectedTermUsers.length !== 1 ? 's' : ''} found
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowUsersModal(false)}
+                    className="p-2 text-white hover:bg-white/20 rounded-lg transition-colors"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="p-6 max-h-[calc(90vh-120px)] overflow-y-auto">
+                {loadingUsers ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="flex items-center gap-3">
+                      <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-slate-600">Loading users...</span>
+                    </div>
+                  </div>
+                ) : selectedTermUsers.length === 0 ? (
+                  <div className="text-center py-12">
+                                         <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                       <Users className="w-8 h-8 text-slate-400" />
+                     </div>
+                    <h3 className="text-lg font-semibold text-slate-800 mb-2">No Users Found</h3>
+                    <p className="text-slate-500">No users are currently assigned to this term.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {selectedTermUsers.map((user) => (
+                      <div key={user.id} className="bg-white border border-slate-200 rounded-xl p-4 hover:shadow-lg transition-all duration-200">
+                        <div className="flex items-start gap-3">
+                          <img 
+                            src={user.avatar} 
+                            alt={user.fullName}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-slate-200"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://res.cloudinary.com/dpw9sgxab/image/upload/v1749247007/avatar/default.jpg'
+                            }}
+                          />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-slate-900 truncate">{user.fullName}</h4>
+                            <p className="text-sm text-slate-600 truncate">{user.email}</p>
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {user.role}
+                              </span>
+                              {user.studentId && (
+                                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                  {user.studentId}
+                                </span>
+                              )}
+                            </div>
+                            {user.phoneNumber && (
+                              <p className="text-xs text-slate-500 mt-1">📞 {user.phoneNumber}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -12,8 +12,14 @@ export function useAdminTerm(page: number, reloadFlag: number) {
     setError(null)
     adminApi
       .getTermList(page)
-      .then((res) => setTerms(res.data.data))
-      .catch((err) => setError(err.message || 'Failed to fetch terms'))
+      .then((res) => {
+        const termsData = res?.data?.data
+        setTerms(Array.isArray(termsData) ? termsData : [])
+      })
+      .catch((err) => {
+        setError(err.message || 'Failed to fetch terms')
+        setTerms([])
+      })
       .finally(() => setLoading(false))
   }, [page, reloadFlag])
 

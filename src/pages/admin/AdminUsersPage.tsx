@@ -515,7 +515,7 @@ export default function AdminUsersPage() {
   }, [baseUsers, searchTerm, selectedRole, selectedStatus, selectedSemester])
 
   const roles = Array.from(new Set(users.map((user) => user.role)))
-  const semesters = terms.map((term: any) => `${term.season} ${term.year}`)
+  const semesters = Array.isArray(terms) ? terms.map((term: any) => `${term.season} ${term.year}`) : []
 
   // When searching across all pages, derive roles from the base list so filters match results
   const rolesFromBase = Array.from(new Set(baseUsers.map((user) => user.role)))

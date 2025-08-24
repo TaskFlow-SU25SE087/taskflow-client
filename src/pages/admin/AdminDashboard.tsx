@@ -41,12 +41,13 @@ const STAT_COLORS = [
 
 const StatCard = ({ stat, index }: { stat: StatItem, index: number }) => {
   const color = STAT_COLORS[index % STAT_COLORS.length];
+  const displayValue = typeof stat.value === 'number' ? stat.value.toLocaleString() : '0';
   return (
     <div className={`rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-white/50 ${color.bg} ${color.shadow}`}>
       <div className="flex items-center justify-between">
         <div>
           <div className="text-sm font-medium text-gray-600 mb-1">{stat.label}</div>
-          <div className="text-3xl font-bold text-gray-800 mb-2">{stat.value.toLocaleString()}</div>
+          <div className="text-3xl font-bold text-gray-800 mb-2">{displayValue}</div>
           {stat.description && <div className="text-sm text-gray-500 font-medium">{stat.description}</div>}
         </div>
         <div className={`rounded-xl p-3 shadow-sm ${color.icon}`}>{stat.icon}</div>
@@ -92,10 +93,10 @@ export default function AdminDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const totalUsers = allUsers.length
-  const totalProjects = projects.length
-  const totalTerms = terms.length
-  const totalTeams = teams.length
+  const totalUsers = allUsers?.length || 0
+  const totalProjects = projects?.length || 0
+  const totalTerms = terms?.length || 0
+  const totalTeams = teams?.length || 0
   const stats: StatItem[] = [
     { label: 'Total Users', value: totalUsers, icon: <Users className="w-6 h-6" />, description: 'Registered users' },
     { label: 'Total Projects', value: totalProjects, icon: <Layout className="w-6 h-6" />, description: 'All projects' },
