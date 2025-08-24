@@ -143,3 +143,6 @@ out/
 # Temporary files
 *.tmp
 *.temp
+
+# .Github folder
+.github
