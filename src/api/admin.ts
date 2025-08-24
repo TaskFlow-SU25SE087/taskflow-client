@@ -75,9 +75,42 @@ export const adminApi = {
 
   deleteTerm: (id: string) => axiosClient.delete(`/admin/term/${id}`),
 
+  // Check if term can be safely deleted
+  checkTermDeletion: async (id: string) => {
+    try {
+      // Check if term has any projects
+      const projectsResponse = await axiosClient.get(`/project/admin/term/${id}`)
+      const hasProjects = projectsResponse.data?.data?.length > 0
+      
+      // Check if term has any users assigned
+      const usersResponse = await axiosClient.get(`/admin/users?termId=${id}`)
+      const hasUsers = usersResponse.data?.data?.items?.length > 0
+      
+      return {
+        canDelete: !hasProjects && !hasUsers,
+        hasProjects,
+        hasUsers,
+        message: hasProjects || hasUsers 
+          ? 'Term cannot be deleted because it has active references'
+          : 'Term can be safely deleted'
+      }
+    } catch (error) {
+      console.error('Error checking term deletion:', error)
+      return {
+        canDelete: false,
+        hasProjects: false,
+        hasUsers: false,
+        message: 'Unable to verify if term can be deleted'
+      }
+    }
+  },
+
   getTermDetail: (id: string) => axiosClient.get(`/admin/term/${id}`),
 
   lockTerm: (id: string) => axiosClient.delete(`/admin/term/lock/${id}`),
+
+  // Unlock term (same endpoint, DELETE request)
+  unlockTerm: (id: string) => axiosClient.delete(`/admin/term/lock/${id}`),
 
   // Admin Projects
   getAllProjects: async () => {

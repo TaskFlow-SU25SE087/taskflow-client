@@ -1,7 +1,6 @@
 import { adminApi } from '@/api/admin'
 import AdminLayout from '@/components/admin/AdminLayout'
 import AdminPagination from '@/components/admin/AdminPagination'
-import FileUpload from '@/components/admin/FileUpload'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -10,7 +9,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { useToastContext } from '@/components/ui/ToastContext'
@@ -21,7 +20,6 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
-  Download,
   Filter,
   Loader2,
   RefreshCw,
@@ -29,25 +27,22 @@ import {
   Shield,
   ShieldOff,
   Sparkles,
-  Upload,
   UserCheck,
   Users,
   UserX
 } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
-import * as XLSX from 'xlsx'
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
+import { AdminUser } from '@/types/admin'
 
 export default function AdminUsersPage() {
-  const { users, loading, error, pagination, fetchUsers, importUsers, fetchAllUsers } = useAdmin()
+  const { users, loading, error, pagination, fetchUsers, fetchAllUsers } = useAdmin()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedRole, setSelectedRole] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [selectedSemester, setSelectedSemester] = useState<string>('all')
-  const [showFileUpload, setShowFileUpload] = useState(false)
-  const [exporting, setExporting] = useState(false)
-  const [uploadTimeout, setUploadTimeout] = useState(false)
-  const [cachedUsers, setCachedUsers] = useState<any[]>([])
-  const [lastFetchTime, setLastFetchTime] = useState<number>(0)
+  // Removed showFileUpload and exporting state (no longer needed)
+  // Removed uploadTimeout and cachedUsers (no longer needed)
+  // Removed lastFetchTime (no longer needed)
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set())
   const [selectAll, setSelectAll] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -58,11 +53,18 @@ export default function AdminUsersPage() {
     active: 0,
     inactive: 0
   })
+  // When user searches (>= 2 chars) we fetch all users across pages and search that list
+  const [allUsersForSearch, setAllUsersForSearch] = useState<AdminUser[] | null>(null)
+  const [isSearching, setIsSearching] = useState(false)
+  const [preservedSelection, setPreservedSelection] = useState<{start: number | null, end: number | null}>({start: null, end: null})
   const pageSize = 10
   const { showToast } = useToastContext()
 
+  // Ref for the search input to preserve focus/selection across re-renders
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
+
   // Cache timeout: 30 giây
-  const CACHE_TIMEOUT = 30000
+  // Removed CACHE_TIMEOUT (no longer needed)
 
   // Lấy danh sách semester (term) từ API
   const { terms, loading: loadingTerms } = useAdminTerm(1, 0)
@@ -76,23 +78,10 @@ export default function AdminUsersPage() {
     users: string[]
   } | null>(null)
 
-  // Auto-refresh effect for upload timeout
-  useEffect(() => {
-    if (uploadTimeout) {
-      const interval = setInterval(() => {
-        window.location.reload()
-      }, 3000)
-      return () => clearInterval(interval)
-    }
-  }, [uploadTimeout])
 
   // Check for file upload dialog after refresh
   useEffect(() => {
-    const shouldShowUpload = localStorage.getItem('showFileUploadAfterRefresh')
-    if (shouldShowUpload === 'true') {
-      setShowFileUpload(true)
-      localStorage.removeItem('showFileUploadAfterRefresh')
-    }
+    // Removed file upload dialog after refresh logic
   }, [])
 
   // Auto-count total users when page loads
@@ -103,8 +92,8 @@ export default function AdminUsersPage() {
         setTotalUsersCount(allUsers.length)
         
         // Tính toán thống kê chính xác từ tất cả users
-        const totalActive = allUsers.filter(user => user.isActive).length
-        const totalInactive = allUsers.filter(user => !user.isActive).length
+  const totalActive = allUsers.filter((user) => user.isActive).length
+  const totalInactive = allUsers.filter((user) => !user.isActive).length
         
         // Cập nhật totalStats để hiển thị số liệu từ tất cả các trang
         setTotalStats({
@@ -122,7 +111,7 @@ export default function AdminUsersPage() {
     if (totalUsersCount === null) {
       autoCountTotalUsers()
     }
-  }, []) // Chỉ chạy một lần khi component mount
+  }, [fetchAllUsers, totalUsersCount]) // Chỉ chạy một lần khi component mount
 
   const handlePageChange = (page: number) => {
     fetchUsers(page, pageSize)
@@ -130,35 +119,61 @@ export default function AdminUsersPage() {
 
   // Kiểm tra cache có còn hợp lệ không
   const isCacheValid = () => {
-    return Date.now() - lastFetchTime < CACHE_TIMEOUT && cachedUsers.length > 0
+    return false // cache logic removed
   }
 
   // Fetch users với cache
   const fetchUsersWithCache = async (page: number, size: number) => {
     // Nếu cache còn hợp lệ và đang ở page 1, sử dụng cache
-    if (page === 1 && isCacheValid()) {
-      return cachedUsers
-    }
+  // cache logic removed
     
     // Nếu không có cache hoặc cache hết hạn, fetch từ server
     await fetchUsers(page, size)
     
     // Cache kết quả nếu fetch thành công và đang ở page 1
-    if (page === 1) {
-      setCachedUsers(users)
-      setLastFetchTime(Date.now())
-    }
+  // cache logic removed
   }
 
   // Debounced search để tránh fetch quá nhiều
   const debouncedSearch = useCallback(
-    debounce((term: string) => {
-      if (term.length >= 2 || term.length === 0) {
-        // Reset về page 1 khi search
-        fetchUsersWithCache(1, pageSize)
+    debounce(async (term: string) => {
+      if (term.length === 0) {
+        setAllUsersForSearch(null)
+        setIsSearching(false)
+        await fetchUsersWithCache(1, pageSize)
+        return
+      }
+
+      // Preserve selection trước khi search
+      const inputEl = searchInputRef.current
+      if (inputEl) {
+        setPreservedSelection({ start: inputEl.selectionStart, end: inputEl.selectionEnd })
+      }
+
+      setIsSearching(true)
+
+      const termLower = term.toLowerCase()
+      const foundOnPage = users.some((u) =>
+        u.fullName.toLowerCase().includes(termLower) || u.email.toLowerCase().includes(termLower)
+      )
+
+      if (foundOnPage) {
+        setAllUsersForSearch(null)
+        setIsSearching(false)
+        return
+      }
+
+      try {
+        const all = await fetchAllUsers()
+        setAllUsersForSearch(all)
+      } catch (err) {
+        console.error('Failed to fetch all users for search', err)
+        setAllUsersForSearch(null)
+      } finally {
+        setIsSearching(false)
       }
     }, 300),
-    []
+    [fetchAllUsers, fetchUsersWithCache, pageSize, users]
   )
 
   // Xử lý search với debounce
@@ -166,6 +181,28 @@ export default function AdminUsersPage() {
     setSearchTerm(value)
     debouncedSearch(value)
   }
+
+  // Effect để restore focus/selection sau khi search xong
+  useEffect(() => {
+    if (!isSearching && searchInputRef.current && (preservedSelection.start !== null || preservedSelection.end !== null)) {
+      const inputEl = searchInputRef.current
+      setTimeout(() => {
+        try {
+          inputEl.focus()
+          if (preservedSelection.start !== null && preservedSelection.end !== null) {
+            inputEl.setSelectionRange(preservedSelection.start, preservedSelection.end)
+          } else {
+            inputEl.setSelectionRange(searchTerm.length, searchTerm.length)
+          }
+        } catch (e) {
+          inputEl.focus()
+        }
+      }, 0)
+
+      setPreservedSelection({ start: null, end: null })
+    }
+  }, [isSearching, preservedSelection, searchTerm])
+  // Removed handleFileUpload function (no longer needed)
 
   // Xử lý filter changes
   const handleFilterChange = (filterType: string, value: string) => {
@@ -187,8 +224,7 @@ export default function AdminUsersPage() {
 
   // Clear cache khi cần thiết
   const clearCache = () => {
-    setCachedUsers([])
-    setLastFetchTime(0)
+  // cache logic removed
   }
 
   // Enhanced refresh function
@@ -212,8 +248,8 @@ export default function AdminUsersPage() {
       setTotalUsersCount(allUsers.length)
       
       // Tính toán thống kê chính xác từ tất cả users
-      const totalActive = allUsers.filter(user => user.isActive).length
-      const totalInactive = allUsers.filter(user => !user.isActive).length
+  const totalActive = allUsers.filter((user) => user.isActive).length
+  const totalInactive = allUsers.filter((user) => !user.isActive).length
       
       // Cập nhật totalStats để hiển thị số liệu từ tất cả các trang
       setTotalStats({
@@ -246,8 +282,8 @@ export default function AdminUsersPage() {
       setTotalUsersCount(allUsers.length)
       
       // Tính toán thống kê chính xác từ tất cả users
-      const totalActive = allUsers.filter(user => user.isActive).length
-      const totalInactive = allUsers.filter(user => !user.isActive).length
+  const totalActive = allUsers.filter((user) => user.isActive).length
+  const totalInactive = allUsers.filter((user) => !user.isActive).length
       
       // Cập nhật totalStats để hiển thị số liệu từ tất cả các trang
       setTotalStats({
@@ -261,188 +297,9 @@ export default function AdminUsersPage() {
     }
   }
 
-  const handleFileUpload = async (file: File, onProgress?: (progress: number) => void) => {
-    console.log('🚀 Starting file upload...')
-    try {
-      let result: boolean | undefined
-      
-      // Simulate progress updates if progress callback is provided
-      if (onProgress) {
-        // Start with 5% progress
-        onProgress(5)
-        
-        // Simulate realistic progress updates
-        const progressSteps = [15, 25, 35, 45, 55, 65, 75, 85, 95]
-        let currentStep = 0
-        
-        const progressInterval = setInterval(() => {
-          if (currentStep < progressSteps.length) {
-            onProgress(progressSteps[currentStep])
-            currentStep++
-          } else {
-            // If we've shown all steps but upload is still going, show 95%
-            onProgress(95)
-          }
-        }, 300) // Update every 300ms for smoother progress
-        
-        result = await importUsers(file)
-        
-        // Clear interval and smoothly go to 100%
-        clearInterval(progressInterval)
-        onProgress(100)
-      } else {
-        result = await importUsers(file)
-      }
-      
-      console.log('🔍 Upload result:', result, 'Type:', typeof result)
-      
-      if (result === false) {
-        // Upload thất bại hoặc timeout
-        console.log('❌ Upload failed or timeout...')
-        
-        // Upload thất bại
-        console.log('❌ Upload failed, no toast shown as requested.')
-        
-        // Clear cache vì dữ liệu có thể đã thay đổi
-        clearCache()
-        
-        // Lưu trạng thái để hiện dialog sau khi refresh
-        localStorage.setItem('showFileUploadAfterRefresh', 'true')
-        
-        // Đợi toast hiển thị xong rồi mới refresh
-        console.log('⏰ Waiting 3 seconds before refresh...')
-        setTimeout(() => {
-          console.log('🔄 Refreshing page...')
-          window.location.reload()
-        }, 3000)
-        
-      } else if (result === true) {
-        // Upload thành công (result === true)
-        setUploadTimeout(false)
-        console.log('🚀 Upload successful! Showing success toast...')
-        showToast({
-          title: 'Upload Successful',
-          description: 'File uploaded and users imported successfully! Refreshing page to show new data...',
-          variant: 'success'
-        })
-        
-        // Clear cache vì dữ liệu đã thay đổi
-        clearCache()
-        
-        // Refresh total statistics before page reload
-        await refreshTotalStats()
-        
-        // Lưu trạng thái để hiện dialog sau khi refresh
-        localStorage.setItem('showFileUploadAfterRefresh', 'true')
-        
-        // Đợi toast hiển thị xong rồi mới refresh
-        console.log('⏰ Waiting 3 seconds before refresh...')
-        setTimeout(() => {
-          console.log('🔄 Refreshing page...')
-          window.location.reload()
-        }, 3000)
-        
-      } else {
-        // Upload thành công (result === undefined hoặc truthy khác)
-        setUploadTimeout(false)
-        console.log('🚀 Upload successful (undefined/truthy)! Showing success toast...')
-        showToast({
-          title: 'Upload Successful',
-          description: 'File uploaded and users imported successfully! Refreshing page to show new data...',
-          variant: 'success'
-        })
-        
-        // Clear cache vì dữ liệu đã thay đổi
-        clearCache()
-        
-        // Refresh total statistics before page reload
-        await refreshTotalStats()
-        
-        // Lưu trạng thái để hiện dialog sau khi refresh
-        localStorage.setItem('showFileUploadAfterRefresh', 'true')
-        
-        // Đợi toast hiển thị xong rồi mới refresh
-        console.log('⏰ Waiting 3 seconds before refresh...')
-        setTimeout(() => {
-          console.log('🔄 Refreshing page...')
-          window.location.reload()
-        }, 3000)
-      }
-      
-      // Đóng dialog upload
-      console.log('✅ Upload completed, closing dialog...')
-      setShowFileUpload(false)
-      
-    } catch (error) {
-      console.error('Error uploading file:', error)
-      // Error đã được xử lý trong useAdmin hook
-      
-             // Không hiển thị toast lỗi theo yêu cầu
-       console.log('❌ Upload error caught, no toast shown as requested.')
-      
-      // Clear cache vì có thể có lỗi
-      clearCache()
-      
-      // Refresh total statistics before page reload
-      await refreshTotalStats()
-      
-      // Lưu trạng thái để hiện dialog sau khi refresh
-      localStorage.setItem('showFileUploadAfterRefresh', 'true')
-      
-      // Đợi một chút rồi mới refresh để user có thể thấy error
-      console.log('⏰ Waiting 2 seconds before refresh...')
-      setTimeout(() => {
-        console.log('🔄 Refreshing page...')
-        window.location.reload()
-      }, 2000)
-    }
-  }
+  // All file upload logic removed
 
-  const handleExportExcel = async () => {
-    setExporting(true)
-    try {
-      const allUsers = await fetchAllUsers()
-      if (allUsers.length === 0) {
-        setExporting(false)
-        return
-      }
-      const filteredAllUsers = allUsers.filter((user) => {
-        const matchesSearch =
-          user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          user.email.toLowerCase().includes(searchTerm.toLowerCase())
-        const matchesRole = selectedRole === 'all' || user.role === selectedRole
-        const matchesStatus =
-          selectedStatus === 'all' ||
-          (selectedStatus === 'active' && user.isActive) ||
-          (selectedStatus === 'inactive' && !user.isActive)
-        // So sánh semester theo định dạng `${term.season} ${term.year}`
-        const userSemester = user.term ? user.term : ''
-        const matchesSemester =
-          selectedSemester === 'all' || userSemester === selectedSemester
-        return matchesSearch && matchesRole && matchesStatus && matchesSemester
-      })
-      if (filteredAllUsers.length === 0) {
-        setExporting(false)
-        return
-      }
-      const data = filteredAllUsers.map((user) => ({
-        ID: user.id,
-        'Full Name': user.fullName,
-        Email: user.email,
-        'Phone Number': user.phoneNumber,
-        'Student ID': user.studentId,
-        Term: user.term,
-        Role: user.role,
-        Status: user.isActive ? 'Active' : 'Inactive'
-      }))
-      const worksheet = XLSX.utils.json_to_sheet(data)
-      const workbook = XLSX.utils.book_new()
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Users')
-      XLSX.writeFile(workbook, 'users.xlsx')
-    } finally {
-      setExporting(false)
-    }
-  }
+  // All export excel logic removed
 
   const handleBanUser = async (userId: string) => {
     setPendingAction({
@@ -471,7 +328,7 @@ export default function AdminUsersPage() {
       newSelected.add(userId)
     }
     setSelectedUsers(newSelected)
-    setSelectAll(newSelected.size === filteredUsers.length)
+  setSelectAll(newSelected.size === memoizedFilteredUsers.length)
   }
 
   const handleSelectAll = () => {
@@ -479,7 +336,7 @@ export default function AdminUsersPage() {
       setSelectedUsers(new Set())
       setSelectAll(false)
     } else {
-      setSelectedUsers(new Set(filteredUsers.map(user => user.id)))
+  setSelectedUsers(new Set(memoizedFilteredUsers.map((user) => user.id)))
       setSelectAll(true)
     }
   }
@@ -623,7 +480,7 @@ export default function AdminUsersPage() {
     const inactiveUsers: string[] = []
     
     selectedUsers.forEach(userId => {
-      const user = filteredUsers.find(u => u.id === userId)
+    const user = memoizedFilteredUsers.find(u => u.id === userId)
       if (user) {
         if (user.isActive) {
           activeUsers.push(userId)
@@ -636,32 +493,38 @@ export default function AdminUsersPage() {
     return { activeUsers, inactiveUsers }
   }
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesRole = selectedRole === 'all' || user.role === selectedRole
-    const matchesStatus =
-      selectedStatus === 'all' ||
-      (selectedStatus === 'active' && user.isActive) ||
-      (selectedStatus === 'inactive' && !user.isActive)
-    // So sánh semester theo định dạng `${termSeason} ${termYear}` hoặc pastTerms
-    const userSemester = user.termSeason && user.termYear
-      ? `${user.termSeason} ${user.termYear}`
-      : user.pastTerms || ''
-    const matchesSemester =
-      selectedSemester === 'all' || userSemester === selectedSemester
-    return matchesSearch && matchesRole && matchesStatus && matchesSemester
-  })
+  const baseUsers = allUsersForSearch && searchTerm.length >= 2 ? allUsersForSearch : users
+  const memoizedFilteredUsers = useMemo(() => {
+    return baseUsers.filter((user) => {
+      const matchesSearch =
+        user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesRole = selectedRole === 'all' || user.role === selectedRole
+      const matchesStatus =
+        selectedStatus === 'all' ||
+        (selectedStatus === 'active' && user.isActive) ||
+        (selectedStatus === 'inactive' && !user.isActive)
+      // So sánh semester theo định dạng `${termSeason} ${termYear}` hoặc pastTerms
+      const userSemester = user.termSeason && user.termYear
+        ? `${user.termSeason} ${user.termYear}`
+        : user.pastTerms || ''
+      const matchesSemester =
+        selectedSemester === 'all' || userSemester === selectedSemester
+      return matchesSearch && matchesRole && matchesStatus && matchesSemester
+    })
+  }, [baseUsers, searchTerm, selectedRole, selectedStatus, selectedSemester])
 
   const roles = Array.from(new Set(users.map((user) => user.role)))
   const semesters = terms.map((term: any) => `${term.season} ${term.year}`)
 
+  // When searching across all pages, derive roles from the base list so filters match results
+  const rolesFromBase = Array.from(new Set(baseUsers.map((user) => user.role)))
+
   // Get statistics
   const stats = {
-    total: filteredUsers.length,
-    active: filteredUsers.filter(user => user.isActive).length,
-    inactive: filteredUsers.filter(user => !user.isActive).length,
+    total: memoizedFilteredUsers.length,
+    active: memoizedFilteredUsers.filter((user) => user.isActive).length,
+    inactive: memoizedFilteredUsers.filter((user) => !user.isActive).length,
     selected: selectedUsers.size
   }
 
@@ -826,8 +689,22 @@ export default function AdminUsersPage() {
                   placeholder='Search by name or email...'
                   value={searchTerm}
                   onChange={(e) => handleSearchChange(e.target.value)}
-                  className='pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-gray-50 focus:bg-white'
+                  ref={(el) => (searchInputRef.current = el)}
+                  className={`pl-10 pr-4 h-10 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-gray-50 focus:bg-white ${
+                    isSearching ? 'opacity-75' : ''
+                  }`}
+                  onFocus={(e) => {
+                    setPreservedSelection({ start: e.target.selectionStart, end: e.target.selectionEnd })
+                  }}
+                  onSelect={(e) => {
+                    setPreservedSelection({ start: (e.target as HTMLInputElement).selectionStart, end: (e.target as HTMLInputElement).selectionEnd })
+                  }}
                 />
+                {isSearching && (
+                  <div className='absolute right-3 top-1/2 transform -translate-y-1/2'>
+                    <Loader2 className='w-4 h-4 animate-spin text-blue-500' />
+                  </div>
+                )}
               </div>
               
               <div className='flex items-center gap-3'>
@@ -839,7 +716,7 @@ export default function AdminUsersPage() {
                   className='px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-gray-50 focus:bg-white text-sm font-medium min-w-[120px]'
                 >
                   <option value='all'>👥 All Roles</option>
-                  {roles.map((role) => (
+                  {(rolesFromBase.length ? rolesFromBase : roles).map((role) => (
                     <option key={role} value={role}>
                       {role === 'admin' ? '🔧' : role === 'teacher' ? '👨‍🏫' : '👨‍🎓'} {role}
                     </option>
@@ -883,25 +760,6 @@ export default function AdminUsersPage() {
                 {isCountingTotal ? 'Refreshing...' : totalUsersCount !== null ? `Total: ${totalUsersCount}` : 'Loading...'}
               </Button>
               
-              <Button 
-                variant='outline' 
-                onClick={() => setShowFileUpload((v) => !v)}
-                className='px-6 py-3 border-2 border-blue-200 text-blue-600 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 rounded-xl font-semibold shadow-sm hover:shadow-md'
-              >
-                <Upload className='h-5 w-5 mr-2' />
-                <span className='hidden md:inline'>Import Users</span>
-                <span className='md:hidden'>Import</span>
-              </Button>
-              
-              <Button 
-                variant='outline' 
-                onClick={handleExportExcel} 
-                disabled={exporting}
-                className='px-6 py-3 border-2 border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300 transition-all duration-200 rounded-xl font-semibold shadow-sm hover:shadow-md disabled:opacity-50'
-              >
-                <Download className={`h-5 w-5 mr-2 ${exporting ? 'animate-bounce' : ''}`} />
-                {exporting ? 'Exporting...' : 'Export Excel'}
-              </Button>
               
               <Button 
                 variant='outline' 
@@ -916,20 +774,6 @@ export default function AdminUsersPage() {
           </div>
         </div>
               {/* Enhanced File Upload Section */}
-        {showFileUpload && (
-          <div className='bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border-2 border-blue-200 shadow-lg'>
-            <div className='flex items-center space-x-4 mb-4'>
-              <div className='flex items-center justify-center w-12 h-12 bg-blue-500 rounded-xl'>
-                <Upload className='w-6 h-6 text-white' />
-              </div>
-              <div>
-                <h3 className='text-lg font-semibold text-blue-900'>Import Users</h3>
-                <p className='text-blue-700'>Upload an Excel file to import multiple users at once</p>
-              </div>
-            </div>
-            <FileUpload onFileUpload={handleFileUpload} />
-          </div>
-        )}
         
         {/* Enhanced Bulk Actions */}
         {selectedUsers.size > 0 && (
@@ -1052,34 +896,6 @@ export default function AdminUsersPage() {
       )}
       
       {/* Timeout Warning */}
-      {uploadTimeout && (
-        <div className='mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg'>
-          <div className='flex items-center justify-between'>
-            <div className='flex items-center space-x-3'>
-              <div className='p-2 bg-yellow-100 rounded-full'>
-                <svg className='w-5 h-5 text-yellow-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z' />
-                </svg>
-              </div>
-              <div>
-                <h3 className='text-lg font-semibold text-yellow-900'>Upload Timeout</h3>
-                <p className='text-yellow-700'>
-                  Your file upload timed out, but the file may still be processing on the server. 
-                  The page is now automatically refreshing every 3 seconds to monitor progress.
-                </p>
-              </div>
-            </div>
-            <Button 
-              variant='outline' 
-              size='sm'
-              onClick={() => window.location.reload()}
-              className='bg-yellow-100 border-yellow-300 text-yellow-800 hover:bg-yellow-200'
-            >
-              Refresh Now
-            </Button>
-          </div>
-        </div>
-      )}
 
       {error ? (
         <Card className='w-full max-w-md mx-auto'>
@@ -1090,7 +906,7 @@ export default function AdminUsersPage() {
             </div>
           </CardContent>
         </Card>
-      ) : filteredUsers.length === 0 ? (
+  ) : memoizedFilteredUsers.length === 0 ? (
         <Card>
           <CardContent className='pt-6'>
             <div className='text-center py-8'>
@@ -1141,7 +957,7 @@ export default function AdminUsersPage() {
               </tr>
             </thead>
             <tbody className='divide-y divide-gray-200'>
-              {filteredUsers.map((user) => {
+              {memoizedFilteredUsers.map((user) => {
                 const userSemester = user.termSeason && user.termYear
                   ? `${user.termSeason} ${user.termYear}`
                   : user.pastTerms || 'Not provided'

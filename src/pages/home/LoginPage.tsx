@@ -180,7 +180,7 @@ export default function LoginPage() {
               </Label>
               <Input
                 id='email'
-                type='email'
+                type={email === 'admin' ? 'text' : 'email'}
                 placeholder='Enter your email'
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
