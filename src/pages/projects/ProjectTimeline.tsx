@@ -64,41 +64,47 @@ function TimelineHeader({
     const dayOfWeek = date.getDay()
     return dayOfWeek === 0 || dayOfWeek === 6
   }
-  const totalWidth = 240 + days.length * DAY_WIDTH
   return (
     <div
       ref={headerRef}
-      className='sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200'
-      style={{ width: totalWidth }}
+      className='sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200 overflow-hidden'
+      style={{ width: '100%' }}
     >
-      <div className='flex items-center justify-between px-6 py-4'>
-        <div className='flex items-center gap-4'>
-          <div className='flex items-center gap-2'>
-            <Clock className='h-5 w-5 text-lavender-600' />
-            <h2 className='text-xl font-bold text-gray-900'>{format(currentDate, 'MMMM yyyy')}</h2>
-          </div>
-          <div className='flex items-center gap-1 bg-gray-50 rounded-lg p-1'>
-            <Button
-              variant='ghost'
-              size='sm'
-              className='h-8 w-8 rounded-lg hover:bg-gray-100 transition-colors'
-              onClick={() => onNavigate('prev')}
-            >
-              <ChevronLeft className='h-4 w-4' />
-            </Button>
-            <Button
-              variant='ghost'
-              size='sm'
-              className='h-8 w-8 rounded-lg hover:bg-gray-100 transition-colors'
-              onClick={() => onNavigate('next')}
-            >
-              <ChevronRight className='h-4 w-4' />
-            </Button>
-          </div>
+      <div className='grid grid-cols-[auto,1fr,auto] items-center px-6 py-4'>
+        {/* Left: previous month button (fixed left) */}
+        <div className='flex items-center'>
+          <Button
+            variant='ghost'
+            size='sm'
+            className='h-8 w-8 rounded-lg hover:bg-gray-100 transition-colors'
+            onClick={() => onNavigate('prev')}
+            aria-label='Previous month'
+          >
+            <ChevronLeft className='h-4 w-4' />
+          </Button>
         </div>
-        <div className='flex items-center gap-2 text-sm text-gray-600'>
-          <Target className='h-4 w-4' />
-          <span>Timeline View</span>
+
+        {/* Center: month title (centered regardless of its length) */}
+        <div className='flex items-center justify-center gap-3'>
+          <Clock className='h-5 w-5 text-lavender-600' />
+          <h2 className='text-xl font-bold text-gray-900 text-center'>{format(currentDate, 'MMMM yyyy')}</h2>
+        </div>
+
+        {/* Right: next month button and small label (fixed right) */}
+        <div className='flex items-center justify-end gap-3'>
+          <Button
+            variant='ghost'
+            size='sm'
+            className='h-8 w-8 rounded-lg hover:bg-gray-100 transition-colors'
+            onClick={() => onNavigate('next')}
+            aria-label='Next month'
+          >
+            <ChevronRight className='h-4 w-4' />
+          </Button>
+          <div className='flex items-center gap-2 text-sm text-gray-600'>
+            <Target className='h-4 w-4' />
+            <span>Timeline View</span>
+          </div>
         </div>
       </div>
       <div className='grid grid-cols-[240px,1fr] border-t border-gray-200 bg-gray-50 overflow-hidden'>
@@ -111,7 +117,7 @@ function TimelineHeader({
         </div>
         <div
           className='flex border-l border-gray-200'
-          style={{ width: days.length * DAY_WIDTH, transform: `translateX(${-scrollLeft}px)` }}
+          style={{ minWidth: days.length * DAY_WIDTH, transform: `translateX(${-scrollLeft}px)` }}
         >
           {days.map((day) => (
             <div
