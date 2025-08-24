@@ -121,3 +121,14 @@ export async function getProjectPartCommitDetail(projectId: string, partId: stri
   const res = await axiosClient.get(`/projects/${projectId}/parts/${encodedPartId}/commit/${commitId}`);
   return res.data;
 }
+
+// API để xóa webhook của project part
+export async function deleteProjectPartWebhook(
+  projectId: string,
+  repoUrl: string
+): Promise<{ code: number; message: string; data: string }> {
+  const res = await axiosClient.delete(`/projects/${projectId}/parts/webhook`, {
+    params: { repoUrl }
+  })
+  return res.data
+}

@@ -1,4 +1,5 @@
 import { connectRepoToPart, createProjectPart } from '@/api/projectParts'
+import { deleteProjectPartWebhook } from '@/api/webhooks'
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
 import { Button } from '@/components/ui/button'
@@ -11,7 +12,7 @@ import axiosClient from '@/configs/axiosClient'
 import { useGitHubStatus } from '@/contexts/GitHubStatusContext'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { extractPartId, processPartsData, validatePartId, type ProjectPart } from '@/utils/partIdHelper'
-import { ArrowRight, CheckCircle, Github, Plus, XCircle } from 'lucide-react'
+import { ArrowRight, CheckCircle, Github, Plus, Trash2, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
@@ -46,6 +47,8 @@ export default function ProjectGitHub() {
   const [connecting, setConnecting] = useState(false)
   const [currentStep, setCurrentStep] = useState<'select' | 'create' | 'connect'>('select')
   const [newlyCreatedPartId, setNewlyCreatedPartId] = useState<string | null>(null)
+  const [deletingWebhook, setDeletingWebhook] = useState<string | null>(null)
+  const [webhookToDelete, setWebhookToDelete] = useState<string | null>(null)
 
   const fetchData = async () => {
     setLoading(true)
@@ -197,6 +200,44 @@ export default function ProjectGitHub() {
     }
   }
 
+  const handleDeleteWebhook = async (repoUrl: string) => {
+    if (!repoUrl) {
+      setError('Repository URL is required for webhook deletion')
+      return
+    }
+    
+    setWebhookToDelete(repoUrl)
+  }
+
+  const confirmDeleteWebhook = async () => {
+    if (!webhookToDelete) return
+    
+    setDeletingWebhook(webhookToDelete)
+    setError(null)
+    setSuccess(null)
+    
+    try {
+      await deleteProjectPartWebhook(projectId!, webhookToDelete)
+      
+      setSuccess('Webhook deleted successfully!')
+      await fetchData()
+      
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 
+                          err.response?.data?.error || 
+                          err.message || 
+                          'Error deleting webhook'
+      setError(errorMessage)
+    } finally {
+      setDeletingWebhook(null)
+      setWebhookToDelete(null)
+    }
+  }
+
+  const cancelDeleteWebhook = () => {
+    setWebhookToDelete(null)
+  }
+
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
   // Check if no project is selected
@@ -260,6 +301,52 @@ export default function ProjectGitHub() {
             )}
             {success && (
               <div className='bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6'>{success}</div>
+            )}
+
+            {/* Webhook Deletion Confirmation Dialog */}
+            {webhookToDelete && (
+              <div className='fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'>
+                <div className='bg-white rounded-lg p-6 max-w-md w-full mx-4'>
+                  <div className='flex items-center gap-3 mb-4'>
+                    <div className='w-10 h-10 bg-red-100 rounded-full flex items-center justify-center'>
+                      <Trash2 className='w-5 h-5 text-red-600' />
+                    </div>
+                    <div>
+                      <h3 className='text-lg font-semibold text-gray-900'>Delete Webhook</h3>
+                      <p className='text-sm text-gray-600'>This action cannot be undone</p>
+                    </div>
+                  </div>
+                  
+                  <div className='mb-6'>
+                    <p className='text-gray-700 mb-2'>Are you sure you want to delete the webhook for:</p>
+                    <p className='text-sm bg-gray-50 p-3 rounded border font-mono break-all'>{webhookToDelete}</p>
+                  </div>
+                  
+                  <div className='flex gap-3 justify-end'>
+                    <Button
+                      variant='outline'
+                      onClick={cancelDeleteWebhook}
+                      disabled={deletingWebhook === webhookToDelete}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant='destructive'
+                      onClick={confirmDeleteWebhook}
+                      disabled={deletingWebhook === webhookToDelete}
+                    >
+                      {deletingWebhook === webhookToDelete ? (
+                        <div className='flex items-center gap-2'>
+                          <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
+                          <span>Deleting...</span>
+                        </div>
+                      ) : (
+                        'Delete Webhook'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* Recently Created Project Part */}
@@ -863,11 +950,32 @@ export default function ProjectGitHub() {
                           .filter(part => part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl)
                           .map((part) => (
                             <div key={part.id} className='flex items-center justify-between p-3 bg-green-50 rounded-lg'>
-                              <div>
+                              <div className='flex-1'>
                                 <p className='font-medium text-gray-900'>{part.name}</p>
                                 <p className='text-sm text-gray-600'>{part.repoUrl}</p>
                               </div>
-                              <span className='text-green-600 text-sm font-medium'>✓ Connected</span>
+                              <div className='flex items-center gap-3'>
+                                <span className='text-green-600 text-sm font-medium'>✓ Connected</span>
+                                <Button
+                                  size='sm'
+                                  variant='outline'
+                                  onClick={() => handleDeleteWebhook(part.repoUrl!)}
+                                  disabled={deletingWebhook === part.repoUrl}
+                                  className='text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200'
+                                >
+                                  {deletingWebhook === part.repoUrl ? (
+                                    <div className='flex items-center gap-2'>
+                                      <div className='w-3 h-3 border-2 border-red-600 border-t-transparent rounded-full animate-spin'></div>
+                                      <span>Deleting...</span>
+                                    </div>
+                                  ) : (
+                                    <div className='flex items-center gap-2'>
+                                      <Trash2 className='w-4 h-4' />
+                                      <span>Delete Webhook</span>
+                                    </div>
+                                  )}
+                                </Button>
+                              </div>
                             </div>
                           ))}
                       </div>
@@ -1012,7 +1120,34 @@ export default function ProjectGitHub() {
                               </div>
                             </div>
                             
-                            {!part.repoUrl && (
+                            {part.repoUrl ? (
+                              <div className='mt-3 pt-3 border-t border-green-200'>
+                                <Button
+                                  size='sm'
+                                  variant='outline'
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    handleDeleteWebhook(part.repoUrl!)
+                                  }}
+                                  disabled={deletingWebhook === part.repoUrl}
+                                  className='w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200'
+                                  type='button'
+                                >
+                                  {deletingWebhook === part.repoUrl ? (
+                                    <div className='flex items-center gap-2'>
+                                      <div className='w-3 h-3 border-2 border-red-600 border-t-transparent rounded-full animate-spin'></div>
+                                      <span>Deleting Webhook...</span>
+                                    </div>
+                                  ) : (
+                                    <span className='flex items-center gap-2'>
+                                      <Trash2 className='w-4 h-4' />
+                                      <span>Delete Webhook</span>
+                                    </span>
+                                  )}
+                                </Button>
+                              </div>
+                            ) : (
                               <div className='mt-3 pt-3 border-t border-blue-200'>
                                 <Button
                                   size='sm'
