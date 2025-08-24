@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToastContext } from '@/components/ui/ToastContext'
 
 import { useAuth } from '@/hooks/useAuth'
-import { useBoards } from '@/hooks/useBoards'
+
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useSignalRIntegration } from '@/hooks/useSignalRIntegration'
 import { useTags } from '@/hooks/useTags'
@@ -25,7 +25,6 @@ import {
   ChevronsUp,
   ChevronUp,
   Eye,
-  FileText,
   Filter,
   Link,
   ListTodo,
@@ -63,7 +62,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const { currentProject } = useCurrentProject()
   const { user } = useAuth()
   const { showToast } = useToastContext()
-  const { boards, refreshBoards } = useBoards()
+
   const navigate = useNavigate()
   const { listenForTaskUpdates } = useSignalRIntegration()
 

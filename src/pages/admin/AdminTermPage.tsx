@@ -58,8 +58,8 @@ export default function TermManagement() {
 
   // State for delete dialog
   const [deleteId, setDeleteId] = useState<string | null>(null)
-  const [deleteSeason, setDeleteSeason] = useState('')
-  const [deleteYear, setDeleteYear] = useState('')
+  const [deleteSeason] = useState('')
+  const [deleteYear] = useState('')
   const [deleteLoading, setDeleteLoading] = useState(false)
 
   // State for lock/unlock operations
@@ -369,13 +369,7 @@ export default function TermManagement() {
     }
   }
 
-  const handleDeleteClick = async (term: Term): Promise<void> => {
-    // Allow deletion for any term without restrictions
-    setDeleteId(term.id)
-    setDeleteSeason(term.season)
-    setDeleteYear(term.year.toString())
-    setDeleteLoading(false)
-  }
+
 
   const handleDeleteConfirm = async (): Promise<void> => {
     if (!deleteId) return
