@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
 import { TaskDetailMenu } from '@/components/tasks/TaskDetailMenu'
@@ -45,10 +46,14 @@ const DAY_WIDTH = 56
 
 function TimelineHeader({
   currentDate,
-  onNavigate
+  onNavigate,
+  headerRef,
+  scrollLeft = 0
 }: {
   currentDate: Date
   onNavigate: (direction: 'prev' | 'next') => void
+  headerRef?: React.RefObject<HTMLDivElement>
+  scrollLeft?: number
 }) {
   const days = eachDayOfInterval({
     start: startOfMonth(currentDate),
@@ -62,7 +67,8 @@ function TimelineHeader({
   const totalWidth = 240 + days.length * DAY_WIDTH
   return (
     <div
-      className='sticky top-0 z-10 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200'
+      ref={headerRef}
+      className='sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200'
       style={{ width: totalWidth }}
     >
       <div className='flex items-center justify-between px-6 py-4'>
@@ -95,12 +101,18 @@ function TimelineHeader({
           <span>Timeline View</span>
         </div>
       </div>
-      <div className='grid grid-cols-[240px,1fr] border-t border-gray-200 bg-gray-50'>
-        <div className='p-4 font-semibold text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center gap-2'>
+      <div className='grid grid-cols-[240px,1fr] border-t border-gray-200 bg-gray-50 overflow-hidden'>
+        <div
+          className='p-4 font-semibold text-gray-700 bg-gray-50 border-r border-gray-200 flex items-center gap-2 sticky left-0 z-30'
+          style={{ top: 'var(--timeline-left-top, 0px)' }}
+        >
           <Users className='h-4 w-4' />
           <span>Sprints</span>
         </div>
-        <div className='flex border-l border-gray-200' style={{ width: days.length * DAY_WIDTH }}>
+        <div
+          className='flex border-l border-gray-200'
+          style={{ width: days.length * DAY_WIDTH, transform: `translateX(${-scrollLeft}px)` }}
+        >
           {days.map((day) => (
             <div
               key={day.toString()}
@@ -276,7 +288,10 @@ function SprintRow({
   if (!sprint.startDate || !sprint.endDate) {
     return (
       <div className='grid grid-cols-[240px,1fr] min-h-[200px] border-b border-gray-200 hover:bg-gray-50 transition-colors'>
-        <div className='p-6 bg-white border-r border-gray-200'>
+        <div
+          className='p-6 bg-white border-r border-gray-200'
+          style={{ position: 'sticky', left: 0, top: 'var(--timeline-left-top, 0px)', zIndex: 30 }}
+        >
           <div className='flex items-center gap-2 mb-3'>
             <div className='w-3 h-3 rounded-full bg-gray-400' />
             <h3 className='font-semibold text-gray-900'>{sprint.name}</h3>
@@ -326,7 +341,10 @@ function SprintRow({
       className='grid grid-cols-[240px,1fr] min-h-[200px] border-b border-gray-200 hover:bg-gray-50 transition-colors'
       style={{ width: totalWidth }}
     >
-      <div className='p-6 bg-white border-r border-gray-200'>
+      <div
+        className='p-6 bg-white border-r border-gray-200 sticky left-0 z-30'
+        style={{ top: 'var(--timeline-left-top, 0px)' }}
+      >
         <div className='flex items-center gap-2 mb-3'>
           <div className={`w-3 h-3 rounded-full ${sprintColor.accent}`} />
           <h3 className='font-semibold text-gray-900'>{sprint.name}</h3>
@@ -452,6 +470,7 @@ function SprintRow({
 
 export default function ProjectTimeline() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const headerRef = useRef<HTMLDivElement | null>(null)
   const { currentProject, isLoading: projectLoading } = useCurrentProject()
   const [currentDate, setCurrentDate] = useState(new Date())
   const {
@@ -468,9 +487,12 @@ export default function ProjectTimeline() {
   )
   const [selectedTask, setSelectedTask] = useState<TaskP | null>(null)
   const timelineScrollRef = useRef<HTMLDivElement>(null)
+  const verticalScrollRef = useRef<HTMLDivElement>(null)
+  const leftTopSetRef = useRef(false)
+  const [scrollLeft, setScrollLeft] = useState(0)
   const isDragging = useRef(false)
   const startX = useRef(0)
-  const scrollLeft = useRef(0)
+  const scrollLeftRef = useRef(0)
   const { projectId: urlProjectId } = useParams<{ projectId: string }>()
   const navigate = useNavigate()
 
@@ -490,7 +512,7 @@ export default function ProjectTimeline() {
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     isDragging.current = true
     startX.current = e.pageX - (timelineScrollRef.current?.getBoundingClientRect().left || 0)
-    scrollLeft.current = timelineScrollRef.current?.scrollLeft || 0
+    scrollLeftRef.current = timelineScrollRef.current?.scrollLeft || 0
   }
 
   const handleMouseLeave = () => {
@@ -507,7 +529,7 @@ export default function ProjectTimeline() {
     const x = e.pageX - (timelineScrollRef.current?.getBoundingClientRect().left || 0)
     const walk = x - startX.current
     if (timelineScrollRef.current) {
-      timelineScrollRef.current.scrollLeft = scrollLeft.current - walk
+      timelineScrollRef.current.scrollLeft = scrollLeftRef.current - walk
     }
   }
 
@@ -526,7 +548,7 @@ export default function ProjectTimeline() {
     if (!projectLoading && !effectiveProjectId) {
       navigate('/projects')
     }
-  }, [projectLoading, effectiveProjectId])
+  }, [projectLoading, effectiveProjectId, navigate])
 
   // Once the page becomes ready, don't regress back to global loader on later refetches
   useEffect(() => {
@@ -534,6 +556,41 @@ export default function ProjectTimeline() {
       setIsPageReady(true)
     }
   }, [isPageReady, effectiveProjectId, didInitialLoad, projectLoading, sprintsLoading, isTaskLoading])
+
+  // Measure header height and set CSS var on scroll container to align sticky left panels
+  useEffect(() => {
+    const setTop = () => {
+      const container = timelineScrollRef.current
+      const header = headerRef.current
+      if (!container || !header) return
+      const containerRect = container.getBoundingClientRect()
+      const headerRect = header.getBoundingClientRect()
+      // distance from top of container to bottom of header
+      const topValue = Math.max(0, headerRect.bottom - containerRect.top)
+      container.style.setProperty('--timeline-left-top', `${topValue}px`)
+      leftTopSetRef.current = true
+      // initialize horizontal scroll offset so header days align
+      const left = container.scrollLeft || 0
+      scrollLeftRef.current = left
+      setScrollLeft(left)
+    }
+    const onScroll = () => {
+      setTop()
+      const container = timelineScrollRef.current
+      const left = container?.scrollLeft || 0
+      scrollLeftRef.current = left
+      setScrollLeft(left)
+    }
+
+    setTop()
+    const container = timelineScrollRef.current
+    window.addEventListener('resize', setTop)
+    if (container) container.addEventListener('scroll', onScroll)
+    return () => {
+      window.removeEventListener('resize', setTop)
+      if (container) container.removeEventListener('scroll', onScroll)
+    }
+  }, [])
 
   // Show global loader only before first meaningful paint
   if (!isPageReady) {
@@ -574,7 +631,7 @@ export default function ProjectTimeline() {
             <div className='flex-1 overflow-hidden bg-white rounded-t-lg shadow-sm border border-gray-200'>
               <div className='min-w-[1200px] relative h-full'>
                 {/* Header strip skeleton */}
-                <div className='sticky top-0 z-10 bg-white/95 backdrop-blur-sm shadow-sm border-b border-gray-200'>
+                <div className='sticky top-0 z-50 bg-white shadow-sm border-b border-gray-200'>
                   <div className='flex items-center justify-between px-6 py-4'>
                     <div className='flex items-center gap-4'>
                       <div className='space-y-2'>
@@ -584,7 +641,7 @@ export default function ProjectTimeline() {
                     <Skeleton className='h-4 w-24' />
                   </div>
                   <div className='grid grid-cols-[240px,1fr] border-t border-gray-200 bg-gray-50'>
-                    <div className='p-4 bg-gray-50 border-r border-gray-200'>
+                    <div className='p-4 bg-gray-50 border-r border-gray-200 sticky left-0 z-30'>
                       <Skeleton className='h-5 w-24' />
                     </div>
                     <div className='px-2 py-2'>
@@ -597,7 +654,10 @@ export default function ProjectTimeline() {
                 <div className='relative'>
                   {Array.from({ length: 3 }).map((_, i) => (
                     <div key={i} className='grid grid-cols-[240px,1fr] min-h-[200px] border-b border-gray-200'>
-                      <div className='p-6 bg-white border-r border-gray-200'>
+                      <div
+                        className='p-6 bg-white border-r border-gray-200 sticky left-0 z-30'
+                        style={{ top: 'var(--timeline-left-top, 0px)' }}
+                      >
                         <div className='space-y-3'>
                           <div className='flex items-center gap-2'>
                             <Skeleton className='h-3 w-3 rounded-full' />
@@ -688,36 +748,46 @@ export default function ProjectTimeline() {
 
           <div className='flex-1 overflow-hidden bg-white rounded-t-lg shadow-sm border border-gray-200 min-h-0'>
             <div className='min-w-[1200px] relative h-full flex flex-col min-h-0'>
-              <div
-                ref={timelineScrollRef}
-                className='relative overflow-x-auto overflow-y-auto flex-1 cursor-grab select-none pb-8'
-                onMouseDown={handleMouseDown}
-                onMouseLeave={handleMouseLeave}
-                onMouseUp={handleMouseUp}
-                onMouseMove={handleMouseMove}
-              >
-                <TimelineHeader currentDate={currentDate} onNavigate={handleNavigate} />
-                <CurrentTimeIndicator currentDate={currentDate} />
-                {sprintsWithTasks.map((sprint, idx) => (
-                  <SprintRow
-                    key={sprint.id}
-                    sprint={sprint}
-                    currentDate={currentDate}
-                    index={idx}
-                    onTaskClick={(task) => setSelectedTask(task)}
-                    isHydratingTasks={isTaskLoading}
-                  />
-                ))}
-                {/* Show empty state only after initial fetch completes and not while we are still hydrating tasks */}
-                {didInitialLoad && !isTaskLoading && sprints.length === 0 && (
-                  <div className='flex items-center justify-center h-96 text-center'>
-                    <div>
-                      <Clock className='h-16 w-16 mx-auto mb-4 text-gray-400' />
-                      <h3 className='text-xl font-semibold text-gray-700 mb-2'>No sprints yet</h3>
-                      <p className='text-gray-500'>Create your first sprint to get started with timeline tracking</p>
+              <div ref={verticalScrollRef} className='relative overflow-y-auto flex-1'>
+                <TimelineHeader
+                  headerRef={headerRef}
+                  currentDate={currentDate}
+                  onNavigate={handleNavigate}
+                  scrollLeft={scrollLeft}
+                />
+
+                <div
+                  ref={timelineScrollRef}
+                  className='relative overflow-x-auto flex-1 cursor-grab select-none pb-8'
+                  onMouseDown={handleMouseDown}
+                  onMouseLeave={handleMouseLeave}
+                  onMouseUp={handleMouseUp}
+                  onMouseMove={handleMouseMove}
+                >
+                  <CurrentTimeIndicator currentDate={currentDate} />
+
+                  {sprintsWithTasks.map((sprint, idx) => (
+                    <SprintRow
+                      key={sprint.id}
+                      sprint={sprint}
+                      currentDate={currentDate}
+                      index={idx}
+                      onTaskClick={(task) => setSelectedTask(task)}
+                      isHydratingTasks={isTaskLoading}
+                    />
+                  ))}
+
+                  {/* Show empty state only after initial fetch completes and not while we are still hydrating tasks */}
+                  {didInitialLoad && !isTaskLoading && sprints.length === 0 && (
+                    <div className='flex items-center justify-center h-96 text-center'>
+                      <div>
+                        <Clock className='h-16 w-16 mx-auto mb-4 text-gray-400' />
+                        <h3 className='text-xl font-semibold text-gray-700 mb-2'>No sprints yet</h3>
+                        <p className='text-gray-500'>Create your first sprint to get started with timeline tracking</p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>
