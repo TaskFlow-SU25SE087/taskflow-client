@@ -1,5 +1,5 @@
 import { useToast } from '@/hooks/use-toast'
-import { AlertCircle, CheckCircle, Download, FileText, RefreshCw, Upload, Users, X } from 'lucide-react'
+import { AlertCircle, CheckCircle, Download, FileText, RefreshCw, Upload, Users, X, Search, Filter } from 'lucide-react'
 import React, { useCallback, useEffect, useState } from 'react'
 import axiosClient from '../../configs/axiosClient'
 
@@ -31,9 +31,17 @@ const AdminUserImport: React.FC = () => {
   const [file, setFile] = useState<File | null>(null)
   const [importing, setImporting] = useState(false)
   const [importResults, setImportResults] = useState<ImportResults | null>(null)
-  const [processedFiles, setProcessedFiles] = useState<ProcessedFile[]>([])
+
+  const [allProcessedFiles, setAllProcessedFiles] = useState<ProcessedFile[]>([])
   const [page, setPage] = useState<number>(1)
   const [totalPages, setTotalPages] = useState<number>(1)
+  
+  // Search and filter states
+  const [searchTerm, setSearchTerm] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [dateFilter, setDateFilter] = useState('all')
+  const [showFilters, setShowFilters] = useState(false)
+  
   const { toast } = useToast()
 
   const handleDrag = useCallback((e: React.DragEvent<HTMLDivElement>) => {
@@ -112,7 +120,7 @@ const AdminUserImport: React.FC = () => {
       const res = await axiosClient.get(`/admin/users/processing-files?page=${pageNumber}`)
       const payload = res.data && res.data.data ? res.data.data : res.data
       const items: ProcessedFile[] = (payload && payload.items) || []
-      setProcessedFiles(items)
+                      setAllProcessedFiles(items) // Store all files for filtering
       setTotalPages(payload?.totalPages ?? 1)
       setPage(payload?.pageNumber ?? pageNumber)
       return payload
@@ -132,6 +140,58 @@ const AdminUserImport: React.FC = () => {
   }
 
   // Note: only using the two allowed APIs. For downloads use the provided urlFile from processing-files.
+
+  // Filter and search logic
+  const filteredFiles = React.useMemo(() => {
+    return allProcessedFiles.filter((file) => {
+      const row = file as unknown as Record<string, unknown>
+      const fileName = String(row['fileName'] ?? row['name'] ?? row['filename'] ?? '').toLowerCase()
+      const status = String(row['status'] ?? row['statusFile'] ?? row['state'] ?? '').toLowerCase()
+      const createdDate = row['createdAt'] ?? row['uploadDate'] ?? row['uploadedAt']
+      
+      // Search filter
+      const matchesSearch = searchTerm === '' || fileName.includes(searchTerm.toLowerCase())
+      
+      // Status filter
+      const matchesStatus = statusFilter === 'all' || status === statusFilter.toLowerCase()
+      
+      // Date filter
+      let matchesDate = true
+      if (dateFilter !== 'all' && createdDate) {
+        const fileDate = new Date(String(createdDate))
+        const today = new Date()
+        const yesterday = new Date(today)
+        yesterday.setDate(yesterday.getDate() - 1)
+        const lastWeek = new Date(today)
+        lastWeek.setDate(lastWeek.getDate() - 7)
+        const lastMonth = new Date(today)
+        lastMonth.setMonth(lastMonth.getMonth() - 1)
+        
+        switch (dateFilter) {
+          case 'today':
+            matchesDate = fileDate.toDateString() === today.toDateString()
+            break
+          case 'yesterday':
+            matchesDate = fileDate.toDateString() === yesterday.toDateString()
+            break
+          case 'lastWeek':
+            matchesDate = fileDate >= lastWeek
+            break
+          case 'lastMonth':
+            matchesDate = fileDate >= lastMonth
+            break
+        }
+      }
+      
+      return matchesSearch && matchesStatus && matchesDate
+    })
+  }, [allProcessedFiles, searchTerm, statusFilter, dateFilter])
+
+  const clearFilters = () => {
+    setSearchTerm('')
+    setStatusFilter('all')
+    setDateFilter('all')
+  }
 
   useEffect(() => {
     fetchProcessedFiles(page)
@@ -267,7 +327,16 @@ const AdminUserImport: React.FC = () => {
               <p className='text-gray-600'>Previously processed files</p>
             </div>
           </div>
-          <div>
+          <div className='flex items-center gap-2'>
+            <button
+              type='button'
+              onClick={() => setShowFilters(!showFilters)}
+              className='inline-flex items-center gap-2 px-3 py-2 bg-white border rounded-md text-sm text-gray-600 hover:bg-gray-50'
+              title='Toggle filters'
+            >
+              <Filter className='h-4 w-4' />
+              Filters
+            </button>
             <button
               type='button'
               onClick={() => fetchProcessedFiles(page)}
@@ -279,16 +348,97 @@ const AdminUserImport: React.FC = () => {
           </div>
         </div>
 
+        {/* Search and Filter Section */}
+        <div className='mb-6 space-y-4'>
+          {/* Search Bar */}
+          <div className='relative'>
+            <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400' />
+            <input
+              type='text'
+              placeholder='Search by file name...'
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className='w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none transition-colors'
+            />
+          </div>
+
+          {/* Expandable Filters */}
+          {showFilters && (
+            <div className='bg-gray-50 rounded-lg p-4 space-y-4'>
+              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                {/* Status Filter */}
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-2'>Status</label>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none'
+                  >
+                    <option value='all'>All Status</option>
+                    <option value='success'>Success</option>
+                    <option value='failed'>Failed</option>
+                    <option value='processing'>Processing</option>
+                  </select>
+                </div>
+
+                {/* Date Filter */}
+                <div>
+                  <label className='block text-sm font-medium text-gray-700 mb-2'>Date Range</label>
+                  <select
+                    value={dateFilter}
+                    onChange={(e) => setDateFilter(e.target.value)}
+                    className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none'
+                  >
+                    <option value='all'>All Time</option>
+                    <option value='today'>Today</option>
+                    <option value='yesterday'>Yesterday</option>
+                    <option value='lastWeek'>Last 7 Days</option>
+                    <option value='lastMonth'>Last 30 Days</option>
+                  </select>
+                </div>
+
+                {/* Clear Filters */}
+                <div className='flex items-end'>
+                  <button
+                    onClick={clearFilters}
+                    className='w-full px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium'
+                  >
+                    Clear Filters
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Results Summary */}
+          <div className='flex items-center justify-between text-sm text-gray-600'>
+            <span>
+              Showing {filteredFiles.length} of {allProcessedFiles.length} files
+              {(searchTerm || statusFilter !== 'all' || dateFilter !== 'all') && ' (filtered)'}
+            </span>
+            {filteredFiles.length === 0 && allProcessedFiles.length > 0 && (
+              <span className='text-orange-600'>No files match your filters</span>
+            )}
+          </div>
+        </div>
+
         <div className="overflow-x-auto">
-          {processedFiles.length === 0 ? (
+          {filteredFiles.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h4 className="text-lg font-medium text-gray-900 mb-2">No import history</h4>
-              <p className="text-gray-500">Import your first file to see the history here.</p>
+              <h4 className="text-lg font-medium text-gray-900 mb-2">
+                {allProcessedFiles.length === 0 ? 'No import history' : 'No files match your filters'}
+              </h4>
+              <p className="text-gray-500">
+                {allProcessedFiles.length === 0 
+                  ? 'Import your first file to see the history here.' 
+                  : 'Try adjusting your search or filters.'
+                }
+              </p>
             </div>
           ) : (
             <div className='space-y-4'>
-              {processedFiles.map((f) => {
+              {filteredFiles.map((f) => {
                 const row = f as unknown as Record<string, unknown>
                 const displayName = String(row['fileName'] ?? row['name'] ?? row['filename'] ?? '—')
                 const createdVal = row['createdAt'] ?? row['uploadDate'] ?? row['uploadedAt']
