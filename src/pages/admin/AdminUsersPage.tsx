@@ -648,12 +648,12 @@ export default function AdminUsersPage() {
 
   return (
     <AdminLayout title='User Management' description='Manage all users in the system'>
-      <div className='space-y-6'>
+      <div className='space-y-6 relative z-0'>
                 {/* Enhanced Header with Statistics */}
         <div className='relative overflow-hidden bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-8 border border-blue-100 shadow-lg'>
-          <div className='absolute inset-0 bg-white/20 backdrop-blur-3xl'></div>
-          <div className='absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full -translate-y-48 translate-x-48'></div>
-          <div className='absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-indigo-400/10 to-blue-400/10 rounded-full translate-y-32 -translate-x-32'></div>
+          <div className='absolute inset-0 bg-white/20 backdrop-blur-3xl z-0'></div>
+          <div className='absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-400/10 to-purple-400/10 rounded-full -translate-y-48 translate-x-48 z-0'></div>
+          <div className='absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-indigo-400/10 to-blue-400/10 rounded-full translate-y-32 -translate-x-32 z-0'></div>
           
           <div className='relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6'>
             <div className='flex items-center space-x-6'>
@@ -704,7 +704,7 @@ export default function AdminUsersPage() {
                   </p>
                 )}
                                  {/* Tooltip */}
-                 <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10'>
+                 <div className='absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50'>
                    <div className='text-center'>
                      <p><strong>Current Page:</strong> {stats.total} users</p>
                      {totalStats.total > 0 ? (

@@ -104,7 +104,7 @@ export default function AdminLayout({ children, title, description, stats }: Adm
           )}
 
           {/* Main Content */}
-          <div className='bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6'>
+          <div className='relative'>
             {children}
           </div>
         </main>
