@@ -7,7 +7,7 @@ import { Users, Layout, Calendar, BarChart3 } from 'lucide-react'
 import { ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, PieChart, Pie, Cell, Tooltip, ResponsiveContainer, LabelList } from 'recharts'
 
-const COLORS = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#6366f1', '#84cc16']
+const COLORS = ['#ec4899', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
 
 interface StatItem {
   label: string
@@ -18,24 +18,24 @@ interface StatItem {
 
 const STAT_COLORS = [
   {
-    bg: 'bg-gradient-to-br from-violet-100 via-purple-50 to-indigo-100',
-    icon: 'text-violet-600 bg-violet-100',
-    shadow: 'shadow-violet-100'
+    bg: 'bg-gradient-to-br from-pink-100 via-rose-50 to-red-100',
+    icon: 'text-pink-600 bg-pink-100',
+    shadow: 'shadow-pink-100'
   },
   {
-    bg: 'bg-gradient-to-br from-cyan-100 via-sky-50 to-blue-100',
-    icon: 'text-cyan-600 bg-cyan-100',
-    shadow: 'shadow-cyan-100'
+    bg: 'bg-gradient-to-br from-blue-100 via-indigo-50 to-purple-100',
+    icon: 'text-blue-600 bg-blue-100',
+    shadow: 'shadow-blue-100'
   },
   {
-    bg: 'bg-gradient-to-br from-emerald-100 via-green-50 to-teal-100',
-    icon: 'text-emerald-600 bg-emerald-100',
-    shadow: 'shadow-emerald-100'
+    bg: 'bg-gradient-to-br from-green-100 via-emerald-50 to-teal-100',
+    icon: 'text-green-600 bg-green-100',
+    shadow: 'shadow-green-100'
   },
   {
-    bg: 'bg-gradient-to-br from-amber-100 via-yellow-50 to-orange-100',
-    icon: 'text-amber-600 bg-amber-100',
-    shadow: 'shadow-amber-100'
+    bg: 'bg-gradient-to-br from-orange-100 via-amber-50 to-yellow-100',
+    icon: 'text-orange-600 bg-orange-100',
+    shadow: 'shadow-orange-100'
   }
 ]
 
@@ -79,16 +79,46 @@ export default function AdminDashboard() {
     Promise.all([
       fetchAllUsers(),
       adminApi.getAllProjects().then((r) => (r?.data as any[]) || []),
-      adminApi.getTermList(1).then((r) => ((r?.data?.data as any[]) || [])),
+      adminApi.getTermList(1).then((r) => {
+        console.log('Term API Response:', r)
+        // Handle different possible response structures
+        let termsData = null
+        if (r?.data?.data?.items) {
+          // Structure: { data: { data: { items: [...] } } }
+          termsData = r.data.data.items
+        } else if (r?.data?.data) {
+          // Structure: { data: { data: [...] } }
+          termsData = r.data.data
+        } else if (r?.data?.items) {
+          // Structure: { data: { items: [...] } }
+          termsData = r.data.items
+        } else if (Array.isArray(r?.data)) {
+          // Structure: { data: [...] } (direct array)
+          termsData = r.data
+        } else if (Array.isArray(r)) {
+          // Structure: [...] (direct array)
+          termsData = r
+        }
+        console.log('Processed terms data:', termsData)
+        return Array.isArray(termsData) ? termsData : []
+      }),
       adminApi.getTeams().then((r) => (r?.data as any[]) || [])
     ])
       .then(([users, proj, termList, teamsRes]) => {
+        console.log('Dashboard data loaded:', { users: users?.length, projects: proj?.length, terms: termList?.length, teams: teamsRes?.length })
         setAllUsers(users || [])
         setProjects(proj || [])
         setTerms(termList || [])
         setTeams(teamsRes || [])
       })
-      .catch((err) => console.error('Dashboard fetch error', err))
+      .catch((err) => {
+        console.error('Dashboard fetch error', err)
+        // Set empty arrays on error to prevent undefined issues
+        setAllUsers([])
+        setProjects([])
+        setTerms([])
+        setTeams([])
+      })
       .finally(() => setFetching(false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -97,10 +127,26 @@ export default function AdminDashboard() {
   const totalProjects = projects?.length || 0
   const totalTerms = terms?.length || 0
   const totalTeams = teams?.length || 0
+  const activeTeams = teams?.filter(team => (team.totalMembers || 0) > 0)?.length || 0
+  
+  // Debug logging
+  console.log('Dashboard stats:', {
+    totalUsers,
+    totalProjects, 
+    totalTerms,
+    totalTeams,
+    activeTeams,
+    termsData: terms
+  })
   const stats: StatItem[] = [
     { label: 'Total Users', value: totalUsers, icon: <Users className="w-6 h-6" />, description: 'Registered users' },
     { label: 'Total Projects', value: totalProjects, icon: <Layout className="w-6 h-6" />, description: 'All projects' },
-    { label: 'Total Teams', value: totalTeams, icon: <Users className="w-6 h-6" />, description: 'Project teams' },
+    { 
+      label: 'Total Teams', 
+      value: activeTeams, 
+      icon: <Users className="w-6 h-6" />, 
+      description: 'Teams with members' 
+    },
     { label: 'Academic Terms', value: totalTerms, icon: <Calendar className="w-6 h-6" />, description: 'Managed periods' }
   ]
 
@@ -131,6 +177,37 @@ export default function AdminDashboard() {
           <LoadingSpinner />
         ) : (
           <div className="space-y-6">
+            {/* Debug section for Academic Terms */}
+            {totalTerms === 0 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-yellow-800">No Academic Terms Found</h3>
+                    <p className="text-yellow-700">Academic Terms count is 0. This might be because:</p>
+                    <ul className="list-disc list-inside text-yellow-700 mt-2">
+                      <li>No terms have been created yet</li>
+                      <li>API endpoint might be incorrect</li>
+                      <li>There might be a server connection issue</li>
+                    </ul>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => window.location.href = '/admin/terms'}
+                      className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+                    >
+                      Go to Terms Management
+                    </button>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors"
+                    >
+                      Refresh Data
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {stats.map((s, i) => (
                 <StatCard key={s.label} stat={s} index={i} />
@@ -157,7 +234,7 @@ export default function AdminDashboard() {
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="name" />
                           <YAxis />
-                          <Bar dataKey="count" fill={COLORS[0]}>
+                          <Bar dataKey="count" fill="#3b82f6">
                             {/* Add value labels on top of each bar */}
                             <LabelList dataKey="count" position="top" />
                           </Bar>

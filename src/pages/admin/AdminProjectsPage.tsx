@@ -30,6 +30,7 @@ export default function AdminProjectsPage() {
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [sortBy, setSortBy] = useState<string>('lastUpdate')
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc')
+  const [termsLoading, setTermsLoading] = useState<boolean>(true)
 
   useEffect(() => {
     void loadTerms()
@@ -44,15 +45,54 @@ export default function AdminProjectsPage() {
     void loadProjectsByTerm(selectedTermId)
   }, [selectedTermId])
 
+  // Extract terms from projects if API terms are empty
+  useEffect(() => {
+    if (terms.length === 0 && projects.length > 0 && !termsLoading) {
+      const uniqueTerms = new Map<string, TermItem>()
+      projects.forEach((project: AdminProjectListItem) => {
+        if (project.termId && project.termName) {
+          // Extract season and year from termName (e.g., "Summer 2025")
+          const match = project.termName.match(/^(.+?)\s+(\d{4})$/)
+          if (match) {
+            const [, season, year] = match
+            uniqueTerms.set(project.termId, {
+              id: project.termId,
+              season: season,
+              year: parseInt(year)
+            })
+          } else {
+            // Fallback if parsing fails
+            uniqueTerms.set(project.termId, {
+              id: project.termId,
+              season: project.termName,
+              year: new Date().getFullYear()
+            })
+          }
+        }
+      })
+      const extractedTerms = Array.from(uniqueTerms.values())
+      console.log('Extracted terms from projects:', extractedTerms)
+      if (extractedTerms.length > 0) {
+        setTerms(extractedTerms)
+      }
+    }
+  }, [projects, terms.length, termsLoading])
+
   const loadTerms = async () => {
     try {
+      setTermsLoading(true)
       const res = await adminApi.getTermList(1)
+      console.log('Terms API response:', res)
       const termsData = res?.data?.data
+      console.log('Terms data:', termsData)
       const list = Array.isArray(termsData) ? termsData as Array<{ id: string; season: string; year: number }> : []
+      console.log('Processed terms list:', list)
       setTerms(list)
     } catch (e: any) {
-      console.error(e)
+      console.error('Error loading terms:', e)
       setTerms([])
+    } finally {
+      setTermsLoading(false)
     }
   }
 
@@ -61,7 +101,8 @@ export default function AdminProjectsPage() {
       setLoading(true)
       setError(null)
       const res = await adminApi.getAllProjects()
-      setProjects(res.data || [])
+      const projectsData = res.data || []
+      setProjects(projectsData)
     } catch (e: any) {
       setError(e?.message || 'Failed to load projects')
     } finally {
@@ -187,13 +228,20 @@ export default function AdminProjectsPage() {
                   className='block w-full px-4 py-3.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 text-sm bg-white/50 backdrop-blur hover:border-slate-300'
                   value={selectedTermId}
                   onChange={(e) => setSelectedTermId(e.target.value)}
+                  disabled={termsLoading}
                 >
                   <option value=''>✨ All terms</option>
-                  {Array.isArray(terms) ? terms.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.season} {t.year}
-                    </option>
-                  )) : null}
+                  {termsLoading ? (
+                    <option value='' disabled>Loading terms...</option>
+                  ) : Array.isArray(terms) && terms.length > 0 ? (
+                    terms.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.season} {t.year}
+                      </option>
+                    ))
+                  ) : (
+                    <option value='' disabled>No terms available</option>
+                  )}
                 </select>
               </div>
               {(searchQuery || selectedTermId) && (

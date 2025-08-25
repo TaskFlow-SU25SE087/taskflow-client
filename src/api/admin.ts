@@ -58,7 +58,25 @@ export const adminApi = {
     return response.data
   },
 
-  getTermList: (page: number = 1) => axiosClient.get('/admin/term/list', { params: { page } }),
+  getTermList: async (page: number = 1) => {
+    try {
+      console.log('Calling getTermList with page:', page)
+      // Try different possible endpoints
+      let response
+      try {
+        response = await axiosClient.get('/admin/term/list', { params: { page } })
+        console.log('getTermList response (term/list):', response)
+      } catch (error) {
+        console.log('term/list failed, trying terms endpoint...')
+        response = await axiosClient.get('/admin/terms', { params: { page } })
+        console.log('getTermList response (terms):', response)
+      }
+      return response
+    } catch (error) {
+      console.error('getTermList error:', error)
+      throw error
+    }
+  },
 
   createTerm: (data: { season: string; year: number; startDate: string; endDate: string }) =>
     axiosClient.post('/admin/term', data),

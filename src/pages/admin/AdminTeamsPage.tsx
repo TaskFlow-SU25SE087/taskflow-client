@@ -13,6 +13,7 @@ export default function AdminTeamsPage() {
   const [sortBy, setSortBy] = useState('name')
   const [showFilters, setShowFilters] = useState(false)
 
+
   useEffect(() => {
     void loadTeams()
   }, [])
@@ -58,6 +59,9 @@ export default function AdminTeamsPage() {
       filtered = filtered.filter(team => team.semester === selectedSemester)
     }
 
+    // Apply empty teams filter - mặc định chỉ hiển thị teams có thành viên
+    filtered = filtered.filter(team => (team.totalMembers || 0) > 0)
+
     // Apply sorting
     filtered.sort((a, b) => {
       switch (sortBy) {
@@ -86,8 +90,15 @@ export default function AdminTeamsPage() {
           <div className='bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-xl shadow-lg'>
             <div className='flex items-center justify-between'>
               <div>
-                <p className='text-blue-100 text-sm font-medium'>Total Teams</p>
-                <p className='text-2xl font-bold'>{teams.length}</p>
+                                 <p className='text-blue-100 text-sm font-medium'>
+                   Teams with Members
+                 </p>
+                 <p className='text-2xl font-bold'>{filteredTeams.length}</p>
+                 {teams.length !== filteredTeams.length && (
+                   <p className='text-blue-200 text-xs mt-1'>
+                     {teams.length - filteredTeams.length} empty teams hidden
+                   </p>
+                 )}
               </div>
               <Users className='h-8 w-8 text-blue-200' />
             </div>
@@ -166,13 +177,14 @@ export default function AdminTeamsPage() {
                   <option value='semester'>Semester</option>
                 </select>
               </div>
+              
               <div className='flex items-end'>
                 <button
-                  onClick={() => {
-                    setSearchTerm('')
-                    setSelectedSemester('all')
-                    setSortBy('name')
-                  }}
+                                     onClick={() => {
+                     setSearchTerm('')
+                     setSelectedSemester('all')
+                     setSortBy('name')
+                   }}
                   className='px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors'
                 >
                   Clear All
@@ -189,7 +201,7 @@ export default function AdminTeamsPage() {
             <div className='flex items-center justify-between mb-4'>
               <h2 className='text-xl font-bold text-gray-900 flex items-center gap-2'>
                 <Users className='h-6 w-6 text-blue-600' />
-                Teams <span className='text-blue-600'>({filteredTeams.length})</span>
+                                 Teams <span className='text-blue-600'>({filteredTeams.length})</span>
               </h2>
             </div>
             
