@@ -67,7 +67,14 @@ export default function AdminUsersPage() {
   // Removed CACHE_TIMEOUT (no longer needed)
 
   // Lấy danh sách semester (term) từ API
-  const { terms, loading: loadingTerms } = useAdminTerm(1, 0)
+  const { terms, loading: loadingTerms, error: termsError } = useAdminTerm(1, 0)
+  
+  // Debug logging for terms
+  useEffect(() => {
+    console.log('Terms loaded:', terms)
+    console.log('Terms loading:', loadingTerms)
+    console.log('Terms error:', termsError)
+  }, [terms, loadingTerms, termsError])
 
   // Add dialog state
   const [showBanDialog, setShowBanDialog] = useState(false)
@@ -493,7 +500,32 @@ export default function AdminUsersPage() {
     return { activeUsers, inactiveUsers }
   }
 
-  const baseUsers = allUsersForSearch && searchTerm.length >= 2 ? allUsersForSearch : users
+  // Determine when we should apply filters across all pages (global filtering)
+  const isGlobalFilterActive =
+    searchTerm.length >= 2 || selectedRole !== 'all' || selectedStatus !== 'all' || selectedSemester !== 'all'
+
+  // Ensure we have all users available whenever a global filter is active
+  useEffect(() => {
+    const ensureAllUsersLoaded = async () => {
+      try {
+        if (isGlobalFilterActive && !allUsersForSearch) {
+          const all = await fetchAllUsers()
+          setAllUsersForSearch(all)
+        }
+        if (!isGlobalFilterActive && allUsersForSearch) {
+          // Clear when not needed to save memory
+          setAllUsersForSearch(null)
+        }
+      } catch (err) {
+        console.error('Failed to load all users for global filtering', err)
+      }
+    }
+
+    ensureAllUsersLoaded()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGlobalFilterActive])
+
+  const baseUsers = isGlobalFilterActive && allUsersForSearch ? allUsersForSearch : users
   const memoizedFilteredUsers = useMemo(() => {
     return baseUsers.filter((user) => {
       const matchesSearch =
@@ -504,18 +536,52 @@ export default function AdminUsersPage() {
         selectedStatus === 'all' ||
         (selectedStatus === 'active' && user.isActive) ||
         (selectedStatus === 'inactive' && !user.isActive)
-      // So sánh semester theo định dạng `${termSeason} ${termYear}` hoặc pastTerms
-      const userSemester = user.termSeason && user.termYear
-        ? `${user.termSeason} ${user.termYear}`
-        : user.pastTerms || ''
+      // Normalize semesters: current term and any past terms
+      const normalizedSelectedSemester = (selectedSemester || '').toString().trim().toLowerCase()
+      const currentTerm = user.termSeason && user.termYear ? `${user.termSeason} ${user.termYear}` : ''
+      const pastTermsList = typeof user.pastTerms === 'string' && user.pastTerms.length
+        ? user.pastTerms
+            .split(/[,;\n]/)
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : []
+      const userSemesters = [currentTerm, ...pastTermsList].filter(Boolean).map((s) => s.toLowerCase())
       const matchesSemester =
-        selectedSemester === 'all' || userSemester === selectedSemester
+        selectedSemester === 'all' || userSemesters.includes(normalizedSelectedSemester)
       return matchesSearch && matchesRole && matchesStatus && matchesSemester
     })
   }, [baseUsers, searchTerm, selectedRole, selectedStatus, selectedSemester])
 
   const roles = Array.from(new Set(users.map((user) => user.role)))
-  const semesters = Array.isArray(terms) ? terms.map((term: any) => `${term.season} ${term.year}`) : []
+  
+  // Get semesters from terms API and also from user data as fallback
+  const semestersFromTerms = Array.isArray(terms) ? terms.map((term: any) => `${term.season} ${term.year}`) : []
+  
+  // Extract unique semesters from user data (current terms and past terms)
+  const semestersFromUsers = useMemo(() => {
+    const allSemesters = new Set<string>()
+    
+    baseUsers.forEach(user => {
+      // Add current term if exists
+      if (user.termSeason && user.termYear) {
+        allSemesters.add(`${user.termSeason} ${user.termYear}`)
+      }
+      
+      // Add past terms if exists
+      if (typeof user.pastTerms === 'string' && user.pastTerms.length) {
+        const pastTermsList = user.pastTerms
+          .split(/[,;\n]/)
+          .map(s => s.trim())
+          .filter(Boolean)
+        pastTermsList.forEach(term => allSemesters.add(term))
+      }
+    })
+    
+    return Array.from(allSemesters).sort()
+  }, [baseUsers])
+  
+  // Combine semesters from API and user data, with API terms taking priority
+  const semesters = [...new Set([...semestersFromTerms, ...semestersFromUsers])].sort()
 
   // When searching across all pages, derive roles from the base list so filters match results
   const rolesFromBase = Array.from(new Set(baseUsers.map((user) => user.role)))
@@ -737,14 +803,18 @@ export default function AdminUsersPage() {
                   value={selectedSemester}
                   onChange={(e) => handleFilterChange('semester', e.target.value)}
                   className='px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-gray-50 focus:bg-white text-sm font-medium min-w-[160px]'
-                  disabled={loadingTerms}
+                  disabled={loadingTerms && semesters.length === 0}
                 >
                   <option value='all'>📚 All Semesters</option>
-                  {semesters.map((term) => (
-                    <option key={term} value={term}>
-                      🎓 {term}
-                    </option>
-                  ))}
+                  {loadingTerms && semesters.length === 0 ? (
+                    <option value='' disabled>Loading semesters...</option>
+                  ) : (
+                    semesters.map((term) => (
+                      <option key={term} value={term}>
+                        🎓 {term}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
             </div>
