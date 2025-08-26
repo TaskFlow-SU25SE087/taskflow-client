@@ -509,7 +509,7 @@ export const ProjectIssues: React.FC = () => {
           <div className='flex flex-col gap-4 px-4 md:px-8 pt-8 pb-4 border-b border-gray-200 bg-white/80 sticky top-0 z-10 shadow-sm'>
                          <div className='flex flex-col md:flex-row items-start md:items-center justify-between gap-2'>
                                <div className='flex items-center gap-4'>
-                  <h1 className='text-3xl md:text-4xl font-extrabold text-gray-900 mb-2'>Code Issues</h1>
+                  <h1 className='text-3xl md:text-4xl font-extrabold text-gray-900 mb-2'>Task Issues</h1>
                 </div>
                <div className='flex gap-2'>
                  <Button
