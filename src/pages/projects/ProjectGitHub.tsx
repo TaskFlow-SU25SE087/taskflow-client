@@ -312,7 +312,7 @@ export default function ProjectGitHub() {
                       <Trash2 className='w-5 h-5 text-red-600' />
                     </div>
                     <div>
-                      <h3 className='text-lg font-semibold text-gray-900'>Delete Webhook</h3>
+                      <h3 className='text-lg font-semibold text-gray-900'>Disconnect</h3>
                       <p className='text-sm text-gray-600'>This action cannot be undone</p>
                     </div>
                   </div>
@@ -338,10 +338,10 @@ export default function ProjectGitHub() {
                       {deletingWebhook === webhookToDelete ? (
                         <div className='flex items-center gap-2'>
                           <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin'></div>
-                          <span>Deleting...</span>
+                          <span>Disconnecting...</span>
                         </div>
                       ) : (
-                        'Delete Webhook'
+                        'Disconnect'
                       )}
                     </Button>
                   </div>
@@ -966,12 +966,12 @@ export default function ProjectGitHub() {
                                   {deletingWebhook === part.repoUrl ? (
                                     <div className='flex items-center gap-2'>
                                       <div className='w-3 h-3 border-2 border-red-600 border-t-transparent rounded-full animate-spin'></div>
-                                      <span>Deleting...</span>
+                                      <span>Disconnecting...</span>
                                     </div>
                                   ) : (
                                     <div className='flex items-center gap-2'>
                                       <Trash2 className='w-4 h-4' />
-                                      <span>Delete Webhook</span>
+                                      <span>Disconnect</span>
                                     </div>
                                   )}
                                 </Button>
@@ -1137,12 +1137,12 @@ export default function ProjectGitHub() {
                                   {deletingWebhook === part.repoUrl ? (
                                     <div className='flex items-center gap-2'>
                                       <div className='w-3 h-3 border-2 border-red-600 border-t-transparent rounded-full animate-spin'></div>
-                                      <span>Deleting Webhook...</span>
+                                      <span>Disconnecting...</span>
                                     </div>
                                   ) : (
                                     <span className='flex items-center gap-2'>
                                       <Trash2 className='w-4 h-4' />
-                                      <span>Delete Webhook</span>
+                                      <span>Disconnect</span>
                                     </span>
                                   )}
                                 </Button>

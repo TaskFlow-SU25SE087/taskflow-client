@@ -79,6 +79,13 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
         section: 1,
         path: activeProjectId ? `/projects/${activeProjectId}/sprint-meetings` : '/projects'
       },
+      {
+        id: 'activity-log',
+        icon: <FiActivity className='h-5 w-5' />,
+        label: 'Activity Log',
+        section: 1,
+        path: activeProjectId ? `/projects/${activeProjectId}/activity-log` : '/activity-log'
+      },
       // Section 2: GitHub, Commits, Issues
       {
         id: 'github',
@@ -100,13 +107,6 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
         label: 'Issues',
         section: 2,
         path: activeProjectId ? `/projects/${activeProjectId}/issues` : '/issues'
-      },
-      {
-        id: 'activity-log',
-        icon: <FiActivity className='h-5 w-5' />,
-        label: 'Activity Log',
-        section: 2,
-        path: activeProjectId ? `/projects/${activeProjectId}/activity-log` : '/activity-log'
       },
       {
         id: 'allparts',
@@ -262,6 +262,22 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
           }
         } catch (error) {
           console.error('Failed to get projects for sprint meetings:', error)
+        }
+        navigate('/projects')
+        return
+      }
+
+      // Special handling for activity-log when no project is selected
+      if (tabId === 'activity-log' && !activeProjectId) {
+        try {
+          const response = await projectApi.getProjects()
+          if (response.data && response.data.length > 0) {
+            const firstProject = response.data[0]
+            navigate(`/projects/${firstProject.id}/activity-log`)
+            return
+          }
+        } catch (error) {
+          console.error('Failed to get projects for activity log:', error)
         }
         navigate('/projects')
         return
