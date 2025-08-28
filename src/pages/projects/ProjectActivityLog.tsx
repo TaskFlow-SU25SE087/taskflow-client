@@ -1,6 +1,5 @@
 import { projectApi } from '@/api/projects'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
@@ -8,8 +7,8 @@ import { useToast } from '@/hooks/use-toast'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { format } from 'date-fns'
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { FiArrowLeft, FiClock, FiUser, FiEdit3, FiPlus, FiTrash2, FiSettings } from 'react-icons/fi'
+import { useParams } from 'react-router-dom'
+import { FiClock, FiUser, FiEdit3, FiPlus, FiTrash2, FiSettings } from 'react-icons/fi'
 
 interface ProjectLog {
   id: string
