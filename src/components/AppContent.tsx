@@ -28,6 +28,7 @@ import VerifyEmailPage from '@/pages/home/VerifyEmailPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import AllProjectParts from '@/pages/projects/AllProjectParts'
 import LegacyProjectMemberVerify from '@/pages/projects/LegacyProjectMemberVerify'
+import { ProjectActivityLog } from '@/pages/projects/ProjectActivityLog'
 import ProjectBacklog from '@/pages/projects/ProjectBacklog'
 import ProjectBoard from '@/pages/projects/ProjectBoard'
 import ProjectCreate from '@/pages/projects/ProjectCreate'
@@ -331,6 +332,14 @@ const AppContent: React.FC = () => {
           element={
             <ProtectedRoute>
               <ProjectIssues />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path='/projects/:projectId/activity-log'
+          element={
+            <ProtectedRoute>
+              <ProjectActivityLog />
             </ProtectedRoute>
           }
         />

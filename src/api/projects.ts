@@ -79,6 +79,25 @@ interface ProjectDetailResponse {
   }
 }
 
+interface ProjectLog {
+  id: string
+  projectMemberId: string
+  fullName: string
+  avatar: string
+  actionType: string
+  fieldChanged: string | null
+  oldValue: string
+  newValue: string
+  description: string
+  createAt: string
+}
+
+interface ProjectLogResponse {
+  code: number
+  message: string
+  data: ProjectLog[]
+}
+
 export const projectApi = {
   getProjects: async (): Promise<ProjectListResponse> => {
     const response = await axiosClient.get<ProjectListResponse>(`${ENDPOINT}`)
@@ -170,6 +189,11 @@ export const projectApi = {
   getProjectMembers: async (projectId: string): Promise<any[]> => {
     const response = await axiosClient.get(`/project/${projectId}/members/list`)
     return response.data.data
+  },
+
+  getProjectLog: async (projectId: string): Promise<ProjectLogResponse> => {
+    const response = await axiosClient.get<ProjectLogResponse>(`/project/${projectId}/log`)
+    return response.data
   }
 }
 

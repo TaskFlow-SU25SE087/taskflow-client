@@ -12,7 +12,8 @@ import {
   FiGithub,
   FiLayers,
   FiSettings,
-  FiUsers
+  FiUsers,
+  FiActivity
 } from 'react-icons/fi'
 import { useLocation, useNavigate } from 'react-router-dom'
 
@@ -99,6 +100,13 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
         label: 'Issues',
         section: 2,
         path: activeProjectId ? `/projects/${activeProjectId}/issues` : '/issues'
+      },
+      {
+        id: 'activity-log',
+        icon: <FiActivity className='h-5 w-5' />,
+        label: 'Activity Log',
+        section: 2,
+        path: activeProjectId ? `/projects/${activeProjectId}/activity-log` : '/activity-log'
       },
       {
         id: 'allparts',
