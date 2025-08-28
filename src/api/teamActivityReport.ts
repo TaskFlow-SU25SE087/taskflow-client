@@ -1,5 +1,5 @@
 import axiosClient from '@/configs/axiosClient'
-import { ProjectReportResponse, ProjectReport } from '@/types/report'
+import { ProjectReportResponse, ProjectReport, BurndownChartResponse, BurndownChartData } from '@/types/report'
 
 export interface TeamActivityReportQuery {
   startDate?: string
@@ -23,6 +23,13 @@ export const teamActivityReportApi = {
     if (query.topContributorsCount !== undefined) params.TopContributorsCount = query.topContributorsCount
 
     const res = await axiosClient.get<ProjectReportResponse>(`/api/TeamActivityReport/project/${projectId}`, { params })
+    return res.data.data
+  },
+
+  getBurndownChart: async (projectId: string, sprintId: string): Promise<BurndownChartData> => {
+    const res = await axiosClient.get<BurndownChartResponse>(
+      `/api/TeamActivityReport/project/${projectId}/sprint/${sprintId}/burndown-chart`
+    )
     return res.data.data
   }
 }

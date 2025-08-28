@@ -1,9 +1,11 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useTeamActivityReport } from '@/hooks/useTeamActivityReport'
+import { useBurndownChart } from '@/hooks/useBurndownChart'
+import { useSprints } from '@/hooks/useSprints'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   AlertCircle,
@@ -46,6 +48,7 @@ const ProjectReports: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>()
   const { report, loading, error, refetch, setQuery } = useTeamActivityReport(projectId)
   const { currentProject } = useCurrentProject()
+  const { sprints } = useSprints()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const toggleSidebar = () => setIsSidebarOpen((v) => !v)
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d'>('30d')
@@ -53,6 +56,16 @@ const ProjectReports: React.FC = () => {
   const [showComments, setShowComments] = useState(true)
   const [showTasks, setShowTasks] = useState(true)
   const [topCount, setTopCount] = useState(5)
+  const [selectedSprintId, setSelectedSprintId] = useState<string>('')
+
+  const { burndownData, loading: burndownLoading, error: burndownError } = useBurndownChart(projectId, selectedSprintId)
+
+  // Set default sprint when sprints are loaded
+  useEffect(() => {
+    if (sprints.length > 0 && !selectedSprintId) {
+      setSelectedSprintId(sprints[0].id)
+    }
+  }, [sprints, selectedSprintId])
 
   const applyTimeRange = (range: typeof timeRange) => {
     setTimeRange(range)
@@ -180,6 +193,17 @@ const ProjectReports: React.FC = () => {
     return arr.slice(-30)
   }, [report])
 
+  const burndownChartData = useMemo(() => {
+    if (!burndownData) return []
+    const combinedData = burndownData.dailyProgress.map((progress, index) => ({
+      date: new Date(progress.date).toLocaleDateString(),
+      remainingEffort: progress.remainingEffortPoints,
+      idealEffort: burndownData.idealBurndown[index]?.remainingEffortPoints || 0,
+      completedEffort: progress.completedEffortPoints
+    }))
+    return combinedData
+  }, [burndownData])
+
   const chartConfig = {
     completed: { label: 'Completed', color: '#16a34a' },
     inProgress: { label: 'In Progress', color: '#6366f1' },
@@ -189,7 +213,9 @@ const ProjectReports: React.FC = () => {
     medium: { label: 'Medium', color: '#f59e0b' },
     low: { label: 'Low', color: '#60a5fa' },
     urgent: { label: 'Urgent', color: '#7c3aed' },
-    comments: { label: 'Comments', color: '#9333ea' }
+    comments: { label: 'Comments', color: '#9333ea' },
+    remainingEffort: { label: 'Remaining Effort', color: '#6366f1' },
+    idealEffort: { label: 'Ideal Burndown', color: '#dc2626' }
   }
 
   return (
@@ -239,7 +265,7 @@ const ProjectReports: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      <Select value={timeRange} onValueChange={(v: any) => applyTimeRange(v)}>
+                      <Select value={timeRange} onValueChange={(v: typeof timeRange) => applyTimeRange(v)}>
                         <SelectTrigger className='w-[120px] h-9 rounded-lg border-gray-300 bg-white/70 backdrop-blur shadow-sm'>
                           <SelectValue />
                         </SelectTrigger>
@@ -517,8 +543,9 @@ const ProjectReports: React.FC = () => {
                 </Card>
               </div>
 
-              {/* Top Contributors Stacked Bar */}
-              <div className='mt-6'>
+              {/* Top Contributors Stacked Bar and Burndown Chart */}
+              <div className='mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6'>
+                {/* Top Contributors Stacked Bar */}
                 <Card className='rounded-xl border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
                   <CardHeader className='pb-2'>
                     {showSkeleton ? (
@@ -552,6 +579,84 @@ const ProjectReports: React.FC = () => {
                       </ChartContainer>
                     ) : (
                       <p className='text-xs text-gray-500'>No contributor data</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Burndown Chart */}
+                <Card className='rounded-xl border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
+                  <CardHeader className='pb-2'>
+                    <div className='flex items-center justify-between'>
+                      {showSkeleton ? (
+                        <Skeleton className='h-4 w-40' />
+                      ) : (
+                        <CardTitle className='text-sm font-semibold'>Sprint Burndown Chart</CardTitle>
+                      )}
+                      {!showSkeleton && (
+                        <Select value={selectedSprintId} onValueChange={setSelectedSprintId}>
+                          <SelectTrigger className='w-[200px] h-8 rounded-lg border-gray-300 bg-white/70 backdrop-blur shadow-sm'>
+                            <SelectValue placeholder='Select Sprint' />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {sprints.map((sprint) => (
+                              <SelectItem key={sprint.id} value={sprint.id}>
+                                {sprint.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      )}
+                    </div>
+                  </CardHeader>
+                  <CardContent className='h-[320px]'>
+                    {showSkeleton || burndownLoading ? (
+                      <Skeleton className='h-full w-full rounded-lg' />
+                    ) : burndownError ? (
+                      <div className='flex items-center justify-center h-full'>
+                        <p className='text-xs text-red-500'>{burndownError}</p>
+                      </div>
+                    ) : burndownChartData.length ? (
+                      <ChartContainer config={chartConfig} className='aspect-auto h-full'>
+                        <LineChart data={burndownChartData}>
+                          <CartesianGrid strokeDasharray='3 3' />
+                          <XAxis
+                            dataKey='date'
+                            tickLine={false}
+                            axisLine={false}
+                            tickFormatter={(d) =>
+                              new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                            }
+                          />
+                          <YAxis allowDecimals={false} width={50} />
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                          <Line
+                            type='monotone'
+                            dataKey='remainingEffort'
+                            stroke='var(--color-remainingEffort)'
+                            strokeWidth={3}
+                            dot={{ r: 4 }}
+                            name='Actual Remaining'
+                          />
+                          <Line
+                            type='monotone'
+                            dataKey='idealEffort'
+                            stroke='var(--color-idealEffort)'
+                            strokeWidth={2}
+                            strokeDasharray='5 5'
+                            dot={false}
+                            name='Ideal Burndown'
+                          />
+                          <ChartLegend content={<ChartLegendContent />} />
+                        </LineChart>
+                      </ChartContainer>
+                    ) : selectedSprintId ? (
+                      <div className='flex items-center justify-center h-full'>
+                        <p className='text-xs text-gray-500'>No burndown data available for this sprint</p>
+                      </div>
+                    ) : (
+                      <div className='flex items-center justify-center h-full'>
+                        <p className='text-xs text-gray-500'>Select a sprint to view burndown chart</p>
+                      </div>
                     )}
                   </CardContent>
                 </Card>

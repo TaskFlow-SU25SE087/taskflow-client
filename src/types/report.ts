@@ -81,3 +81,37 @@ export interface ProjectReportSummary {
     contributionScore: number
   }>
 }
+
+export interface BurndownChartResponse {
+  code: number
+  message: string
+  data: BurndownChartData
+}
+
+export interface BurndownChartData {
+  sprintId: string
+  sprintName: string
+  startDate: string
+  endDate: string
+  totalDays: number
+  priorityEfforts: Array<{
+    priority: string
+    priorityName: string
+    totalEffortPoints: number
+    completedEffortPoints: number
+    remainingEffortPoints: number
+    completionPercentage: number
+  }>
+  dailyProgress: Array<{
+    date: string
+    remainingEffortPoints: number
+    completedEffortPoints: number
+    totalEffortPoints: number
+  }>
+  idealBurndown: Array<{
+    date: string
+    remainingEffortPoints: number
+    completedEffortPoints: number
+    totalEffortPoints: number
+  }>
+}
