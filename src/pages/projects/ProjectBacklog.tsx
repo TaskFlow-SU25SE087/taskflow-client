@@ -421,24 +421,23 @@ const ProjectBacklog = () => {
           {/* Sprint & Backlog List */}
           <div className='space-y-6'>
             {filteredSprints.map((sprint) => (
-              <SprintBoard
-                key={sprint.id}
-                // add id for scroll target
-                id={`sprint-${sprint.id}` as unknown as undefined}
-                sprint={sprint}
-                tasks={filteredSprintTasks[sprint.id] || []}
-                onMoveTask={setSelectedTaskId}
-                projectId={currentProject?.id || ''}
-                onTaskUpdate={handleTaskUpdate}
-                onTaskCreated={handleTaskUpdate}
-                onSprintUpdate={handleSprintUpdate}
-                onLoadTasks={() => handleLoadSprintTasks(sprint.id)}
-                loadingTasks={loadingSprintIds.includes(sprint.id)}
-                hasLoadedTasks={!!sprintTasks[sprint.id]}
-                boards={boards}
-                refreshBoards={refreshBoards}
-                className={highlightSprintId === sprint.id ? 'ring-2 ring-blue-400 rounded-md' : ''}
-              />
+              <div key={sprint.id} id={`sprint-${sprint.id}`}>
+                <SprintBoard
+                  sprint={sprint}
+                  tasks={filteredSprintTasks[sprint.id] || []}
+                  onMoveTask={setSelectedTaskId}
+                  projectId={currentProject?.id || ''}
+                  onTaskUpdate={handleTaskUpdate}
+                  onTaskCreated={handleTaskUpdate}
+                  onSprintUpdate={handleSprintUpdate}
+                  onLoadTasks={() => handleLoadSprintTasks(sprint.id)}
+                  loadingTasks={loadingSprintIds.includes(sprint.id)}
+                  hasLoadedTasks={!!sprintTasks[sprint.id]}
+                  boards={boards}
+                  refreshBoards={refreshBoards}
+                  className={highlightSprintId === sprint.id ? 'ring-2 ring-blue-400 rounded-md' : ''}
+                />
+              </div>
             ))}
             <SprintBacklog
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
