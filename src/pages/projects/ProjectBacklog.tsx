@@ -6,6 +6,14 @@ import { SprintBoard } from '@/components/sprints/SprintBoard'
 import { SprintCreateMenu } from '@/components/sprints/SprintCreateMenu'
 import { SprintSelector } from '@/components/sprints/SprintSelector'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToastContext } from '@/components/ui/ToastContext'
@@ -32,6 +40,8 @@ const ProjectBacklog = () => {
   const contentRef = useRef<HTMLDivElement>(null)
   const location = useLocation()
   const [highlightSprintId, setHighlightSprintId] = useState<string | null>(null)
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'priority'>('newest')
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
 
   const {
     sprints,
@@ -53,6 +63,12 @@ const ProjectBacklog = () => {
   // Debounced search queries - phải khai báo trước useMemo
   const [debouncedTaskSearch, setDebouncedTaskSearch] = useState('')
   const [debouncedSprintSearch, setDebouncedSprintSearch] = useState('')
+  const preventEnterDefault = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      e.stopPropagation()
+    }
+  }, [])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -96,11 +112,20 @@ const ProjectBacklog = () => {
     const searchLower = debouncedTaskSearch.toLowerCase().trim()
     return tasks.filter(
       (task) =>
-        task.description.toLowerCase().includes(searchLower) ||
-        task.status.toLowerCase().includes(searchLower) ||
-        task.title?.toLowerCase().includes(searchLower)
+        (task.description || '').toLowerCase().includes(searchLower) ||
+        (task.status || '').toLowerCase().includes(searchLower) ||
+        (task.title || '').toLowerCase().includes(searchLower)
     )
   }, [tasks, debouncedTaskSearch])
+
+  // derive available statuses for Filter menu
+  const availableStatuses = useMemo(() => {
+    const set = new Set<string>()
+    tasks.forEach((t) => {
+      if (t.status) set.add(t.status)
+    })
+    return Array.from(set).sort()
+  }, [tasks])
 
   useEffect(() => {
     let isCancelled = false
@@ -291,14 +316,54 @@ const ProjectBacklog = () => {
         ...acc,
         [sprintId]: tasks.filter(
           (task) =>
-            task.description.toLowerCase().includes(searchLower) ||
-            task.status.toLowerCase().includes(searchLower) ||
-            task.title?.toLowerCase().includes(searchLower)
+            (task.description || '').toLowerCase().includes(searchLower) ||
+            (task.status || '').toLowerCase().includes(searchLower) ||
+            (task.title || '').toLowerCase().includes(searchLower)
         )
       }),
       {} as Record<string, TaskP[]>
     )
   }, [sprintTasks, debouncedTaskSearch])
+
+  // Apply status filters and sorting (loosen typing to interop with OptimizedTaskP and TaskP)
+  const sortTasks = useCallback(
+    (list: Array<Record<string, unknown>>): Array<Record<string, unknown>> => {
+      const filteredByStatus = selectedStatuses.length
+        ? list.filter((t) => selectedStatuses.includes(((t as any).status || '').toString()))
+        : list
+      const cloned = [...filteredByStatus]
+      switch (sortBy) {
+        case 'oldest':
+          cloned.sort(
+            (a, b) =>
+              new Date(((a as any).created || (a as any).createdAt || (a as any).updated || 0) as string).getTime() -
+              new Date(((b as any).created || (b as any).createdAt || (b as any).updated || 0) as string).getTime()
+          )
+          break
+        case 'priority':
+          cloned.sort((a, b) => Number((a as any).priority ?? 0) - Number((b as any).priority ?? 0))
+          break
+        case 'newest':
+        default:
+          cloned.sort(
+            (a, b) =>
+              new Date(((b as any).created || (b as any).createdAt || (b as any).updated || 0) as string).getTime() -
+              new Date(((a as any).created || (a as any).createdAt || (a as any).updated || 0) as string).getTime()
+          )
+      }
+      return cloned
+    },
+    [selectedStatuses, sortBy]
+  )
+
+  const visibleBacklogTasks = useMemo(() => sortTasks(backlogTasks as unknown as Array<Record<string, unknown>>) as unknown as TaskP[], [backlogTasks, sortTasks])
+  const visibleSprintTasks = useMemo(() => {
+    const result: Record<string, TaskP[]> = {}
+    Object.entries(filteredSprintTasks).forEach(([sid, list]) => {
+      result[sid] = sortTasks(list as unknown as Array<Record<string, unknown>>) as unknown as TaskP[]
+    })
+    return result
+  }, [filteredSprintTasks, sortTasks])
 
   // Keep render lightweight – no debug logs
 
@@ -390,17 +455,43 @@ const ProjectBacklog = () => {
           {/* Toolbar (match Board style) */}
           <div className='flex items-center justify-between mb-3'>
             <div className='flex items-center gap-3'>
-              <Button variant='outline' className='hover:bg-gray-50 border-gray-300'>
-                <Filter className='mr-2 h-4 w-4' />
-                Filter
-                <ChevronDown className='ml-2 h-4 w-4' />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant='outline' className='hover:bg-gray-50 border-gray-300'>
+                    <Filter className='mr-2 h-4 w-4' />
+                    Filter
+                    <ChevronDown className='ml-2 h-4 w-4' />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align='start' className='w-56'>
+                  <DropdownMenuLabel>Status</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {availableStatuses.length === 0 && (
+                    <div className='px-3 py-2 text-sm text-gray-500'>No statuses</div>
+                  )}
+                  {availableStatuses.map((status) => (
+                    <DropdownMenuCheckboxItem
+                      key={status}
+                      checked={selectedStatuses.includes(status)}
+                      onCheckedChange={(checked) => {
+                        setSelectedStatuses((prev) => {
+                          if (checked) return [...prev, status]
+                          return prev.filter((s) => s !== status)
+                        })
+                      }}
+                    >
+                      {status}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
               <div className='relative'>
                 <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
                 <Input
                   placeholder='Search tasks...'
                   value={taskSearchQuery}
                   onChange={(e) => setTaskSearchQuery(e.target.value)}
+                  onKeyDown={preventEnterDefault}
                   className='w-[280px] pl-10 border-gray-300'
                 />
               </div>
@@ -410,6 +501,7 @@ const ProjectBacklog = () => {
                   placeholder='Search sprints...'
                   value={sprintSearchQuery}
                   onChange={(e) => setSprintSearchQuery(e.target.value)}
+                  onKeyDown={preventEnterDefault}
                   className='w-[220px] pl-10 border-gray-300'
                 />
               </div>
@@ -419,7 +511,7 @@ const ProjectBacklog = () => {
                 <Share2 className='mr-2 h-4 w-4' />
                 Share
               </Button>
-              <Select defaultValue='newest'>
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as 'newest' | 'oldest' | 'priority')}>
                 <SelectTrigger className='w-[180px] border-gray-300'>
                   <SelectValue placeholder='Sort by' />
                 </SelectTrigger>
@@ -442,7 +534,7 @@ const ProjectBacklog = () => {
               >
                 <SprintBoard
                   sprint={sprint}
-                  tasks={filteredSprintTasks[sprint.id] || []}
+                  tasks={visibleSprintTasks[sprint.id] || []}
                   onMoveTask={setSelectedTaskId}
                   projectId={currentProject?.id || ''}
                   onTaskUpdate={handleTaskUpdate}
@@ -458,7 +550,7 @@ const ProjectBacklog = () => {
             ))}
             <SprintBacklog
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              tasks={backlogTasks as any as TaskP[]}
+              tasks={visibleBacklogTasks as any as TaskP[]}
               onMoveTask={setSelectedTaskId}
               projectId={currentProject?.id || ''}
               onTaskCreated={handleTaskUpdate}
