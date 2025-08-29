@@ -16,6 +16,7 @@ import { useSprints } from '@/hooks/useSprints'
 import { TaskP } from '@/types/task'
 import { ChevronDown, Filter, Search, Share2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 
 const ProjectBacklog = () => {
   // Cleaned up noisy perf logs to keep UI logic focused
@@ -29,6 +30,8 @@ const ProjectBacklog = () => {
   const { currentProject, isLoading: isProjectLoading } = useCurrentProject()
   const [scrollPosition, setScrollPosition] = useState(0)
   const contentRef = useRef<HTMLDivElement>(null)
+  const location = useLocation()
+  const [highlightSprintId, setHighlightSprintId] = useState<string | null>(null)
 
   const {
     sprints,
@@ -135,6 +138,23 @@ const ProjectBacklog = () => {
       isCancelled = true
     }
   }, [sprints, getSprintTasks, currentProject?.id, sprintsDidInitialLoad, hasPrefetchedInitialSprintTasks])
+
+  // On first load, if sprintId is present in query, scroll to it and highlight
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const sprintId = params.get('sprintId')
+    if (!sprintId) return
+    setHighlightSprintId(sprintId)
+    // attempt to scroll into view after a tick
+    setTimeout(() => {
+      const el = document.getElementById(`sprint-${sprintId}`)
+      if (el && contentRef.current) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+      // remove highlight after a short delay
+      setTimeout(() => setHighlightSprintId(null), 2000)
+    }, 300)
+  }, [location.search])
 
   useEffect(() => {
     if (contentRef.current) {
@@ -403,6 +423,8 @@ const ProjectBacklog = () => {
             {filteredSprints.map((sprint) => (
               <SprintBoard
                 key={sprint.id}
+                // add id for scroll target
+                id={`sprint-${sprint.id}` as unknown as undefined}
                 sprint={sprint}
                 tasks={filteredSprintTasks[sprint.id] || []}
                 onMoveTask={setSelectedTaskId}
@@ -415,6 +437,7 @@ const ProjectBacklog = () => {
                 hasLoadedTasks={!!sprintTasks[sprint.id]}
                 boards={boards}
                 refreshBoards={refreshBoards}
+                className={highlightSprintId === sprint.id ? 'ring-2 ring-blue-400 rounded-md' : ''}
               />
             ))}
             <SprintBacklog

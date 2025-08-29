@@ -79,23 +79,34 @@ interface ProjectDetailResponse {
   }
 }
 
-interface ProjectLog {
+export interface ProjectLog {
   id: string
   projectMemberId: string
   fullName: string
   avatar: string
   actionType: string
   fieldChanged: string | null
+  board: { boardId: string; boardName: string } | null
+  sprint: { sprintId: string; sprintName: string } | null
+  task: { taskId: string; taskName: string } | null
   oldValue: string
   newValue: string
   description: string
   createAt: string
 }
 
-interface ProjectLogResponse {
+interface ProjectLogCursorResponse {
   code: number
   message: string
-  data: ProjectLog[]
+  data: {
+    items: ProjectLog[]
+    totalItems: number
+    totalPages: number
+    pageNumber: number
+    pageSize: number
+    nextCursor: string | null
+    hasMore: boolean
+  }
 }
 
 export const projectApi = {
@@ -191,8 +202,13 @@ export const projectApi = {
     return response.data.data
   },
 
-  getProjectLog: async (projectId: string): Promise<ProjectLogResponse> => {
-    const response = await axiosClient.get<ProjectLogResponse>(`/project/${projectId}/log`)
+  getProjectLog: async (
+    projectId: string,
+    nextcursor?: string
+  ): Promise<ProjectLogCursorResponse> => {
+    const response = await axiosClient.get<ProjectLogCursorResponse>(`/project/${projectId}/log`, {
+      params: nextcursor ? { nextcursor } : undefined
+    })
     return response.data
   }
 }
