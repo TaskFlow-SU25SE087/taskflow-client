@@ -7,8 +7,8 @@ import { Sidebar } from '@/components/Sidebar'
 import { useToast } from '@/hooks/use-toast'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { format } from 'date-fns'
-import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { FiClock, FiUser, FiEdit3, FiPlus, FiTrash2, FiSettings, FiActivity } from 'react-icons/fi'
 
 // Uses ProjectLog type from api
@@ -144,6 +144,7 @@ const getActionLabel = (actionType: string) => {
 
 export const ProjectActivityLog = () => {
   const { projectId } = useParams<{ projectId: string }>()
+  const [searchParams] = useSearchParams()
   const [logs, setLogs] = useState<ProjectLog[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -156,6 +157,21 @@ export const ProjectActivityLog = () => {
   const [sprintDialogOpen, setSprintDialogOpen] = useState(false)
   const [selectedSprint] = useState<{ sprintId: string; sprintName: string } | null>(null)
   const navigate = useNavigate()
+  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const [activeHighlightId, setActiveHighlightId] = useState<string | null>(null)
+  const groupHeaderRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const [activeSprintHighlightId, setActiveSprintHighlightId] = useState<string | null>(null)
+
+  const groupedLogs = useMemo(() => {
+    const map = new Map<string, { sprint: ProjectLog['sprint']; items: ProjectLog[] }>()
+    for (const log of logs) {
+      const key = log.sprint?.sprintId || 'no-sprint'
+      const group = map.get(key) || { sprint: log.sprint, items: [] }
+      group.items.push(log)
+      map.set(key, group)
+    }
+    return Array.from(map.entries())
+  }, [logs])
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
 
@@ -183,6 +199,40 @@ export const ProjectActivityLog = () => {
     fetchLogs()
   }, [projectId, toast])
 
+  // Handle highlighting a specific log item via ?highlight=LOG_ID
+  useEffect(() => {
+    const highlightId = searchParams.get('highlight')
+    if (!highlightId || loading || logs.length === 0) return
+
+    const targetRef = itemRefs.current[highlightId]
+    if (targetRef) {
+      setActiveHighlightId(highlightId)
+      // Ensure it scrolls into view smoothly and centers the item
+      targetRef.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      // Remove highlight after a short delay
+      const timer = setTimeout(() => {
+        setActiveHighlightId(null)
+      }, 2500)
+      return () => clearTimeout(timer)
+    }
+  }, [searchParams, logs, loading])
+
+  // Handle highlighting a sprint group header via ?highlightSprint=SPRINT_ID
+  useEffect(() => {
+    const sprintId = searchParams.get('highlightSprint')
+    if (!sprintId || loading || groupedLogs.length === 0) return
+
+    const targetRef = groupHeaderRefs.current[sprintId]
+    if (targetRef) {
+      setActiveSprintHighlightId(sprintId)
+      targetRef.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      const timer = setTimeout(() => {
+        setActiveSprintHighlightId(null)
+      }, 2500)
+      return () => clearTimeout(timer)
+    }
+  }, [searchParams, groupedLogs, loading])
+
   const loadMore = async () => {
     if (!projectId || !hasMore || !nextCursor) return
     try {
@@ -199,16 +249,7 @@ export const ProjectActivityLog = () => {
     }
   }
 
-  const groupedLogs = useMemo(() => {
-    const map = new Map<string, { sprint: ProjectLog['sprint']; items: ProjectLog[] }>()
-    for (const log of logs) {
-      const key = log.sprint?.sprintId || 'no-sprint'
-      const group = map.get(key) || { sprint: log.sprint, items: [] }
-      group.items.push(log)
-      map.set(key, group)
-    }
-    return Array.from(map.entries())
-  }, [logs])
+  
 
   if (loading) {
     return (
@@ -309,7 +350,18 @@ export const ProjectActivityLog = () => {
                 <div className="space-y-8">
                   {groupedLogs.map(([key, group]) => (
                     <div key={key} className="space-y-4">
-                      <div className="flex items-center justify-between">
+                      <div
+                        ref={(el) => {
+                          if (el && group.sprint?.sprintId) {
+                            groupHeaderRefs.current[group.sprint.sprintId] = el
+                          }
+                        }}
+                        className={`flex items-center justify-between rounded-lg px-2 py-1 transition-colors ${
+                          group.sprint?.sprintId && group.sprint.sprintId === activeSprintHighlightId
+                            ? 'bg-amber-50 ring-1 ring-amber-300'
+                            : ''
+                        }`}
+                      >
                         <div className="flex items-center gap-3">
                           <h3 className="text-lg font-semibold text-slate-900">
                             {group.sprint ? `Sprint: ${group.sprint.sprintName}` : 'Other activity'}
@@ -335,7 +387,14 @@ export const ProjectActivityLog = () => {
                         {group.items.map((log, index) => (
                           <div
                             key={log.id}
-                            className="group relative bg-white border border-slate-200 rounded-xl p-6 hover:border-slate-300 hover:shadow-md transition-all duration-200"
+                            ref={(el) => {
+                              if (el) itemRefs.current[log.id] = el
+                            }}
+                            className={`group relative border rounded-xl p-6 hover:border-slate-300 hover:shadow-md transition-all duration-200 ${
+                              log.id === activeHighlightId
+                                ? 'border-amber-300 bg-amber-50 ring-2 ring-amber-300'
+                                : 'bg-white border-slate-200'
+                            }`}
                           >
                             {index < group.items.length - 1 && (
                               <div className="absolute left-11 top-16 bottom-0 w-px bg-gradient-to-b from-slate-200 to-transparent"></div>

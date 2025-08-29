@@ -139,22 +139,7 @@ const ProjectBacklog = () => {
     }
   }, [sprints, getSprintTasks, currentProject?.id, sprintsDidInitialLoad, hasPrefetchedInitialSprintTasks])
 
-  // On first load, if sprintId is present in query, scroll to it and highlight
-  useEffect(() => {
-    const params = new URLSearchParams(location.search)
-    const sprintId = params.get('sprintId')
-    if (!sprintId) return
-    setHighlightSprintId(sprintId)
-    // attempt to scroll into view after a tick
-    setTimeout(() => {
-      const el = document.getElementById(`sprint-${sprintId}`)
-      if (el && contentRef.current) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }
-      // remove highlight after a short delay
-      setTimeout(() => setHighlightSprintId(null), 2000)
-    }, 300)
-  }, [location.search])
+  // Placeholder: autoscroll effect moved below filteredSprints declaration
 
   useEffect(() => {
     if (contentRef.current) {
@@ -316,6 +301,35 @@ const ProjectBacklog = () => {
   }, [sprintTasks, debouncedTaskSearch])
 
   // Keep render lightweight – no debug logs
+
+  // Auto-scroll to sprint from query (?sprintId=...) with robust retry until rendered
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const sprintId = params.get('sprintId')
+    if (!sprintId) return
+
+    let cancelled = false
+    const tryScroll = (attemptsLeft: number) => {
+      if (cancelled) return
+      const el = document.getElementById(`sprint-${sprintId}`)
+      if (el && contentRef.current) {
+        setHighlightSprintId(sprintId)
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        // Clear highlight after a brief moment
+        const t = setTimeout(() => setHighlightSprintId(null), 2200)
+        return () => clearTimeout(t)
+      }
+      if (attemptsLeft > 0) {
+        setTimeout(() => tryScroll(attemptsLeft - 1), 200)
+      }
+    }
+
+    // Try up to ~2s
+    tryScroll(10)
+    return () => {
+      cancelled = true
+    }
+  }, [location.search, filteredSprints.length])
 
   // Hold skeleton until project, boards/sprints, tasks, and prefetch done
   const isPageLoading =
