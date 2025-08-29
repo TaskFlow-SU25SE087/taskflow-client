@@ -421,7 +421,11 @@ const ProjectBacklog = () => {
           {/* Sprint & Backlog List */}
           <div className='space-y-6'>
             {filteredSprints.map((sprint) => (
-              <div key={sprint.id} id={`sprint-${sprint.id}`}>
+              <div
+                key={sprint.id}
+                id={`sprint-${sprint.id}`}
+                className={highlightSprintId === sprint.id ? 'ring-2 ring-blue-400 rounded-md' : ''}
+              >
                 <SprintBoard
                   sprint={sprint}
                   tasks={filteredSprintTasks[sprint.id] || []}
@@ -435,7 +439,6 @@ const ProjectBacklog = () => {
                   hasLoadedTasks={!!sprintTasks[sprint.id]}
                   boards={boards}
                   refreshBoards={refreshBoards}
-                  className={highlightSprintId === sprint.id ? 'ring-2 ring-blue-400 rounded-md' : ''}
                 />
               </div>
             ))}
