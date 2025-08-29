@@ -66,7 +66,11 @@ export function SprintEditMenu({ sprint, onUpdateSprint }: SprintEditMenuProps) 
 
   const toISOString = (date: string) => {
     if (!date) return ''
-    return date.includes('T') ? date : new Date(date + 'T00:00:00').toISOString()
+    // If date already contains time (has 'T'), return as is
+    if (date.includes('T')) return date
+    // Convert date string (YYYY-MM-DD) to ISO string with timezone
+    const dateObj = new Date(date + 'T00:00:00.000Z')
+    return dateObj.toISOString()
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
