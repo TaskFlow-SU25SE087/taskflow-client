@@ -55,6 +55,10 @@ export default function TaskCreateMenuForBoard({
   const [effortPoints, setEffortPoints] = useState<string>('')
   const [effortPointsError, setEffortPointsError] = useState<string>('')
 
+  const textareaStyle = `w-full bg-transparent text-foreground placeholder-gray-400 text-sm 
+    border-b-2 border-gray-200 focus:border-lavender-700 
+    transition-colors duration-300 focus:outline-none focus:ring-0 resize-none`
+
   useEffect(() => {
     if (boards && boardId) {
       const foundBoard = boards.find((board) => board.id === boardId)
@@ -229,9 +233,9 @@ export default function TaskCreateMenuForBoard({
         <DialogHeader>
           <DialogTitle className='text-center'>
             <div className='flex flex-col items-center gap-4'>
-              <Plus className='h-12 w-12 text-lavender-700' />
+              <Plus className='h-8 w-8 text-lavender-700' />
               <div>
-                <h2 className='text-2xl font-bold'>Create new task</h2>
+                <h2 className='text-xl font-semibold'>Create new task</h2>
                 <p className='text-sm text-gray-500 mt-1'>Add a task to the selected board and sprint</p>
               </div>
             </div>
@@ -254,7 +258,7 @@ export default function TaskCreateMenuForBoard({
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !isSubmitting) handleSubmit()
               }}
-              className='w-full bg-transparent text-foreground placeholder-gray-400 text-lg border-b-2 border-gray-200 focus:border-lavender-700 transition-colors duration-300 focus:outline-none focus:ring-0'
+              className='w-full bg-transparent text-foreground placeholder-gray-400 text-sm border-b-2 border-gray-200 focus:border-lavender-700 transition-colors duration-300 focus:outline-none focus:ring-0'
             />
           </div>
 
@@ -268,7 +272,17 @@ export default function TaskCreateMenuForBoard({
                     checked={selectedTagIds.includes(tag.id)}
                     onChange={() => handleTagChange(tag.id)}
                   />
-                  <span style={{ color: tag.color }} className='text-xs font-medium'>
+                  <span
+                    style={{
+                      backgroundColor: tag.color,
+                      color: getContrastYIQ(tag.color),
+                      padding: '2px 8px',
+                      borderRadius: '8px',
+                      fontWeight: 500,
+                      fontSize: '0.875rem',
+                      display: 'inline-block'
+                    }}
+                  >
                     {tag.name}
                   </span>
                 </label>
@@ -309,12 +323,13 @@ export default function TaskCreateMenuForBoard({
             <Label htmlFor='description' className='text-sm font-medium'>
               Description
             </Label>
-            <input
+            <textarea
               id='description'
               placeholder='Enter task description (optional)'
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className='w-full bg-transparent text-foreground placeholder-gray-400 text-lg border-b-2 border-gray-200 focus:border-lavender-700 transition-colors duration-300 focus:outline-none focus:ring-0'
+              className={textareaStyle}
+              rows={3}
             />
             <p className='text-xs text-gray-500 mt-1'>Optional, you can attach a file below.</p>
           </div>
@@ -342,7 +357,7 @@ export default function TaskCreateMenuForBoard({
                   setEffortPointsError('')
                 }
               }}
-              className={`w-full bg-transparent text-foreground placeholder-gray-400 text-lg border-b-2 transition-colors duration-300 focus:outline-none focus:ring-0 ${
+              className={`w-full bg-transparent text-foreground placeholder-gray-400 text-sm border-b-2 transition-colors duration-300 focus:outline-none focus:ring-0 ${
                 effortPointsError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-lavender-700'
               }`}
             />
@@ -359,7 +374,7 @@ export default function TaskCreateMenuForBoard({
             <Input
               id='file'
               type='file'
-              className='h-11'
+              className='h-10'
               onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)}
             />
           </div>
@@ -392,4 +407,16 @@ export default function TaskCreateMenuForBoard({
       </DialogContent>
     </Dialog>
   )
+}
+
+function getContrastYIQ(hexcolor: string) {
+  let color = hexcolor.replace('#', '')
+  if (color.length === 3) {
+    color = color[0] + color[0] + color[1] + color[1] + color[2] + color[2]
+  }
+  const r = parseInt(color.substr(0, 2), 16)
+  const g = parseInt(color.substr(2, 2), 16)
+  const b = parseInt(color.substr(4, 2), 16)
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000
+  return yiq >= 128 ? '#222' : '#fff'
 }
