@@ -20,7 +20,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjectMembers } from '@/hooks/useProjectMembers'
 import { ProjectMember } from '@/types/project'
-import { LogOut, Users } from 'lucide-react'
+import { Loader2, LogOut, Users } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import UserProfileDialog from '../../components/UserProfileDialog'
@@ -34,8 +34,10 @@ export default function ProjectMembers() {
   const [error, setError] = useState<string | null>(null)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [pendingRemove, setPendingRemove] = useState<string | null>(null) // stores userId
+  const [isRemoving, setIsRemoving] = useState<boolean>(false)
   const [isInviteOpen, setIsInviteOpen] = useState<boolean>(false)
   const [isConfirmLeaveDialogOpen, setIsConfirmLeaveDialogOpen] = useState(false)
+  const [isLeaving, setIsLeaving] = useState<boolean>(false)
   const { user } = useAuth()
   const { showToast } = useToastContext()
   const { leaveProject, removeMember } = useProjectMembers()
@@ -101,7 +103,9 @@ export default function ProjectMembers() {
   }, [members])
 
   const handleRemove = async (memberUserId: string) => {
-    if (!currentProject?.id) return
+    if (!currentProject?.id || isRemoving) return
+    
+    setIsRemoving(true)
     try {
       console.log('🔄 Starting to remove member:', memberUserId)
       await removeMember(currentProject.id, memberUserId)
@@ -111,6 +115,8 @@ export default function ProjectMembers() {
     } catch (err: any) {
       console.error('❌ Error in handleRemove:', err)
       showToast({ title: 'Error', description: 'Failed to remove member', variant: 'destructive' })
+    } finally {
+      setIsRemoving(false)
     }
   }
 
@@ -120,12 +126,16 @@ export default function ProjectMembers() {
   }
 
   const handleConfirmLeave = async () => {
-    if (!currentProject?.id) return
+    if (!currentProject?.id || isLeaving) return
+    
+    setIsLeaving(true)
     try {
       await leaveProject(currentProject.id)
       navigate('/projects')
     } catch (err: any) {
       showToast({ title: 'Error', description: 'Failed to leave project', variant: 'destructive' })
+    } finally {
+      setIsLeaving(false)
     }
   }
 
@@ -312,14 +322,22 @@ export default function ProjectMembers() {
                 <Button
                   variant='destructive'
                   className='bg-red-100 hover:bg-red-200 text-red-700 font-semibold rounded-lg px-4 py-2 transition border-none shadow-none'
+                  disabled={isRemoving}
                   onClick={async () => {
-                    if (pendingRemove) {
+                    if (pendingRemove && !isRemoving) {
                       await handleRemove(pendingRemove)
                       setPendingRemove(null)
                     }
                   }}
                 >
-                  Remove
+                  {isRemoving ? (
+                    <>
+                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                      Removing...
+                    </>
+                  ) : (
+                    'Remove'
+                  )}
                 </Button>
               </div>
             </DialogContent>
@@ -335,11 +353,26 @@ export default function ProjectMembers() {
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button variant='outline' onClick={() => setIsConfirmLeaveDialogOpen(false)}>
+              <Button 
+                variant='outline' 
+                onClick={() => setIsConfirmLeaveDialogOpen(false)}
+                disabled={isLeaving}
+              >
                 Cancel
               </Button>
-              <Button variant='destructive' onClick={handleConfirmLeave}>
-                Leave Project
+              <Button 
+                variant='destructive' 
+                onClick={handleConfirmLeave}
+                disabled={isLeaving}
+              >
+                {isLeaving ? (
+                  <>
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    Leaving...
+                  </>
+                ) : (
+                  'Leave Project'
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

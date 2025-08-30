@@ -47,6 +47,7 @@ import {
     Clock,
     Filter,
     Link2,
+    Loader2,
     Pencil,
     Plus,
     Search,
@@ -376,7 +377,7 @@ export default function ProjectBoard() {
   }
 
   const handleConfirmLeaveProject = async () => {
-    if (!currentProject?.id) return
+    if (!currentProject?.id || isLeavingProject) return
 
     setIsLeavingProject(true)
     try {
@@ -1296,11 +1297,26 @@ export default function ProjectBoard() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant='outline' onClick={() => setIsConfirmLeaveDialogOpen(false)}>
+            <Button 
+              variant='outline' 
+              onClick={() => setIsConfirmLeaveDialogOpen(false)}
+              disabled={isLeavingProject}
+            >
               Cancel
             </Button>
-            <Button variant='destructive' onClick={handleConfirmLeaveProject}>
-              Leave Project
+            <Button 
+              variant='destructive' 
+              onClick={handleConfirmLeaveProject}
+              disabled={isLeavingProject}
+            >
+              {isLeavingProject ? (
+                <>
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  Leaving...
+                </>
+              ) : (
+                'Leave Project'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
