@@ -7,9 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToastContext } from '@/components/ui/ToastContext'
-
 import { useAuth } from '@/hooks/useAuth'
-
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useSignalRIntegration } from '@/hooks/useSignalRIntegration'
 import { useTags } from '@/hooks/useTags'
@@ -255,6 +253,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   // useEffect để fetch data ban đầu
   useEffect(() => {
     fetchAssigneeAndMembers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentProject, navigate, task.id, showToast, user?.id])
 
   // Thêm useEffect để refresh khi dialog mở
@@ -310,7 +309,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
       refreshOnOpen()
     }
-  }, [isOpen, currentProject?.id, task.id])
+  }, [isOpen, currentProject?.id, task.id, currentProject])
 
   // SignalR: Listen for task updates
   useEffect(() => {
@@ -559,7 +558,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
       if (res) {
         // Refresh task data to show new attachments
-        onTaskUpdated && onTaskUpdated()
+        if (onTaskUpdated) onTaskUpdated()
       }
     } catch (error) {
       const errorMessage = extractBackendErrorMessage(error)
@@ -592,8 +591,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       })
       // Inform parent so lists refresh immediately
       try {
-        onTaskUpdated && onTaskUpdated()
-      } catch {}
+        if (onTaskUpdated) onTaskUpdated()
+      } catch {
+        /* empty */
+      }
       setIsTagSelectOpen(false)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to add tag'
@@ -644,6 +645,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setEditEffortPoints(task.effortPoints?.toString() || '')
     setLocalTaskData(task)
     // Task data updated
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [task])
 
   // Update edit fields when localTaskData changes (for real-time updates)
@@ -653,6 +655,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setEditPriority(normalizePriority(localTaskData.priority))
     setEditDeadline(localTaskData.deadline ? localTaskData.deadline.split('T')[0] : '')
     setEditEffortPoints(localTaskData.effortPoints?.toString() || '')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [localTaskData])
 
   // Validation function for effort points
@@ -704,7 +707,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         })
       }
       // Ask parent to refresh and reflect changes immediately
-      onTaskUpdated && onTaskUpdated()
+      if (onTaskUpdated) onTaskUpdated()
     } catch (error) {
       const errorMessage = extractBackendErrorMessage(error)
       const errorTitle = getErrorTitle(error)
@@ -1673,7 +1676,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     if (updatedTask) {
                       // Task tags updated
                       // Thông báo cho component cha biết task đã được cập nhật
-                      onTaskUpdated && onTaskUpdated()
+                      if (onTaskUpdated) onTaskUpdated()
                     }
                   })
                 }
