@@ -7,7 +7,6 @@ export { default as RepositoryConnection } from './RepositoryConnection'
 // GitHub Feature Components
 export { default as CodeQualityDashboard } from './CodeQualityDashboard'
 export { default as CommitHistory } from './CommitHistory'
-export { default as GitHubSidebarItem } from './GitHubSidebarItem'
 
 // GitHub OAuth Components
 export { default as GitHubOAuthDemo } from './GitHubOAuthDemo'

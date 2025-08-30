@@ -1,9 +1,18 @@
 import { NotificationData } from '@/configs/signalr'
 import { useSignalR } from '@/contexts/SignalRContext'
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 
 export const useSignalRIntegration = () => {
   const { signalRService, notificationService, isConnected, connectionState } = useSignalR()
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[useSignalRIntegration] Hook state:', {
+      isConnected,
+      connectionState,
+      hasNotificationService: !!notificationService
+    });
+  }, [isConnected, connectionState, notificationService]);
 
   // const joinProjectGroup = useCallback(
   //   async (projectId: string) => {

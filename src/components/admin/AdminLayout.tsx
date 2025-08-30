@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useAuth } from '@/hooks/useAuth'
-import { Home, LogOut, Menu, Shield } from 'lucide-react'
+import { LogOut, Menu, Shield } from 'lucide-react'
 import { ReactNode, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
@@ -22,18 +22,28 @@ export default function AdminLayout({ children, title, description, stats }: Adm
   const { logout } = useAuth()
   const navigate = useNavigate()
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false)
 
   const handleLogout = () => {
     logout()
     navigate('/login')
   }
 
+  const toggleSidebarCollapse = () => {
+    setIsSidebarCollapsed(!isSidebarCollapsed)
+  }
+
   return (
     <div className='min-h-screen bg-gray-50 flex'>
-      <AdminSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      <div className='flex-1 flex flex-col lg:ml-0'>
+      <AdminSidebar 
+        isOpen={isSidebarOpen} 
+        onClose={() => setIsSidebarOpen(false)}
+        isCollapsed={isSidebarCollapsed}
+        onToggleCollapse={toggleSidebarCollapse}
+      />
+      <div className={`flex-1 flex flex-col lg:ml-0 min-h-screen transition-all duration-300 ease-in-out`}>
         {/* Header */}
-        <header className='bg-white border-b border-gray-200'>
+        <header className='bg-white border-b border-gray-200 sticky top-0 z-10'>
           <div className='container mx-auto px-4 sm:px-6 py-3 sm:py-4'>
             <div className='flex items-center justify-between'>
               <div className='flex items-center space-x-2 sm:space-x-4'>
@@ -55,15 +65,6 @@ export default function AdminLayout({ children, title, description, stats }: Adm
               </div>
               <div className='flex items-center space-x-2 sm:space-x-4'>
                 <Button
-                  variant='ghost'
-                  onClick={() => navigate('/projects')}
-                  className='flex items-center space-x-1 sm:space-x-2 text-sm sm:text-base h-8 sm:h-10 px-2 sm:px-4'
-                >
-                  <Home className='h-4 w-4' />
-                  <span className='hidden sm:inline'>Back to App</span>
-                  <span className='sm:hidden'>App</span>
-                </Button>
-                <Button
                   variant='outline'
                   onClick={handleLogout}
                   className='flex items-center space-x-1 sm:space-x-2 text-sm sm:text-base h-8 sm:h-10 px-2 sm:px-4'
@@ -76,7 +77,7 @@ export default function AdminLayout({ children, title, description, stats }: Adm
             </div>
           </div>
         </header>
-        <div className='container mx-auto px-4 sm:px-6 py-4 sm:py-6 flex-1'>
+        <main className='flex-1 container mx-auto px-4 sm:px-6 py-4 sm:py-6'>
           {/* Page Header */}
           <div className='mb-6 sm:mb-8'>
             <h2 className='text-2xl sm:text-3xl font-bold text-gray-900'>{title}</h2>
@@ -103,8 +104,10 @@ export default function AdminLayout({ children, title, description, stats }: Adm
           )}
 
           {/* Main Content */}
-          <main>{children}</main>
-        </div>
+          <div className='relative'>
+            {children}
+          </div>
+        </main>
       </div>
     </div>
   )

@@ -1,5 +1,5 @@
 import { useGitMembers } from '@/hooks/useGitMembers'
-import { GitMemberLocal, ProjectMember } from '@/types/project'
+import { GitMemberFull, ProjectMember } from '@/types/project'
 import { Edit, GitBranch, Mail, Plus, Settings, User, UserPlus, Users } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '../ui/button'
@@ -23,7 +23,7 @@ export function GitMemberLocalDialog({
   onOpenChange
 }: GitMemberLocalDialogProps) {
   const { loading, gitMembers, fetchGitMembers, addGitMember, updateGitMember } = useGitMembers()
-  const [editingMember, setEditingMember] = useState<GitMemberLocal | null>(null)
+  const [editingMember, setEditingMember] = useState<GitMemberFull | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [selectedMemberId, setSelectedMemberId] = useState<string>('')
   const [formData, setFormData] = useState({ nameLocal: '', emailLocal: '' })
@@ -83,7 +83,7 @@ export function GitMemberLocalDialog({
     }
   }
 
-  const handleEdit = (member: GitMemberLocal) => {
+  const handleEdit = (member: GitMemberFull) => {
     setEditingMember(member)
     setFormData({ nameLocal: member.nameLocal, emailLocal: member.emailLocal })
   }
@@ -158,7 +158,7 @@ export function GitMemberLocalDialog({
                     onChange={(e) => setSelectedMemberId(e.target.value)}
                     className="w-full p-3 border border-green-200 rounded-lg bg-white focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-200"
                   >
-                    <option value="">-- Select a member --</option>
+                    <option key="default" value="">-- Select a member --</option>
                     {membersWithoutGitLocal.map((member) => (
                       <option key={member.userId} value={member.id || member.userId}>
                         {member.fullName || member.email} ({member.role})
@@ -250,13 +250,19 @@ export function GitMemberLocalDialog({
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {gitMembers.map((gitMember) => {
-                  const projectMember = getProjectMemberById(gitMember.projectMemberId)
+                  const projectMember = gitMember.projectMemberId ? getProjectMemberById(gitMember.projectMemberId) : null
                   const isEditing = editingMember?.id === gitMember.id
 
                   return (
                     <div key={gitMember.id} className="p-6 border border-blue-200 rounded-xl bg-gradient-to-r from-blue-50/50 to-purple-50/50 hover:shadow-md transition-all duration-200">
                       {isEditing ? (
                         <div className="space-y-4">
+                          {gitMember.gitAvatarUrl && (
+                            <div className="flex items-center gap-3 mb-2">
+                              <img src={gitMember.gitAvatarUrl} alt="avatar" className="w-12 h-12 rounded-full border-2 border-blue-300 shadow" />
+                              <span className="text-sm text-gray-700">Git Avatar</span>
+                            </div>
+                          )}
                           <div>
                             <Label className="text-sm font-medium text-gray-700 mb-2 block">Project Member</Label>
                             <div className="p-3 bg-gray-100 rounded-lg text-sm border">
@@ -352,16 +358,35 @@ export function GitMemberLocalDialog({
                             <div className="flex items-center gap-3">
                               <GitBranch className="h-4 w-4 text-blue-500" />
                               <div>
-                                <div className="text-sm font-medium text-gray-700">Local Name</div>
-                                <div className="text-sm text-gray-900">{gitMember.nameLocal}</div>
+                                <div className="text-sm font-medium text-gray-700">Git Name</div>
+                                <div className="text-sm text-gray-900">{gitMember.gitName || <span className='text-gray-400 italic'>-</span>}</div>
                               </div>
                             </div>
-                            
+                            <div className="flex items-center gap-3">
+                              <Mail className="h-4 w-4 text-blue-500" />
+                              <div>
+                                <div className="text-sm font-medium text-gray-700">Git Email</div>
+                                <div className="text-sm text-gray-900">{gitMember.gitEmail || <span className='text-gray-400 italic'>-</span>}</div>
+                              </div>
+                            </div>
+                            {gitMember.gitAvatarUrl && (
+                              <div className="flex items-center gap-3">
+                                <img src={gitMember.gitAvatarUrl} alt="avatar" className="w-8 h-8 rounded-full border" />
+                                <div className="text-sm text-gray-700">Git Avatar</div>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-3">
+                              <GitBranch className="h-4 w-4 text-green-500" />
+                              <div>
+                                <div className="text-sm font-medium text-gray-700">Local Name</div>
+                                <div className="text-sm text-gray-900">{gitMember.nameLocal || <span className='text-gray-400 italic'>-</span>}</div>
+                              </div>
+                            </div>
                             <div className="flex items-center gap-3">
                               <Mail className="h-4 w-4 text-purple-500" />
                               <div>
                                 <div className="text-sm font-medium text-gray-700">Local Email</div>
-                                <div className="text-sm text-gray-900">{gitMember.emailLocal}</div>
+                                <div className="text-sm text-gray-900">{gitMember.emailLocal || <span className='text-gray-400 italic'>-</span>}</div>
                               </div>
                             </div>
                           </div>

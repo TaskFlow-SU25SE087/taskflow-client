@@ -1,38 +1,34 @@
 import { Button } from '@/components/ui/button'
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
+import axiosClient from '@/configs/axiosClient'
 import { useAuth } from '@/hooks/useAuth'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjects } from '@/hooks/useProjects'
-import Avatar from 'boring-avatars'
-import {
-    ChevronDown,
-    FolderKanban,
-    HelpCircle,
-    Layout,
-    LogOut,
-    Plus,
-    Search,
-    Settings,
-    Shield,
-    User
-} from 'lucide-react'
+import { ChevronDown, FolderKanban, HelpCircle, Layout, LogOut, Plus, Settings, Shield, User } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { FiMenu, FiX } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
+import { GlobalSearch } from './GlobalSearch'
 import NotificationCenter from './NotificationCenter'
+import SearchErrorBoundary from './SearchErrorBoundary'
+import { TutorialModal } from './TutorialModal'
 
 interface NavbarProps {
   isSidebarOpen: boolean
   toggleSidebar: () => void
 }
+
+let cachedUserProfile: any | null = null
+let cachedAvatarUrl: string | undefined = undefined
+let avatarPreviouslyLoaded = false
 
 export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
   const { projects } = useProjects()
@@ -40,12 +36,38 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
   const navigate = useNavigate()
   const { logout } = useAuth()
   const { user } = useAuth()
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false)
+  // Initialize from cache so we don't blank out while routing
+  const [userProfile, setUserProfile] = useState<any>(cachedUserProfile)
 
   console.log('user in Navbar:', user)
 
+  // Fetch full user profile including avatar (only if not already cached)
+  useEffect(() => {
+    let cancelled = false
+    const fetchUserProfile = async () => {
+      if (!user?.id) return
+      if (cachedUserProfile && cachedUserProfile.id === user.id) return // already cached
+      try {
+        const response = await axiosClient.get(`/user/${user.id}`)
+        if (cancelled) return
+        setUserProfile(response.data.data)
+        cachedUserProfile = response.data.data
+        if (response.data.data?.avatar) {
+          cachedAvatarUrl = response.data.data.avatar
+        }
+      } catch (error) {
+        if (!cancelled) console.error('Failed to fetch user profile:', error)
+      }
+    }
+    fetchUserProfile()
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
+
   const handleProjectSelect = (projectId: string) => {
     setCurrentProjectId(projectId)
-    navigate('/board')
   }
 
   const handleLogout = () => {
@@ -53,8 +75,18 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
     navigate('/')
   }
 
+  const avatarUrl = userProfile?.avatar || (user as any)?.avatar || cachedAvatarUrl
+  const [avatarLoaded, setAvatarLoaded] = useState(() => avatarPreviouslyLoaded && !!avatarUrl)
+
+  // If we already have a cached avatar and it matches current, ensure loaded flag stays true
+  useEffect(() => {
+    if (avatarPreviouslyLoaded && avatarUrl === cachedAvatarUrl && !avatarLoaded) {
+      setAvatarLoaded(true)
+    }
+  }, [avatarUrl, avatarLoaded])
+
   return (
-    <div className='sticky top-0 z-10 w-full bg-white border-b border-gray-300'>
+    <div className='sticky top-0 z-[9990] w-full bg-white border-b border-gray-300'>
       <div className='px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between'>
         <div className='flex items-center gap-1 sm:gap-2 flex-1'>
           <Button
@@ -63,11 +95,7 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
             className='text-gray-500 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 h-8 w-8 sm:h-10 sm:w-10'
             onClick={toggleSidebar}
           >
-            {isSidebarOpen ? (
-              <FiX className='h-4 w-4 sm:h-5 sm:w-5' />
-            ) : (
-              <FiMenu className='h-4 w-4 sm:h-5 sm:w-5' />
-            )}
+            {isSidebarOpen ? <FiX className='h-4 w-4 sm:h-5 sm:w-5' /> : <FiMenu className='h-4 w-4 sm:h-5 sm:w-5' />}
           </Button>
 
           {/* Projects Dropdown */}
@@ -116,7 +144,7 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
           </DropdownMenu>
 
           {/* Teams Dropdown - Hidden on mobile */}
-          <div className='hidden md:block'>
+          {/* <div className='hidden md:block'>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -131,47 +159,53 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
                 <DropdownMenuItem className='cursor-not-allowed opacity-50'>Coming soon...</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </div>
+          </div> */}
         </div>
-        {/* Search Bar ở giữa */}
+        {/* Global Search Bar ở giữa */}
         <div className='flex-1 flex justify-center'>
-          <div className='relative w-[300px] xl:w-[400px]'>
-            <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
-            <Input
-              placeholder='Search For Anything...'
-              className='w-full rounded-lg bg-gray-100 pl-10 focus-visible:ring-offset-0 focus-visible:ring-0'
-            />
-          </div>
+          <SearchErrorBoundary>
+            <GlobalSearch />
+          </SearchErrorBoundary>
         </div>
 
         <div className='flex items-center gap-2 sm:gap-4'>
           {/* Help Icon - Hidden on mobile */}
-          <div className='hidden md:block text-gray-500 px-2 hover:bg-transparent cursor-pointer'>
+          <div
+            className='hidden md:block text-gray-500 px-2 hover:bg-transparent cursor-pointer hover:text-blue-600 transition-colors'
+            onClick={() => setIsTutorialOpen(true)}
+          >
             <HelpCircle className='h-5 w-5' />
           </div>
 
           {/* Notification Center */}
           <NotificationCenter />
 
-          {/* Connection Status - Hidden on mobile */}
-          {/* <div className='hidden sm:block'>
-            <ConnectionStatus />
-          </div> */}
-
           {/* Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <div className='cursor-pointer relative h-8 w-fit flex items-center gap-1 sm:gap-2 px-0 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 focus:outline-none'>
-                {user?.avatar ? (
-                  <img src={user.avatar} alt='avatar' className='w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover' />
-                ) : (
-                  <Avatar size='28px' variant='beam' name={user?.id || 'unknown'} className='sm:w-8 sm:h-8' />
-                )}
-                {/* Ẩn tên và mũi tên */}
-                {/* <span className='hidden sm:block ml-2 font-medium text-black text-sm'>
-                  {user?.fullName || user?.email || 'No name'}
-                </span>
-                <ChevronDown className='hidden sm:block h-4 w-4 text-gray-500' /> */}
+                <div className='h-7 w-7 sm:h-8 sm:w-8 rounded-full overflow-hidden ring-2 ring-white shadow-sm bg-gray-100'>
+                  {avatarUrl && (
+                    <img
+                      src={avatarUrl}
+                      alt='avatar'
+                      // Skip fade if already loaded once in this session
+                      className={`h-full w-full object-cover ${avatarLoaded ? 'opacity-100' : 'opacity-0'} ${avatarPreviouslyLoaded ? 'transition-none' : 'transition-opacity duration-200'}`}
+                      onLoad={() => {
+                        if (!avatarLoaded) {
+                          setAvatarLoaded(true)
+                          avatarPreviouslyLoaded = true
+                          cachedAvatarUrl = avatarUrl
+                        }
+                      }}
+                      draggable={false}
+                      referrerPolicy='no-referrer'
+                      decoding='async'
+                      loading='eager'
+                      crossOrigin='anonymous'
+                    />
+                  )}
+                </div>
               </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent className='w-56' align='end'>
@@ -217,6 +251,9 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Tutorial Modal */}
+      <TutorialModal isOpen={isTutorialOpen} onClose={() => setIsTutorialOpen(false)} />
     </div>
   )
 }

@@ -13,7 +13,7 @@ export function DroppableBoard({ boardId, children, className = '' }: DroppableB
   return (
     <div
       ref={setNodeRef}
-      className={`rounded-2xl w-full relative p-2 flex flex-col ${className}`}
+      className={`rounded-2xl w-full relative pt-0 px-2 pb-2 flex flex-col ${className}`}
       style={{ width: '320px', minWidth: '320px' }}
     >
       {children}

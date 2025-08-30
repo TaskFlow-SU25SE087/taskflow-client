@@ -1,43 +1,58 @@
 // Environment Configuration
-// Helper function to get first available URL from multiple options
-const getFirstAvailableUrl = (envValue: string | undefined, fallback: string): string => {
-  if (!envValue) return fallback
-  
-  // Split by || and get the first non-empty URL
-  const urls = envValue.split('||').map(url => url.trim()).filter(url => url)
-  return urls[0] || fallback
-}
-
 export const ENV_CONFIG = {
-  // API Configuration
-  API_BASE_URL: getFirstAvailableUrl(import.meta.env.VITE_API_BASE_URL, 'http://localhost:5041'),
-  API_TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT || '10000'),
+  // ========================================
+  // DEVELOPMENT SERVER CONFIGURATION
+  // ========================================
+  DEV_SERVER_PORT: parseInt(import.meta.env.VITE_DEV_SERVER_PORT || '3000'),
 
-  // SignalR Configuration
-  SIGNALR_HUB_URL: getFirstAvailableUrl(import.meta.env.VITE_SIGNALR_HUB_URL, 'http://localhost:5041/taskHub'),
+  // ========================================
+  // API CONFIGURATION (Cổng duy nhất)
+  // ========================================
+  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || '',
+  API_TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT || '30000'),
+
+  // ========================================
+  // SIGNALR CONFIGURATION (Cổng duy nhất)
+  // ========================================
+  SIGNALR_HUB_URL: import.meta.env.VITE_SIGNALR_HUB_URL || '',
   SIGNALR_RECONNECT_INTERVAL: parseInt(import.meta.env.VITE_SIGNALR_RECONNECT_INTERVAL || '5000'),
   SIGNALR_MAX_RECONNECT_ATTEMPTS: parseInt(import.meta.env.VITE_SIGNALR_MAX_RECONNECT_ATTEMPTS || '5'),
 
-  // Development Server
-  DEV_SERVER_PORT: parseInt(import.meta.env.VITE_DEV_SERVER_PORT || '3000'),
-
-  // GitHub OAuth
+  // ========================================
+  // GITHUB OAUTH CONFIGURATION
+  // ========================================
   GITHUB_CLIENT_ID: import.meta.env.VITE_GITHUB_CLIENT_ID || '',
-  GITHUB_REDIRECT_URI: import.meta.env.VITE_GITHUB_REDIRECT_URI || 'http://localhost:3000/github/callback',
+  GITHUB_REDIRECT_URI: import.meta.env.VITE_GITHUB_REDIRECT_URI || '',
 
-  // Feature Flags
+  // ========================================
+  // FEATURE FLAGS & DEBUGGING
+  // ========================================
   ENABLE_DEBUG_LOGS: import.meta.env.VITE_ENABLE_DEBUG_LOGS === 'true',
   ENABLE_SIGNALR: import.meta.env.VITE_ENABLE_SIGNALR !== 'false',
 
-  // Storage Keys
+  // ========================================
+  // STORAGE KEYS
+  // ========================================
   ACCESS_TOKEN_KEY: import.meta.env.VITE_ACCESS_TOKEN_KEY || 'accessToken',
   REMEMBER_ME_KEY: import.meta.env.VITE_REMEMBER_ME_KEY || 'rememberMe',
 
-  // Environment
+  // ========================================
+  // ENVIRONMENT
+  // ========================================
   NODE_ENV: import.meta.env.MODE || 'development',
   IS_DEVELOPMENT: import.meta.env.DEV,
   IS_PRODUCTION: import.meta.env.PROD
 }
+
+// Log the configuration for debugging
+console.log('[ENV_CONFIG] Environment configuration loaded:', {
+  API_BASE_URL: ENV_CONFIG.API_BASE_URL,
+  SIGNALR_HUB_URL: ENV_CONFIG.SIGNALR_HUB_URL,
+  DEV_SERVER_PORT: ENV_CONFIG.DEV_SERVER_PORT,
+  IS_DEVELOPMENT: ENV_CONFIG.IS_DEVELOPMENT,
+  ENABLE_DEBUG_LOGS: ENV_CONFIG.ENABLE_DEBUG_LOGS,
+  ENABLE_SIGNALR: ENV_CONFIG.ENABLE_SIGNALR
+});
 
 // Helper functions
 export const isDevelopment = () => ENV_CONFIG.IS_DEVELOPMENT

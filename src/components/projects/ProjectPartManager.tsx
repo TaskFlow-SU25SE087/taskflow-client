@@ -1,4 +1,5 @@
 import { useToastContext } from '@/components/ui/ToastContext'
+import 'devicon/devicon.min.css'
 import { Github, Link, Plus, Settings } from 'lucide-react'
 import { useState } from 'react'
 import { useProjectParts } from '../../hooks/useProjectParts'
@@ -9,14 +10,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Input } from '../ui/input'
 import { Label } from '../ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Separator } from '../ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 
 export default function ProjectPartManager({ projectId }: { projectId: string }) {
   const { createPart, connectRepo, loading, error, result } = useProjectParts()
   const [name, setName] = useState('')
-  const [programmingLanguage, setProgrammingLanguage] = useState('None')
-  const [framework, setFramework] = useState('None')
+  const [programmingLanguage, setProgrammingLanguage] = useState('')
   const [partId, setPartId] = useState('')
   const [repoUrl, setRepoUrl] = useState('')
   const [accessToken, setAccessToken] = useState('')
@@ -25,16 +26,16 @@ export default function ProjectPartManager({ projectId }: { projectId: string })
 
   // Tạo Project Part
   const handleCreatePart = async () => {
-    console.log('Create Part Clicked:', { name, programmingLanguage, framework });
-    if (!name.trim()) {
-      showToast({ title: 'Error', description: 'Please fill in all fields (Name is required)', variant: 'destructive' });
+    console.log('Create Part Clicked:', { name, programmingLanguage });
+    if (!name.trim() || !programmingLanguage) {
+      showToast({ title: 'Error', description: 'Please fill in all required fields (Name and Programming Language)', variant: 'destructive' });
       return;
     }
     try {
       const res = await createPart(projectId, {
         name: name.trim(),
-        programmingLanguage: programmingLanguage || 'None',
-        framework: framework || 'None',
+        programmingLanguage: programmingLanguage,
+        framework: 'None',
       })
       if (res?.code === 200) {
         setPartId(res.data)
@@ -47,13 +48,51 @@ export default function ProjectPartManager({ projectId }: { projectId: string })
     }
   }
 
-  console.log('ProjectPartManager render', { name, programmingLanguage, framework });
+  console.log('ProjectPartManager render', { name, programmingLanguage });
+
+  // Function để lấy icon URL cho programming language
+  const getProgrammingLanguageIconUrl = (language: string) => {
+    const iconMap: { [key: string]: string } = {
+      'None': '',
+      'JavaScript': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg',
+      'TypeScript': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg',
+      'Python': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg',
+      'PHP': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg',
+      'Go': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg',
+      'Ruby': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg',
+      'C++': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg',
+      'Swift': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg',
+      'Kotlin': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg',
+      'Java': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg',
+      'C#': 'https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg'
+    }
+    return iconMap[language] || ''
+  }
+
+  // ...existing code...
+
+  // Programming language options
+  const programmingLanguageOptions = [
+    { value: 'Java', label: 'Java' },
+    { value: 'C#', label: 'C#' },
+    { value: 'JavaScript', label: 'JavaScript' },
+    { value: 'TypeScript', label: 'TypeScript' },
+    { value: 'Python', label: 'Python' },
+    { value: 'PHP', label: 'PHP' },
+    { value: 'Go', label: 'Go' },
+    { value: 'Ruby', label: 'Ruby' },
+    { value: 'C++', label: 'C++' },
+    { value: 'Swift', label: 'Swift' },
+    { value: 'Kotlin', label: 'Kotlin' }
+  ]
+
+  // ...existing code...
 
   // Kết nối repo
   const handleConnectRepo = async () => {
     try {
       const res = await connectRepo(projectId, partId, { repoUrl, accessToken })
-      showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Repository connected successfully', variant: res?.code === 200 ? 'default' : 'destructive' })
+              showToast({ title: res?.code === 200 ? 'Success' : 'Error', description: res?.message || 'Repository connected successfully', variant: res?.code === 200 ? 'success' : 'destructive' })
     } catch (err: any) {
       showToast({ title: 'Error', description: err.response?.data?.message || err.message || 'Failed to connect repository', variant: 'destructive' })
     }
@@ -122,39 +161,42 @@ export default function ProjectPartManager({ projectId }: { projectId: string })
                 </div>
                 <div>
                   <Label htmlFor='programming-language'>Programming Language</Label>
-                  <select
-                    id='programming-language'
-                    value={programmingLanguage}
-                    onChange={(e) => setProgrammingLanguage(e.target.value)}
-                    className='w-full border rounded px-2 py-2'
-                  >
-                    <option value='None'>None</option>
-                    <option value='Java'>Java</option>
-                    <option value='C#'>C#</option>
-                    <option value='JavaScript'>JavaScript</option>
-                    <option value='Python'>Python</option>
-                    {/* Thêm các ngôn ngữ khác nếu cần */}
-                  </select>
-                </div>
-                <div>
-                  <Label htmlFor='framework'>Framework</Label>
-                  <select
-                    id='framework'
-                    value={framework}
-                    onChange={(e) => setFramework(e.target.value)}
-                    className='w-full border rounded px-2 py-2'
-                  >
-                    <option value='None'>None</option>
-                    <option value='Spring Boot'>Spring Boot</option>
-                    <option value='.NET'>.NET</option>
-                    <option value='React'>React</option>
-                    <option value='Django'>Django</option>
-                    {/* Thêm các framework khác nếu cần */}
-                  </select>
+                  <Select value={programmingLanguage} onValueChange={setProgrammingLanguage}>
+                    <SelectTrigger>
+                                             <SelectValue>
+                         <div className='flex items-center gap-2'>
+                           {getProgrammingLanguageIconUrl(programmingLanguage) && (
+                             <img 
+                               src={getProgrammingLanguageIconUrl(programmingLanguage)} 
+                               alt={programmingLanguage}
+                               className='w-5 h-5'
+                             />
+                           )}
+                           <span>{programmingLanguage}</span>
+                         </div>
+                       </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                                             {programmingLanguageOptions.map((option) => (
+                         <SelectItem key={option.value} value={option.value}>
+                           <div className='flex items-center gap-2'>
+                             {getProgrammingLanguageIconUrl(option.value) && (
+                               <img 
+                                 src={getProgrammingLanguageIconUrl(option.value)} 
+                                 alt={option.label}
+                                 className='w-5 h-5'
+                               />
+                             )}
+                             <span>{option.label}</span>
+                           </div>
+                         </SelectItem>
+                       ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
 
-              <Button onClick={handleCreatePart} disabled={loading || !name.trim()} className='w-full md:w-auto'>
+              <Button onClick={handleCreatePart} disabled={loading || !name.trim() || !programmingLanguage} className='w-full md:w-auto'>
                 {loading ? 'Creating...' : 'Create Part'}
               </Button>
             </CardContent>

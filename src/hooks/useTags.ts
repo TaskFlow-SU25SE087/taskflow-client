@@ -3,7 +3,7 @@ import { Tag } from '@/types/project'
 import { useEffect, useState } from 'react'
 import { useCurrentProject } from './useCurrentProject'
 
-export const useTags = () => {
+export const useTags = (onTagsChange?: () => void) => {
   const [tags, setTags] = useState<Tag[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
@@ -36,7 +36,10 @@ export const useTags = () => {
     setIsLoading(true)
     try {
       const ok = await tagApi.createTag(currentProject.id, tag)
-      if (ok) await fetchTags()
+      if (ok) {
+        await fetchTags()
+        onTagsChange && onTagsChange()
+      }
       return ok
     } catch (err) {
       setError(err as Error)
@@ -51,7 +54,10 @@ export const useTags = () => {
     setIsLoading(true)
     try {
       const ok = await tagApi.updateTag(currentProject.id, tagId, tag)
-      if (ok) await fetchTags()
+      if (ok) {
+        await fetchTags()
+        onTagsChange && onTagsChange()
+      }
       return ok
     } catch (err) {
       setError(err as Error)
@@ -66,7 +72,10 @@ export const useTags = () => {
     setIsLoading(true)
     try {
       const ok = await tagApi.deleteTag(currentProject.id, tagId)
-      if (ok) await fetchTags()
+      if (ok) {
+        await fetchTags()
+        onTagsChange && onTagsChange()
+      }
       return ok
     } catch (err) {
       setError(err as Error)

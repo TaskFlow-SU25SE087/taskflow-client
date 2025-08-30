@@ -24,7 +24,7 @@ export default function OtpPage() {
       showToast({
         title: 'Success',
         description: 'OTP verified successfully',
-        variant: 'default'
+        variant: 'success'
       })
       setTimeout(() => {
         navigate('/add-info')
@@ -47,7 +47,7 @@ export default function OtpPage() {
       showToast({
         title: 'Success',
         description: 'OTP has been resent to your email',
-        variant: 'default'
+        variant: 'success'
       })
     } catch (error: any) {
       showToast({

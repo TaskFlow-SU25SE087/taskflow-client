@@ -1,4 +1,5 @@
 import { TaskP } from '@/types/task'
+import { Board } from '@/types/board'
 import React from 'react'
 import { FixedSizeList as List } from 'react-window'
 import { BacklogTaskRow } from './BacklogTaskRow'
@@ -28,6 +29,8 @@ interface VirtualizedTaskListProps {
   height?: number
   onLoadMore?: () => void
   hasMore?: boolean
+  boards?: Board[]
+  refreshBoards?: () => Promise<void>
 }
 
 const ITEM_HEIGHT = 44 // Height of each task row including margin
@@ -41,7 +44,9 @@ export const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = ({
   isLoading = false,
   height = 400,
   onLoadMore,
-  hasMore
+  hasMore,
+  boards = [],
+  refreshBoards
 }) => {
   // Thêm effect để gọi onLoadMore khi scroll đến cuối
   const listRef = React.useRef<any>(null)
@@ -79,20 +84,25 @@ export const VirtualizedTaskList: React.FC<VirtualizedTaskListProps> = ({
           checked={selectedTaskIds.includes(task.id)}
           onCheck={onCheck}
           onTaskUpdate={onTaskUpdate}
+          boards={boards}
+          refreshBoards={refreshBoards as any}
         />
       </div>
     )
   }
 
+  const autoHeight = Math.min(tasks.length * ITEM_HEIGHT, height)
+
   return (
     <List
-      height={height}
+      height={autoHeight}
       itemCount={tasks.length}
       itemSize={ITEM_HEIGHT}
       width='100%'
-      overscanCount={5}
+      overscanCount={3}
       onItemsRendered={({ visibleStopIndex }) => handleItemsRendered({ visibleStopIndex })}
       ref={listRef}
+      style={{ overflowX: 'hidden' }}
     >
       {Row}
     </List>

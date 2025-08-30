@@ -11,10 +11,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { useToastContext } from '@/components/ui/ToastContext'
 import { useIssues } from '@/hooks/useIssues'
-import { CreateIssueRequest, IssuePriority, IssueType } from '@/types/issue'
-import { AlertCircle } from 'lucide-react'
+import { CreateIssueRequest } from '@/types/issue'
+import { AlertCircle, Bug, ChevronDown, ChevronUp, ChevronsDown, ChevronsUp, FileText, Lightbulb, Loader2, MessageSquare, Plus, X } from 'lucide-react'
 import React, { useState } from 'react'
 
 interface IssueCreateMenuProps {
@@ -24,46 +23,36 @@ interface IssueCreateMenuProps {
 }
 
 const priorityOptions = [
-  { value: IssuePriority.Low, label: 'Low' },
-  { value: IssuePriority.Medium, label: 'Medium' },
-  { value: IssuePriority.High, label: 'High' },
-  { value: IssuePriority.Urgent, label: 'Urgent' }
+  { value: 0, label: 'Low', color: 'text-blue-600', icon: ChevronDown },
+  { value: 10000, label: 'Medium', color: 'text-orange-600', icon: ChevronsDown },
+  { value: 20000, label: 'High', color: 'text-red-600', icon: ChevronUp },
+  { value: 30000, label: 'Urgent', color: 'text-red-800', icon: ChevronsUp }
 ]
 
 const typeOptions = [
-  { value: IssueType.Bug, label: 'Bug' },
-  { value: IssueType.FeatureRequest, label: 'Feature Request' },
-  { value: IssueType.Improvement, label: 'Improvement' },
-  { value: IssueType.Task, label: 'Task' },
-  { value: IssueType.Documentation, label: 'Documentation' },
-  { value: IssueType.Other, label: 'Other' }
+  { value: 10000, label: 'Bug', icon: Bug, color: 'text-red-600' },
+  { value: 20000, label: 'Feature Request', icon: Plus, color: 'text-green-600' },
+  { value: 30000, label: 'Improvement', icon: Lightbulb, color: 'text-blue-600' },
+  { value: 40000, label: 'Sub Task', icon: MessageSquare, color: 'text-purple-600' },
+  { value: 50000, label: 'Documentation', icon: FileText, color: 'text-indigo-600' },
+  { value: 60000, label: 'Other', icon: X, color: 'text-gray-600' }
 ]
 
 export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, taskId, onIssueCreated }) => {
   const { createIssue, isLoading } = useIssues()
-  const { showToast } = useToastContext()
   const [open, setOpen] = useState(false)
   const [files, setFiles] = useState<File[]>([])
 
   const [formData, setFormData] = useState<CreateIssueRequest>({
     title: '',
     description: '',
-    priority: IssuePriority.Medium,
+    priority: 10000, // Medium/Trung bình
     explanation: '',
     example: '',
-    type: IssueType.Bug
-  })
-
-  console.log('🎨 [IssueCreateMenu] Component rendered with:', {
-    projectId,
-    taskId,
-    open,
-    isLoading,
-    formData
+    type: 10000 // Bug
   })
 
   const handleInputChange = (field: keyof CreateIssueRequest, value: string | number) => {
-    console.log('✏️ [IssueCreateMenu] Input changed:', { field, value })
     setFormData((prev) => ({
       ...prev,
       [field]: value
@@ -72,70 +61,61 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files || [])
-    console.log('📁 [IssueCreateMenu] Files selected:', selectedFiles)
     setFiles(selectedFiles)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    console.log('🚀 [IssueCreateMenu] Form submitted!')
-    console.log('📋 [IssueCreateMenu] Form data:', formData)
-    console.log('📁 [IssueCreateMenu] Files:', files)
 
     const issueData: CreateIssueRequest = {
       ...formData,
       files: files.length > 0 ? files : undefined
     }
 
-    console.log('📤 [IssueCreateMenu] Calling createIssue with:', {
-      projectId,
-      taskId,
-      issueData
-    })
-
     try {
       const res = await createIssue(projectId, taskId, issueData) as any
-      if (res && typeof res === 'object' && 'code' in res) {
-        if (res.code === 200) {
-          showToast({ title: 'Success', description: res.message || 'Issue created successfully' })
+      if (res) {
+        // Issue created successfully - useIssues already shows success toast
+        
+        // Đóng dialog với delay nhỏ để user thấy thông báo
+        setTimeout(() => {
           setOpen(false)
+          // Reset form
           setFormData({
             title: '',
             description: '',
-            priority: IssuePriority.Medium,
+            priority: 10000, // Medium/Trung bình
             explanation: '',
             example: '',
-            type: IssueType.Bug
+            type: 10000 // Bug
           })
           setFiles([])
+          // Gọi callback để update realtime
           onIssueCreated?.()
-        } else {
-          showToast({ title: 'Error', description: res.message || 'Failed to create issue', variant: 'destructive' })
-        }
-      } else {
-        showToast({ title: 'Error', description: 'Failed to create issue', variant: 'destructive' })
+        }, 1000)
       }
     } catch (error: any) {
-      showToast({ title: 'Error', description: error.response?.data?.message || error.message || 'Failed to create issue', variant: 'destructive' })
+      // Exception occurred - useIssues already shows error toast
     }
   }
 
   const resetForm = () => {
-    console.log('🔄 [IssueCreateMenu] Resetting form')
     setFormData({
       title: '',
       description: '',
-      priority: IssuePriority.Medium,
+      priority: 10000, // Medium/Trung bình
       explanation: '',
       example: '',
-      type: IssueType.Bug
+      type: 10000 // Bug
     })
     setFiles([])
   }
 
   const handleDialogChange = (newOpen: boolean) => {
-    console.log('🚪 [IssueCreateMenu] Dialog open state changing to:', newOpen)
     setOpen(newOpen)
+    if (!newOpen) {
+      resetForm()
+    }
   }
 
   return (
@@ -145,7 +125,6 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
           variant='outline'
           size='sm'
           className='gap-2'
-          onClick={() => console.log('🔘 [IssueCreateMenu] Report Issue button clicked')}
         >
           <AlertCircle className='h-4 w-4' />
           Report Issue
@@ -153,113 +132,175 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
       </DialogTrigger>
       <DialogContent className='max-w-2xl max-h-[90vh] overflow-y-auto'>
         <DialogHeader>
-          <DialogTitle>Create New Issue</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-gray-900">Create New Issue</DialogTitle>
           <DialogDescription>Fill out the form below to report a new issue for this task.</DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className='space-y-4'>
+        <form onSubmit={handleSubmit} className='space-y-6'>
           <div className='grid grid-cols-2 gap-4'>
             <div className='space-y-2'>
-              <Label htmlFor='title'>Title *</Label>
+              <Label htmlFor='title' className="text-sm font-medium text-gray-700">Title *</Label>
               <Input
                 id='title'
                 value={formData.title}
                 onChange={(e) => handleInputChange('title', e.target.value)}
                 placeholder='Issue title'
                 required
+                className="w-full"
               />
             </div>
 
             <div className='space-y-2'>
-              <Label htmlFor='type'>Type *</Label>
+              <Label htmlFor='type' className="text-sm font-medium text-gray-700">Type *</Label>
               <Select
                 value={formData.type.toString()}
                 onValueChange={(value) => handleInputChange('type', parseInt(value))}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder='Select type' />
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder='Select type'>
+                    {(() => {
+                      const selectedType = typeOptions.find(type => type.value === formData.type);
+                      if (selectedType) {
+                        const TypeIcon = selectedType.icon;
+                        return (
+                          <div className="flex items-center gap-2">
+                            <TypeIcon className={`w-4 h-4 ${selectedType.color}`} />
+                            {selectedType.label}
+                          </div>
+                        );
+                      }
+                      return "Select type";
+                    })()}
+                  </SelectValue>
                 </SelectTrigger>
-                <SelectContent>
-                  {typeOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value.toString()}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
+                <SelectContent className="max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100" position="popper">
+                  {typeOptions.map((type) => {
+                    const TypeIcon = type.icon
+                    return (
+                      <SelectItem key={type.value} value={type.value.toString()} className="flex items-center gap-2 py-2 cursor-pointer">
+                        <TypeIcon className={`w-4 h-4 ${type.color}`} />
+                        {type.label}
+                      </SelectItem>
+                    )
+                  })}
                 </SelectContent>
               </Select>
             </div>
           </div>
 
           <div className='space-y-2'>
-            <Label htmlFor='description'>Description *</Label>
+            <Label htmlFor='description' className="text-sm font-medium text-gray-700">Description *</Label>
             <Textarea
               id='description'
               value={formData.description}
               onChange={(e) => handleInputChange('description', e.target.value)}
               placeholder='Describe the issue in detail'
-              rows={3}
+              rows={4}
               required
+              className="w-full"
             />
           </div>
 
           <div className='space-y-2'>
-            <Label htmlFor='explanation'>Explanation (Optional)</Label>
+            <Label htmlFor='explanation' className="text-sm font-medium text-gray-700">Explanation (Optional)</Label>
             <Textarea
               id='explanation'
               value={formData.explanation}
               onChange={(e) => handleInputChange('explanation', e.target.value)}
               placeholder='Explain the issue in detail'
               rows={3}
+              className="w-full"
             />
           </div>
 
           <div className='space-y-2'>
-            <Label htmlFor='example'>Example (Optional)</Label>
+            <Label htmlFor='example' className="text-sm font-medium text-gray-700">Example (Optional)</Label>
             <Textarea
               id='example'
               value={formData.example}
               onChange={(e) => handleInputChange('example', e.target.value)}
               placeholder='Provide an example or steps to reproduce'
-              rows={2}
+              rows={3}
+              className="w-full"
             />
           </div>
 
           <div className='grid grid-cols-2 gap-4'>
             <div className='space-y-2'>
-              <Label htmlFor='priority'>Priority *</Label>
+              <Label htmlFor='priority' className="text-sm font-medium text-gray-700">Priority *</Label>
               <Select
                 value={formData.priority.toString()}
                 onValueChange={(value) => handleInputChange('priority', parseInt(value))}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder='Select priority' />
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder='Select priority'>
+                    {(() => {
+                      const selectedPriority = priorityOptions.find(priority => priority.value === formData.priority);
+                      if (selectedPriority) {
+                        const PriorityIcon = selectedPriority.icon;
+                        return (
+                          <div className="flex items-center gap-2">
+                            <PriorityIcon className={`w-4 h-4 ${selectedPriority.color}`} />
+                            {selectedPriority.label}
+                          </div>
+                        );
+                      }
+                      return "Select priority";
+                    })()}
+                  </SelectValue>
                 </SelectTrigger>
-                <SelectContent>
-                  {priorityOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value.toString()}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
+                <SelectContent className="max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100" position="popper">
+                  {priorityOptions.map((priority) => {
+                    const PriorityIcon = priority.icon;
+                    return (
+                      <SelectItem key={priority.value} value={priority.value.toString()} className="flex items-center gap-2 py-2 cursor-pointer">
+                        <PriorityIcon className={`w-4 h-4 ${priority.color}`} />
+                        {priority.label}
+                      </SelectItem>
+                    )
+                  })}
                 </SelectContent>
               </Select>
             </div>
 
             <div className='space-y-2'>
-              <Label htmlFor='files'>Files (Optional)</Label>
-              <Input id='files' type='file' multiple onChange={handleFileChange} className='cursor-pointer' />
-              {files.length > 0 && <div className='text-sm text-muted-foreground'>{files.length} file(s) selected</div>}
+              <Label htmlFor='files' className="text-sm font-medium text-gray-700">Files (Optional)</Label>
+              <Input 
+                id='files' 
+                type='file' 
+                multiple 
+                onChange={handleFileChange} 
+                className="cursor-pointer"
+                accept='.jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt'
+              />
+              {files.length > 0 && (
+                <div className="text-sm text-gray-600">
+                  Selected files: {files.map(f => f.name).join(', ')}
+                </div>
+              )}
             </div>
           </div>
 
-          <div className='flex justify-end gap-2 pt-4'>
-            <Button type='button' variant='outline' onClick={resetForm} disabled={isLoading}>
+          <div className='flex justify-end gap-3 pt-4'>
+            <Button 
+              type='button' 
+              variant='outline' 
+              onClick={resetForm} 
+              disabled={isLoading}
+              className="px-6"
+            >
               Reset
             </Button>
             <Button
               type='submit'
-              disabled={isLoading}
-              onClick={() => console.log('🔘 [IssueCreateMenu] Create Issue button clicked')}
+              disabled={isLoading || !formData.title.trim() || !formData.description.trim()}
+              className='px-6 flex items-center gap-2'
             >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Plus className='h-4 w-4 flex-shrink-0' />
+              )}
               {isLoading ? 'Creating...' : 'Create Issue'}
             </Button>
           </div>

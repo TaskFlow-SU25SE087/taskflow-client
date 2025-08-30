@@ -10,8 +10,16 @@ import { useTags } from '@/hooks/useTags'
 import { Check, Edit3, Plus, Search, Tag, Trash2, X } from 'lucide-react'
 import { useRef, useState } from 'react'
 
-export default function ProjectTagManager({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const { tags, isLoading, error, createTag, updateTag, deleteTag } = useTags()
+export default function ProjectTagManager({ 
+  isOpen, 
+  onClose, 
+  onTagUpdated 
+}: { 
+  isOpen: boolean; 
+  onClose: () => void; 
+  onTagUpdated?: () => void;
+}) {
+  const { tags, isLoading, error, createTag, updateTag, deleteTag } = useTags(onTagUpdated)
   const [newTag, setNewTag] = useState({ name: '', description: '', color: '#7B61FF' })
   const [editingTagId, setEditingTagId] = useState<string | null>(null)
   const [editingTag, setEditingTag] = useState({ name: '', description: '', color: '#7B61FF' })
@@ -97,12 +105,12 @@ export default function ProjectTagManager({ isOpen, onClose }: { isOpen: boolean
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className='max-w-2xl w-full p-0 bg-transparent border-0 shadow-none'>
+      <DialogContent className='max-w-2xl w-full p-0 bg-transparent border-0 shadow-none [&>button]:hidden'>
         <div className='sr-only'>
           <h2 id='project-tag-manager-title'>Project Tags</h2>
         </div>
         <Card className='w-full max-w-2xl mx-auto shadow-lg border-0 bg-white'>
-          <CardHeader className='bg-white text-gray-900 rounded-t-lg flex flex-row items-center justify-between'>
+          <CardHeader className='bg-white text-gray-900 rounded-t-lg flex flex-row items-center justify-between relative'>
             <div className='flex items-center gap-3'>
               <div className='p-2 bg-gray-100 rounded-lg'>
                 <Tag className='w-6 h-6' />
@@ -114,6 +122,13 @@ export default function ProjectTagManager({ isOpen, onClose }: { isOpen: boolean
                 </CardDescription>
               </div>
             </div>
+            <button
+              onClick={onClose}
+              className='absolute right-4 top-4 p-2 rounded-lg hover:bg-gray-100 transition-colors'
+              aria-label='Close modal'
+            >
+              <X className='w-5 h-5 text-gray-500' />
+            </button>
           </CardHeader>
           <CardContent className='p-6'>
             {/* Create New Tag Section */}

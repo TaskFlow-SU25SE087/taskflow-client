@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Loader } from '../../components/ui/loader'
+import { useGitHubStatus } from '../../contexts/GitHubStatusContext'
 import { useGitHubProjectPartIntegration } from '../../hooks/useGitHubProjectPartIntegration'
 
 export default function GitHubOAuthCallback() {
@@ -8,6 +9,7 @@ export default function GitHubOAuthCallback() {
   const location = useLocation()
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
+  const { updateConnectionStatus } = useGitHubStatus()
 
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search)
@@ -30,6 +32,9 @@ export default function GitHubOAuthCallback() {
         // Call the OAuth callback API
         await handleOAuthCallback(code)
 
+        // Cập nhật trạng thái toàn cục khi OAuth thành công
+        updateConnectionStatus(true)
+
         // Success - redirect back to GitHub page
         // Try to get the project ID from localStorage or redirect to projects list
         const currentProjectId = localStorage.getItem('currentProjectId')
@@ -41,6 +46,7 @@ export default function GitHubOAuthCallback() {
       } catch (err) {
         console.error('OAuth callback error:', err)
         setError(err instanceof Error ? err.message : 'Failed to process OAuth callback')
+        updateConnectionStatus(false)
       }
     }
 

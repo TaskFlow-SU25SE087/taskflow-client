@@ -23,7 +23,7 @@ export default function VerifyEmailPage() {
           showToast({
             title: 'Success',
             description: 'Email verified successfully',
-            variant: 'default'
+            variant: 'success'
           })
           navigate('/login')
         } catch (error: any) {
@@ -48,7 +48,7 @@ export default function VerifyEmailPage() {
       showToast({
         title: 'Success',
         description: 'Verification email sent successfully',
-        variant: 'default'
+        variant: 'success'
       })
     } catch (error: any) {
       showToast({

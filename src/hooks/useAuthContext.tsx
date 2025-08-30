@@ -1,8 +1,12 @@
 import { authApi } from '@/api/auth'
+import { projectApi } from '@/api/projects'
 import axiosClient from '@/configs/axiosClient'
+import { clearLastProjectForAllUsersExcept, clearLastProjectForUser, getLastProjectIdForUser } from '@/lib/utils'
 import { User } from '@/types/auth'
+import Cookies from 'js-cookie'
 import { createContext, ReactNode, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+
 
 interface AuthContextType {
   user: User | null
@@ -10,7 +14,7 @@ interface AuthContextType {
   isAuthenticated: boolean
   authLoading: boolean
   login: (username: string, password: string) => Promise<void>
-  register: (email: string, fullName: string, password: string, confirmPassword: string) => Promise<void>
+
   logout: () => void
   error: string | null
   resendVerificationEmail: () => Promise<void>
@@ -42,83 +46,84 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authLoading, setAuthLoading] = useState(true)
   const navigate = useNavigate()
 
-  // Initialize auth state from session storage
+  // Initialize auth state from storage; try refresh with refreshToken for new tabs
   useEffect(() => {
-    const storedUser = sessionStorage.getItem('auth_user')
-    const storedOtpStatus = sessionStorage.getItem('otp_verified')
-    // Ưu tiên lấy accessToken từ localStorage nếu có rememberMe
-    const rememberMe = localStorage.getItem('rememberMe') === 'true'
-    const storedAccessToken = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken')
-    console.log('[AuthProvider] useEffect mount:')
-    console.log('  storedUser:', storedUser)
-    console.log('  storedOtpStatus:', storedOtpStatus)
-    console.log('  storedAccessToken:', storedAccessToken)
-    if (storedAccessToken) {
-      axiosClient.defaults.headers.common['Authorization'] = `Bearer ${storedAccessToken}`
-      // Decode accessToken để lấy lại user info
-      try {
-        const tokenPayload = JSON.parse(atob(storedAccessToken.split('.')[1]))
-        const currentUser = {
-          id: tokenPayload.ID || '',
-          email: tokenPayload.Email || '',
-          fullName: tokenPayload.FullName || '',
-          role: tokenPayload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || '',
-          phoneNumber: '',
-          username: tokenPayload.Username || ''
-        }
-        setUser(currentUser)
-        sessionStorage.setItem('auth_user', JSON.stringify(currentUser))
-        setIsOtpVerified(true)
-      } catch (e) {
-        setUser(null)
-        setIsOtpVerified(false)
-        sessionStorage.removeItem('auth_user')
-        if (rememberMe) {
-          localStorage.removeItem('accessToken')
-        } else {
-          sessionStorage.removeItem('accessToken')
+    let cancelled = false
+
+    const hydrateAuth = async () => {
+      const storedUser = sessionStorage.getItem('auth_user')
+      const storedOtpStatus = sessionStorage.getItem('otp_verified')
+      const rememberMe = localStorage.getItem('rememberMe') === 'true'
+      let accessToken = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken') || ''
+      const refreshToken = localStorage.getItem('refreshToken')
+
+      console.log('[AuthProvider] boot:', {
+        hasStoredUser: !!storedUser,
+        storedOtpStatus,
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken
+      })
+
+      // If we don't have an access token but do have a refresh token, try to refresh
+      if (!accessToken && refreshToken) {
+        try {
+          const refreshed = await authApi.refreshToken(accessToken, refreshToken)
+          accessToken = refreshed.accessToken
+          axiosClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+          // Persist token according to rememberMe; fallback to session for current tab
+          if (rememberMe) {
+            localStorage.setItem('accessToken', accessToken)
+          }
+          sessionStorage.setItem('accessToken', accessToken)
+        } catch (e) {
+          console.warn('[AuthProvider] Failed to refresh access token on boot:', e)
         }
       }
-    }
-    setAuthLoading(false)
 
-    if (storedUser) {
-      try {
-        const parsedUser = JSON.parse(storedUser)
-        setUser(parsedUser)
-        setIsOtpVerified(storedOtpStatus === 'true')
-        // Nếu user thiếu fullName, tự động lấy lại từ API /user/{userId}
-        if (storedOtpStatus === 'true' && (!parsedUser.fullName || parsedUser.fullName === '')) {
-          // Lấy userId từ token
-          let userId = ''
-          if (storedAccessToken) {
-            try {
-              const tokenPayload = JSON.parse(atob(storedAccessToken.split('.')[1]))
-              userId = tokenPayload.ID
-            } catch (e) {
-              userId = ''
-            }
+      // If we have an access token (either from storage or refresh), decode and set user
+      if (accessToken) {
+        try {
+          const tokenPayload = JSON.parse(atob(accessToken.split('.')[1]))
+          const currentUser = {
+            id: tokenPayload.ID || '',
+            email: tokenPayload.Email || '',
+            fullName: tokenPayload.FullName || '',
+            role: tokenPayload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || '',
+            phoneNumber: '',
+            username: tokenPayload.Username || ''
           }
-          if (userId) {
-            authApi
-              .getUserById(userId)
-              .then((currentUser) => {
-                setUser({ ...parsedUser, ...currentUser })
-                sessionStorage.setItem('auth_user', JSON.stringify({ ...parsedUser, ...currentUser }))
-                console.log('Auto-fetched user info from /user/{userId}:', currentUser)
-              })
-              .catch((error) => {
-                console.warn('Could not auto-fetch user info from /user/{userId}:', error)
-              })
-          }
+          if (cancelled) return
+          axiosClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+          setUser(currentUser)
+          sessionStorage.setItem('auth_user', JSON.stringify(currentUser))
+          setIsOtpVerified(true)
+          sessionStorage.setItem('otp_verified', 'true')
+        } catch (e) {
+          if (cancelled) return
+          setUser(null)
+          setIsOtpVerified(false)
+          sessionStorage.removeItem('auth_user')
+          // Don't aggressively remove refresh token here; keep for later manual login
+          sessionStorage.removeItem('accessToken')
+          localStorage.removeItem('accessToken')
         }
-      } catch (error) {
-        console.error('Error parsing stored user:', error)
+      } else if (storedUser) {
+        // If there's a stored user but no access token, treat as logged out to avoid ghost sessions
+        console.warn('[AuthProvider] Stored user found without access token. Clearing stale auth state.')
         sessionStorage.removeItem('auth_user')
         sessionStorage.removeItem('otp_verified')
+        setUser(null)
+        setIsOtpVerified(false)
       }
+
+      if (!cancelled) setAuthLoading(false)
     }
-  }, []) // Empty dependency array to run only once on mount
+
+    hydrateAuth()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     console.log('[AuthProvider] user:', user)
@@ -127,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (username: string, password: string) => {
     try {
+      setError(null) // Clear any previous errors
       console.log('Starting login process...')
       const response = await authApi.login(username, password)
       console.log('Login response:', response)
@@ -135,13 +141,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Store tokens
       axiosClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
       localStorage.setItem('refreshToken', refreshToken)
-      // Lưu accessToken vào localStorage nếu rememberMe, ngược lại dùng sessionStorage
-      const rememberMe = localStorage.getItem('rememberMe') === 'true'
-      if (rememberMe) {
-        localStorage.setItem('accessToken', accessToken)
-      } else {
-        sessionStorage.setItem('accessToken', accessToken)
-      }
+      // Persist accessToken to both storages to support new tabs; logout clears both
+      localStorage.setItem('accessToken', accessToken)
+      sessionStorage.setItem('accessToken', accessToken)
 
       // Get current user information including role from JWT token
       let currentUser: User | null = null
@@ -162,6 +164,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionStorage.setItem('auth_user', JSON.stringify(currentUser))
         sessionStorage.setItem('otp_verified', 'true')
         setIsOtpVerified(true)
+        
+        // Clear last project data for all other users to prevent data leakage
+        clearLastProjectForAllUsersExcept(currentUser?.id)
       } catch (userError) {
         console.warn('Could not decode JWT token, using basic user info:', userError)
         // Fallback to basic user info
@@ -170,59 +175,86 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sessionStorage.setItem('auth_user', JSON.stringify(currentUser))
         sessionStorage.setItem('otp_verified', 'true')
         setIsOtpVerified(true)
+        
+        // Clear last project data for all other users to prevent data leakage
+        clearLastProjectForAllUsersExcept(currentUser?.id)
       }
 
       console.log('Login successful, redirecting...')
-      setTimeout(() => {
-        // Check if user is admin and redirect accordingly
-        if (
+      setTimeout(async () => {
+        // Admins go to admin panel as before
+        const isAdmin =
           currentUser &&
           (currentUser.role === 0 ||
             currentUser.role === '0' ||
             currentUser.role === 'Admin' ||
             currentUser.role === 'admin')
-        ) {
-          navigate('/admin/users', { replace: true })
+
+        if (isAdmin) {
+          navigate('/admin/dashboard', { replace: true })
+          return
+        }
+
+        // For regular users, prefer the per-user last project if present; fall back to cookie/local
+        const savedProjectId =
+          getLastProjectIdForUser(currentUser?.id) ||
+          Cookies.get('current_project_id') ||
+          localStorage.getItem('currentProjectId')
+        if (savedProjectId) {
+          try {
+            // Verify access; if unauthorized or not found, this will throw
+            await projectApi.getProjectById(savedProjectId)
+            navigate(`/projects/${savedProjectId}/board`, { replace: true })
+          } catch (e: any) {
+            // Clear stale project selection and go to projects list
+            Cookies.remove('current_project_id')
+            localStorage.removeItem('currentProjectId')
+            clearLastProjectForUser(currentUser?.id)
+            navigate('/projects', { replace: true })
+          }
         } else {
           navigate('/projects', { replace: true })
         }
-      }, 200) // Add a small delay for toast to appear
+      }, 200) // Small delay for any UI effects
     } catch (error: any) {
       console.error('Login error:', error)
-      setError(error.message || 'Failed to login')
-      throw error
+      // Set a user-friendly error message
+      const errorMessage =
+        error.response?.data?.message || error.message || 'Login failed. Please check your credentials and try again.'
+      setError(errorMessage)
+      // Don't throw the error - this prevents any unhandled promise rejection
     }
   }
 
-  const register = async (email: string, fullName: string, password: string, confirmPassword: string) => {
-    try {
-      console.log('Starting registration process...')
-      setError(null)
-      const response = await authApi.register(email, fullName, password, confirmPassword)
-      console.log('Registration response:', response)
-      const { accessToken, refreshToken } = response
+  // const register = async (email: string, fullName: string, password: string, confirmPassword: string) => {
+  //   try {
+  //     console.log('Starting registration process...')
+  //     setError(null)
+  //     const response = await authApi.register(email, fullName, password, confirmPassword)
+  //     console.log('Registration response:', response)
+  //     const { accessToken, refreshToken } = response
 
-      // Store tokens
-      axiosClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
-      localStorage.setItem('refreshToken', refreshToken)
-      sessionStorage.setItem('accessToken', accessToken)
+  //     // Store tokens
+  //     axiosClient.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+  //     localStorage.setItem('refreshToken', refreshToken)
+  //     sessionStorage.setItem('accessToken', accessToken)
 
-      // Store user info
-      sessionStorage.setItem('auth_user', JSON.stringify({ email })) // Only store email in session storage for simplification
-      sessionStorage.setItem('otp_verified', 'false')
-      setUser({ email: email, fullName: '', id: '', role: '', phoneNumber: '', username: '' }) // Simplified User object for initial state, removed avatar as it's not in User interface
-      setIsOtpVerified(false)
+  //     // Store user info
+  //     sessionStorage.setItem('auth_user', JSON.stringify({ email })) // Only store email in session storage for simplification
+  //     sessionStorage.setItem('otp_verified', 'false')
+  //     setUser({ email: email, fullName: '', id: '', role: '', phoneNumber: '', username: '' }) // Simplified User object for initial state, removed avatar as it's not in User interface
+  //     setIsOtpVerified(false)
 
-      console.log('Registration successful, redirecting to OTP page...')
-      setTimeout(() => {
-        navigate('/verify-otp', { replace: true })
-      }, 200) // Add a small delay for toast to appear
-    } catch (error: any) {
-      console.error('Registration error:', error)
-      setError(error.message || 'Failed to register')
-      throw error
-    }
-  }
+  //     console.log('Registration successful, redirecting to OTP page...')
+  //     setTimeout(() => {
+  //       navigate('/verify-otp', { replace: true })
+  //     }, 200) // Add a small delay for toast to appear
+  //   } catch (error: any) {
+  //     console.error('Registration error:', error)
+  //     setError(error.message || 'Failed to register')
+  //     throw error
+  //   }
+  // }
 
   const logout = () => {
     authApi.logout()
@@ -232,7 +264,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.removeItem('otp_verified')
     sessionStorage.removeItem('accessToken')
     localStorage.removeItem('accessToken')
+    localStorage.removeItem('refreshToken')
     localStorage.removeItem('rememberMe')
+    
+    // Clear current user's last project data on logout for security
+    if (user?.id) {
+      clearLastProjectForUser(user.id)
+    }
+    
+    // Clear global fallback to avoid cross-account leakage
+    Cookies.remove('current_project_id')
+    localStorage.removeItem('currentProjectId')
     navigate('/login', { replace: true })
   }
 
@@ -296,7 +338,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             updatedUser.role === 'Admin' ||
             updatedUser.role === 'admin')
         ) {
-          navigate('/admin/users', { replace: true })
+          navigate('/admin/dashboard', { replace: true })
         } else {
           navigate('/projects/new', { replace: true })
         }
@@ -362,7 +404,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         authLoading,
         login,
-        register,
+        // register,
         logout,
         error,
         resendVerificationEmail,

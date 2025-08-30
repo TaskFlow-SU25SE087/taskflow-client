@@ -27,17 +27,28 @@ export function SprintCreateMenu({ onCreateSprint }: SprintCreateMenuProps) {
 
   const handleCreateSprint = async () => {
     try {
-      const res = await onCreateSprint({ name, description, startDate: startDate ? startDate.toISOString() : '', endDate: endDate ? endDate.toISOString() : '' })
-      if (res && typeof res === 'object' && 'message' in res && typeof (res as { message: string }).message === 'string') {
-        showToast({ title: 'Success', description: (res as { message: string }).message })
-      } else {
-        showToast({ title: 'Success', description: 'Sprint created successfully' })
+      // Format date đúng chuẩn ISO 8601
+      const formatDate = (date: Date | null): string => {
+        if (!date) return ''
+        return date.toISOString().split('.')[0] + 'Z' // Loại bỏ milliseconds và thêm Z
       }
-      setIsOpen(false)
-      setName('')
-      setDescription('')
-      setStartDate(null)
-      setEndDate(null)
+      
+      const res = await onCreateSprint({ 
+        name, 
+        description, 
+        startDate: formatDate(startDate), 
+        endDate: formatDate(endDate) 
+      })
+      
+      // Chỉ hiển thị toast nếu tạo thành công
+      if (res) {
+        showToast({ title: 'Success', description: 'Sprint created successfully', variant: 'success' })
+        setIsOpen(false)
+        setName('')
+        setDescription('')
+        setStartDate(null)
+        setEndDate(null)
+      }
     } catch (error) {
       const err = error as any
       showToast({ title: 'Error', description: err?.response?.data?.message || err?.message || 'Failed to create sprint.', variant: 'destructive' })

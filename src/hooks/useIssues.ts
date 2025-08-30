@@ -5,34 +5,27 @@ import { useState } from 'react'
 
 export const useIssues = () => {
   const [isLoading, setIsLoading] = useState(false)
+  const [cache, setCache] = useState<{ [key: string]: { data: any; timestamp: number } }>({})
+  const [lastLoadTime, setLastLoadTime] = useState<number>()
   const { showToast } = useToastContext()
 
-  const createIssue = async (projectId: string, taskId: string, issueData: CreateIssueRequest): Promise<boolean> => {
-    console.log('🎯 [useIssues] createIssue called with:', {
-      projectId,
-      taskId,
-      issueData
-    })
+  // Cache duration: 2 minutes (increased to reduce API calls)
+  const CACHE_DURATION = 2 * 60 * 1000
 
+  const createIssue = async (projectId: string, taskId: string, issueData: CreateIssueRequest): Promise<boolean> => {
     setIsLoading(true)
-    console.log('⏳ [useIssues] Setting loading to true')
 
     try {
-      console.log('📞 [useIssues] Calling issueApi.createIssue...')
       const success = await issueApi.createIssue(projectId, taskId, issueData)
 
-      console.log('📊 [useIssues] API call result:', success)
-
       if (success) {
-        console.log('✅ [useIssues] Issue created successfully, showing success toast')
         showToast({
-          title: 'Success',
-          description: 'Issue created successfully',
-          variant: 'default'
+          title: '✅ Issue Created Successfully!',
+          description: `Issue has been created and will appear in the task details.`,
+          variant: 'success'
         })
         return true
       } else {
-        console.log('❌ [useIssues] API returned false, showing error toast')
         showToast({
           title: 'Error',
           description: 'Failed to create issue',
@@ -41,7 +34,6 @@ export const useIssues = () => {
         return false
       }
     } catch (error) {
-      console.error('💥 [useIssues] Exception caught:', error)
       showToast({
         title: 'Error',
         description: 'An error occurred while creating the issue',
@@ -49,19 +41,49 @@ export const useIssues = () => {
       })
       return false
     } finally {
-      console.log('🏁 [useIssues] Setting loading to false')
+      setIsLoading(false)
+    }
+  }
+
+  const createProjectIssue = async (projectId: string, issueData: CreateIssueRequest): Promise<boolean> => {
+    setIsLoading(true)
+
+    try {
+      const response = await issueApi.createProjectIssue(projectId, issueData)
+
+      // Check if the response indicates success (code 200 or 0)
+      if (response && (response.code === 200 || response.code === 0)) {
+        showToast({
+          title: 'Success',
+          description: response.message || 'Issue created successfully',
+          variant: 'success'
+        })
+        return true
+      } else {
+        showToast({
+          title: 'Error',
+          description: response?.message || 'Failed to create issue',
+          variant: 'destructive'
+        })
+        return false
+      }
+    } catch (error) {
+      showToast({
+        title: 'Error',
+        description: 'An error occurred while creating the issue',
+        variant: 'destructive'
+      })
+      return false
+    } finally {
       setIsLoading(false)
     }
   }
 
   const getTaskIssues = async (projectId: string, taskId: string) => {
-    console.log('🔍 [useIssues] getTaskIssues called with:', { projectId, taskId })
     try {
       const result = await issueApi.getTaskIssues(projectId, taskId)
-      console.log('✅ [useIssues] getTaskIssues result:', result)
       return result
     } catch (error) {
-      console.error('❌ [useIssues] getTaskIssues error:', error)
       showToast({
         title: 'Error',
         description: 'Failed to fetch task issues',
@@ -71,20 +93,47 @@ export const useIssues = () => {
     }
   }
 
-  const getProjectIssues = async (projectId: string) => {
-    console.log('🔍 [useIssues] getProjectIssues called with:', { projectId })
+  const getProjectIssues = async (projectId: string, forceRefresh = false) => {
+    const startTime = Date.now()
+    
+    // Check cache first
+    const cacheKey = `project-issues-${projectId}`
+    const cached = cache[cacheKey]
+    const now = Date.now()
+    
+    if (!forceRefresh && cached && (now - cached.timestamp) < CACHE_DURATION) {
+      setLastLoadTime(0) // Cache hit
+      return cached.data
+    }
+    
+    setIsLoading(true)
     try {
       const result = await issueApi.getProjectIssues(projectId)
-      console.log('✅ [useIssues] getProjectIssues result:', result)
+      const endTime = Date.now()
+      const loadTime = endTime - startTime
+      
+      setLastLoadTime(loadTime)
+      
+      // Update cache
+      setCache(prev => ({
+        ...prev,
+        [cacheKey]: { data: result, timestamp: now }
+      }))
+      
       return result
     } catch (error) {
-      console.error('❌ [useIssues] getProjectIssues error:', error)
+      const endTime = Date.now()
+      const loadTime = endTime - startTime
+      setLastLoadTime(loadTime)
+      
       showToast({
         title: 'Error',
         description: 'Failed to fetch project issues',
         variant: 'destructive'
       })
       return []
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -108,9 +157,11 @@ export const useIssues = () => {
 
   return {
     createIssue,
+    createProjectIssue,
     getTaskIssues,
     getProjectIssues,
     getFilteredProjectIssues,
-    isLoading
+    isLoading,
+    lastLoadTime
   }
 }

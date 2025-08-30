@@ -23,14 +23,25 @@ export const taskApi = {
     return response.data
   },
 
-  // Update a task
+  // Update a task (now supports optional deadline and effort points)
   updateTask: async (
     projectId: string,
     taskId: string,
-    data: { title: string; description: string; priority: string }
+    data: {
+      title?: string
+      description?: string
+      priority?: string
+      deadline?: string | null
+      effortPoints?: number | null
+    }
   ): Promise<any> => {
-    const response = await axiosClient.put(`/projects/${projectId}/tasks/update/${taskId}`, data)
-    return response.data // Sửa lại trả về toàn bộ response.data
+    // Remove undefined keys to avoid overwriting unintentionally
+    const payload: Record<string, any> = {}
+    Object.entries(data).forEach(([k, v]) => {
+      if (v !== undefined) payload[k] = v
+    })
+    const response = await axiosClient.put(`/projects/${projectId}/tasks/update/${taskId}`, payload)
+    return response.data // Return full response payload for caller to handle codes/messages
   },
 
   // Delete a task
@@ -138,23 +149,44 @@ export const taskApi = {
     return response.data.data
   },
 
-  // Chuyển task sang board
+  // Chuyển task sang board với retry logic
   moveTaskToBoard: async (projectId: string, taskId: string, boardId: string): Promise<APIResponse<boolean>> => {
-    const response = await axiosClient.post(`/projects/${projectId}/tasks/${taskId}/status/board/${boardId}`)
-    return response.data
+    const maxRetries = 2
+    let lastError: any
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[moveTaskToBoard] Attempt ${attempt + 1}/${maxRetries + 1}`)
+        const response = await axiosClient.post(`/projects/${projectId}/tasks/${taskId}/status/board/${boardId}`)
+
+        return response.data
+      } catch (error: any) {
+        lastError = error
+        console.warn(`[moveTaskToBoard] Attempt ${attempt + 1} failed:`, error.message)
+
+        if (attempt < maxRetries) {
+          // Exponential backoff: wait 200ms, then 400ms
+          const delay = 200 * Math.pow(2, attempt)
+          console.log(`[moveTaskToBoard] Retrying in ${delay}ms...`)
+          await new Promise((resolve) => setTimeout(resolve, delay))
+        }
+      }
+    }
+
+    throw lastError
   },
 
   // Complete a task with file upload (custom endpoint)
   completeTaskWithUpload: async (projectId: string, taskId: string, files?: File[]): Promise<boolean> => {
-    const formData = new FormData();
+    const formData = new FormData()
     if (files && files.length > 0) {
       files.forEach((file) => {
-        formData.append('Files', file);
-      });
+        formData.append('Files', file)
+      })
     }
     const response = await axiosClient.post(`/projects/${projectId}/tasks/${taskId}/upflie`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
-    });
-    return response.data.data === true;
-  },
+    })
+    return response.data.data === true
+  }
 }

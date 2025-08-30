@@ -12,7 +12,19 @@ export const projectMemberApi = {
     return response.data.data
   },
 
-  leaveProject: (projectId: string) => axiosClient.post(`/project/${projectId}/members/leave`),
+  leaveProject: async (projectId: string) => {
+    console.log('🔄 projectMemberApi: leaveProject called with projectId:', projectId)
+    try {
+      const response = await axiosClient.post(`/project/${projectId}/members/leave`)
+      console.log('✅ projectMemberApi: leaveProject response:', response)
+      return response.data
+    } catch (error: any) {
+      console.error('❌ projectMemberApi: leaveProject error:', error)
+      console.error('❌ projectMemberApi: Error response:', error?.response)
+      console.error('❌ projectMemberApi: Error message:', error?.message)
+      throw error
+    }
+  },
 
   removeMember: (projectId: string, userId: string) =>
     axiosClient.delete(`/project/${projectId}/members/remove/${userId}`),

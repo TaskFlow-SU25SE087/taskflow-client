@@ -49,6 +49,7 @@ export interface TaskP {
     avatar: string
     role: string
   }>
+  effortPoints?: number | null
 }
 
 export interface Task {

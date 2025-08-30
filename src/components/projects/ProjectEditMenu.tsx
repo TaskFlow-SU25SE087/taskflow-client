@@ -34,7 +34,7 @@ export function ProjectEditMenu({ project, onProjectUpdated, trigger }: ProjectE
 
       console.log('Update response:', response)
 
-      showToast({ title: response?.code === 200 ? 'Success' : 'Error', description: response?.message || 'Project name updated successfully', variant: response?.code === 200 ? 'default' : 'destructive' })
+              showToast({ title: response?.code === 200 ? 'Success' : 'Success', description: response?.message || 'Project name updated successfully', variant: response?.code === 200 ? 'success' : 'destructive' })
       onProjectUpdated()
       setIsOpen(false)
     } catch (error: any) {

@@ -42,7 +42,7 @@ export const useTasks = () => {
       showToast({
         title: success ? 'Success' : 'Error',
         description: success ? 'Task created successfully' : 'Failed to create task',
-        variant: success ? 'default' : 'destructive'
+        variant: success ? 'success' : 'destructive'
       })
       
       // Refresh tasks after adding a new one

@@ -43,8 +43,7 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
   const [showCreatePartDialog, setShowCreatePartDialog] = useState(false)
   const [newPartData, setNewPartData] = useState({
     name: '',
-    programmingLanguage: '',
-    framework: ''
+    programmingLanguage: ''
   })
 
   // Use refs to avoid dependency loops
@@ -113,26 +112,29 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
 
   // Handle creating new project part
   const handleCreatePart = async () => {
-    if (!newPartData.name || !newPartData.programmingLanguage || !newPartData.framework) {
+    if (!newPartData.name || !newPartData.programmingLanguage) {
       return
     }
 
     try {
-      const result = await createNewProjectPart(projectId, newPartData)
+      const result = await createNewProjectPart(projectId, {
+        ...newPartData,
+        framework: 'None'
+      })
       if (result) {
         // Add the new part to the local state
         const newPart = {
           id: result.id || `part-${Date.now()}`,
           name: newPartData.name,
           programmingLanguage: newPartData.programmingLanguage,
-          framework: newPartData.framework,
+          framework: 'None',
           isConnected: false
         }
         setProjectPartsData([...projectParts, newPart])
         setSelectedPart(newPart.id)
 
         // Reset form
-        setNewPartData({ name: '', programmingLanguage: '', framework: '' })
+        setNewPartData({ name: '', programmingLanguage: '' })
         setShowCreatePartDialog(false)
       }
     } catch (error) {
@@ -213,7 +215,7 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
                 <SelectTrigger className="w-full bg-lavender-50 border-0 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300">
                   <SelectValue placeholder="-- Select a repository --" />
                 </SelectTrigger>
-                <SelectContent className="bg-white rounded-xl shadow-lg">
+                <SelectContent className="bg-white rounded-xl shadow-lg" position="popper">
                   {repositories.map((repo) => (
                     <SelectItem key={repo.htmlUrl} value={repo.htmlUrl} className="hover:bg-blue-50 text-blue-700 font-semibold">
                       <Github className="inline-block mr-2 text-lavender-400" />
@@ -229,11 +231,11 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
                 <SelectTrigger className="w-full bg-lavender-50 border-0 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400 placeholder:text-lavender-300">
                   <SelectValue placeholder="-- Select a part --" />
                 </SelectTrigger>
-                <SelectContent className="bg-white rounded-xl shadow-lg">
+                <SelectContent className="bg-white rounded-xl shadow-lg" position="popper">
                   {mappedProjectParts.map((part) => (
                     <SelectItem key={part.id} value={part.id} className="hover:bg-purple-50 text-purple-700 font-semibold">
                       <BarChart3 className="inline-block mr-2 text-blue-400" />
-                      {part.name} ({part.programmingLanguage}, {part.framework})
+                      {part.name} ({part.programmingLanguage})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -275,41 +277,55 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
             </div>
             <div>
               <Label htmlFor='programmingLanguage' className="text-lavender-700 font-semibold mb-1 block">Programming Language</Label>
-              <select
-                id='programmingLanguage'
-                value={newPartData.programmingLanguage}
-                onChange={(e) => setNewPartData((prev) => ({ ...prev, programmingLanguage: e.target.value }))}
-                className="w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl py-2 px-3 text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400"
-              >
-                <option value=''>None</option>
-                <option value='TypeScript'>TypeScript</option>
-                <option value='JavaScript'>JavaScript</option>
-                <option value='C#'>C#</option>
-                <option value='Java'>Java</option>
-                <option value='Python'>Python</option>
-                <option value='Go'>Go</option>
-                <option value='Rust'>Rust</option>
-                <option value='PHP'>PHP</option>
-              </select>
-            </div>
-            <div>
-              <Label htmlFor='framework' className="text-lavender-700 font-semibold mb-1 block">Framework</Label>
-              <select
-                id='framework'
-                value={newPartData.framework}
-                onChange={(e) => setNewPartData((prev) => ({ ...prev, framework: e.target.value }))}
-                className="w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl py-2 px-3 text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400"
-              >
-                <option value=''>None</option>
-                <option value='React'>React</option>
-                <option value='Vue'>Vue</option>
-                <option value='Angular'>Angular</option>
-                <option value='.NET'>.NET</option>
-                <option value='Spring'>Spring</option>
-                <option value='Django'>Django</option>
-                <option value='Express'>Express</option>
-                <option value='Laravel'>Laravel</option>
-              </select>
+              <Select value={newPartData.programmingLanguage} onValueChange={(value) => setNewPartData((prev) => ({ ...prev, programmingLanguage: value }))}>
+                <SelectTrigger className="w-full bg-lavender-50 border-2 border-lavender-200 rounded-xl text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400">
+                  <SelectValue placeholder="Select programming language" />
+                </SelectTrigger>
+                <SelectContent className="bg-white rounded-xl shadow-lg" position="popper">
+                  <SelectItem value="Java">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" alt="Java" className='w-5 h-5' />
+                      <span>Java</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="C#">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg" alt="C#" className='w-5 h-5' />
+                      <span>C#</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="JavaScript">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg" alt="JavaScript" className='w-5 h-5' />
+                      <span>JavaScript</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="TypeScript">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg" alt="TypeScript" className='w-5 h-5' />
+                      <span>TypeScript</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Python">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" alt="Python" className='w-5 h-5' />
+                      <span>Python</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="Go">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg" alt="Go" className='w-5 h-5' />
+                      <span>Go</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="PHP">
+                    <div className='flex items-center gap-2'>
+                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg" alt="PHP" className='w-5 h-5' />
+                      <span>PHP</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex items-center justify-end gap-4 mt-6">
               <button
@@ -321,7 +337,7 @@ export default function GitHubProjectPartIntegration({ projectId, partId }: GitH
               </button>
               <Button
                 onClick={handleCreatePart}
-                disabled={creatingPart || !newPartData.name || !newPartData.programmingLanguage || !newPartData.framework}
+                disabled={creatingPart || !newPartData.name || !newPartData.programmingLanguage}
                 className="bg-gradient-to-r from-lavender-500 to-blue-400 hover:from-lavender-600 hover:to-blue-500 text-white font-bold shadow-lg rounded-2xl px-8 py-3 text-lg disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {creatingPart ? 'Creating...' : 'Create Part'}

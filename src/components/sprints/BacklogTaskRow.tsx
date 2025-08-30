@@ -1,13 +1,23 @@
 import { taskApi } from '@/api/tasks'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { useBoards } from '@/hooks/useBoards'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
+import { Board } from '@/types/board'
 import { TaskP } from '@/types/task'
-import { AlertCircle, Calendar, FileText, MessageSquare } from 'lucide-react'
+import {
+  AlertCircle,
+  Calendar,
+  CheckCircle,
+  ChevronDown,
+  Circle,
+  FileText,
+  MessageSquare,
+  PlayCircle
+} from 'lucide-react'
 import React, { useState } from 'react'
 import { TaskDetailMenu } from '../tasks/TaskDetailMenu'
 import { AvatarFallback, AvatarImage, Avatar as UIAvatar } from '../ui/avatar'
+import { Checkbox } from '../ui/checkbox'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '../ui/dropdown-menu'
 
 interface BacklogTaskRowProps {
@@ -16,55 +26,60 @@ interface BacklogTaskRowProps {
   checked?: boolean
   onCheck?: (taskId: string, checked: boolean) => void
   onTaskUpdate?: () => void
+  boards: Board[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  refreshBoards: () => Promise<void> | (() => Promise<any>) | any
 }
 
-type TaskStatus =
-  | 'to do'
-  | 'not started'
-  | 'in progress'
-  | 'done'
-  | 'completed'
-  | 'review'
-  | 'blocked'
-  | 'cancelled'
-  | 'on hold'
-  | 'unassigned'
-  | 'urgent'
-  | 'testing'
-  | 'pending'
-  | 'n/a'
-
-const statusColorMap: Record<TaskStatus, string> = {
-  'to do': 'bg-gray-200 text-gray-700',
-  'not started': 'bg-gray-200 text-gray-700',
-  'in progress': 'bg-blue-100 text-blue-700',
-  done: 'bg-green-100 text-green-700',
-  completed: 'bg-green-100 text-green-700',
-  review: 'bg-yellow-100 text-yellow-700',
-  blocked: 'bg-red-100 text-red-700',
-  cancelled: 'bg-pink-100 text-pink-700',
-  'on hold': 'bg-amber-100 text-amber-700',
-  unassigned: 'bg-slate-100 text-slate-500',
-  urgent: 'bg-red-200 text-red-800',
-  testing: 'bg-purple-100 text-purple-700',
-  pending: 'bg-orange-100 text-orange-700',
-  'n/a': 'bg-gray-100 text-gray-500'
+const boardTypeColors: Record<string, string> = {
+  todo: '#5030E5',
+  'to do': '#5030E5',
+  ongoing: '#FFA500',
+  'in progress': '#FFA500',
+  done: '#22C55E',
+  completed: '#22C55E',
+  backlog: '#E84393',
+  review: '#00B894',
+  blocked: '#FF4757',
+  testing: '#9B59B6',
+  deployed: '#27AE60',
+  'not started': '#9CA3AF'
 }
 
-interface Board {
-  color?: string
-  name?: string
-}
+// Fallback for legacy name-based color
+const boardNameColors = boardTypeColors
 
-const getBoardColorClass = (board?: Board) => {
-  if (board?.color) {
-    return `bg-[${board.color}] text-white`
+const getBoardColor = (statusOrBoard?: string | Board): string => {
+  if (!statusOrBoard) return '#5030E5'
+  // If string, fallback to name-based color
+  if (typeof statusOrBoard === 'string') {
+    return boardNameColors[statusOrBoard.toLowerCase()] || '#5030E5'
   }
-  const boardName = board?.name?.toLowerCase() || ''
-  return statusColorMap[boardName as TaskStatus] || 'bg-gray-100 text-gray-600'
+  // If Board object, prefer type-based color
+  if (statusOrBoard.type) {
+    const typeKey = statusOrBoard.type.toLowerCase()
+    if (boardTypeColors[typeKey]) return boardTypeColors[typeKey]
+  }
+  // Fallback to name-based color
+  const key = (statusOrBoard.name || '').toLowerCase()
+  return boardNameColors[key] || '#5030E5'
 }
 
-// Helper function to get deadline color based on urgency
+// Accept board as optional param for accurate icon color
+const getStatusIcon = (status: string, board?: Board) => {
+  const s = status.toLowerCase()
+  const iconClass = 'h-4 w-4 stroke-[2.5px]'
+  const color = getBoardColor(board || status)
+  const style = { color }
+  if (board?.type?.toLowerCase() === 'completed' || s === 'done' || s === 'completed') {
+    return <CheckCircle className={iconClass} style={style} />
+  }
+  if (board?.type?.toLowerCase() === 'in progress' || s === 'ongoing' || s === 'in progress') {
+    return <PlayCircle className={iconClass} style={style} />
+  }
+  return <Circle className={iconClass} style={style} />
+}
+
 const getDeadlineColor = (deadline: string | null) => {
   if (!deadline) return 'text-gray-400'
 
@@ -79,7 +94,6 @@ const getDeadlineColor = (deadline: string | null) => {
   return 'text-gray-400' // Due later
 }
 
-// Helper function to get deadline icon
 const getDeadlineIcon = (deadline: string | null) => {
   if (!deadline) return Calendar
 
@@ -92,7 +106,6 @@ const getDeadlineIcon = (deadline: string | null) => {
   return Calendar
 }
 
-// --- AvatarStack nội bộ cho backlog ---
 const avatarColors = [
   { bg: 'linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%)', text: '#FFFFFF' },
   { bg: 'linear-gradient(135deg, #4ECDC4 0%, #45B7AF 100%)', text: '#FFFFFF' },
@@ -114,13 +127,13 @@ interface Assignee {
 function AvatarStack({ assignees }: { assignees: Assignee[] }) {
   if (!assignees || assignees.length === 0) {
     return (
-      <div className='flex items-center justify-center min-w-[70px] h-7'>
+      <div className='flex items-center justify-center min-w-[84px] h-7'>
         <span className='text-xs text-gray-500 whitespace-nowrap text-center w-full'>Unassigned</span>
       </div>
     )
   }
   return (
-    <div className='flex items-center justify-center min-w-[70px] h-7'>
+    <div className='flex items-center justify-center min-w-[84px] h-7'>
       <div className='flex items-center justify-center -space-x-2'>
         {assignees.slice(0, 4).map((assignee, idx) => {
           const { bg, text } = getAvatarColor(idx)
@@ -153,18 +166,17 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
   showMeta = true,
   checked = false,
   onCheck,
-  onTaskUpdate
+  onTaskUpdate,
+  boards,
+  refreshBoards
 }) => {
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [statusLoading, setStatusLoading] = useState(false)
-  const { boards, refreshBoards } = useBoards()
   const { currentProject } = useCurrentProject()
   const { showToast } = useToastContext()
 
-  // Comment count
   const commentCount = Array.isArray(task.commnets) ? task.commnets.length : 0
 
-  // File count: attachmentUrl + completionAttachmentUrls + file trong comment
   const fileCount =
     (task.attachmentUrl ? 1 : 0) +
     (Array.isArray(task.completionAttachmentUrls) ? task.completionAttachmentUrls.length : 0) +
@@ -172,101 +184,132 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
       ? task.commnets.reduce((acc, c) => acc + (Array.isArray(c.attachmentUrls) ? c.attachmentUrls.length : 0), 0)
       : 0)
 
-  // Deadline: deadline -> updatedAt -> createdAt -> N/A
-  const rawDeadline: string | null = task.deadline ?? task.updatedAt ?? task.createdAt ?? null
-  const deadline = rawDeadline ? new Date(rawDeadline).toLocaleDateString('en-GB') : 'N/A'
-  const deadlineColor = getDeadlineColor(rawDeadline)
-  const DeadlineIcon = getDeadlineIcon(rawDeadline)
+  const hasRealDeadline = Boolean(task.deadline)
+  const deadlineDisplay = hasRealDeadline && task.deadline ? new Date(task.deadline).toLocaleDateString('en-GB') : 'N/A'
+  const deadlineColor = getDeadlineColor(hasRealDeadline ? task.deadline! : null)
+  const DeadlineIcon = getDeadlineIcon(hasRealDeadline ? task.deadline! : null)
+
+  const TagPill: React.FC<{ name: string; color?: string }> = ({ name, color }) => (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${
+        color ? 'text-white' : 'bg-gray-100 text-gray-700'
+      }`}
+      style={color ? { backgroundColor: color } : undefined}
+      title={name}
+    >
+      {name}
+    </span>
+  )
+
+  const hasTags = Array.isArray(task.tags) && task.tags.length > 0
 
   return (
     <TooltipProvider>
       <>
         <div
-          className='flex items-center border border-gray-200 rounded px-2 py-1 text-xs bg-white min-h-[36px] mb-2 cursor-pointer hover:bg-gray-50'
+          className='grid grid-cols-[24px,1fr,140px,84px,60px,60px,100px,auto] items-center gap-1 px-2 h-11 text-xs bg-white cursor-pointer hover:bg-gray-50 border-b border-gray-100'
           onClick={(e) => {
             if ((e.target as HTMLElement).closest('button')) return
             setIsDetailOpen(true)
           }}
         >
           {/* Checkbox */}
-          <div className='flex-shrink-0 w-6 flex justify-center'>
+          <div className='w-6 flex justify-center'>
             {onCheck && (
-              <input
-                type='checkbox'
+              <Checkbox
                 checked={checked}
-                onChange={(e) => onCheck(task.id, e.target.checked)}
+                onCheckedChange={(v) => onCheck(task.id, Boolean(v))}
                 onClick={(e) => e.stopPropagation()}
-                className='form-checkbox h-4 w-4 text-lavender-600'
+                className='h-4 w-4 border-gray-300 data-[state=checked]:bg-lavender-600 data-[state=checked]:border-lavender-600'
               />
             )}
           </div>
 
-          {/* Tags */}
-          <div className='flex-shrink-0 min-w-[60px] max-w-[80px]'>
-            {task.tags && task.tags.length > 0 && (
-              <div className='flex gap-1'>
-                {task.tags.map((tag: { id: string; name: string; color?: string }, index: number) => (
-                  <Tooltip key={tag.id || index}>
-                    <TooltipTrigger>
-                      <span
-                        style={{
-                          backgroundColor: tag.color || '#eee',
-                          color: '#fff',
-                          borderRadius: '8px',
-                          padding: '2px 8px',
-                          fontWeight: 500,
-                          fontSize: '0.95em',
-                          display: 'inline-block'
-                        }}
-                        title={tag.name}
-                      >
-                        {tag.name}
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{tag.name}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                ))}
-              </div>
-            )}
+          {/* Title + Tags (inline) */}
+          <div className='min-w-0'>
+            <div className='flex items-center gap-2'>
+              <Tooltip>
+                <TooltipTrigger>
+                  <div className='font-medium text-gray-900 truncate pl-1'>{task.title}</div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{task.title}</p>
+                </TooltipContent>
+              </Tooltip>
+              {hasTags && (
+                <div className='flex gap-1'>
+                  {task.tags!.slice(0, 1).map((tag: { id: string; name: string; color?: string }, index: number) => (
+                    <Tooltip key={tag.id || index}>
+                      <TooltipTrigger>
+                        <TagPill name={tag.name} color={tag.color} />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{tag.name}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Title */}
-          <Tooltip>
-            <TooltipTrigger>
-              <div className='flex-shrink-0 min-w-[100px] max-w-[140px] font-semibold truncate'>{task.title}</div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{task.title}</p>
-            </TooltipContent>
-          </Tooltip>
-
           {/* Status (dropdown) */}
-          <div className='flex-shrink-0 min-w-[90px] max-w-[110px]'>
-            {task.status && boards.length > 0 ? (
+          <div className='min-w-[140px] max-w-[140px]'>
+            {task.status && boards && boards.length > 0 ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
-                    className={`px-2 py-0.5 rounded text-xs font-medium w-full text-left ${getBoardColorClass(boards.find((b) => b.id === task.boardId) || { name: task.status })} ${statusLoading ? 'opacity-60' : ''}`}
+                    className={`w-full inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-colors border border-transparent ${
+                      statusLoading ? 'opacity-60' : ''
+                    }`}
+                    style={{
+                      backgroundColor: `${getBoardColor(
+                        boards.find((b: Board) => b.id === task.boardId) || task.status
+                      )}20`
+                    }}
                     disabled={statusLoading}
                   >
-                    {task.status}
+                    {getStatusIcon(
+                      task.status,
+                      boards.find((b: Board) => b.id === task.boardId)
+                    )}
+                    <span
+                      className='capitalize'
+                      style={{
+                        color: getBoardColor(boards.find((b: Board) => b.id === task.boardId) || task.status)
+                      }}
+                    >
+                      {task.status}
+                    </span>
+                    <ChevronDown
+                      className='h-3 w-3 opacity-60'
+                      style={{
+                        color: getBoardColor(boards.find((b: Board) => b.id === task.boardId) || task.status)
+                      }}
+                    />
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align='start'>
-                  {boards.map((board) => (
+                <DropdownMenuContent align='start' className='w-[200px] p-1.5 border-none shadow-lg'>
+                  {boards.map((board: Board, idx: number) => (
                     <DropdownMenuItem
-                      key={board.id}
-                      className={getBoardColorClass(board)}
-                      onClick={async () => {
+                      key={board.id || idx}
+                      className='gap-2 rounded-md px-2.5 py-2 cursor-pointer transition-colors focus:ring-0 focus:ring-offset-0'
+                      style={{
+                        backgroundColor:
+                          (board.id && board.id === task.boardId) ||
+                          board.name?.toLowerCase() === task.status?.toLowerCase()
+                            ? `${getBoardColor(board)}20`
+                            : 'transparent'
+                      }}
+                      onClick={async (e) => {
+                        e.stopPropagation()
                         if (!currentProject?.id || board.id === task.boardId) return
                         setStatusLoading(true)
                         try {
-                          await taskApi.moveTaskToBoard(currentProject.id, task.id, board.id)
+                          await taskApi.moveTaskToBoard(currentProject.id, task.id, board.id as string)
                           showToast({ title: 'Success', description: `Status changed to ${board.name}` })
                           await refreshBoards()
-                          window.location.reload()
+                          if (typeof onTaskUpdate === 'function') onTaskUpdate()
                         } catch {
                           showToast({ title: 'Error', description: 'Failed to change status', variant: 'destructive' })
                         } finally {
@@ -274,7 +317,10 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
                         }
                       }}
                     >
-                      {board.name}
+                      {getStatusIcon(board.name || '', board)}
+                      <span className='capitalize font-medium' style={{ color: getBoardColor(board) }}>
+                        {board.name}
+                      </span>
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>
@@ -282,9 +328,17 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
             ) : (
               task.status && (
                 <span
-                  className={`px-2 py-0.5 rounded text-xs font-medium ${statusColorMap[task.status.toLowerCase() as TaskStatus] || 'bg-gray-100 text-gray-600'}`}
+                  className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium`}
+                  style={{
+                    backgroundColor: `${getBoardColor(boards.find((b: Board) => b.id === task.boardId) || task.status)}20`,
+                    color: getBoardColor(boards.find((b: Board) => b.id === task.boardId) || task.status)
+                  }}
                 >
-                  {task.status}
+                  {getStatusIcon(
+                    task.status,
+                    boards.find((b: Board) => b.id === task.boardId)
+                  )}
+                  <span className='capitalize'>{task.status}</span>
                 </span>
               )
             )}
@@ -296,7 +350,7 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
               {/* Assignee */}
               <Tooltip>
                 <TooltipTrigger>
-                  <div className='flex-shrink-0 min-w-[70px] flex items-center justify-center h-7 ml-3'>
+                  <div className='flex items-center justify-center h-7'>
                     <AvatarStack assignees={Array.isArray(task.taskAssignees) ? task.taskAssignees : []} />
                   </div>
                 </TooltipTrigger>
@@ -312,7 +366,7 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
               {/* Comments */}
               <Tooltip>
                 <TooltipTrigger>
-                  <div className='flex-shrink-0 w-10 flex items-center justify-center text-gray-400'>
+                  <div className='w-10 flex items-center justify-center text-gray-400'>
                     <MessageSquare className='w-4 h-4 mr-1' /> {commentCount}
                   </div>
                 </TooltipTrigger>
@@ -326,7 +380,7 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
               {/* Files */}
               <Tooltip>
                 <TooltipTrigger>
-                  <div className='flex-shrink-0 w-10 flex items-center justify-center text-gray-400'>
+                  <div className='w-10 flex items-center justify-center text-gray-400'>
                     <FileText className='w-4 h-4 mr-1' /> {fileCount}
                   </div>
                 </TooltipTrigger>
@@ -340,18 +394,18 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
               {/* Due date */}
               <Tooltip>
                 <TooltipTrigger>
-                  <div className={`flex-shrink-0 w-16 flex items-center justify-center ${deadlineColor}`}>
-                    <DeadlineIcon className='w-4 h-4 mr-1' /> {deadline}
+                  <div className={`w-24 flex items-center justify-center ${deadlineColor}`}>
+                    <DeadlineIcon className='w-4 h-4 mr-1' /> {deadlineDisplay}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Deadline: {deadline}</p>
+                  <p>{hasRealDeadline ? `Deadline: ${deadlineDisplay}` : 'No deadline set'}</p>
                 </TooltipContent>
               </Tooltip>
             </>
           )}
 
-          {/* Nút xóa task */}
+          {/* Delete task button */}
           <Tooltip>
             <TooltipTrigger asChild>
               <button
@@ -367,7 +421,7 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
                       showToast({
                         title: r.code === 200 ? 'Success' : 'Error',
                         description: r.message || 'Task deleted!',
-                        variant: r.code === 200 ? 'default' : 'destructive'
+                        variant: r.code === 200 ? 'success' : 'destructive'
                       })
                     } else if (res && typeof res === 'object' && 'data' in res && res.data === true) {
                       showToast({ title: 'Success', description: 'Task deleted!' })
@@ -397,7 +451,11 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
           task={task}
           isOpen={isDetailOpen}
           onClose={() => setIsDetailOpen(false)}
-          onTaskUpdated={() => {}}
+          onTaskUpdated={() => {
+            if (typeof onTaskUpdate === 'function') {
+              onTaskUpdate()
+            }
+          }}
         />
       </>
     </TooltipProvider>

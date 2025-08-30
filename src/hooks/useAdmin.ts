@@ -1,5 +1,5 @@
 import { adminApi } from '@/api/admin'
-import { useToastContext } from '@/components/ui/ToastContext'
+
 import { AdminUser, AdminUsersResponse } from '@/types/admin'
 import { useEffect, useState } from 'react'
 
@@ -13,7 +13,7 @@ export const useAdmin = () => {
     pageNumber: 1,
     pageSize: 0
   })
-  const { showToast } = useToastContext()
+
 
   const fetchUsers = async (page: number = 1, pageSize: number = 10) => {
     setLoading(true)
@@ -30,20 +30,22 @@ export const useAdmin = () => {
         })
       } else {
         setError(response.message || 'Failed to fetch users')
-        showToast({
-          title: 'Error',
-          description: response.message || 'Failed to fetch users',
-          variant: 'destructive'
-        })
+        // Không gọi showToast ở đây để tránh duplicate
+        // showToast({
+        //   title: 'Error',
+        //   description: response.message || 'Failed to fetch users',
+        //   variant: 'destructive'
+        // })
       }
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch users'
       setError(errorMessage)
-      showToast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive'
-      })
+      // Không gọi showToast ở đây để tránh duplicate
+      // showToast({
+      //   title: 'Error',
+      //   description: errorMessage,
+      //   variant: 'destructive'
+      // })
     } finally {
       setLoading(false)
     }
@@ -52,21 +54,41 @@ export const useAdmin = () => {
   const importUsers = async (file: File) => {
     try {
       const result = await adminApi.importUsers(file)
-      showToast({
-        title: 'Success',
-        description: 'File uploaded successfully. Users will be imported.',
-        variant: 'default'
-      })
+      console.log('✅ Upload API response:', result)
+      // Không gọi showToast ở đây để tránh duplicate với AdminUsersPage
       await fetchUsers(1)
       return result
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Failed to upload file'
-      showToast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive'
-      })
-      throw err
+      let errorMessage = 'Failed to upload file'
+      
+      // Xử lý các loại lỗi khác nhau
+      if (err.isTimeout) {
+        errorMessage = 'Upload timeout. File might still be processing on server. Please check the user list in a few minutes.'
+        // Không gọi showToast ở đây để tránh duplicate với AdminUsersPage
+        // showToast({
+        //   title: 'Upload Timeout',
+        //   description: errorMessage,
+        //   variant: 'warning'
+        // })
+        
+        // Vẫn refresh danh sách users để kiểm tra xem có thành công không
+        try {
+          await fetchUsers(1)
+        } catch (refreshError) {
+          console.error('Failed to refresh users after timeout:', refreshError)
+        }
+        
+        // Không throw error để user có thể đóng dialog
+        return false
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message
+      } else if (err.message) {
+        errorMessage = err.message
+      }
+      
+      // Thay vì throw error, trả về false để AdminUsersPage xử lý
+      console.log('❌ Upload failed:', errorMessage)
+      return false
     }
   }
 
@@ -87,25 +109,27 @@ export const useAdmin = () => {
           totalPages = response.data.totalPages
           page++
           if (page > maxLoop) break // Prevent infinite loop
-        } else {
-          setError(response.message || 'Failed to fetch users')
-          showToast({
-            title: 'Error',
-            description: response.message || 'Failed to fetch users',
-            variant: 'destructive'
-          })
-          break
-        }
+              } else {
+        setError(response.message || 'Failed to fetch users')
+        // Không gọi showToast ở đây để tránh duplicate
+        // showToast({
+        //   title: 'Error',
+        //   description: response.message || 'Failed to fetch users',
+        //   variant: 'destructive'
+        // })
+        break
+      }
       } while (page <= totalPages)
       return allUsers
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch users'
       setError(errorMessage)
-      showToast({
-        title: 'Error',
-        description: errorMessage,
-        variant: 'destructive'
-      })
+      // Không gọi showToast ở đây để tránh duplicate
+      // showToast({
+      //   title: 'Error',
+      //   description: errorMessage,
+      //   variant: 'destructive'
+      // })
       return []
     } finally {
       setLoading(false)

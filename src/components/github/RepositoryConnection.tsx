@@ -1,6 +1,7 @@
 import { useToastContext } from '@/components/ui/ToastContext'
 import { Github, Loader } from 'lucide-react'
 import { useState } from 'react'
+import { useGitHubStatus } from '../../contexts/GitHubStatusContext'
 import { useWebhooks } from '../../hooks/useWebhooks'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
@@ -20,6 +21,7 @@ export default function RepositoryConnection({ projectId, partId }: RepositoryCo
 
   const { connectionStatus, connectRepository, disconnectRepository } = useWebhooks()
   const { showToast } = useToastContext()
+  const { updateConnectionStatus } = useGitHubStatus()
 
   // Note: Removed fetchConnectionStatus because /projects/{projectId}/parts/{partId}/repo-status endpoint doesn't exist
   // Connection status will be managed through the connect/disconnect operations
@@ -36,8 +38,11 @@ export default function RepositoryConnection({ projectId, partId }: RepositoryCo
       setRepoUrl('')
       setAccessToken('')
       showToast({ title: 'Success', description: 'Repository connected successfully' })
+      // Cập nhật trạng thái toàn cục khi kết nối thành công
+      updateConnectionStatus(true)
     } catch (error) {
       showToast({ title: 'Error', description: 'Failed to connect repository', variant: 'destructive' })
+      updateConnectionStatus(false)
     } finally {
       setIsConnecting(false)
     }
@@ -47,6 +52,8 @@ export default function RepositoryConnection({ projectId, partId }: RepositoryCo
     try {
       await disconnectRepository(projectId, partId)
       showToast({ title: 'Success', description: 'Repository disconnected successfully' })
+      // Cập nhật trạng thái toàn cục khi ngắt kết nối
+      updateConnectionStatus(false)
     } catch (error) {
       showToast({ title: 'Error', description: 'Failed to disconnect repository', variant: 'destructive' })
     }

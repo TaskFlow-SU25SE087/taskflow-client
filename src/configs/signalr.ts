@@ -14,6 +14,7 @@ export interface NotificationData {
   projectId: string
   taskId?: string
   message: string
+  type: string
   isRead: boolean
   createdAt: string
 }
@@ -22,30 +23,90 @@ export class SignalRService {
   private connection: signalR.HubConnection | null = null
   private reconnectAttempts = 0
   private isConnecting = false
+  private signalREnabled = ENV_CONFIG.ENABLE_SIGNALR
+  private connectionDisabled = false
 
   async connect() {
+    // Disable SignalR if not enabled or if connection has been disabled due to failures
+    if (!this.signalREnabled || this.connectionDisabled) {
+      console.log('[SignalR] SignalR is disabled or connection disabled due to failures')
+      return
+    }
+
+    // Check if we're in production and don't have a proper SignalR server
+    if (ENV_CONFIG.IS_PRODUCTION && (SIGNALR_CONFIG.HUB_URL.includes('localhost') || !SIGNALR_CONFIG.HUB_URL)) {
+      console.warn(
+        '[SignalR] Production environment detected but SignalR server is not properly configured. Disabling SignalR.'
+      )
+      this.signalREnabled = false
+      return
+    }
+
+    // Check if SignalR URL is configured
+    if (!SIGNALR_CONFIG.HUB_URL || SIGNALR_CONFIG.HUB_URL === '') {
+      console.warn('[SignalR] SignalR HUB_URL is not configured. Disabling SignalR.')
+      this.signalREnabled = false
+      return
+    }
+
+    // Check if user is authenticated before attempting connection
+    const rememberMe = localStorage.getItem('rememberMe') === 'true'
+    const accessToken = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken')
+    
+    if (!accessToken) {
+      console.log('[SignalR] No access token found. Skipping SignalR connection until user is authenticated.')
+      return
+    }
+
     if (this.isConnecting) return
     this.isConnecting = true
+
+    if (this.isConnecting) return
+    this.isConnecting = true
+
     try {
+      console.log('[SignalR] Environment:', ENV_CONFIG.IS_PRODUCTION ? 'PRODUCTION' : 'DEVELOPMENT')
+      console.log('[SignalR] Config HUB_URL:', SIGNALR_CONFIG.HUB_URL)
+      console.log('[SignalR] ENV_CONFIG.SIGNALR_HUB_URL:', ENV_CONFIG.SIGNALR_HUB_URL)
+      console.log('[SignalR] Đang kết nối tới:', SIGNALR_CONFIG.HUB_URL)
+
       this.connection = new signalR.HubConnectionBuilder()
         .withUrl(SIGNALR_CONFIG.HUB_URL, {
           accessTokenFactory: () => {
-            const rememberMe = localStorage.getItem('rememberMe') === 'true'
-            return rememberMe ? localStorage.getItem('accessToken') || '' : sessionStorage.getItem('accessToken') || ''
-          }
+            const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken') || ''
+            if (!token) {
+              console.warn('[SignalR] No access token found. SignalR connection may fail.')
+            }
+            return token
+          },
+          skipNegotiation: false,
+          transport:
+            signalR.HttpTransportType.WebSockets |
+            signalR.HttpTransportType.ServerSentEvents |
+            signalR.HttpTransportType.LongPolling
         })
         .withAutomaticReconnect([0, 2000, 10000, 30000])
-        .configureLogging(signalR.LogLevel.Debug)
+        .configureLogging(signalR.LogLevel.Warning)
         .build()
 
       // Register event handlers
       this.registerEventHandlers()
 
-      console.log('[SignalR] Đang kết nối tới:', SIGNALR_CONFIG.HUB_URL)
       await this.connection.start()
       console.log('✅ SignalR Connected!')
       this.reconnectAttempts = 0
-    } catch (error) {
+    } catch (error: any) {
+      console.error('[SignalR] Connection failed:', error)
+
+      // Handle specific error types
+      if (error.message?.includes('401')) {
+        console.error('[SignalR] Authentication failed. Check your access token.')
+      } else if (error.message?.includes('timeout')) {
+        console.error('[SignalR] Connection timeout. Server may be down or slow.')
+      } else if (error.message?.includes('WebSocket failed to connect')) {
+        console.error('[SignalR] WebSocket connection failed. Server may not support WebSockets or is down.')
+      }
+
       SignalRErrorHandler.handleConnectionError(error, this)
       this.handleReconnect()
     } finally {
@@ -53,108 +114,112 @@ export class SignalRService {
     }
   }
 
+  // Secondary connection methods (disabled for single API setup)
+  async connectSecondary() {
+    console.log('[SignalR] Secondary connection is disabled in single API setup')
+  }
+
   async disconnect() {
     if (this.connection) {
-      console.log('[SignalR] Ngắt kết nối SignalR')
       await this.connection.stop()
       this.connection = null
     }
+    // Reset connection state
+    this.reconnectAttempts = 0
+    this.isConnecting = false
   }
 
   private handleReconnect() {
+    if (!this.signalREnabled || this.connectionDisabled) return
+
     if (this.reconnectAttempts < SIGNALR_CONFIG.MAX_RECONNECT_ATTEMPTS) {
       this.reconnectAttempts++
-      SignalRErrorHandler.handleReconnectionAttempt(this.reconnectAttempts, SIGNALR_CONFIG.MAX_RECONNECT_ATTEMPTS)
-      setTimeout(() => this.connect(), SIGNALR_CONFIG.RECONNECT_INTERVAL)
+      console.log(
+        `🔄 [SignalR] Reconnecting... Attempt ${this.reconnectAttempts}/${SIGNALR_CONFIG.MAX_RECONNECT_ATTEMPTS}`
+      )
+      setTimeout(() => {
+        this.connect()
+      }, SIGNALR_CONFIG.RECONNECT_INTERVAL)
+    } else {
+      console.error('❌ [SignalR] Max reconnection attempts reached. Disabling SignalR to prevent endless retries.')
+      this.connectionDisabled = true
+      this.signalREnabled = false
     }
   }
 
   private registerEventHandlers() {
     if (!this.connection) return
 
-    // Connection state handlers
-    this.connection.onclose((error?: any) => {
-      console.log('🔌 SignalR disconnected', error)
+    this.connection.onclose(() => {
+      console.log('🔌 [SignalR] Connection closed')
+      this.handleReconnect()
     })
 
-    this.connection.onreconnected((connectionId?: any) => {
-      console.log('🔄 SignalR reconnected', connectionId)
+    this.connection.onreconnecting(() => {
+      console.log('🔄 [SignalR] Reconnecting...')
     })
 
-    this.connection.onreconnecting((error?: any) => {
-      console.log('🔄 SignalR reconnecting...', error)
-    })
-
-    // Lắng nghe sự kiện ReceiveNotification
-    this.connection.on('ReceiveNotification', (data: any) => {
-      console.log('[SignalR] Nhận thông báo real-time:', data)
-      // TODO: Xử lý hiển thị notification ở đây nếu cần
+    this.connection.onreconnected(() => {
+      console.log('✅ [SignalR] Reconnected!')
+      this.reconnectAttempts = 0
     })
   }
 
-  async invokeMethod(methodName: string, ...args: any[]) {
-    if (!this.connection) {
-      throw new Error('SignalR connection not established')
-    }
-    try {
-      console.log(`[SignalR] Gọi method: ${methodName}`, ...args)
-      return await this.connection.invoke(methodName, ...args)
-    } catch (error) {
-      SignalRErrorHandler.handleMethodError(error, methodName)
-      console.error(`[SignalR] Lỗi khi gọi method: ${methodName}`, error)
-      throw error
+  on(event: string, callback: (...args: any[]) => void) {
+    if (this.connection) {
+      this.connection.on(event, callback)
     }
   }
 
-  async joinProjectGroup(projectId: string) {
-    if (!this.isConnected()) {
-      console.warn('SignalR chưa kết nối, không thể join group')
-      return
-    }
-    try {
-      return await this.invokeMethod('JoinProjectGroup', projectId)
-    } catch (error) {
-      SignalRErrorHandler.handleProjectGroupError(error, projectId, 'join')
-      throw error
+  off(event: string, callback: (...args: any[]) => void) {
+    if (this.connection) {
+      this.connection.off(event, callback)
     }
   }
 
-  async leaveProjectGroup(projectId: string) {
-    if (!this.isConnected()) {
-      console.warn('SignalR chưa kết nối, không thể leave group')
-      return
+  async invoke(method: string, ...args: any[]) {
+    if (this.connection) {
+      return await this.connection.invoke(method, ...args)
     }
-    try {
-      return await this.invokeMethod('LeaveProjectGroup', projectId)
-    } catch (error) {
-      SignalRErrorHandler.handleProjectGroupError(error, projectId, 'leave')
-      throw error
-    }
+    throw new Error('SignalR connection not available')
   }
 
-  on(eventName: string, callback: (...args: any[]) => void) {
-    if (!this.connection) {
-      console.warn('SignalR connection not established, cannot register event listener')
-      return
-    }
-    this.connection.on(eventName, callback)
+  // Secondary methods (disabled for single API setup)
+  async invokeSecondary(_method: string, ..._args: any[]) {
+    throw new Error('Secondary SignalR connection is disabled in single API setup')
   }
 
-  off(eventName: string, callback?: (...args: any[]) => void) {
-    if (!this.connection) return
-    if (callback) {
-      this.connection.off(eventName, callback)
-    } else {
-      this.connection.off(eventName)
-    }
+  isConnected(): boolean {
+    return this.connection?.state === signalR.HubConnectionState.Connected
   }
 
-  getConnectionState() {
-    return this.connection?.state || 'Disconnected'
+  // Secondary connection check (disabled for single API setup)
+  isSecondaryConnected(): boolean {
+    return false
   }
 
-  isConnected() {
-    return this.connection?.state === 'Connected'
+  isEnabled() {
+    return this.signalREnabled && !this.connectionDisabled
+  }
+
+  isAuthenticated(): boolean {
+    const rememberMe = localStorage.getItem('rememberMe') === 'true'
+    const accessToken = rememberMe ? localStorage.getItem('accessToken') : sessionStorage.getItem('accessToken')
+    return !!accessToken
+  }
+
+  // Method to re-enable SignalR if needed
+  reEnable() {
+    this.connectionDisabled = false
+    this.signalREnabled = true
+    this.reconnectAttempts = 0
+  }
+
+  // Method to force disable SignalR
+  forceDisable() {
+    this.connectionDisabled = true
+    this.signalREnabled = false
+    this.reconnectAttempts = 0
+    this.isConnecting = false
   }
 }
-

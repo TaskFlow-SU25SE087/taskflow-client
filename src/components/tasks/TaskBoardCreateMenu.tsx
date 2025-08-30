@@ -3,9 +3,10 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { Loader2, SquarePlus } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { APIError } from '@/types/api'
 
 interface TaskBoardCreateMenuProps {
@@ -27,6 +28,21 @@ export default function TaskBoardCreateMenu({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [status, setStatus] = useState('')
   const [description, setDescription] = useState('')
+  const [type, setType] = useState<string>('Todo')
+  const [types, setTypes] = useState<string[]>([])
+
+  useEffect(() => {
+    if (!isOpen) return
+    let cancelled = false
+    const loadTypes = async () => {
+      const list = await boardApi.getBoardTypes(projectId)
+      if (!cancelled) setTypes(list)
+    }
+    loadTypes()
+    return () => {
+      cancelled = true
+    }
+  }, [isOpen, projectId])
 
   const handleSubmit = async () => {
     if (!status.trim()) {
@@ -39,9 +55,10 @@ export default function TaskBoardCreateMenu({
     }
     setIsSubmitting(true)
     try {
-      const res = await boardApi.createBoard(projectId, status.trim(), description.trim())
+      const selectedType = type || types[0] || 'Todo'
+      const res = await boardApi.createBoard(projectId, status.trim(), description.trim(), selectedType)
       if (res) {
-        showToast({ title: 'Success', description: 'Board created successfully', variant: 'default' })
+        showToast({ title: 'Success', description: 'Board created successfully', variant: 'success' })
       } else {
         showToast({ title: 'Error', description: 'Failed to create board', variant: 'destructive' })
       }
@@ -49,9 +66,14 @@ export default function TaskBoardCreateMenu({
       onOpenChange(false)
       setStatus('')
       setDescription('')
+      setType('Todo')
     } catch (error) {
       const err = error as APIError
-      showToast({ title: 'Error', description: err?.response?.data?.message || err?.message || 'Failed to create board.', variant: 'destructive' })
+      showToast({
+        title: 'Error',
+        description: err?.response?.data?.message || err?.message || 'Failed to create board.',
+        variant: 'destructive'
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -100,6 +122,23 @@ export default function TaskBoardCreateMenu({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+          </div>
+          <div className='space-y-2'>
+            <Label htmlFor='type' className='text-sm font-medium'>
+              Board Type
+            </Label>
+            <Select value={type} onValueChange={setType}>
+              <SelectTrigger id='type' className='h-11'>
+                <SelectValue placeholder='Select board type' />
+              </SelectTrigger>
+              <SelectContent>
+                {(types.length ? types : ['Todo', 'InProgress', 'Done', 'Custom']).map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className='flex justify-end gap-3 pt-4'>

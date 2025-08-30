@@ -55,10 +55,10 @@ export const BacklogSkeleton = () => {
               </div>
               <Skeleton className='h-4 w-32 min-w-[100px] max-w-[140px]' />
               <Skeleton className='h-5 w-16 min-w-[90px] max-w-[110px]' />
-              <Skeleton className='h-5 w-5 w-8' />
-              <Skeleton className='h-4 w-6 w-10' />
-              <Skeleton className='h-4 w-6 w-10' />
-              <Skeleton className='h-4 w-12 w-16' />
+              <Skeleton className='h-5 w-8' />
+              <Skeleton className='h-4 w-10' />
+              <Skeleton className='h-4 w-10' />
+              <Skeleton className='h-4 w-16' />
               <Skeleton className='h-6 w-12 ml-2' />
             </div>
           ))}

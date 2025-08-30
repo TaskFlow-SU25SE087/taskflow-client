@@ -79,6 +79,36 @@ interface ProjectDetailResponse {
   }
 }
 
+export interface ProjectLog {
+  id: string
+  projectMemberId: string
+  fullName: string
+  avatar: string
+  actionType: string
+  fieldChanged: string | null
+  board: { boardId: string; boardName: string } | null
+  sprint: { sprintId: string; sprintName: string } | null
+  task: { taskId: string; taskName: string } | null
+  oldValue: string
+  newValue: string
+  description: string
+  createAt: string
+}
+
+interface ProjectLogCursorResponse {
+  code: number
+  message: string
+  data: {
+    items: ProjectLog[]
+    totalItems: number
+    totalPages: number
+    pageNumber: number
+    pageSize: number
+    nextCursor: string | null
+    hasMore: boolean
+  }
+}
+
 export const projectApi = {
   getProjects: async (): Promise<ProjectListResponse> => {
     const response = await axiosClient.get<ProjectListResponse>(`${ENDPOINT}`)
@@ -130,8 +160,8 @@ export const projectApi = {
   },
 
   deleteProject: async (projectId: string): Promise<boolean> => {
-    const response = await axiosClient.delete<boolean>(`${ENDPOINT}/delete/projectId=${projectId}`)
-    return response.data
+    const response = await axiosClient.delete<{ code: number; message: string; data: boolean }>(`${ENDPOINT}/${projectId}`)
+    return response.data.data
   },
 
   addMemberToProject: async (projectId: string, email: string): Promise<boolean> => {
@@ -170,6 +200,16 @@ export const projectApi = {
   getProjectMembers: async (projectId: string): Promise<any[]> => {
     const response = await axiosClient.get(`/project/${projectId}/members/list`)
     return response.data.data
+  },
+
+  getProjectLog: async (
+    projectId: string,
+    nextcursor?: string
+  ): Promise<ProjectLogCursorResponse> => {
+    const response = await axiosClient.get<ProjectLogCursorResponse>(`/project/${projectId}/log`, {
+      params: nextcursor ? { nextcursor } : undefined
+    })
+    return response.data
   }
 }
 

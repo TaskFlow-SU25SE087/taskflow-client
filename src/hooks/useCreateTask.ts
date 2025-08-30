@@ -9,6 +9,7 @@ interface CreateTaskInput {
   priority: string
   deadline: string
   file?: File | null
+  effortPoints?: string
 }
 
 export function useCreateTask() {
@@ -27,8 +28,15 @@ export function useCreateTask() {
       formData.append('Priority', input.priority)
       formData.append('Deadline', input.deadline)
       if (input.file) formData.append('File', input.file)
+      if (input.effortPoints?.trim()) formData.append('EffortPoints', input.effortPoints.trim())
       const result = await taskApi.createTask(input.projectId, formData)
-      if (typeof result === 'object' && result !== null && 'title' in result && 'description' in result && 'priority' in result) {
+      if (
+        typeof result === 'object' &&
+        result !== null &&
+        'title' in result &&
+        'description' in result &&
+        'priority' in result
+      ) {
         setData(result as unknown as TaskP)
       } else {
         setData(null)

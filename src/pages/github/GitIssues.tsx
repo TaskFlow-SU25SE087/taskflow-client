@@ -7,94 +7,109 @@ import { Input } from '@/components/ui/input'
 import { Loader } from '@/components/ui/loader'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
+import { useIssues } from '@/hooks/useIssues'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
-import { AlertCircle, ArrowRight, Calendar, ChevronDown, Filter, Search, Tag } from 'lucide-react'
-import { useState } from 'react'
+import {
+  AlertCircle,
+  ArrowRight,
+  Bug,
+  Calendar,
+  ChevronDown,
+  Clock,
+  FileText,
+  Filter,
+  GitBranch,
+  GitCommit,
+  GitPullRequest,
+  Lightbulb,
+  MessageSquare,
+  RefreshCw,
+  Search,
+  Tag,
+  User,
+  Users
+} from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useParams } from 'react-router-dom'
 
-// Temporary mock data until API is ready
-const MOCK_ISSUES = [
-  {
-    id: '1',
-    number: 123,
-    title: 'Fix authentication bug in login flow',
-    description:
-      'Users are experiencing issues with the login authentication process. The session is not being properly maintained after successful login.',
-    state: 'open',
-    author: {
-      name: 'Sarah Chen',
-      email: 'sarah@example.com'
-    },
-    assignee: {
-      name: 'Mike Johnson',
-      email: 'mike@example.com'
-    },
-    createdAt: new Date('2024-01-15T10:30:00'),
-    updatedAt: new Date('2024-01-16T14:20:00'),
-    labels: ['bug', 'authentication', 'high-priority'],
-    comments: 5,
-    milestone: 'Sprint 2'
-  },
-  {
-    id: '2',
-    number: 124,
-    title: 'Add dark mode support to dashboard',
-    description:
-      'Implement a dark mode theme option for the dashboard to improve user experience in low-light environments.',
-    state: 'closed',
-    author: {
-      name: 'Alex Rodriguez',
-      email: 'alex@example.com'
-    },
-    assignee: {
-      name: 'Sarah Chen',
-      email: 'sarah@example.com'
-    },
-    createdAt: new Date('2024-01-14T15:45:00'),
-    updatedAt: new Date('2024-01-17T09:15:00'),
-    labels: ['enhancement', 'ui/ux', 'feature'],
-    comments: 12,
-    milestone: 'Sprint 1'
-  },
-  {
-    id: '3',
-    number: 125,
-    title: 'Performance optimization for large datasets',
-    description:
-      'The application is experiencing slow loading times when handling large datasets. Need to implement pagination and lazy loading.',
-    state: 'open',
-    author: {
-      name: 'Mike Johnson',
-      email: 'mike@example.com'
-    },
-    assignee: null,
-    createdAt: new Date('2024-01-13T11:20:00'),
-    updatedAt: new Date('2024-01-16T16:30:00'),
-    labels: ['performance', 'optimization'],
-    comments: 3,
-    milestone: 'Sprint 3'
+// Interface for GitHub issue data
+interface GitHubIssue {
+  id: string
+  number?: number
+  title: string
+  description?: string
+  state?: string
+  author?: {
+    name: string
+    email?: string
   }
-]
+  assignee?: {
+    name: string
+    email?: string
+  } | null
+  createdAt?: string | Date
+  updatedAt?: string | Date
+  labels?: string[]
+  comments?: number
+  milestone?: string
+  // Additional fields from API
+  titleTask?: string
+  nameCreate?: string
+  avatarCreate?: string
+  roleCreate?: string
+  priority?: string
+  type?: string
+  status?: string
+  explanation?: string
+  example?: string
+  issueAttachmentUrls?: string[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  taskAssignees?: any[]
+}
 
 interface IssueCardProps {
-  issue: (typeof MOCK_ISSUES)[0]
+  issue: GitHubIssue
 }
 
 function IssueCard({ issue }: IssueCardProps) {
-  const authorInitials = issue.author.name
+  // Handle both API data and mock data structure
+  const authorName = issue.author?.name || issue.nameCreate || 'Unknown'
+  const assigneeName = issue.assignee?.name || 'Unassigned'
+
+  const authorInitials = authorName
     .split(' ')
     .map((n) => n[0])
     .join('')
     .toUpperCase()
 
-  const assigneeInitials = issue.assignee?.name
+  const assigneeInitials = assigneeName
     .split(' ')
     .map((n) => n[0])
     .join('')
     .toUpperCase()
 
-  const getStateColor = (state: string) => {
+  const getStateColor = (state?: string) => {
+    if (!state) return 'bg-gray-100 text-gray-700'
     return state === 'open' ? 'bg-green-100 text-green-700' : 'bg-purple-100 text-purple-700'
+  }
+
+  const getIssueTypeIcon = (type?: string) => {
+    switch (type?.toLowerCase()) {
+      case 'bug':
+        return <Bug className='w-4 h-4' />
+      case 'featurerequest':
+      case 'feature request':
+        return <Lightbulb className='w-4 h-4' />
+      case 'improvement':
+        return <FileText className='w-4 h-4' />
+      case 'task':
+        return <MessageSquare className='w-4 h-4' />
+      case 'documentation':
+        return <AlertCircle className='w-4 h-4' />
+      default:
+        return <Bug className='w-4 h-4' />
+    }
   }
 
   return (
@@ -113,30 +128,53 @@ function IssueCard({ issue }: IssueCardProps) {
 
         <div className='flex-1 min-w-0'>
           <div className='flex items-center gap-2 mb-2'>
-            <Badge className={cn('text-xs', getStateColor(issue.state))}>
-              {issue.state === 'open' ? 'Open' : 'Closed'}
+            <Badge className={cn('text-xs', getStateColor(issue.state || issue.status))}>
+              {issue.state === 'open' || issue.status === 'Open' ? 'Open' : 'Closed'}
             </Badge>
-            <span className='text-gray-500 text-sm'>#{issue.number}</span>
+            <span className='text-gray-500 text-sm'>#{issue.number || issue.id}</span>
             <span className='text-gray-500'>•</span>
-            <span className='text-sm text-gray-500'>{format(issue.updatedAt, 'MMM d, yyyy')}</span>
+            <span className='text-sm text-gray-500 flex items-center gap-1'>
+              <Clock className='w-3 h-3' />
+              {issue.updatedAt ? format(new Date(issue.updatedAt), 'MMM d, yyyy') : 'Unknown date'}
+            </span>
           </div>
 
-          <h3 className='text-gray-900 font-medium mb-2 hover:text-lavender-700 cursor-pointer'>{issue.title}</h3>
+          <h3 className='text-gray-900 font-medium mb-2 hover:text-lavender-700 cursor-pointer flex items-center gap-2'>
+            {getIssueTypeIcon(issue.type)}
+            {issue.title}
+          </h3>
 
-          <p className='text-gray-600 text-sm mb-3 line-clamp-2'>{issue.description}</p>
+          {/* Hiển thị tên task nếu có */}
+          {issue.titleTask && (
+            <div className='mb-2'>
+              <Badge
+                variant='outline'
+                className='text-xs bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1 w-fit'
+              >
+                <GitBranch className='w-3 h-3' />
+                Task: {issue.titleTask}
+              </Badge>
+            </div>
+          )}
+
+          <p className='text-gray-600 text-sm mb-3 line-clamp-2'>
+            {issue.description || issue.explanation || 'No description available'}
+          </p>
 
           <div className='flex items-center gap-4 text-sm'>
             <div className='flex items-center gap-2'>
+              <User className='h-4 w-4 text-gray-400' />
               <span className='text-gray-500'>by</span>
-              <span className='font-medium text-gray-900'>{issue.author.name}</span>
+              <span className='font-medium text-gray-900'>{authorName}</span>
             </div>
 
             {issue.assignee && (
               <>
                 <span className='text-gray-500'>•</span>
                 <div className='flex items-center gap-2'>
+                  <Users className='h-4 w-4 text-gray-400' />
                   <span className='text-gray-500'>assigned to</span>
-                  <span className='font-medium text-gray-900'>{issue.assignee.name}</span>
+                  <span className='font-medium text-gray-900'>{assigneeName}</span>
                 </div>
               </>
             )}
@@ -144,19 +182,21 @@ function IssueCard({ issue }: IssueCardProps) {
             <span className='text-gray-500'>•</span>
             <div className='flex items-center gap-1 text-gray-500'>
               <AlertCircle className='h-4 w-4' />
-              <span>{issue.comments}</span>
+              <span>{issue.comments || 0}</span>
             </div>
           </div>
 
           <div className='flex items-center gap-2 mt-3'>
-            {issue.labels.map((label) => (
-              <Badge key={label} variant='secondary' className='text-xs'>
-                {label}
-              </Badge>
-            ))}
+            {issue.labels &&
+              issue.labels.map((label) => (
+                <Badge key={label} variant='secondary' className='text-xs flex items-center gap-1'>
+                  <Tag className='h-3 w-3' />
+                  {label}
+                </Badge>
+              ))}
             {issue.milestone && (
-              <Badge variant='outline' className='text-xs'>
-                <Tag className='mr-1 h-3 w-3' />
+              <Badge variant='outline' className='text-xs flex items-center gap-1'>
+                <Clock className='h-3 w-3' />
                 {issue.milestone}
               </Badge>
             )}
@@ -172,16 +212,82 @@ function IssueCard({ issue }: IssueCardProps) {
 }
 
 export default function GitIssues() {
+  const { projectId } = useParams<{ projectId: string }>()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
-  const { currentProject, isLoading } = useCurrentProject()
-  const [filteredIssues] = useState(MOCK_ISSUES)
+  const { currentProject, isLoading: projectLoading } = useCurrentProject()
+  const { getProjectIssues, isLoading: issuesLoading } = useIssues()
+  const [issues, setIssues] = useState<GitHubIssue[]>([])
+  const [filteredIssues, setFilteredIssues] = useState<GitHubIssue[]>([])
+  const [loadingTimeout, setLoadingTimeout] = useState(false)
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen)
   }
 
-  if (isLoading || !currentProject) {
+  const handleRefresh = async () => {
+    if (projectId) {
+      setLoadingTimeout(false)
+      try {
+        console.log('🔄 Refreshing issues for project:', projectId)
+        const projectIssues = await getProjectIssues(projectId)
+        console.log('✅ Issues refreshed:', projectIssues)
+        setIssues(projectIssues || [])
+        setFilteredIssues(projectIssues || [])
+      } catch (error) {
+        console.error('Error refreshing issues:', error)
+        setIssues([])
+        setFilteredIssues([])
+      }
+    }
+  }
+
+  // Load issues when component mounts
+  useEffect(() => {
+    const loadIssues = async () => {
+      if (projectId) {
+        try {
+          console.log('🔄 Loading issues for project:', projectId)
+
+          // Set a timeout to show loading timeout message after 15 seconds
+          const timeoutId = setTimeout(() => {
+            setLoadingTimeout(true)
+          }, 15000)
+
+          const projectIssues = await getProjectIssues(projectId)
+          console.log('✅ Issues loaded:', projectIssues)
+
+          clearTimeout(timeoutId)
+          setLoadingTimeout(false)
+          setIssues(projectIssues || [])
+          setFilteredIssues(projectIssues || [])
+        } catch (error) {
+          console.error('Error loading issues:', error)
+          setLoadingTimeout(false)
+          setIssues([])
+          setFilteredIssues([])
+        }
+      }
+    }
+
+    loadIssues()
+  }, [projectId, getProjectIssues])
+
+  // Filter issues based on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setFilteredIssues(issues)
+    } else {
+      const filtered = issues.filter(
+        (issue) =>
+          (issue.title || issue.titleTask || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (issue.description || issue.explanation || '').toLowerCase().includes(searchQuery.toLowerCase())
+      )
+      setFilteredIssues(filtered)
+    }
+  }, [searchQuery, issues])
+
+  if (projectLoading || !currentProject) {
     return (
       <div className='flex h-screen bg-gray-100'>
         <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
@@ -203,21 +309,24 @@ export default function GitIssues() {
         <div className='flex flex-col h-full p-8'>
           <div className='flex-none w-full flex items-center justify-between pb-8 border-b-2 border-lavender-200 mb-6 shadow-sm'>
             <div className='flex items-center gap-3'>
-              <img src="/logo.png" alt="GitHub" className="w-10 h-10 rounded-full bg-lavender-100 p-1" />
+              <div className='w-10 h-10 rounded-full bg-lavender-100 p-2 flex items-center justify-center'>
+                <GitPullRequest className='w-6 h-6 text-lavender-700' />
+              </div>
               <h1 className='text-4xl font-extrabold text-lavender-700 drop-shadow'>Issues</h1>
               <div className='flex items-center gap-2 ml-4'>
+                <GitBranch className='w-5 h-5 text-blue-600' />
                 <span className='text-base text-blue-700 font-semibold'>Repository:</span>
                 <span className='font-bold text-purple-700'>{currentProject.title}</span>
               </div>
             </div>
-            <Button className='bg-gradient-to-r from-lavender-500 to-blue-400 hover:from-lavender-600 hover:to-blue-500 text-white font-bold shadow-lg rounded-xl px-6 py-2'>
-              + New Issue
-            </Button>
           </div>
 
           <div className='pb-8 flex items-center justify-between'>
             <div className='flex items-center gap-4 bg-white/80 rounded-2xl shadow-md px-6 py-3'>
-              <Button variant='outline' className='bg-lavender-50 hover:bg-lavender-100 text-lavender-700 border-0 font-semibold rounded-lg'>
+              <Button
+                variant='outline'
+                className='bg-lavender-50 hover:bg-lavender-100 text-lavender-700 border-0 font-semibold rounded-lg'
+              >
                 <Filter className='mr-2 h-4 w-4 text-blue-400' />
                 Filter
                 <ChevronDown className='ml-2 h-4 w-4 text-blue-400' />
@@ -231,9 +340,21 @@ export default function GitIssues() {
                   className='w-[280px] pl-10 bg-lavender-50 border-0 rounded-lg text-lavender-700 font-medium focus:ring-2 focus:ring-lavender-400'
                 />
               </div>
+              <Button
+                variant='outline'
+                className='bg-blue-50 hover:bg-blue-100 text-blue-700 border-0 font-semibold rounded-lg'
+                onClick={handleRefresh}
+                disabled={issuesLoading}
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${issuesLoading ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
             </div>
             <div className='flex gap-2 bg-white/80 rounded-2xl shadow-md px-6 py-3'>
-              <Button variant='outline' className='bg-blue-50 hover:bg-blue-100 text-blue-700 border-0 font-semibold rounded-lg'>
+              <Button
+                variant='outline'
+                className='bg-blue-50 hover:bg-blue-100 text-blue-700 border-0 font-semibold rounded-lg'
+              >
                 <Calendar className='mr-2 h-4 w-4 text-purple-400' />
                 Time Range
               </Button>
@@ -252,13 +373,26 @@ export default function GitIssues() {
           </div>
 
           <div className='space-y-6 overflow-y-auto'>
-            {filteredIssues.map((issue) => (
-              <IssueCard key={issue.id} issue={issue} />
-            ))}
-            {filteredIssues.length === 0 && (
+            {issuesLoading ? (
+              <div className='text-center py-12'>
+                <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-lavender-600 mx-auto mb-4'></div>
+                <p className='text-lavender-600 font-medium'>
+                  {loadingTimeout ? 'Loading is taking longer than expected...' : 'Loading issues...'}
+                </p>
+                {loadingTimeout && (
+                  <p className='text-sm text-gray-500 mt-2'>
+                    The server might be slow. Please wait or try refreshing the page.
+                  </p>
+                )}
+              </div>
+            ) : filteredIssues.length > 0 ? (
+              filteredIssues.map((issue: GitHubIssue) => <IssueCard key={issue.id} issue={issue} />)
+            ) : (
               <div className='text-center py-12 text-lavender-400 text-xl font-semibold flex flex-col items-center'>
-                <img src="/logo.png" alt="No issues" className="w-16 h-16 mb-4 opacity-60" />
-                No issues found
+                <div className='w-16 h-16 mb-4 opacity-60 flex items-center justify-center'>
+                  <GitCommit className='w-12 h-12 text-lavender-400' />
+                </div>
+                {searchQuery ? 'No issues found matching your search' : 'No issues found'}
               </div>
             )}
           </div>
