@@ -18,6 +18,7 @@ interface TaskColumnProps {
   movingTaskId?: string | null
   type?: string
   canCreate?: boolean
+  isMember?: boolean
 }
 
 // Color mapping aligned with project board colors and API types
@@ -43,7 +44,8 @@ export function TaskColumn({
   boardId,
   movingTaskId,
   type,
-  canCreate
+  canCreate,
+  isMember = false
 }: TaskColumnProps) {
   const [isAddingTask, setIsAddingTask] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
@@ -102,7 +104,8 @@ export function TaskColumn({
                 }
               />
             )}
-            {currentProject && (
+            {/* Hide board edit button for Members */}
+            {currentProject && !isMember && (
               <BoardEditMenu
                 projectId={currentProject.id}
                 boardId={boardId}
@@ -120,7 +123,8 @@ export function TaskColumn({
                 }
               />
             )}
-            {currentProject && (
+            {/* Hide board delete button for Members */}
+            {currentProject && !isMember && (
               <BoardDeleteButton
                 projectId={currentProject.id}
                 boardId={boardId}

@@ -8,6 +8,7 @@ import { useState } from 'react'
 interface SprintStatusDropdownProps {
   sprint: Sprint
   onStatusUpdate?: () => void
+  isMember?: boolean
 }
 
 
@@ -17,7 +18,7 @@ const statusOptions = [
   { value: '30000', label: 'On Hold', disabled: false }
 ]
 
-export function SprintStatusDropdown({ sprint, onStatusUpdate }: SprintStatusDropdownProps) {
+export function SprintStatusDropdown({ sprint, onStatusUpdate, isMember = false }: SprintStatusDropdownProps) {
   const [isUpdating, setIsUpdating] = useState(false)
   const { updateSprintStatus } = useSprints()
   const { showToast } = useToastContext()
@@ -108,11 +109,25 @@ export function SprintStatusDropdown({ sprint, onStatusUpdate }: SprintStatusDro
   return (
     <div className="flex items-center gap-2">
       <span className="text-sm text-gray-500">Status:</span>
-      <Select
-        value={currentEnumValue}
-        onValueChange={handleStatusChange}
-        disabled={isUpdating}
-      >
+      {isMember ? (
+        // For members, show status as read-only
+        <span className={`px-2 py-1 rounded text-xs font-medium ${
+          currentEnumValue === '0' ? 'bg-gray-100 text-gray-700' :
+          currentEnumValue === '10000' ? 'bg-blue-100 text-blue-700' :
+          currentEnumValue === '20000' ? 'bg-green-100 text-green-700' :
+          currentEnumValue === '30000' ? 'bg-yellow-100 text-yellow-700' :
+          currentEnumValue === '40000' ? 'bg-red-100 text-red-700' :
+          'bg-gray-100 text-gray-700'
+        }`}>
+          {currentStatus}
+        </span>
+      ) : (
+        // For non-members, show dropdown
+        <Select
+          value={currentEnumValue}
+          onValueChange={handleStatusChange}
+          disabled={isUpdating}
+        >
         <SelectTrigger className="w-40 h-8 text-xs border-0 bg-transparent p-0">
           <SelectValue>
             {isUpdating ? (
@@ -156,6 +171,7 @@ export function SprintStatusDropdown({ sprint, onStatusUpdate }: SprintStatusDro
           ))}
         </SelectContent>
       </Select>
+      )}
     </div>
   )
 } 

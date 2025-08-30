@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToastContext } from '@/components/ui/ToastContext'
+import { useAuth } from '@/hooks/useAuth'
 import { useBoards } from '@/hooks/useBoards'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useSprints } from '@/hooks/useSprints'
@@ -52,7 +53,7 @@ import {
   Settings,
   TrendingUp
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 interface MemberAvatarProps {
@@ -239,8 +240,17 @@ export default function ProjectBoard() {
   const [isConfirmLeaveDialogOpen, setIsConfirmLeaveDialogOpen] = useState(false)
 
   const { showToast } = useToastContext()
+  const { user } = useAuth()
   // const { leaveProject, loading: memberLoading, error: memberError } = useProjectMembers()
   const [isLeavingProject, setIsLeavingProject] = useState(false)
+
+  // Check user's role in current project
+  const myMemberRecord = useMemo(() => {
+    if (!user || !projectMembers.length) return null
+    return projectMembers.find((m) => m.userId === user.id || m.id === user.id || m.email === user.email) || null
+  }, [projectMembers, user])
+
+  const isMember = (myMemberRecord?.role || '').toLowerCase() === 'member'
 
   // Function to refresh both boards and sprint tasks
   const refreshBoardsAndSprintTasks = async () => {
@@ -945,8 +955,8 @@ export default function ProjectBoard() {
                   <Settings className='h-5 w-5 text-lavender-600' />
                 </Button>
 
-                {/* Board creation is now always allowed, regardless of sprint status */}
-                {currentProject && (
+                {/* Hide board creation for Members */}
+                {currentProject && !isMember && (
                   <TaskBoardCreateMenu
                     isOpen={isBoardDialogOpen}
                     onOpenChange={setIsBoardDialogOpen}
@@ -955,14 +965,17 @@ export default function ProjectBoard() {
                   />
                 )}
 
-                <Button
-                  variant='ghost'
-                  className='flex items-center gap-2 px-3 py-2 rounded-lg bg-[#ece8fd] hover:bg-[#e0dbfa] text-[#7c3aed]'
-                  onClick={() => setIsInviteOpen(true)}
-                >
-                  <Plus className='h-4 w-4 text-[#7c3aed]' />
-                  <span>Invite</span>
-                </Button>
+                {/* Hide invite button for Members */}
+                {!isMember && (
+                  <Button
+                    variant='ghost'
+                    className='flex items-center gap-2 px-3 py-2 rounded-lg bg-[#ece8fd] hover:bg-[#e0dbfa] text-[#7c3aed]'
+                    onClick={() => setIsInviteOpen(true)}
+                  >
+                    <Plus className='h-4 w-4 text-[#7c3aed]' />
+                    <span>Invite</span>
+                  </Button>
+                )}
                 <Button
                   variant='outline'
                   className='text-red-600 border-red-200 hover:bg-red-50'
@@ -1170,6 +1183,7 @@ export default function ProjectBoard() {
                                 movingTaskId={movingTaskId}
                                 type={board.type}
                                 canCreate={canCreateInBoard}
+                                isMember={isMember}
                               />
                             </SortableContext>
                           </DroppableBoard>

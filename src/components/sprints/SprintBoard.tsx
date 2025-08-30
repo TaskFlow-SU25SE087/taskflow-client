@@ -27,6 +27,7 @@ interface SprintBoardProps {
   hasLoadedTasks: boolean
   boards: Board[]
   refreshBoards: () => Promise<void>
+  isMember?: boolean
 }
 
 export function SprintBoard({
@@ -40,7 +41,8 @@ export function SprintBoard({
   loadingTasks,
   hasLoadedTasks,
   boards,
-  refreshBoards
+  refreshBoards,
+  isMember = false
 }: SprintBoardProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
@@ -118,7 +120,7 @@ export function SprintBoard({
               />
             </div>
             <div className='flex items-center gap-3 text-sm'>
-              <SprintStatusDropdown sprint={sprint} onStatusUpdate={onSprintUpdate} />
+              <SprintStatusDropdown sprint={sprint} onStatusUpdate={onSprintUpdate} isMember={isMember} />
               {(sprint.startDate || sprint.endDate) && (
                 <>
                   <span>•</span>

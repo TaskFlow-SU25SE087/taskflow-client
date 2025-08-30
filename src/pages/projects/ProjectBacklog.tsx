@@ -1,4 +1,5 @@
 import { Navbar } from '@/components/Navbar'
+import { projectMemberApi } from '@/api/projectMembers'
 import { Sidebar } from '@/components/Sidebar'
 import { BacklogSkeleton } from '@/components/sprints/BacklogSkeleton'
 import { SprintBacklog } from '@/components/sprints/SprintBacklog'
@@ -17,10 +18,12 @@ import {
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useToastContext } from '@/components/ui/ToastContext'
+import { useAuth } from '@/hooks/useAuth'
 import { useBoards } from '@/hooks/useBoards'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useOptimizedTasks } from '@/hooks/useOptimizedTasks'
 import { useSprints } from '@/hooks/useSprints'
+import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { ChevronDown, Filter, Search, Share2 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -30,6 +33,7 @@ const ProjectBacklog = () => {
   // Cleaned up noisy perf logs to keep UI logic focused
 
   const { showToast } = useToastContext()
+  const { user } = useAuth()
   const { tasks, didInitialLoad: tasksDidInitialLoad, refreshTasks, loadMore, hasMore } = useOptimizedTasks()
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [taskSearchQuery, setTaskSearchQuery] = useState('')
@@ -42,6 +46,17 @@ const ProjectBacklog = () => {
   const [highlightSprintId, setHighlightSprintId] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'priority'>('newest')
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
+  
+  // Project members for role checking
+  const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([])
+
+  // Check user's role in current project
+  const myMemberRecord = useMemo(() => {
+    if (!user || !projectMembers.length) return null
+    return projectMembers.find((m) => m.userId === user.id || m.id === user.id || m.email === user.email) || null
+  }, [projectMembers, user])
+
+  const isMember = (myMemberRecord?.role || '').toLowerCase() === 'member'
 
   const {
     sprints,
@@ -83,6 +98,22 @@ const ProjectBacklog = () => {
     }, 300)
     return () => clearTimeout(timer)
   }, [sprintSearchQuery])
+
+  // Fetch project members for role checking
+  useEffect(() => {
+    const fetchProjectMembers = async () => {
+      if (!currentProject?.id) return
+      try {
+        const members = await projectMemberApi.getMembersByProjectId(currentProject.id)
+        setProjectMembers(members || [])
+      } catch (error) {
+        console.error('Error fetching project members:', error)
+        setProjectMembers([])
+      }
+    }
+
+    fetchProjectMembers()
+  }, [currentProject?.id])
 
   // Removed heavy console logging and perf measurement to prevent noise and align code style
 
@@ -545,6 +576,7 @@ const ProjectBacklog = () => {
                   hasLoadedTasks={!!sprintTasks[sprint.id]}
                   boards={boards}
                   refreshBoards={refreshBoards}
+                  isMember={isMember}
                 />
               </div>
             ))}

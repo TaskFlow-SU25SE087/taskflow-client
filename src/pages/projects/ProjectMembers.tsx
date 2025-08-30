@@ -7,12 +7,12 @@ import { Sidebar } from '@/components/Sidebar'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle
 } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToastContext } from '@/components/ui/ToastContext'
@@ -87,6 +87,7 @@ export default function ProjectMembers() {
   }, [members, user])
 
   const isLeader = (myMemberRecord?.role || '').toLowerCase() === 'leader'
+  const isMember = (myMemberRecord?.role || '').toLowerCase() === 'member'
 
   const sortedMembers = useMemo(() => {
     console.log('🔄 Recalculating sorted members, count:', members.length)
@@ -183,13 +184,16 @@ export default function ProjectMembers() {
             </div>
 
             <div className='flex items-center gap-2 lg:gap-3'>
-              <Button
-                variant='ghost'
-                className='flex items-center gap-2 px-3 py-2 rounded-lg bg-[#ece8fd] hover:bg-[#e0dbfa] text-[#7c3aed]'
-                onClick={() => setIsInviteOpen(true)}
-              >
-                Invite
-              </Button>
+              {/* Hide invite button for Members */}
+              {!isMember && (
+                <Button
+                  variant='ghost'
+                  className='flex items-center gap-2 px-3 py-2 rounded-lg bg-[#ece8fd] hover:bg-[#e0dbfa] text-[#7c3aed]'
+                  onClick={() => setIsInviteOpen(true)}
+                >
+                  Invite
+                </Button>
+              )}
               <Button variant='outline' className='text-red-600 border-red-200 hover:bg-red-50' onClick={handleLeave}>
                 <LogOut className='h-4 w-4 mr-2' /> Leave Project
               </Button>
