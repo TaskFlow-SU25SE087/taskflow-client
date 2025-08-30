@@ -53,9 +53,8 @@ export default function TaskCreateMenu({
     const fetchMembers = async () => {
       try {
         await projectMemberApi.getMembersByProjectId(projectId)
-        // setMembers(data) // XÓA: setMembers(data)
-      } catch (error) {
-        // setMembers([]) // XÓA: setMembers([])
+      } catch {
+        // Ignore errors during member fetch
       }
     }
     fetchMembers()
@@ -124,7 +123,7 @@ export default function TaskCreateMenu({
             await sprintApi.assignTasksToSprint(projectId, sprintId, [createdTask.id])
           }
         } catch {
-          /* ignore */
+          // Best-effort assignment
         }
       } else {
         showToast({ title: 'Warning', description: 'Task created but not found for tagging.', variant: 'warning' })
@@ -141,7 +140,7 @@ export default function TaskCreateMenu({
       setEffortPoints('')
       setEffortPointsError('')
     } catch (error) {
-      const err = error as any
+      const err = error as { response?: { data?: { message?: string } }; message?: string }
       showToast({
         title: 'Error',
         description: err?.response?.data?.message || err?.message || 'Failed to create task.',
@@ -301,21 +300,6 @@ export default function TaskCreateMenu({
               <p className='text-xs text-gray-500'>Optional. Enter a positive integer for effort estimation.</p>
             )}
           </div>
-          {/* XÓA: <div className='space-y-2'>
-            <label className='text-sm font-medium'>Assignee</label>
-            <select
-              className='h-11 w-full border rounded px-3'
-              value={assigneeId}
-              onChange={e => setAssigneeId(e.target.value)}
-            >
-              <option value=''>Assign member</option>
-              {members.map(member => (
-                <option key={member.userId} value={member.userId}>
-                  {member.user?.fullName || member.user?.username || member.user?.email || member.userId}
-                </option>
-              ))}
-            </select>
-          </div> */}
           <div className='flex justify-end gap-3 pt-4'>
             <Button
               variant='outline'

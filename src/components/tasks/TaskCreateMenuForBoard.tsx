@@ -74,9 +74,8 @@ export default function TaskCreateMenuForBoard({
           setActiveSprintId(current.id)
           return
         }
-      } catch (err) {
-        // Swallow and fallback
-        // console.warn('getCurrentSprint failed, fallback to manual detection', err)
+      } catch {
+        // Fallback to manual detection
       }
       try {
         // 2. Fallback: load all and infer
@@ -175,7 +174,7 @@ export default function TaskCreateMenuForBoard({
             try {
               await sprintApi.assignTasksToSprint(projectId, activeSprintId, [createdTask.id])
             } catch {
-              /* ignore, best-effort */
+              // Best-effort assignment
             }
           }
           // Ensure board placement (so it shows immediately on this column)
@@ -183,7 +182,7 @@ export default function TaskCreateMenuForBoard({
             try {
               await taskApi.moveTaskToBoard(projectId, createdTask.id, boardId)
             } catch {
-              /* ignore, best-effort */
+              // Best-effort placement
             }
           }
         } else {
@@ -191,7 +190,7 @@ export default function TaskCreateMenuForBoard({
           showToast({ title: 'Notice', description: 'Task created. Syncing lists…', variant: 'default' })
         }
       } catch {
-        /* ignore, will refresh below */
+        // Ignore, will refresh below
       }
       await refreshTasks()
       onTaskCreated()
@@ -203,7 +202,7 @@ export default function TaskCreateMenuForBoard({
       setEffortPoints('')
       setEffortPointsError('')
     } catch (error) {
-      const err = error as any
+      const err = error as { response?: { data?: { message?: string } }; message?: string }
       showToast({
         title: 'Error',
         description: err?.response?.data?.message || err?.message || 'Failed to create task.',
