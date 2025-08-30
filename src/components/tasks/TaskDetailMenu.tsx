@@ -1554,7 +1554,21 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                     disabled={!user?.id}
                   >
                     <SelectTrigger className='w-full bg-white border-gray-300 hover:border-gray-400 focus:border-lavender-500 focus:ring-lavender-500/20 h-10'>
-                      <SelectValue placeholder='Select a team member...' />
+                      <SelectValue placeholder='Select a team member...'>
+                        {assignee ? (
+                          <div className='flex items-center gap-3 min-w-0'>
+                            <Avatar className='w-6 h-6 flex-shrink-0'>
+                              <AvatarImage src={assignee.avatar} alt={assignee.fullName || 'Member'} />
+                              <AvatarFallback className='text-xs bg-gray-100 text-gray-700'>
+                                {(assignee.fullName || assignee.userId || '?')[0]?.toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className='text-sm truncate'>{assignee.fullName || assignee.userId}</span>
+                          </div>
+                        ) : (
+                          'Select a team member...'
+                        )}
+                      </SelectValue>
                     </SelectTrigger>
                     {user?.id && (
                       <SelectContent className='max-h-48'>
@@ -1573,14 +1587,14 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
                           return (
                             <SelectItem key={memberId} value={memberId} className='py-2'>
-                              <div className='flex items-center gap-3'>
-                                <Avatar className='w-6 h-6'>
+                              <div className='flex items-center gap-3 min-w-0'>
+                                <Avatar className='w-6 h-6 flex-shrink-0'>
                                   <AvatarImage src={member.avatar} alt={displayName} />
                                   <AvatarFallback className='text-xs bg-gray-100 text-gray-700'>
                                     {avatarChar}
                                   </AvatarFallback>
                                 </Avatar>
-                                <span className='text-sm'>{displayName}</span>
+                                <span className='text-sm truncate'>{displayName}</span>
                               </div>
                             </SelectItem>
                           )
