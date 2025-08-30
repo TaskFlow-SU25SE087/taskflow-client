@@ -1,11 +1,11 @@
 import { Button } from '@/components/ui/button'
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,7 +13,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { useIssues } from '@/hooks/useIssues'
 import { CreateIssueRequest } from '@/types/issue'
-import { AlertCircle, Bug, ChevronDown, ChevronUp, ChevronsDown, ChevronsUp, FileText, Lightbulb, Loader2, MessageSquare, Plus, X } from 'lucide-react'
+import {
+  AlertCircle,
+  Bug,
+  ChevronDown,
+  ChevronUp,
+  ChevronsDown,
+  ChevronsUp,
+  FileText,
+  Lightbulb,
+  Loader2,
+  MessageSquare,
+  Plus,
+  X
+} from 'lucide-react'
 import React, { useState } from 'react'
 
 interface IssueCreateMenuProps {
@@ -73,10 +86,10 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
     }
 
     try {
-      const res = await createIssue(projectId, taskId, issueData) as any
+      const res = await createIssue(projectId, taskId, issueData)
       if (res) {
         // Issue created successfully - useIssues already shows success toast
-        
+
         // Đóng dialog với delay nhỏ để user thấy thông báo
         setTimeout(() => {
           setOpen(false)
@@ -94,7 +107,8 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
           onIssueCreated?.()
         }, 1000)
       }
-    } catch (error: any) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error: unknown) {
       // Exception occurred - useIssues already shows error toast
     }
   }
@@ -123,8 +137,7 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
       <DialogTrigger asChild>
         <Button
           variant='outline'
-          size='sm'
-          className='gap-2'
+          className='flex items-center gap-2 px-4 py-2.5 text-gray-700 rounded-lg border border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 text-sm font-medium'
         >
           <AlertCircle className='h-4 w-4' />
           Report Issue
@@ -132,52 +145,63 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
       </DialogTrigger>
       <DialogContent className='max-w-2xl max-h-[90vh] overflow-y-auto'>
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-gray-900">Create New Issue</DialogTitle>
+          <DialogTitle className='text-2xl font-bold text-gray-900'>Create New Issue</DialogTitle>
           <DialogDescription>Fill out the form below to report a new issue for this task.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className='space-y-6'>
           <div className='grid grid-cols-2 gap-4'>
             <div className='space-y-2'>
-              <Label htmlFor='title' className="text-sm font-medium text-gray-700">Title *</Label>
+              <Label htmlFor='title' className='text-sm font-medium text-gray-700'>
+                Title *
+              </Label>
               <Input
                 id='title'
                 value={formData.title}
                 onChange={(e) => handleInputChange('title', e.target.value)}
                 placeholder='Issue title'
                 required
-                className="w-full"
+                className='w-full'
               />
             </div>
 
             <div className='space-y-2'>
-              <Label htmlFor='type' className="text-sm font-medium text-gray-700">Type *</Label>
+              <Label htmlFor='type' className='text-sm font-medium text-gray-700'>
+                Type *
+              </Label>
               <Select
                 value={formData.type.toString()}
                 onValueChange={(value) => handleInputChange('type', parseInt(value))}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className='w-full'>
                   <SelectValue placeholder='Select type'>
                     {(() => {
-                      const selectedType = typeOptions.find(type => type.value === formData.type);
+                      const selectedType = typeOptions.find((type) => type.value === formData.type)
                       if (selectedType) {
-                        const TypeIcon = selectedType.icon;
+                        const TypeIcon = selectedType.icon
                         return (
-                          <div className="flex items-center gap-2">
+                          <div className='flex items-center gap-2'>
                             <TypeIcon className={`w-4 h-4 ${selectedType.color}`} />
                             {selectedType.label}
                           </div>
-                        );
+                        )
                       }
-                      return "Select type";
+                      return 'Select type'
                     })()}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100" position="popper">
+                <SelectContent
+                  className='max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100'
+                  position='popper'
+                >
                   {typeOptions.map((type) => {
                     const TypeIcon = type.icon
                     return (
-                      <SelectItem key={type.value} value={type.value.toString()} className="flex items-center gap-2 py-2 cursor-pointer">
+                      <SelectItem
+                        key={type.value}
+                        value={type.value.toString()}
+                        className='flex items-center gap-2 py-2 cursor-pointer'
+                      >
                         <TypeIcon className={`w-4 h-4 ${type.color}`} />
                         {type.label}
                       </SelectItem>
@@ -189,7 +213,9 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
           </div>
 
           <div className='space-y-2'>
-            <Label htmlFor='description' className="text-sm font-medium text-gray-700">Description *</Label>
+            <Label htmlFor='description' className='text-sm font-medium text-gray-700'>
+              Description *
+            </Label>
             <Textarea
               id='description'
               value={formData.description}
@@ -197,63 +223,76 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
               placeholder='Describe the issue in detail'
               rows={4}
               required
-              className="w-full"
+              className='w-full'
             />
           </div>
 
           <div className='space-y-2'>
-            <Label htmlFor='explanation' className="text-sm font-medium text-gray-700">Explanation (Optional)</Label>
+            <Label htmlFor='explanation' className='text-sm font-medium text-gray-700'>
+              Explanation (Optional)
+            </Label>
             <Textarea
               id='explanation'
               value={formData.explanation}
               onChange={(e) => handleInputChange('explanation', e.target.value)}
               placeholder='Explain the issue in detail'
               rows={3}
-              className="w-full"
+              className='w-full'
             />
           </div>
 
           <div className='space-y-2'>
-            <Label htmlFor='example' className="text-sm font-medium text-gray-700">Example (Optional)</Label>
+            <Label htmlFor='example' className='text-sm font-medium text-gray-700'>
+              Example (Optional)
+            </Label>
             <Textarea
               id='example'
               value={formData.example}
               onChange={(e) => handleInputChange('example', e.target.value)}
               placeholder='Provide an example or steps to reproduce'
               rows={3}
-              className="w-full"
+              className='w-full'
             />
           </div>
 
           <div className='grid grid-cols-2 gap-4'>
             <div className='space-y-2'>
-              <Label htmlFor='priority' className="text-sm font-medium text-gray-700">Priority *</Label>
+              <Label htmlFor='priority' className='text-sm font-medium text-gray-700'>
+                Priority *
+              </Label>
               <Select
                 value={formData.priority.toString()}
                 onValueChange={(value) => handleInputChange('priority', parseInt(value))}
               >
-                <SelectTrigger className="w-full">
+                <SelectTrigger className='w-full'>
                   <SelectValue placeholder='Select priority'>
                     {(() => {
-                      const selectedPriority = priorityOptions.find(priority => priority.value === formData.priority);
+                      const selectedPriority = priorityOptions.find((priority) => priority.value === formData.priority)
                       if (selectedPriority) {
-                        const PriorityIcon = selectedPriority.icon;
+                        const PriorityIcon = selectedPriority.icon
                         return (
-                          <div className="flex items-center gap-2">
+                          <div className='flex items-center gap-2'>
                             <PriorityIcon className={`w-4 h-4 ${selectedPriority.color}`} />
                             {selectedPriority.label}
                           </div>
-                        );
+                        )
                       }
-                      return "Select priority";
+                      return 'Select priority'
                     })()}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100" position="popper">
+                <SelectContent
+                  className='max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100'
+                  position='popper'
+                >
                   {priorityOptions.map((priority) => {
-                    const PriorityIcon = priority.icon;
+                    const PriorityIcon = priority.icon
                     return (
-                      <SelectItem key={priority.value} value={priority.value.toString()} className="flex items-center gap-2 py-2 cursor-pointer">
+                      <SelectItem
+                        key={priority.value}
+                        value={priority.value.toString()}
+                        className='flex items-center gap-2 py-2 cursor-pointer'
+                      >
                         <PriorityIcon className={`w-4 h-4 ${priority.color}`} />
                         {priority.label}
                       </SelectItem>
@@ -264,31 +303,25 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
             </div>
 
             <div className='space-y-2'>
-              <Label htmlFor='files' className="text-sm font-medium text-gray-700">Files (Optional)</Label>
-              <Input 
-                id='files' 
-                type='file' 
-                multiple 
-                onChange={handleFileChange} 
-                className="cursor-pointer"
+              <Label htmlFor='files' className='text-sm font-medium text-gray-700'>
+                Files (Optional)
+              </Label>
+              <Input
+                id='files'
+                type='file'
+                multiple
+                onChange={handleFileChange}
+                className='cursor-pointer'
                 accept='.jpg,.jpeg,.png,.gif,.pdf,.doc,.docx,.txt'
               />
               {files.length > 0 && (
-                <div className="text-sm text-gray-600">
-                  Selected files: {files.map(f => f.name).join(', ')}
-                </div>
+                <div className='text-sm text-gray-600'>Selected files: {files.map((f) => f.name).join(', ')}</div>
               )}
             </div>
           </div>
 
           <div className='flex justify-end gap-3 pt-4'>
-            <Button 
-              type='button' 
-              variant='outline' 
-              onClick={resetForm} 
-              disabled={isLoading}
-              className="px-6"
-            >
+            <Button type='button' variant='outline' onClick={resetForm} disabled={isLoading} className='px-6'>
               Reset
             </Button>
             <Button
@@ -296,11 +329,7 @@ export const IssueCreateMenu: React.FC<IssueCreateMenuProps> = ({ projectId, tas
               disabled={isLoading || !formData.title.trim() || !formData.description.trim()}
               className='px-6 flex items-center gap-2'
             >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Plus className='h-4 w-4 flex-shrink-0' />
-              )}
+              {isLoading ? <Loader2 className='h-4 w-4 animate-spin' /> : <Plus className='h-4 w-4 flex-shrink-0' />}
               {isLoading ? 'Creating...' : 'Create Issue'}
             </Button>
           </div>
