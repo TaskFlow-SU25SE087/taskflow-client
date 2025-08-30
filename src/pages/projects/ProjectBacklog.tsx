@@ -1,5 +1,5 @@
-import { Navbar } from '@/components/Navbar'
 import { projectMemberApi } from '@/api/projectMembers'
+import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
 import { BacklogSkeleton } from '@/components/sprints/BacklogSkeleton'
 import { SprintBacklog } from '@/components/sprints/SprintBacklog'
@@ -476,7 +476,7 @@ const ProjectBacklog = () => {
             <div className='flex items-center gap-2 sm:gap-3'>
               {currentProject && (
                 <>
-                  <SprintCreateMenu onCreateSprint={handleCreateSprint} />
+                  <SprintCreateMenu onCreateSprint={handleCreateSprint} isMember={isMember} />
                   {selectedTaskId && <SprintSelector sprints={sprints} onSprintSelect={handleMoveToSprint} />}
                 </>
               )}
@@ -592,6 +592,7 @@ const ProjectBacklog = () => {
               hasMore={hasMore}
               boards={boards}
               refreshBoards={refreshBoards}
+              isMember={isMember}
             />
           </div>
         </div>

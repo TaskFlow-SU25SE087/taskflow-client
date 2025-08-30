@@ -3,6 +3,7 @@ import { boardApi } from '@/api/boards'
 import { projectMemberApi } from '@/api/projectMembers'
 import { sprintApi } from '@/api/sprints'
 import { taskApi } from '@/api/tasks'
+import { NoDragPointerSensor } from '@/components/dnd/NoDragPointerSensor'
 import { Navbar } from '@/components/Navbar'
 import ProjectGroupManager from '@/components/ProjectGroupManager'
 import { ProjectEditMenu } from '@/components/projects/ProjectEditMenu'
@@ -15,12 +16,12 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -34,24 +35,23 @@ import { useTasks } from '@/hooks/useTasks'
 import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { closestCenter, DndContext, useSensor, useSensors } from '@dnd-kit/core'
-import { NoDragPointerSensor } from '@/components/dnd/NoDragPointerSensor'
 import {
-  arrayMove,
-  horizontalListSortingStrategy,
-  SortableContext,
-  verticalListSortingStrategy
+    arrayMove,
+    horizontalListSortingStrategy,
+    SortableContext,
+    verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import {
-  CheckCircle,
-  ChevronDown,
-  Clock,
-  Filter,
-  Link2,
-  Pencil,
-  Plus,
-  Search,
-  Settings,
-  TrendingUp
+    CheckCircle,
+    ChevronDown,
+    Clock,
+    Filter,
+    Link2,
+    Pencil,
+    Plus,
+    Search,
+    Settings,
+    TrendingUp
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -410,6 +410,16 @@ export default function ProjectBoard() {
     const isBoardDrag = boards.some((b) => b.id === active.id)
 
     if (isBoardDrag) {
+      // Check if user is a member - members cannot reorder boards
+      if (isMember) {
+        showToast({
+          title: 'Access Denied',
+          description: 'You do not have permission to reorder boards.',
+          variant: 'destructive'
+        })
+        return
+      }
+
       if (lockedColumns.includes(active.id) || (over && lockedColumns.includes(over.id))) {
         showToast({
           title: 'Column Locked',
@@ -662,8 +672,17 @@ export default function ProjectBoard() {
   // Use custom pointer sensor that ignores drag activation from elements marked with data-prevent-dnd
   const sensors = useSensors(useSensor(NoDragPointerSensor, { activationConstraint: { distance: 5 } }))
 
-  const handleDragStart = () => {
+  const handleDragStart = (event: any) => {
     console.log('[TIMING] 🎬 Drag start at:', new Date().toISOString())
+    
+    // Check if member is trying to drag a board
+    const { active } = event
+    const isBoardDrag = boards.some((b) => b.id === active.id)
+    
+    if (isBoardDrag && isMember) {
+      // Prevent the drag from starting for members trying to drag boards
+      return false
+    }
   }
 
   console.log('All tasks:', tasks)
@@ -920,7 +939,7 @@ export default function ProjectBoard() {
               </div>
 
               <div className='flex items-center gap-2 lg:gap-3'>
-                {currentProject && (
+                {currentProject && !isMember && (
                   <ProjectEditMenu
                     project={currentProject}
                     onProjectUpdated={refreshBoards}
@@ -1164,7 +1183,7 @@ export default function ProjectBoard() {
                     />
                     {filteredBoards.map((board) => (
                       <div key={board.id} className='flex-shrink-0' style={{ width: '320px', minWidth: '320px' }}>
-                        <SortableBoardColumn id={board.id}>
+                        <SortableBoardColumn id={board.id} isMember={isMember}>
                           <DroppableBoard boardId={board.id}>
                             <SortableContext
                               items={board.tasks.map((t) => t.id)}

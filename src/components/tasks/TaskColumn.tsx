@@ -1,7 +1,7 @@
 import TaskCreateMenuForBoard from '@/components/tasks/TaskCreateMenuForBoard'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { TaskP } from '@/types/task'
-import { Inbox, Plus, Pencil } from 'lucide-react'
+import { Inbox, Pencil, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { BoardDeleteButton } from './BoardDeleteButton'
 import { BoardEditMenu } from './BoardEditMenu'

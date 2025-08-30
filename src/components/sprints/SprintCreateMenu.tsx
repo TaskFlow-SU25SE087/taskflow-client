@@ -15,15 +15,21 @@ import 'react-datepicker/dist/react-datepicker.css'
 
 interface SprintCreateMenuProps {
   onCreateSprint: (data: { name: string; description: string; startDate: string; endDate: string }) => Promise<boolean>
+  isMember?: boolean
 }
 
-export function SprintCreateMenu({ onCreateSprint }: SprintCreateMenuProps) {
+export function SprintCreateMenu({ onCreateSprint, isMember = false }: SprintCreateMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [startDate, setStartDate] = useState<Date | null>(null)
   const [endDate, setEndDate] = useState<Date | null>(null)
   const { showToast } = useToastContext()
+
+  // Hide the button for members
+  if (isMember) {
+    return null
+  }
 
   const handleCreateSprint = async () => {
     try {

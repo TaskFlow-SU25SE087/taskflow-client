@@ -1882,9 +1882,9 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       {/* Leave Task Confirmation Dialog */}
       <Dialog open={showLeaveConfirm} onOpenChange={setShowLeaveConfirm}>
         <DialogContent className='max-w-md'>
-          <DialogTitle>Xác nhận rời task</DialogTitle>
+          <DialogTitle>Confirm Leave Task</DialogTitle>
           <DialogDescription>
-            Bạn có chắc chắn muốn rời khỏi task này? Hành động này sẽ gỡ bỏ bạn khỏi danh sách assignee.
+            Are you sure you want to leave this task? This action will remove you from the assignee list.
           </DialogDescription>
           <div className='flex justify-end gap-2 mt-4'>
             <Button
@@ -1894,14 +1894,14 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                 setSelectedAssignee(null)
               }}
             >
-              Hủy
+              Cancel
             </Button>
             <Button
               variant='destructive'
               onClick={() => selectedAssignee && handleLeaveTask(selectedAssignee)}
               disabled={selectedAssignee ? leaveLoadingMap[selectedAssignee] : false}
             >
-              {selectedAssignee && leaveLoadingMap[selectedAssignee] ? 'Đang xử lý...' : 'Rời task'}
+              {selectedAssignee && leaveLoadingMap[selectedAssignee] ? 'Processing...' : 'Leave Task'}
             </Button>
           </div>
         </DialogContent>
@@ -1910,9 +1910,9 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       {/* Remove Assignee Confirmation Dialog */}
       <Dialog open={showRemoveConfirm} onOpenChange={setShowRemoveConfirm}>
         <DialogContent className='max-w-md'>
-          <DialogTitle>Xác nhận xóa assignee</DialogTitle>
+          <DialogTitle>Confirm Remove Assignee</DialogTitle>
           <DialogDescription>
-            Bạn có chắc chắn muốn xóa assignee này khỏi task? Hành động này sẽ gỡ bỏ họ khỏi danh sách assignee.
+            Are you sure you want to remove this assignee from the task? This action will remove them from the assignee list.
           </DialogDescription>
           <div className='flex justify-end gap-2 mt-4'>
             <Button
@@ -1922,14 +1922,14 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                 setSelectedAssignee(null)
               }}
             >
-              Hủy
+              Cancel
             </Button>
             <Button
               variant='destructive'
               onClick={() => selectedAssignee && handleRemoveAssignee(selectedAssignee)}
               disabled={selectedAssignee ? removeLoadingMap[selectedAssignee] : false}
             >
-              {selectedAssignee && removeLoadingMap[selectedAssignee] ? 'Đang xử lý...' : 'Xóa assignee'}
+              {selectedAssignee && removeLoadingMap[selectedAssignee] ? 'Processing...' : 'Remove Assignee'}
             </Button>
           </div>
         </DialogContent>

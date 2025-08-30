@@ -27,9 +27,10 @@ interface SprintEditMenuProps {
     endDate: string
     status: string // canonical: NotStarted | InProgress | Completed
   }) => Promise<void>
+  isMember?: boolean
 }
 
-export function SprintEditMenu({ sprint, onUpdateSprint }: SprintEditMenuProps) {
+export function SprintEditMenu({ sprint, onUpdateSprint, isMember = false }: SprintEditMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [name, setName] = useState(sprint.name)
   const [description, setDescription] = useState(sprint.description)
@@ -85,6 +86,11 @@ export function SprintEditMenu({ sprint, onUpdateSprint }: SprintEditMenuProps) 
       status // send canonical textual status
     })
     setIsOpen(false)
+  }
+
+  // Hide the button for members
+  if (isMember) {
+    return null
   }
 
   return (

@@ -22,14 +22,15 @@ interface SortableTaskColumnProps {
 
 export function SortableTaskColumn(props: SortableTaskColumnProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging, isSorting, isOver } = useSortable({
-    id: props.id
+    id: props.id,
+    disabled: props.isMember // Disable drag and drop for members
   })
 
   const style = {
     ...(transform ? { transform: CSS.Transform.toString(transform) } : {}),
     transition: transition || 'transform 150ms ease-in-out',
     opacity: isDragging ? 0.8 : 1,
-    cursor: isDragging ? 'grabbing' : 'grab',
+    cursor: props.isMember ? 'default' : (isDragging ? 'grabbing' : 'grab'),
     zIndex: isDragging ? 1000 : 1
   } as React.CSSProperties
 
@@ -45,7 +46,7 @@ export function SortableTaskColumn(props: SortableTaskColumnProps) {
         ${isSorting ? 'animate-bounce-subtle' : ''}
       `}
       {...attributes}
-      {...listeners}
+      {...(props.isMember ? {} : listeners)} // Only add listeners if not a member
     >
       <TaskColumn {...props} />
     </div>
@@ -55,18 +56,20 @@ export function SortableTaskColumn(props: SortableTaskColumnProps) {
 interface SortableBoardColumnProps {
   id: string
   children: ReactNode
+  isMember?: boolean
 }
 
-export function SortableBoardColumn({ id, children }: SortableBoardColumnProps) {
+export function SortableBoardColumn({ id, children, isMember = false }: SortableBoardColumnProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging, isSorting, isOver } = useSortable({
-    id
+    id,
+    disabled: isMember // Disable drag and drop for members
   })
 
   const style = {
     ...(transform ? { transform: CSS.Transform.toString(transform) } : {}),
     transition: transition || 'transform 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94)',
     opacity: isDragging ? 0.9 : 1,
-    cursor: isDragging ? 'grabbing' : 'grab',
+    cursor: isMember ? 'default' : isDragging ? 'grabbing' : 'grab',
     zIndex: isDragging ? 999 : 1
   } as React.CSSProperties
 
@@ -82,7 +85,7 @@ export function SortableBoardColumn({ id, children }: SortableBoardColumnProps) 
         ${isSorting ? 'animate-bounce-subtle' : ''}
       `}
       {...attributes}
-      {...listeners}
+      {...(isMember ? {} : listeners)} // Only add listeners if not a member
     >
       {children}
     </div>

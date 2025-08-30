@@ -2,8 +2,8 @@ import { taskApi } from '@/api/tasks'
 import { Button } from '@/components/ui/button'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { useSprints } from '@/hooks/useSprints'
-import { Sprint } from '@/types/sprint'
 import { Board } from '@/types/board'
+import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
 import { format } from 'date-fns'
 import { ChevronDown, ChevronRight, PlayCircle, Plus } from 'lucide-react'
@@ -117,6 +117,7 @@ export function SprintBoard({
                   })
                   onSprintUpdate()
                 }}
+                isMember={isMember}
               />
             </div>
             <div className='flex items-center gap-3 text-sm'>
@@ -140,19 +141,21 @@ export function SprintBoard({
             onTaskCreated={onTaskCreated}
             sprintId={sprint.id}
             trigger={
-              <div className='flex items-center gap-2 cursor-pointer'>
-                <span className='font-medium text-gray-800'>Add Task</span>
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  className='h-6 w-6 rounded-lg bg-lavender-100 hover:bg-lavender-200'
-                >
-                  <Plus className='h-4 w-4 text-lavender-600' />
-                </Button>
-              </div>
+              !isMember ? (
+                <div className='flex items-center gap-2 cursor-pointer'>
+                  <span className='font-medium text-gray-800'>Add Task</span>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='h-6 w-6 rounded-lg bg-lavender-100 hover:bg-lavender-200'
+                  >
+                    <Plus className='h-4 w-4 text-lavender-600' />
+                  </Button>
+                </div>
+              ) : null
             }
           />
-          {!sprint.startDate && (
+          {!sprint.startDate && !isMember && (
             <Button
               variant='default'
               size='sm'

@@ -26,6 +26,7 @@ interface SprintBacklogProps {
   hasMore?: boolean
   boards: Board[]
   refreshBoards: () => Promise<void>
+  isMember?: boolean
 }
 
 export function SprintBacklog({
@@ -36,7 +37,8 @@ export function SprintBacklog({
   sprint,
   isLoading = false,
   boards,
-  refreshBoards
+  refreshBoards,
+  isMember = false
 }: SprintBacklogProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
@@ -89,16 +91,18 @@ export function SprintBacklog({
             projectId={projectId}
             onTaskCreated={onTaskCreated}
             trigger={
-              <div className='flex items-center gap-2 cursor-pointer'>
-                <span className='font-medium text-gray-800'>Add Task</span>
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  className='h-6 w-6 rounded-lg bg-lavender-100 hover:bg-lavender-200'
-                >
-                  <Plus className='h-4 w-4 text-lavender-600' />
-                </Button>
-              </div>
+              !isMember ? (
+                <div className='flex items-center gap-2 cursor-pointer'>
+                  <span className='font-medium text-gray-800'>Add Task</span>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='h-6 w-6 rounded-lg bg-lavender-100 hover:bg-lavender-200'
+                  >
+                    <Plus className='h-4 w-4 text-lavender-600' />
+                  </Button>
+                </div>
+              ) : null
             }
           />
         </div>
