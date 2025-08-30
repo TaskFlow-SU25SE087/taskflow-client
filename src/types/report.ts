@@ -40,6 +40,16 @@ export interface MemberActivity {
     lastCommentDate?: string
     averageCommentsPerTask: number
   }
+  effortPointStats: {
+    totalAssignedEffortPoints: number
+    totalCompletedEffortPoints: number
+    totalInProgressEffortPoints: number
+    totalTodoEffortPoints: number
+    effortPointCompletionRate: number
+    averageEffortPointsPerTask: number
+    totalTasksWithEffortPoints: number
+    totalTasksWithoutEffortPoints: number
+  }
   taskActivities: Array<{
     taskId: string
     taskTitle: string
@@ -50,6 +60,8 @@ export interface MemberActivity {
     deadline?: string
     isOverdue?: boolean
     sprintName?: string
+    taskEffortPoints: number
+    assignedEffortPoints: number
   }>
   commentActivities: Array<{
     commentId: string
@@ -73,11 +85,21 @@ export interface ProjectReportSummary {
   overallCompletionRate: number
   averageTasksPerMember: number
   averageCommentsPerTask: number
+  totalAssignedEffortPoints: number
+  totalCompletedEffortPoints: number
+  totalInProgressEffortPoints: number
+  totalTodoEffortPoints: number
+  overallEffortPointCompletionRate: number
+  averageEffortPointsPerTask: number
+  averageEffortPointsPerMember: number
+  totalTasksWithEffortPoints: number
+  totalTasksWithoutEffortPoints: number
   topContributors: Array<{
     userId: string
     fullName: string
     completedTasks: number
     totalComments: number
+    completedEffortPoints: number
     contributionScore: number
   }>
 }

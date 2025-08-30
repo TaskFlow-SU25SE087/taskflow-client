@@ -171,7 +171,8 @@ const ProjectReports: React.FC = () => {
       key: c.userId,
       name: c.fullName,
       completed: c.completedTasks,
-      comments: c.totalComments
+      comments: c.totalComments,
+      effortPoints: c.completedEffortPoints
     }))
   }, [s])
 
@@ -214,6 +215,7 @@ const ProjectReports: React.FC = () => {
     low: { label: 'Low', color: '#60a5fa' },
     urgent: { label: 'Urgent', color: '#7c3aed' },
     comments: { label: 'Comments', color: '#9333ea' },
+    effortPoints: { label: 'Effort Points', color: '#f97316' },
     remainingEffort: { label: 'Remaining Effort', color: '#6366f1' },
     idealEffort: { label: 'Ideal Burndown', color: '#dc2626' }
   }
@@ -250,7 +252,7 @@ const ProjectReports: React.FC = () => {
                       </div>
                       {s && (
                         <div className='ml-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-full px-3 py-1 border border-gray-200'>
-                          {s.totalTasks} tasks • {s.totalComments} comments
+                          {s.totalTasks} tasks • {s.totalComments} comments • {s.totalAssignedEffortPoints} effort
                         </div>
                       )}
                     </>
@@ -383,9 +385,9 @@ const ProjectReports: React.FC = () => {
             </div>
 
             {/* Summary Cards */}
-            <div className='px-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4'>
+            <div className='px-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4'>
               {showSkeleton || !s
-                ? Array.from({ length: 4 }).map((_, i) => (
+                ? Array.from({ length: 8 }).map((_, i) => (
                     <Card key={i} className='rounded-xl border border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
                       <CardContent className='p-4'>
                         <div className='space-y-2'>
@@ -415,6 +417,26 @@ const ProjectReports: React.FC = () => {
                       label: 'Overdue',
                       value: s.totalOverdueTasks,
                       icon: <AlertCircle className='h-5 w-5 text-red-600' />
+                    },
+                    {
+                      label: 'Total Effort Points',
+                      value: s.totalAssignedEffortPoints,
+                      icon: <Timer className='h-5 w-5 text-indigo-600' />
+                    },
+                    {
+                      label: 'Completed Effort',
+                      value: s.totalCompletedEffortPoints,
+                      icon: <TrendingUp className='h-5 w-5 text-emerald-600' />
+                    },
+                    {
+                      label: 'Effort Completion Rate',
+                      value: `${s.overallEffortPointCompletionRate.toFixed(1)}%`,
+                      icon: <BarChart3 className='h-5 w-5 text-cyan-600' />
+                    },
+                    {
+                      label: 'Avg Effort/Member',
+                      value: s.averageEffortPointsPerMember.toFixed(1),
+                      icon: <Users className='h-5 w-5 text-orange-600' />
                     }
                   ].map((c) => (
                     <Card
@@ -574,6 +596,12 @@ const ProjectReports: React.FC = () => {
                           <ChartTooltip content={<ChartTooltipContent />} />
                           <Bar dataKey='completed' stackId='a' fill='var(--color-completed)' radius={[4, 4, 0, 0]} />
                           <Bar dataKey='comments' stackId='a' fill='var(--color-comments)' radius={[4, 4, 0, 0]} />
+                          <Bar
+                            dataKey='effortPoints'
+                            stackId='a'
+                            fill='var(--color-effortPoints)'
+                            radius={[4, 4, 0, 0]}
+                          />
                           <ChartLegend content={<ChartLegendContent />} />
                         </ReBarChart>
                       </ChartContainer>
@@ -692,7 +720,7 @@ const ProjectReports: React.FC = () => {
                           <div>
                             <p className='font-medium text-sm'>{tc.fullName}</p>
                             <p className='text-xs text-gray-500'>
-                              Done {tc.completedTasks} • Comments {tc.totalComments}
+                              Done {tc.completedTasks} • Comments {tc.totalComments} • Effort {tc.completedEffortPoints}
                             </p>
                           </div>
                           <Badge variant='secondary' className='rounded-full'>
@@ -754,7 +782,7 @@ const ProjectReports: React.FC = () => {
                                 </Badge>
                               </div>
                             </div>
-                            <div className='grid grid-cols-1 md:grid-cols-2 gap-3'>
+                            <div className='grid grid-cols-1 md:grid-cols-3 gap-3'>
                               <div className='text-xs text-gray-600'>CR: {m.taskStats.completionRate.toFixed(1)}%</div>
                               <div className='text-xs text-gray-600'>
                                 Pri: L {m.taskStats.lowPriorityTasks} • M {m.taskStats.mediumPriorityTasks} • H{' '}
@@ -763,6 +791,13 @@ const ProjectReports: React.FC = () => {
                               <div className='text-xs text-gray-600'>
                                 Comments: {m.commentStats.totalComments} (avg{' '}
                                 {m.commentStats.averageCommentsPerTask.toFixed(1)})
+                              </div>
+                              <div className='text-xs text-gray-600'>
+                                Effort: {m.effortPointStats.totalAssignedEffortPoints} (CR:{' '}
+                                {m.effortPointStats.effortPointCompletionRate.toFixed(1)}%)
+                              </div>
+                              <div className='text-xs text-gray-600'>
+                                Avg Effort/Task: {m.effortPointStats.averageEffortPointsPerTask.toFixed(1)}
                               </div>
                               {m.commentStats.lastCommentDate && (
                                 <div className='text-xs text-gray-600'>Last: {fmt(m.commentStats.lastCommentDate)}</div>
@@ -836,6 +871,10 @@ const ProjectReports: React.FC = () => {
                                     <AlertCircle className='h-3.5 w-3.5' /> Overdue
                                   </span>
                                 )}
+                                <span className='inline-flex items-center gap-1'>
+                                  <Timer className='h-3.5 w-3.5' /> Effort: {t.taskEffortPoints} (
+                                  {t.assignedEffortPoints})
+                                </span>
                               </div>
                             </div>
                           ))}
