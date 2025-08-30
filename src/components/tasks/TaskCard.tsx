@@ -131,29 +131,36 @@ export const TaskCard = ({
   const [isDetailOpen, setIsDetailOpen] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const [wasTaskUpdated, setWasTaskUpdated] = useState(false)
+  const [currentTaskData, setCurrentTaskData] = useState<TaskP>(task)
   const { currentProject } = useCurrentProject()
   const { notificationService } = useSignalR()
+
+  // Update currentTaskData when task prop changes
+  useEffect(() => {
+    setCurrentTaskData(task)
+  }, [task])
 
   // Only fetch details when opening the detail modal
   const fetchTaskDetails = useCallback(async () => {
     if (!currentProject) return
     try {
       const tasks = await taskApi.getTasksFromProject(currentProject.id)
-      const currentTask = tasks.find((taskFromArray) => taskFromArray.id === task.id)
-      if (currentTask) {
-        // Task details updated, component will re-render with new data
-        console.log('Task details updated:', currentTask)
+      const updatedTask = tasks.find((taskFromArray) => taskFromArray.id === currentTaskData.id)
+      if (updatedTask) {
+        // Update the current task data with fresh server data
+        setCurrentTaskData(updatedTask)
+        console.log('Task details updated:', updatedTask)
       }
     } catch (error) {
       console.error('Error fetching task details:', error)
     }
-  }, [currentProject, task.id])
+  }, [currentProject, currentTaskData.id])
 
   // Only listen for SignalR updates if detail modal is open
   useEffect(() => {
     if (!isDetailOpen) return
     const handleTaskNotification = (notification: { taskId?: string; message: string }) => {
-      if (notification.taskId === task.id) {
+      if (notification.taskId === currentTaskData.id) {
         console.log('Task updated via SignalR:', notification.message)
         fetchTaskDetails()
       }
@@ -162,7 +169,7 @@ export const TaskCard = ({
     return () => {
       notificationService.removeListener(handleTaskNotification)
     }
-  }, [task.id, notificationService, fetchTaskDetails, isDetailOpen])
+  }, [currentTaskData.id, notificationService, fetchTaskDetails, isDetailOpen])
 
   const handleTaskUpdated = useCallback(() => {
     setWasTaskUpdated(true)
@@ -174,16 +181,19 @@ export const TaskCard = ({
     return null
   }
 
-  const commentCount = Array.isArray(task.comments)
-    ? task.comments.length
-    : Array.isArray(task.commnets)
-      ? task.commnets.length
+  const commentCount = Array.isArray(currentTaskData.comments)
+    ? currentTaskData.comments.length
+    : Array.isArray(currentTaskData.commnets)
+      ? currentTaskData.commnets.length
       : 0
-  const fileCount = task.attachmentUrl ? 1 : 0
-  const assignees = Array.isArray(task.taskAssignees) && task.taskAssignees.length > 0 ? task.taskAssignees : []
+  const fileCount = currentTaskData.attachmentUrl ? 1 : 0
+  const assignees =
+    Array.isArray(currentTaskData.taskAssignees) && currentTaskData.taskAssignees.length > 0
+      ? currentTaskData.taskAssignees
+      : []
 
   // Use normalized priority so different sources display correctly
-  const priorityConfig = getPriorityConfig(normalizePriority(task.priority))
+  const priorityConfig = getPriorityConfig(normalizePriority(currentTaskData.priority))
 
   // Debug priority
   // console.log('Task priority:', task.priority, 'Normalized:', normalizePriority(task.priority), 'Priority config:', priorityConfig)
@@ -217,30 +227,32 @@ export const TaskCard = ({
         <div className={`w-1 h-8 rounded-full ${priorityConfig.leftBorder}`} />
 
         {/* Tags */}
-        {task.tags && task.tags.length > 0 && (
+        {currentTaskData.tags && currentTaskData.tags.length > 0 && (
           <div className='flex gap-1'>
-            {task.tags.slice(0, 2).map((tag: { id: string; name: string; color?: string }, index: number) => (
-              <span
-                key={tag.id || index}
-                className='inline-block px-2 py-1 text-xs font-medium rounded-md text-white shadow-sm'
-                style={{ backgroundColor: tag.color || '#8B5CF6' }}
-              >
-                {tag.name}
-              </span>
-            ))}
-            {task.tags.length > 2 && (
+            {currentTaskData.tags
+              .slice(0, 2)
+              .map((tag: { id: string; name: string; color?: string }, index: number) => (
+                <span
+                  key={tag.id || index}
+                  className='inline-block px-2 py-1 text-xs font-medium rounded-md text-white shadow-sm'
+                  style={{ backgroundColor: tag.color || '#8B5CF6' }}
+                >
+                  {tag.name}
+                </span>
+              ))}
+            {currentTaskData.tags.length > 2 && (
               <span className='inline-block px-2 py-1 text-xs font-medium rounded-md bg-gray-200 text-gray-600'>
-                +{task.tags.length - 2}
+                +{currentTaskData.tags.length - 2}
               </span>
             )}
           </div>
         )}
 
         {/* Title */}
-        <span className='font-semibold truncate max-w-[150px] text-gray-900'>{task.title}</span>
+        <span className='font-semibold truncate max-w-[150px] text-gray-900'>{currentTaskData.title}</span>
 
         {/* Description */}
-        <span className='text-gray-500 truncate max-w-[150px]'>{task.description}</span>
+        <span className='text-gray-500 truncate max-w-[150px]'>{currentTaskData.description}</span>
 
         {/* Priority */}
         <div className={`flex items-center gap-1 ${priorityConfig.color} text-xs font-medium`}>
@@ -249,9 +261,9 @@ export const TaskCard = ({
         </div>
 
         {/* Status badge */}
-        {task.status && (
-          <span className={`px-2 py-0.5 rounded text-xs font-semibold ml-2 ${getStatusColor(task.status)}`}>
-            {task.status}
+        {currentTaskData.status && (
+          <span className={`px-2 py-0.5 rounded text-xs font-semibold ml-2 ${getStatusColor(currentTaskData.status)}`}>
+            {currentTaskData.status}
           </span>
         )}
 
@@ -287,9 +299,9 @@ export const TaskCard = ({
           />
           <div className='p-4 relative'>
             {/* Tags */}
-            {task.tags && task.tags.length > 0 && (
+            {currentTaskData.tags && currentTaskData.tags.length > 0 && (
               <div className='flex gap-2 mb-2 flex-wrap'>
-                {task.tags.map((tag: { id: string; name: string; color?: string }, index: number) => (
+                {currentTaskData.tags.map((tag: { id: string; name: string; color?: string }, index: number) => (
                   <span
                     key={tag.id || index}
                     className='inline-block px-3 py-1 text-xs font-medium rounded-full text-white shadow-sm hover:shadow-md transition-all duration-200'
@@ -300,10 +312,9 @@ export const TaskCard = ({
                 ))}
               </div>
             )}
-
             {/* Title + Priority inline */}
             <div className='flex items-center justify-between gap-3 mt-1 mb-1'>
-              <h3 className='font-bold text-lg text-gray-900 leading-snug flex-1'>{task.title}</h3>
+              <h3 className='font-bold text-lg text-gray-900 leading-snug flex-1'>{currentTaskData.title}</h3>
               <div
                 className={`flex items-center gap-1.5 ${priorityConfig.color} ${priorityConfig.bg} px-2.5 py-1 rounded-md text-xs font-semibold border ${priorityConfig.border} shrink-0`}
                 onPointerDown={(e) => {
@@ -319,10 +330,10 @@ export const TaskCard = ({
                 <span>{priorityConfig.text}</span>
               </div>
             </div>
-
             {/* Description */}
-            <p className='text-gray-600 mb-2 line-clamp-2 mt-1 text-sm leading-relaxed'>{task.description}</p>
-
+            <p className='text-gray-600 mb-2 line-clamp-2 mt-1 text-sm leading-relaxed'>
+              {currentTaskData.description}
+            </p>{' '}
             {/* Stats */}
             <div className='flex items-center gap-4 mt-3'>
               <div className='flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors text-[11px]'>
@@ -336,19 +347,17 @@ export const TaskCard = ({
                 <span className='font-medium text-gray-500'>files</span>
               </div>
             </div>
-
             {/* Single separator below stats */}
             <div className='border-t border-gray-100 mt-2 mb-1' />
-
             {/* Footer */}
             <div className='flex justify-between items-center'>
               <AvatarStack assignees={assignees} />
 
-              {task.deadline && (
+              {currentTaskData.deadline && (
                 <div className='flex items-center gap-1.5 text-gray-400'>
                   <Calendar className='w-3.5 h-3.5 text-gray-400' />
                   <span className='text-xs font-medium tracking-wide'>
-                    {format(new Date(task.deadline), 'dd/MM/yyyy')}
+                    {format(new Date(currentTaskData.deadline), 'dd/MM/yyyy')}
                   </span>
                 </div>
               )}
@@ -358,7 +367,7 @@ export const TaskCard = ({
       </div>
 
       <TaskDetailMenu
-        task={task}
+        task={currentTaskData}
         isOpen={isDetailOpen}
         onClose={() => {
           setIsDetailOpen(false)

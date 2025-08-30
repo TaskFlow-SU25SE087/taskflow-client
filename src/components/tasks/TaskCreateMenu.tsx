@@ -42,6 +42,8 @@ export default function TaskCreateMenu({
   const [priority, setPriority] = useState('Medium')
   const [deadline, setDeadline] = useState<Date | null>(null)
   const [file, setFile] = useState<File | null>(null)
+  const [effortPoints, setEffortPoints] = useState<string>('')
+  const [effortPointsError, setEffortPointsError] = useState<string>('')
 
   const handleTagChange = (tagId: string) => {
     setSelectedTagIds((prev) => (prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]))
@@ -68,6 +70,24 @@ export default function TaskCreateMenu({
       showToast({ title: 'Validation Error', description: 'Please select a priority', variant: 'destructive' })
       return
     }
+    // Validate effort points if provided
+    if (effortPoints.trim() && !/^\d+$/.test(effortPoints.trim())) {
+      showToast({
+        title: 'Validation Error',
+        description: 'Effort points must be a valid integer',
+        variant: 'destructive'
+      })
+      return
+    }
+    // Check if there's an error state for effort points
+    if (effortPointsError) {
+      showToast({
+        title: 'Validation Error',
+        description: effortPointsError,
+        variant: 'destructive'
+      })
+      return
+    }
     setIsSubmitting(true)
     try {
       const formData = new FormData()
@@ -82,6 +102,7 @@ export default function TaskCreateMenu({
       formData.append('Priority', String(priorityMap[priority as 'Low' | 'Medium' | 'High' | 'Urgent']))
       formData.append('Deadline', deadline ? deadline.toISOString() : '')
       if (file) formData.append('File', file)
+      if (effortPoints.trim()) formData.append('EffortPoints', effortPoints.trim())
       if (sprintId) formData.append('SprintId', sprintId)
       selectedTagIds.forEach((tagId) => formData.append('TagIds', tagId))
       const res = await taskApi.createTask(projectId, formData)
@@ -117,6 +138,8 @@ export default function TaskCreateMenu({
       setSelectedTagIds([])
       setPriority('Medium')
       setDeadline(null)
+      setEffortPoints('')
+      setEffortPointsError('')
     } catch (error) {
       const err = error as any
       showToast({
@@ -243,6 +266,40 @@ export default function TaskCreateMenu({
               className='h-11 text-sm'
               onChange={(e) => setFile(e.target.files?.[0] || null)}
             />
+          </div>
+
+          <div className='space-y-2'>
+            <Label htmlFor='effortPoints' className='text-sm font-medium'>
+              Effort Points (optional)
+            </Label>
+            <Input
+              id='effortPoints'
+              type='text'
+              placeholder='Enter effort points (e.g., 2, 5, 8)'
+              className={`h-11 text-sm placeholder:text-neutral-500 ${
+                effortPointsError ? 'border-red-500 focus:border-red-500' : ''
+              }`}
+              value={effortPoints}
+              onChange={(e) => {
+                const value = e.target.value
+                setEffortPoints(value)
+                // Clear error when user starts typing
+                if (effortPointsError) setEffortPointsError('')
+              }}
+              onBlur={() => {
+                // Validate on blur
+                if (effortPoints.trim() && !/^\d+$/.test(effortPoints.trim())) {
+                  setEffortPointsError('Effort points must be a valid positive integer')
+                } else {
+                  setEffortPointsError('')
+                }
+              }}
+            />
+            {effortPointsError ? (
+              <p className='text-xs text-red-500'>{effortPointsError}</p>
+            ) : (
+              <p className='text-xs text-gray-500'>Optional. Enter a positive integer for effort estimation.</p>
+            )}
           </div>
           {/* XÓA: <div className='space-y-2'>
             <label className='text-sm font-medium'>Assignee</label>

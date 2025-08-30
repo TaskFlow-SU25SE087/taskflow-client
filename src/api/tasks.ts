@@ -23,11 +23,17 @@ export const taskApi = {
     return response.data
   },
 
-  // Update a task (now supports optional deadline)
+  // Update a task (now supports optional deadline and effort points)
   updateTask: async (
     projectId: string,
     taskId: string,
-    data: { title?: string; description?: string; priority?: string; deadline?: string | null }
+    data: {
+      title?: string
+      description?: string
+      priority?: string
+      deadline?: string | null
+      effortPoints?: number | null
+    }
   ): Promise<any> => {
     // Remove undefined keys to avoid overwriting unintentionally
     const payload: Record<string, any> = {}

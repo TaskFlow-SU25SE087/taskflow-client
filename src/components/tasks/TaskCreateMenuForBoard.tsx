@@ -52,6 +52,8 @@ export default function TaskCreateMenuForBoard({
   const [deadline, setDeadline] = useState('')
   const [description, setDescription] = useState('')
   const [file, setFile] = useState<File | null>(null)
+  const [effortPoints, setEffortPoints] = useState<string>('')
+  const [effortPointsError, setEffortPointsError] = useState<string>('')
 
   useEffect(() => {
     if (boards && boardId) {
@@ -121,6 +123,24 @@ export default function TaskCreateMenuForBoard({
       showToast({ title: 'Validation Error', description: 'Please enter a task title', variant: 'destructive' })
       return
     }
+    // Validate effort points if provided
+    if (effortPoints.trim() && !/^\d+$/.test(effortPoints.trim())) {
+      showToast({
+        title: 'Validation Error',
+        description: 'Effort points must be a valid integer',
+        variant: 'destructive'
+      })
+      return
+    }
+    // Check if there's an error state for effort points
+    if (effortPointsError) {
+      showToast({
+        title: 'Validation Error',
+        description: effortPointsError,
+        variant: 'destructive'
+      })
+      return
+    }
     // Sprint selection removed: silently allow no active sprint, task will be backlog if none running
     if (!board) {
       showToast({ title: 'Error', description: 'Board not found', variant: 'destructive' })
@@ -134,6 +154,7 @@ export default function TaskCreateMenuForBoard({
       formData.append('Priority', priority)
       if (deadline) formData.append('Deadline', deadline) // Deadline now optional
       if (file) formData.append('File', file)
+      if (effortPoints.trim()) formData.append('EffortPoints', effortPoints.trim())
       if (activeSprintId) formData.append('SprintId', activeSprintId)
       // Hint backend to put task on the clicked board (best-effort; server may ignore)
       if (boardId) formData.append('BoardId', boardId)
@@ -179,6 +200,8 @@ export default function TaskCreateMenuForBoard({
       setDescription('')
       setFile(null)
       setSelectedTagIds([])
+      setEffortPoints('')
+      setEffortPointsError('')
     } catch (error) {
       const err = error as any
       showToast({
@@ -295,6 +318,39 @@ export default function TaskCreateMenuForBoard({
               className='w-full bg-transparent text-foreground placeholder-gray-400 text-lg border-b-2 border-gray-200 focus:border-lavender-700 transition-colors duration-300 focus:outline-none focus:ring-0'
             />
             <p className='text-xs text-gray-500 mt-1'>Optional, you can attach a file below.</p>
+          </div>
+
+          <div>
+            <Label htmlFor='effortPoints' className='text-sm font-medium'>
+              Effort Points (optional)
+            </Label>
+            <input
+              id='effortPoints'
+              type='text'
+              placeholder='Enter effort points (e.g., 2, 5, 8)'
+              value={effortPoints}
+              onChange={(e) => {
+                const value = e.target.value
+                setEffortPoints(value)
+                // Clear error when user starts typing
+                if (effortPointsError) setEffortPointsError('')
+              }}
+              onBlur={() => {
+                // Validate on blur
+                if (effortPoints.trim() && !/^\d+$/.test(effortPoints.trim())) {
+                  setEffortPointsError('Effort points must be a valid positive integer')
+                } else {
+                  setEffortPointsError('')
+                }
+              }}
+              className={`w-full bg-transparent text-foreground placeholder-gray-400 text-lg border-b-2 transition-colors duration-300 focus:outline-none focus:ring-0 ${
+                effortPointsError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-lavender-700'
+              }`}
+            />
+            {effortPointsError && <p className='text-xs text-red-500 mt-1'>{effortPointsError}</p>}
+            {!effortPointsError && (
+              <p className='text-xs text-gray-500 mt-1'>Optional. Enter a positive integer for effort estimation.</p>
+            )}
           </div>
 
           <div>

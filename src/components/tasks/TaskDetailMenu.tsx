@@ -74,7 +74,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const [isTagSelectOpen, setIsTagSelectOpen] = useState(false)
   const [isPrioritySelectOpen, setIsPrioritySelectOpen] = useState(false)
 
-
   const [comment, setComment] = useState('')
   const [commentFiles, setCommentFiles] = useState<File[]>([])
   const [isCommentLoading, setIsCommentLoading] = useState(false)
@@ -83,6 +82,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const [editDescription, setEditDescription] = useState(task.description)
   const [editPriority, setEditPriority] = useState<number>(normalizePriority(task.priority))
   const [editDeadline, setEditDeadline] = useState<string>(task.deadline ? task.deadline.split('T')[0] : '')
+  const [editEffortPoints, setEditEffortPoints] = useState<string>(task.effortPoints?.toString() || '')
+  const [effortPointsError, setEffortPointsError] = useState<string>('')
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false)
 
   // State cho edit mode
@@ -234,6 +235,11 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           )
         }
       }
+
+      // Update local task data with fresh server data
+      if (taskDetails) {
+        setLocalTaskData(taskDetails)
+      }
     } catch (error) {
       console.error('Error fetching data:', error)
       showToast({
@@ -285,6 +291,9 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               }
             }
 
+            // Update local task data with fresh server data
+            setLocalTaskData(updatedTask)
+
             // Refresh comments từ server
             setComments(updatedTask.commnets || [])
           }
@@ -318,8 +327,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
           const tasks = await taskApi.getTasksFromProject(currentProject?.id || '')
           const taskDetails = tasks?.find((t) => t.id === task.id)
           if (taskDetails) {
-            // Cập nhật task tags để hiển thị màu sắc realtime
+            // Update local task data with fresh server data
+            setLocalTaskData(taskDetails)
 
+            // Cập nhật task tags để hiển thị màu sắc realtime
             if (taskDetails.taskAssignees) {
               const assigneeFromTask =
                 Array.isArray(taskDetails.taskAssignees) && taskDetails.taskAssignees.length > 0
@@ -534,10 +545,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
   const handleAttachFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!currentProject || !e.target.files || e.target.files.length === 0) return
-    
+
     const files = Array.from(e.target.files)
     setIsUpdating(true)
-    
+
     try {
       const res = await taskApi.completeTaskWithUpload(currentProject.id, task.id, files)
       showToast({
@@ -545,7 +556,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         description: res ? 'Files attached successfully!' : 'Failed to attach files',
         variant: res ? 'success' : 'destructive'
       })
-      
+
       if (res) {
         // Refresh task data to show new attachments
         onTaskUpdated && onTaskUpdated()
@@ -630,6 +641,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setEditDescription(task.description)
     setEditPriority(normalizePriority(task.priority))
     setEditDeadline(task.deadline ? task.deadline.split('T')[0] : '')
+    setEditEffortPoints(task.effortPoints?.toString() || '')
     setLocalTaskData(task)
     // Task data updated
   }, [task])
@@ -640,17 +652,43 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setEditDescription(localTaskData.description)
     setEditPriority(normalizePriority(localTaskData.priority))
     setEditDeadline(localTaskData.deadline ? localTaskData.deadline.split('T')[0] : '')
+    setEditEffortPoints(localTaskData.effortPoints?.toString() || '')
   }, [localTaskData])
+
+  // Validation function for effort points
+  const validateEffortPoints = (value: string): string => {
+    if (!value.trim()) return '' // Empty is valid (optional field)
+    const num = Number(value)
+    if (isNaN(num) || !/^\d+$/.test(value) || num < 0) {
+      return 'Effort points must be a positive integer'
+    }
+    return ''
+  }
+
+  // Handle effort points change with validation
+  const handleEffortPointsChange = (value: string) => {
+    setEditEffortPoints(value)
+    const error = validateEffortPoints(value)
+    setEffortPointsError(error)
+  }
+
+  // Handle effort points blur for validation
+  const handleEffortPointsBlur = () => {
+    const error = validateEffortPoints(editEffortPoints)
+    setEffortPointsError(error)
+  }
 
   const handleUpdateTask = async () => {
     if (!currentProject) return
     setIsUpdating(true)
     try {
+      const effortPointsValue = editEffortPoints.trim() ? Number(editEffortPoints) : null
       const res = await taskApi.updateTask(currentProject.id, task.id, {
         title: editTitle,
         description: editDescription,
         priority: editPriority.toString(),
-        deadline: editDeadline || null
+        deadline: editDeadline || null,
+        effortPoints: effortPointsValue
       })
       if (typeof res === 'object' && res !== null && 'code' in res && 'message' in res) {
         showToast({
@@ -717,8 +755,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const priorityDropdownRef = useRef<HTMLDivElement>(null)
   const tagDropdownRef = useRef<HTMLDivElement>(null)
   const attachFileInputRef = useRef<HTMLInputElement>(null)
-
-
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -1135,6 +1171,48 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               </button>
             )}
           </div>
+          <div className='flex items-center gap-2 mt-1'>
+            <span className='text-xs text-gray-600'>Effort Points:</span>
+            <div className='relative'>
+              <input
+                type='text'
+                className={`border rounded px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-lavender-400 w-20 ${
+                  effortPointsError ? 'border-red-500 focus:ring-red-400' : ''
+                }`}
+                value={editEffortPoints}
+                onChange={(e) => handleEffortPointsChange(e.target.value)}
+                onBlur={handleEffortPointsBlur}
+                placeholder='0'
+                disabled={isUpdating}
+              />
+              {effortPointsError && (
+                <div className='absolute top-full left-0 mt-1 text-xs text-red-600 bg-white border border-red-200 rounded px-2 py-1 shadow-sm z-10'>
+                  {effortPointsError}
+                </div>
+              )}
+            </div>
+            {localTaskData.effortPoints !== null && localTaskData.effortPoints !== undefined && !editEffortPoints && (
+              <button
+                type='button'
+                onClick={() => setEditEffortPoints(localTaskData.effortPoints?.toString() || '')}
+                className='text-[10px] text-blue-500 underline'
+              >
+                revert
+              </button>
+            )}
+            {editEffortPoints && (
+              <button
+                type='button'
+                onClick={() => {
+                  setEditEffortPoints('')
+                  setEffortPointsError('')
+                }}
+                className='text-[10px] text-red-500 underline'
+              >
+                clear
+              </button>
+            )}
+          </div>
           <div className='mt-2 text-gray-600'>
             <div className='relative'>
               {isEditingDescription ? (
@@ -1172,7 +1250,9 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                 (editTitle === task.title &&
                   editDescription === task.description &&
                   editPriority === task.priority &&
-                  (task.deadline ? task.deadline.split('T')[0] : '') === editDeadline)
+                  (task.deadline ? task.deadline.split('T')[0] : '') === editDeadline &&
+                  (task.effortPoints?.toString() || '') === editEffortPoints) ||
+                !!effortPointsError
               }
               className='px-4 py-1.5 bg-lavender-500 hover:bg-lavender-700 text-white font-semibold border-0 text-sm'
               style={{ boxShadow: 'none' }}
@@ -1307,11 +1387,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             disabled={isUpdating}
             className='flex items-center gap-1 px-2 py-1 text-gray-600 rounded-lg border hover:bg-gray-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed'
           >
-            {isUpdating ? (
-              <Loader2 className='h-3 w-3 animate-spin' />
-            ) : (
-              <Paperclip className='h-3 w-3' />
-            )}
+            {isUpdating ? <Loader2 className='h-3 w-3 animate-spin' /> : <Paperclip className='h-3 w-3' />}
             <span>{isUpdating ? 'Attaching...' : 'Attach'}</span>
           </button>
 
@@ -1324,18 +1400,10 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             onChange={handleAttachFileChange}
           />
 
-
-
-
-
           {currentProject && (
             <IssueCreateMenu projectId={currentProject.id} taskId={task.id} onIssueCreated={onTaskUpdated} />
           )}
         </div>
-
-
-
-
 
         {/* Assignee and Tags - Layout responsive */}
         <div className='grid grid-cols-1 xl:grid-cols-2 gap-3 lg:gap-4 mb-4'>
