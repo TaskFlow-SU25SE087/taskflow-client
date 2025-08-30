@@ -2,18 +2,21 @@ import { projectMemberApi } from '@/api/projectMembers'
 import { sprintApi } from '@/api/sprints'
 import { taskApi } from '@/api/tasks'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { useTags } from '@/hooks/useTags'
 import { useTasks } from '@/hooks/useTasks'
 import { Loader2, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import DatePicker from 'react-datepicker'
-import 'react-datepicker/dist/react-datepicker.css'
 
 interface CreateTaskDialogProps {
   isOpen: boolean
@@ -40,10 +43,14 @@ export default function TaskCreateMenu({
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([])
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState('Medium')
-  const [deadline, setDeadline] = useState<Date | null>(null)
+  const [deadline, setDeadline] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [effortPoints, setEffortPoints] = useState<string>('')
   const [effortPointsError, setEffortPointsError] = useState<string>('')
+
+  const textareaStyle = `w-full bg-transparent text-foreground placeholder-gray-400 text-sm 
+    border-b-2 border-gray-200 focus:border-lavender-700 
+    transition-colors duration-300 focus:outline-none focus:ring-0 resize-none`
 
   const handleTagChange = (tagId: string) => {
     setSelectedTagIds((prev) => (prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]))
@@ -99,7 +106,7 @@ export default function TaskCreateMenu({
         Urgent: 30000
       }
       formData.append('Priority', String(priorityMap[priority as 'Low' | 'Medium' | 'High' | 'Urgent']))
-      formData.append('Deadline', deadline ? deadline.toISOString() : '')
+      formData.append('Deadline', deadline || '')
       if (file) formData.append('File', file)
       if (effortPoints.trim()) formData.append('EffortPoints', effortPoints.trim())
       if (sprintId) formData.append('SprintId', sprintId)
@@ -136,7 +143,7 @@ export default function TaskCreateMenu({
       setFile(null)
       setSelectedTagIds([])
       setPriority('Medium')
-      setDeadline(null)
+      setDeadline('')
       setEffortPoints('')
       setEffortPointsError('')
     } catch (error) {
@@ -163,39 +170,51 @@ export default function TaskCreateMenu({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{trigger || defaultTrigger}</DialogTrigger>
-      <DialogContent className='sm:max-w-[425px]' data-prevent-dnd>
+      <DialogContent className='sm:max-w-md' data-prevent-dnd>
         <DialogHeader>
-          <DialogTitle className='text-2xl font-semibold'>Create New Task</DialogTitle>
+          <DialogTitle className='text-center'>
+            <div className='flex flex-col items-center gap-4'>
+              <Plus className='h-8 w-8 text-lavender-700' />
+              <div>
+                <h2 className='text-xl font-semibold'>Create new task</h2>
+                <p className='text-sm text-gray-500 mt-1'>Add a task to your project</p>
+              </div>
+            </div>
+          </DialogTitle>
         </DialogHeader>
-        <div className='grid gap-4 py-4'>
-          <div className='space-y-2'>
+        <DialogDescription>
+          Fill in the task details below. You can attach a file and set priority and deadline.
+        </DialogDescription>
+
+        <div className='grid gap-6 py-4'>
+          <div>
             <Label htmlFor='title' className='text-sm font-medium'>
-              Task Title
+              Task title
             </Label>
-            <Input
+            <input
               id='title'
               placeholder='Enter task title'
-              className='h-11 text-sm placeholder:text-neutral-500'
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isSubmitting) {
-                  handleSubmit()
-                }
+                if (e.key === 'Enter' && !isSubmitting) handleSubmit()
               }}
+              className='w-full bg-transparent text-foreground placeholder-gray-400 text-sm border-b-2 border-gray-200 focus:border-lavender-700 transition-colors duration-300 focus:outline-none focus:ring-0'
             />
           </div>
-          <div className='space-y-2'>
+          <div>
             <Label htmlFor='description' className='text-sm font-medium'>
               Description
             </Label>
-            <Textarea
+            <textarea
               id='description'
-              placeholder='Enter task description'
-              className='h-20'
+              placeholder='Enter task description (optional)'
               value={description}
               onChange={(e) => setDescription(e.target.value)}
+              className={textareaStyle}
+              rows={3}
             />
+            <p className='text-xs text-gray-500 mt-1'>Optional, you can attach a file below.</p>
           </div>
           <div className='space-y-2'>
             <Label className='text-sm font-medium'>Tags</Label>
@@ -224,60 +243,48 @@ export default function TaskCreateMenu({
               ))}
             </div>
           </div>
-          <div className='space-y-2'>
+          <div>
             <Label htmlFor='priority' className='text-sm font-medium'>
               Priority
             </Label>
-            <Select value={priority} onValueChange={setPriority}>
-              <SelectTrigger className='h-11 text-sm placeholder:text-neutral-500'>
-                <SelectValue placeholder='Select priority' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='Low'>Low</SelectItem>
-                <SelectItem value='Medium'>Medium</SelectItem>
-                <SelectItem value='High'>High</SelectItem>
-                <SelectItem value='Urgent'>Urgent</SelectItem>
-              </SelectContent>
-            </Select>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+              className='h-10 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lavender-600'
+            >
+              <option value='Low'>Low</option>
+              <option value='Medium'>Medium</option>
+              <option value='High'>High</option>
+              <option value='Urgent'>Urgent</option>
+            </select>
           </div>
-          <div className='space-y-2 w-full'>
+          <div>
             <Label htmlFor='deadline' className='text-sm font-medium'>
-              Deadline
+              Deadline (optional)
             </Label>
-            <div>
-              <DatePicker
-                id='deadline'
-                selected={deadline}
-                onChange={(date: Date | null) => setDeadline(date)}
-                dateFormat='dd/MM/yy'
-                placeholderText='dd/mm/yy (optional)'
-                className='w-full h-11 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-lavender-400 transition-all text-sm placeholder:text-neutral-500 bg-gray-50'
-              />
-            </div>
-          </div>
-          <div className='space-y-2'>
-            <Label htmlFor='file' className='text-sm font-medium'>
-              Attachment
-            </Label>
-            <Input
-              id='file'
-              type='file'
-              className='h-11 text-sm'
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
+            <input
+              id='deadline'
+              type='date'
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+              className='w-full h-10 rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-lavender-600'
             />
           </div>
+          <div>
+            <Label htmlFor='file' className='text-sm font-medium'>
+              Attach file
+            </Label>
+            <Input id='file' type='file' className='h-10' onChange={(e) => setFile(e.target.files?.[0] || null)} />
+          </div>
 
-          <div className='space-y-2'>
+          <div>
             <Label htmlFor='effortPoints' className='text-sm font-medium'>
               Effort Points (optional)
             </Label>
-            <Input
+            <input
               id='effortPoints'
               type='text'
               placeholder='Enter effort points (e.g., 2, 5, 8)'
-              className={`h-11 text-sm placeholder:text-neutral-500 ${
-                effortPointsError ? 'border-red-500 focus:border-red-500' : ''
-              }`}
               value={effortPoints}
               onChange={(e) => {
                 const value = e.target.value
@@ -293,14 +300,17 @@ export default function TaskCreateMenu({
                   setEffortPointsError('')
                 }
               }}
+              className={`w-full bg-transparent text-foreground placeholder-gray-400 text-sm border-b-2 transition-colors duration-300 focus:outline-none focus:ring-0 ${
+                effortPointsError ? 'border-red-500 focus:border-red-500' : 'border-gray-200 focus:border-lavender-700'
+              }`}
             />
-            {effortPointsError ? (
-              <p className='text-xs text-red-500'>{effortPointsError}</p>
-            ) : (
-              <p className='text-xs text-gray-500'>Optional. Enter a positive integer for effort estimation.</p>
+            {effortPointsError && <p className='text-xs text-red-500 mt-1'>{effortPointsError}</p>}
+            {!effortPointsError && (
+              <p className='text-xs text-gray-500 mt-1'>Optional. Enter a positive integer for effort estimation.</p>
             )}
           </div>
-          <div className='flex justify-end gap-3 pt-4'>
+
+          <div className='flex justify-end gap-3 pt-2'>
             <Button
               variant='outline'
               onClick={() => onOpenChange(false)}
@@ -311,7 +321,7 @@ export default function TaskCreateMenu({
             </Button>
             <Button
               onClick={handleSubmit}
-              className='px-8 bg-lavender-500 hover:bg-lavender-600 focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0'
+              className='px-8 bg-lavender-700 hover:bg-lavender-800 text-white focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0'
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -320,7 +330,7 @@ export default function TaskCreateMenu({
                   Creating...
                 </>
               ) : (
-                'Create Task'
+                'Create task'
               )}
             </Button>
           </div>
