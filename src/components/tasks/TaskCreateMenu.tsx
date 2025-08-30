@@ -170,7 +170,7 @@ export default function TaskCreateMenu({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{trigger || defaultTrigger}</DialogTrigger>
-      <DialogContent className='sm:max-w-md' data-prevent-dnd>
+      <DialogContent className='w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto scrollbar-transparent' data-prevent-dnd>
         <DialogHeader>
           <DialogTitle className='text-center'>
             <div className='flex flex-col items-center gap-4'>
