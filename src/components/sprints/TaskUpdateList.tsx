@@ -161,7 +161,7 @@ export const TaskUpdateList: React.FC<TaskUpdateListProps> = ({ taskUpdates, onU
                   </div>
 
                   <div className='flex items-center space-x-2'>
-                    <span className='text-gray-600'>Version: {task.itemVersion}</span>
+                    <span className='text-gray-600'>Edited {task.itemVersion} times</span>
                   </div>
                 </div>
 

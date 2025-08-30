@@ -311,7 +311,7 @@ export const SprintMeetingDetail: React.FC<SprintMeetingDetailProps> = ({
                           <Badge className={getPriorityColor(task.priority)}>
                             {task.priority}
                           </Badge>
-                          <span className="text-xs text-gray-500">v{task.itemVersion}</span>
+                          <span className="text-xs text-gray-500">Edited {task.itemVersion} times</span>
                         </div>
                         {task.reason && (
                           <p className="text-sm text-gray-600 mt-2">

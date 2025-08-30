@@ -23,7 +23,6 @@ import {
   ChevronUp,
   Eye,
   Filter,
-  Tag,
   ListTodo,
   Loader2,
   LogOut,
@@ -32,6 +31,7 @@ import {
   Pencil,
   Plus,
   Settings,
+  Tag,
   UserPlus,
   X
 } from 'lucide-react'

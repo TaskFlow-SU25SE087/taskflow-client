@@ -13,7 +13,7 @@ import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useSprintMeetings } from '@/hooks/useSprintMeetings'
 import { SprintMeetingDetail as SprintMeetingDetailType } from '@/types/sprint'
 import { canUpdateSprintMeeting } from '@/utils/sprintMeetingUtils'
-import { Calendar, Clock, TrendingUp, Users } from 'lucide-react'
+import { Calendar, Clock, TrendingUp } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
@@ -371,7 +371,7 @@ const SprintMeetings: React.FC = () => {
                 </div>
 
                 {/* Stats Cards */}
-                <div className='grid grid-cols-1 md:grid-cols-3 gap-4 mb-8'>
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-8'>
                   <div className='bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow'>
                     <div className='flex items-center justify-between'>
                       <div>
@@ -404,29 +404,6 @@ const SprintMeetings: React.FC = () => {
                         <div className='bg-orange-500 h-2' style={{ width: taskUpdates.length > 0 ? '100%' : '0%' }} />
                       </div>
                       <span className='text-xs text-gray-500'>Queued</span>
-                    </div>
-                  </div>
-                  <div className='bg-white rounded-lg p-4 border border-gray-200 shadow-sm hover:shadow-md transition-shadow'>
-                    <div className='flex items-center justify-between'>
-                      <div>
-                        <p className='text-gray-600 text-sm font-medium'>Active (7d)</p>
-                        <p className='text-2xl font-bold text-gray-900'>
-                          {
-                            sprintMeetings.filter(
-                              (m) => new Date(m.updatedAt) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
-                            ).length
-                          }
-                        </p>
-                      </div>
-                      <div className='p-3 bg-green-50 rounded-lg'>
-                        <Users className='h-6 w-6 text-green-600' />
-                      </div>
-                    </div>
-                    <div className='mt-3 flex items-center gap-2'>
-                      <div className='flex-1 bg-gray-200 rounded-full h-2 overflow-hidden'>
-                        <div className='bg-green-500 h-2 w-full' />
-                      </div>
-                      <span className='text-xs text-gray-500'>Recent</span>
                     </div>
                   </div>
                 </div>
