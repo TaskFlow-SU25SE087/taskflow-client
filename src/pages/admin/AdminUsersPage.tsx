@@ -19,7 +19,6 @@ import { debounce } from 'lodash'
 import {
   Calendar,
   CheckCircle2,
-  Clock,
   Filter,
   Loader2,
   RefreshCw,
@@ -29,9 +28,10 @@ import {
   Sparkles,
   UserCheck,
   Users,
-  UserX
+  UserX,
+  X
 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import { AdminUser } from '@/types/admin'
 
 export default function AdminUsersPage() {
@@ -53,10 +53,9 @@ export default function AdminUsersPage() {
     active: 0,
     inactive: 0
   })
-  // When user searches (>= 2 chars) we fetch all users across pages and search that list
+  // When user searches, we fetch all users and search that list
   const [allUsersForSearch, setAllUsersForSearch] = useState<AdminUser[] | null>(null)
   const [isSearching, setIsSearching] = useState(false)
-  const [preservedSelection, setPreservedSelection] = useState<{start: number | null, end: number | null}>({start: null, end: null})
   const pageSize = 10
   const { showToast } = useToastContext()
 
@@ -124,91 +123,64 @@ export default function AdminUsersPage() {
     fetchUsers(page, pageSize)
   }
 
-  // Kiểm tra cache có còn hợp lệ không
-  const isCacheValid = () => {
-    return false // cache logic removed
-  }
-
-  // Fetch users với cache
-  const fetchUsersWithCache = async (page: number, size: number) => {
-    // Nếu cache còn hợp lệ và đang ở page 1, sử dụng cache
-  // cache logic removed
-    
-    // Nếu không có cache hoặc cache hết hạn, fetch từ server
-    await fetchUsers(page, size)
-    
-    // Cache kết quả nếu fetch thành công và đang ở page 1
-  // cache logic removed
-  }
-
-  // Debounced search để tránh fetch quá nhiều
+  // Smart search handler - auto search when typing with debounce
   const debouncedSearch = useCallback(
     debounce(async (term: string) => {
       if (term.length === 0) {
         setAllUsersForSearch(null)
         setIsSearching(false)
-        await fetchUsersWithCache(1, pageSize)
+        fetchUsers(1, pageSize) // Reset to pagination
         return
       }
 
-      // Preserve selection trước khi search
-      const inputEl = searchInputRef.current
-      if (inputEl) {
-        setPreservedSelection({ start: inputEl.selectionStart, end: inputEl.selectionEnd })
+      if (term.length >= 2) {
+        setIsSearching(true)
+        try {
+          // Auto-fetch all users for complete search
+          const all = await fetchAllUsers()
+          setAllUsersForSearch(all)
+        } catch (err) {
+          console.error('Search failed', err)
+          setAllUsersForSearch(null)
+        } finally {
+          setIsSearching(false)
+        }
       }
-
-      setIsSearching(true)
-
-      const termLower = term.toLowerCase()
-      const foundOnPage = users.some((u) =>
-        u.fullName.toLowerCase().includes(termLower) || u.email.toLowerCase().includes(termLower)
-      )
-
-      if (foundOnPage) {
-        setAllUsersForSearch(null)
-        setIsSearching(false)
-        return
-      }
-
-      try {
-        const all = await fetchAllUsers()
-        setAllUsersForSearch(all)
-      } catch (err) {
-        console.error('Failed to fetch all users for search', err)
-        setAllUsersForSearch(null)
-      } finally {
-        setIsSearching(false)
-      }
-    }, 300),
-    [fetchAllUsers, fetchUsersWithCache, pageSize, users]
+    }, 1000), // 1000ms debounce - reasonable delay
+    [fetchAllUsers, fetchUsers, pageSize]
   )
 
-  // Xử lý search với debounce
+  // Simple text input handler - no auto-search
   const handleSearchChange = (value: string) => {
     setSearchTerm(value)
-    debouncedSearch(value)
+    // Only update search term, no automatic search
   }
 
-  // Effect để restore focus/selection sau khi search xong
-  useEffect(() => {
-    if (!isSearching && searchInputRef.current && (preservedSelection.start !== null || preservedSelection.end !== null)) {
-      const inputEl = searchInputRef.current
-      setTimeout(() => {
-        try {
-          inputEl.focus()
-          if (preservedSelection.start !== null && preservedSelection.end !== null) {
-            inputEl.setSelectionRange(preservedSelection.start, preservedSelection.end)
-          } else {
-            inputEl.setSelectionRange(searchTerm.length, searchTerm.length)
-          }
-        } catch (e) {
-          inputEl.focus()
-        }
-      }, 0)
-
-      setPreservedSelection({ start: null, end: null })
+  // Manual search trigger - only way to search
+  const handleSearchTrigger = () => {
+    if (searchTerm.length >= 2) {
+      // Search manually when button clicked
+      debouncedSearch(searchTerm)
     }
-  }, [isSearching, preservedSelection, searchTerm])
+  }
+
+  // Clear search and reset to pagination
+  const handleClearSearch = () => {
+    setSearchTerm('')
+    debouncedSearch.cancel() // Cancel any pending search
+    setIsSearching(false)
+    setAllUsersForSearch(null)
+    fetchUsers(1, pageSize) // Reset to pagination
+  }
+
+  // Handle Enter key press for search
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearchTrigger()
+    }
+  }
+
+  // Removed complex focus/selection restoration logic for better UX
   // Removed handleFileUpload function (no longer needed)
 
   // Xử lý filter changes
@@ -500,37 +472,42 @@ export default function AdminUsersPage() {
     return { activeUsers, inactiveUsers }
   }
 
-  // Determine when we should apply filters across all pages (global filtering)
-  const isGlobalFilterActive =
-    searchTerm.length >= 2 || selectedRole !== 'all' || selectedStatus !== 'all' || selectedSemester !== 'all'
-
-  // Ensure we have all users available whenever a global filter is active
-  useEffect(() => {
-    const ensureAllUsersLoaded = async () => {
-      try {
-        if (isGlobalFilterActive && !allUsersForSearch) {
-          const all = await fetchAllUsers()
-          setAllUsersForSearch(all)
-        }
-        if (!isGlobalFilterActive && allUsersForSearch) {
-          // Clear when not needed to save memory
-          setAllUsersForSearch(null)
-        }
-      } catch (err) {
-        console.error('Failed to load all users for global filtering', err)
-      }
-    }
-
-    ensureAllUsersLoaded()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isGlobalFilterActive])
-
-  const baseUsers = isGlobalFilterActive && allUsersForSearch ? allUsersForSearch : users
+  // Use search results or current page users
+  const baseUsers = allUsersForSearch || users
+  
   const memoizedFilteredUsers = useMemo(() => {
+    // Only apply search filtering when we have search results (allUsersForSearch)
+    // For normal pagination (users), don't apply search filter
+    if (!allUsersForSearch) {
+      return baseUsers.filter((user) => {
+        const matchesRole = selectedRole === 'all' || user.role === selectedRole
+        const matchesStatus =
+          selectedStatus === 'all' ||
+          (selectedStatus === 'active' && user.isActive) ||
+          (selectedStatus === 'inactive' && !user.isActive)
+        // Normalize semesters: current term and any past terms
+        const normalizedSelectedSemester = (selectedSemester || '').toString().trim().toLowerCase()
+        const currentTerm = user.termSeason && user.termYear ? `${user.termSeason} ${user.termYear}` : ''
+        const pastTermsList = typeof user.pastTerms === 'string' && user.pastTerms.length
+          ? user.pastTerms
+              .split(/[,;\n]/)
+              .map((s) => s.trim())
+              .filter(Boolean)
+          : []
+        const userSemesters = [currentTerm, ...pastTermsList].filter(Boolean).map((s) => s.toLowerCase())
+        const matchesSemester =
+          selectedSemester === 'all' || userSemesters.includes(normalizedSelectedSemester)
+        return matchesRole && matchesStatus && matchesSemester
+      })
+    }
+    
+    // Apply all filters including search when we have search results
     return baseUsers.filter((user) => {
       const matchesSearch =
+        !searchTerm ||
         user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchTerm.toLowerCase())
+        user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (user.studentId && user.studentId.toLowerCase().includes(searchTerm.toLowerCase()))
       const matchesRole = selectedRole === 'all' || user.role === selectedRole
       const matchesStatus =
         selectedStatus === 'all' ||
@@ -550,7 +527,7 @@ export default function AdminUsersPage() {
         selectedSemester === 'all' || userSemesters.includes(normalizedSelectedSemester)
       return matchesSearch && matchesRole && matchesStatus && matchesSemester
     })
-  }, [baseUsers, searchTerm, selectedRole, selectedStatus, selectedSemester])
+  }, [baseUsers, searchTerm, selectedRole, selectedStatus, selectedSemester, allUsersForSearch])
 
   const roles = Array.from(new Set(users.map((user) => user.role)))
   
@@ -673,13 +650,6 @@ export default function AdminUsersPage() {
                 <div className='flex items-center space-x-2 text-sm text-gray-600'>
                   <Sparkles className='w-4 h-4 text-yellow-500' />
                   <span>Real-time data management</span>
-                  {isCacheValid() && (
-                    <>
-                      <span className='w-1 h-1 bg-gray-400 rounded-full'></span>
-                      <Clock className='w-4 h-4 text-green-500' />
-                      <span className='text-green-600 font-medium'>Cached data active</span>
-                    </>
-                  )}
                   {totalUsersCount !== null && (
                     <>
                       <span className='w-1 h-1 bg-gray-400 rounded-full'></span>
@@ -712,7 +682,6 @@ export default function AdminUsersPage() {
                      ) : (
                        <p><strong>All Pages:</strong> Loading...</p>
                      )}
-                     <p className='text-gray-300 text-xs mt-1'>Click button to refresh count</p>
                    </div>
                    <div className='absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900'></div>
                  </div>
@@ -748,30 +717,38 @@ export default function AdminUsersPage() {
         {/* Enhanced Search and Filter Bar */}
         <div className='bg-white rounded-2xl p-6 shadow-lg border border-gray-100'>
           <div className='flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6'>
-            <div className='flex flex-1 gap-4 items-center'>
+            <div className='flex flex-1 gap-2 items-center'>
               <div className='relative flex-1 max-w-md'>
-                <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5' />
                 <Input
-                  placeholder='Search by name or email...'
+                  placeholder='Search by name, email, or student ID...'
                   value={searchTerm}
                   onChange={(e) => handleSearchChange(e.target.value)}
+                  onKeyPress={handleKeyPress}
                   ref={(el) => (searchInputRef.current = el)}
-                  className={`pl-10 pr-4 h-10 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-gray-50 focus:bg-white ${
-                    isSearching ? 'opacity-75' : ''
-                  }`}
-                  onFocus={(e) => {
-                    setPreservedSelection({ start: e.target.selectionStart, end: e.target.selectionEnd })
-                  }}
-                  onSelect={(e) => {
-                    setPreservedSelection({ start: (e.target as HTMLInputElement).selectionStart, end: (e.target as HTMLInputElement).selectionEnd })
-                  }}
+                  className='pr-10 h-10 border-2 border-gray-200 rounded-l-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-gray-50 focus:bg-white border-r-0'
                 />
-                {isSearching && (
-                  <div className='absolute right-3 top-1/2 transform -translate-y-1/2'>
-                    <Loader2 className='w-4 h-4 animate-spin text-blue-500' />
-                  </div>
+                {searchTerm && (
+                  <button
+                    onClick={handleClearSearch}
+                    className='absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors duration-200'
+                  >
+                    <X className='w-4 h-4' />
+                  </button>
                 )}
               </div>
+              
+              {/* Search Button */}
+              <Button
+                onClick={handleSearchTrigger}
+                disabled={searchTerm.length < 2}
+                className='h-10 px-4 rounded-r-xl rounded-l-none border-l-0 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors duration-200'
+              >
+                {isSearching && searchTerm.length >= 2 ? (
+                  <Loader2 className='w-4 h-4 animate-spin' />
+                ) : (
+                  <Search className='w-4 h-4' />
+                )}
+              </Button>
               
               <div className='flex items-center gap-3'>
                 <Filter className='text-gray-500 w-5 h-5' />
@@ -951,14 +928,16 @@ export default function AdminUsersPage() {
           </div>
         )}
 
+
+
       {/* Multi-select Info */}
       {selectedUsers.size === 0 && (
         <div className='mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg'>
           <div className='flex items-center space-x-2 text-sm text-gray-600'>
             <Users className='h-4 w-4' />
             <span>
-              💡 <strong>Tip:</strong> Use checkboxes to select multiple users for bulk actions. 
-              The system will automatically categorize selected users by status and show appropriate actions.
+              💡 <strong>Tip:</strong> Type to search by name, email, or student ID, then <strong>click the search button or press Enter</strong> to search. Use checkboxes to select multiple users for bulk actions. 
+              The system will categorize selected users by status and show appropriate actions.
               Click the header checkbox to select all users on this page.
             </span>
           </div>
