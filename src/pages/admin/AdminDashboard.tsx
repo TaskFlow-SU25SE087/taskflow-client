@@ -246,7 +246,7 @@ export default function AdminDashboard() {
       description: 'Teams with members'
     },
     { 
-      label: 'Academic Terms', 
+      label: 'Academic Semesters', 
       value: totalTerms, 
       icon: <Calendar className="w-7 h-7" />, 
       description: 'Managed periods'
@@ -343,10 +343,10 @@ export default function AdminDashboard() {
                       <Clock className="w-6 h-6 text-amber-600" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold text-amber-800 mb-2">No Academic Terms Found</h3>
-                      <p className="text-amber-700 mb-3">Academic Terms count is 0. This might be because:</p>
+                      <h3 className="text-lg font-semibold text-amber-800 mb-2">No Academic Semesters Found</h3>
+                      <p className="text-amber-700 mb-3">Academic Semesters count is 0. This might be because:</p>
                       <ul className="list-disc list-inside text-amber-700 space-y-1">
-                        <li>No terms have been created yet</li>
+                        <li>No semesters have been created yet</li>
                         <li>API endpoint might be incorrect</li>
                         <li>There might be a server connection issue</li>
                       </ul>
@@ -390,7 +390,7 @@ export default function AdminDashboard() {
                       </div>
                       <div>
                         <CardTitle className="text-xl">Projects Distribution</CardTitle>
-                        <p className="text-sm text-gray-500 mt-1">Projects across academic terms</p>
+                        <p className="text-sm text-gray-500 mt-1">Projects across academic semesters</p>
                       </div>
                     </div>
                   </CardHeader>
@@ -557,8 +557,8 @@ export default function AdminDashboard() {
                         <Users className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <CardTitle className="text-xl">Users by Term Overview</CardTitle>
-                        <p className="text-sm text-gray-500 mt-1">User distribution and status across academic terms</p>
+                        <CardTitle className="text-xl">Users by Semester Overview</CardTitle>
+                        <p className="text-sm text-gray-500 mt-1">User distribution and status across academic semesters</p>
                       </div>
                     </div>
                   </CardHeader>

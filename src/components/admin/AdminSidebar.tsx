@@ -101,11 +101,11 @@ export default function AdminSidebar({
               }`
             }
             onClick={onClose}
-            title={isCollapsed ? 'Term Management' : undefined}
+            title={isCollapsed ? 'Semester Management' : undefined}
           >
             <Calendar className='h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0' />
             <span className={`transition-opacity ${isCollapsed ? 'opacity-0 hidden' : 'opacity-100'}`}>
-              Term Management
+              Semester Management
             </span>
           </NavLink>
           <NavLink

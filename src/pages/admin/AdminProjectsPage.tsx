@@ -192,7 +192,7 @@ export default function AdminProjectsPage() {
   }
 
   return (
-    <AdminLayout title='Projects' description='View all projects and filter by term' stats={stats}>
+    <AdminLayout title='Projects' description='View all projects and filter by semester' stats={stats}>
       <div className='p-6 space-y-6 min-h-screen bg-gradient-to-br from-slate-50 to-blue-50'>
         <div className='relative'>
           <div className='absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-20'></div>
@@ -223,16 +223,16 @@ export default function AdminProjectsPage() {
                 </div>
               </div>
               <div className='space-y-2 min-w-[220px]'>
-                <label className='block text-sm font-semibold text-slate-800 tracking-wide'>📅 Filter by Term</label>
+                <label className='block text-sm font-semibold text-slate-800 tracking-wide'>📅 Filter by Semester</label>
                 <select
                   className='block w-full px-4 py-3.5 border-2 border-slate-200 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 text-sm bg-white/50 backdrop-blur hover:border-slate-300'
                   value={selectedTermId}
                   onChange={(e) => setSelectedTermId(e.target.value)}
                   disabled={termsLoading}
                 >
-                  <option value=''>✨ All terms</option>
+                  <option value=''>✨ All semesters</option>
                   {termsLoading ? (
-                    <option value='' disabled>Loading terms...</option>
+                    <option value='' disabled>Loading semesters...</option>
                   ) : Array.isArray(terms) && terms.length > 0 ? (
                     terms.map((t) => (
                       <option key={t.id} value={t.id}>
@@ -240,7 +240,7 @@ export default function AdminProjectsPage() {
                       </option>
                     ))
                   ) : (
-                    <option value='' disabled>No terms available</option>
+                    <option value='' disabled>No semesters available</option>
                   )}
                 </select>
               </div>
@@ -381,7 +381,7 @@ export default function AdminProjectsPage() {
                       <th className='text-left px-8 py-5 font-bold text-slate-800 text-sm uppercase tracking-wider'>Description</th>
                       <th className='group text-left px-8 py-5 font-bold text-slate-800 text-sm uppercase tracking-wider cursor-pointer hover:bg-slate-200/50 transition-all duration-200' onClick={() => handleSort('termName')}>
                         <div className='flex items-center gap-2'>
-                          Term
+                          Semester
                           <SortIcon field='termName' />
                         </div>
                       </th>
