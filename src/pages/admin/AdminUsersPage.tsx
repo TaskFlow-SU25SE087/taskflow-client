@@ -198,7 +198,7 @@ export default function AdminUsersPage() {
     }
     
     // Reset về page 1 khi thay đổi filter
-    fetchUsersWithCache(1, pageSize)
+    fetchUsers(1, pageSize)
   }
 
   // Clear cache khi cần thiết
@@ -211,7 +211,7 @@ export default function AdminUsersPage() {
     setIsRefreshing(true)
     clearCache()
     try {
-      await fetchUsersWithCache(1, pageSize)
+      await fetchUsers(1, pageSize)
       // Also refresh total statistics
       await refreshTotalStats()
     } finally {
