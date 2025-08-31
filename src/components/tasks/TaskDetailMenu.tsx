@@ -1912,7 +1912,8 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
         <DialogContent className='max-w-md'>
           <DialogTitle>Confirm Remove Assignee</DialogTitle>
           <DialogDescription>
-            Are you sure you want to remove this assignee from the task? This action will remove them from the assignee list.
+            Are you sure you want to remove this assignee from the task? This action will remove them from the assignee
+            list.
           </DialogDescription>
           <div className='flex justify-end gap-2 mt-4'>
             <Button

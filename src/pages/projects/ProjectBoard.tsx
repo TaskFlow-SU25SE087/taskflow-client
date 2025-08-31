@@ -16,12 +16,12 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -36,23 +36,23 @@ import { ProjectMember } from '@/types/project'
 import { TaskP } from '@/types/task'
 import { closestCenter, DndContext, useSensor, useSensors } from '@dnd-kit/core'
 import {
-    arrayMove,
-    horizontalListSortingStrategy,
-    SortableContext,
-    verticalListSortingStrategy
+  arrayMove,
+  horizontalListSortingStrategy,
+  SortableContext,
+  verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import {
-    CheckCircle,
-    ChevronDown,
-    Clock,
-    Filter,
-    Link2,
-    Loader2,
-    Pencil,
-    Plus,
-    Search,
-    Settings,
-    TrendingUp
+  CheckCircle,
+  ChevronDown,
+  Clock,
+  Filter,
+  Link2,
+  Loader2,
+  Pencil,
+  Plus,
+  Search,
+  Settings,
+  TrendingUp
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -675,11 +675,11 @@ export default function ProjectBoard() {
 
   const handleDragStart = (event: any) => {
     console.log('[TIMING] 🎬 Drag start at:', new Date().toISOString())
-    
+
     // Check if member is trying to drag a board
     const { active } = event
     const isBoardDrag = boards.some((b) => b.id === active.id)
-    
+
     if (isBoardDrag && isMember) {
       // Prevent the drag from starting for members trying to drag boards
       return false
@@ -1073,7 +1073,7 @@ export default function ProjectBoard() {
                     </Button>
 
                     {showStatsCards && (
-                      <div className='absolute left-0 top-full mt-2 z-50 w-[560px] max-w-[90vw] rounded-xl border border-gray-200 bg-white/95 backdrop-blur-md shadow-xl p-3'>
+                      <div className='absolute right-0 top-full mt-2 z-50 w-[560px] max-w-[90vw] rounded-xl border border-gray-200 bg-white/95 backdrop-blur-md shadow-xl p-3 origin-top-right'>
                         {(() => {
                           const stats = calculateBoardProgress(tasks)
                           let timeProgress = 0
@@ -1297,18 +1297,10 @@ export default function ProjectBoard() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button 
-              variant='outline' 
-              onClick={() => setIsConfirmLeaveDialogOpen(false)}
-              disabled={isLeavingProject}
-            >
+            <Button variant='outline' onClick={() => setIsConfirmLeaveDialogOpen(false)} disabled={isLeavingProject}>
               Cancel
             </Button>
-            <Button 
-              variant='destructive' 
-              onClick={handleConfirmLeaveProject}
-              disabled={isLeavingProject}
-            >
+            <Button variant='destructive' onClick={handleConfirmLeaveProject} disabled={isLeavingProject}>
               {isLeavingProject ? (
                 <>
                   <Loader2 className='mr-2 h-4 w-4 animate-spin' />
