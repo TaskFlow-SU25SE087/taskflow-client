@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import axiosClient from '@/configs/axiosClient'
 import { useAuth } from '@/hooks/useAuth'
+import type { User as AuthUser } from '@/types/auth'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjects } from '@/hooks/useProjects'
 import { ChevronDown, FolderKanban, HelpCircle, Layout, LogOut, Plus, Settings, Shield, User } from 'lucide-react'
@@ -24,23 +25,21 @@ import { TutorialModal } from './TutorialModal'
 interface NavbarProps {
   isSidebarOpen: boolean
   toggleSidebar: () => void
+  customLeft?: React.ReactNode
 }
 
-let cachedUserProfile: any | null = null
+let cachedUserProfile: AuthUser | null = null
 let cachedAvatarUrl: string | undefined = undefined
 let avatarPreviouslyLoaded = false
 
-export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
+export function Navbar({ isSidebarOpen, toggleSidebar, customLeft }: NavbarProps) {
   const { projects } = useProjects()
   const { currentProject, setCurrentProjectId } = useCurrentProject()
   const navigate = useNavigate()
-  const { logout } = useAuth()
-  const { user } = useAuth()
+  const { logout, user } = useAuth()
   const [isTutorialOpen, setIsTutorialOpen] = useState(false)
   // Initialize from cache so we don't blank out while routing
-  const [userProfile, setUserProfile] = useState<any>(cachedUserProfile)
-
-  console.log('user in Navbar:', user)
+  const [userProfile, setUserProfile] = useState<AuthUser | null>(cachedUserProfile)
 
   // Fetch full user profile including avatar (only if not already cached)
   useEffect(() => {
@@ -51,11 +50,10 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
       try {
         const response = await axiosClient.get(`/user/${user.id}`)
         if (cancelled) return
-        setUserProfile(response.data.data)
-        cachedUserProfile = response.data.data
-        if (response.data.data?.avatar) {
-          cachedAvatarUrl = response.data.data.avatar
-        }
+        const profile: AuthUser = response.data.data
+        setUserProfile(profile)
+        cachedUserProfile = profile
+        if (profile?.avatar) cachedAvatarUrl = profile.avatar
       } catch (error) {
         if (!cancelled) console.error('Failed to fetch user profile:', error)
       }
@@ -75,7 +73,7 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
     navigate('/')
   }
 
-  const avatarUrl = userProfile?.avatar || (user as any)?.avatar || cachedAvatarUrl
+  const avatarUrl = userProfile?.avatar || user?.avatar || cachedAvatarUrl
   const [avatarLoaded, setAvatarLoaded] = useState(() => avatarPreviouslyLoaded && !!avatarUrl)
 
   // If we already have a cached avatar and it matches current, ensure loaded flag stays true
@@ -89,14 +87,19 @@ export function Navbar({ isSidebarOpen, toggleSidebar }: NavbarProps) {
     <div className='sticky top-0 z-[9990] w-full bg-white border-b border-gray-300'>
       <div className='px-2 sm:px-4 py-2 sm:py-3 flex items-center justify-between'>
         <div className='flex items-center gap-1 sm:gap-2 flex-1'>
-          <Button
-            variant='ghost'
-            size='icon'
-            className='text-gray-500 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 h-8 w-8 sm:h-10 sm:w-10'
-            onClick={toggleSidebar}
-          >
-            {isSidebarOpen ? <FiX className='h-4 w-4 sm:h-5 sm:w-5' /> : <FiMenu className='h-4 w-4 sm:h-5 sm:w-5' />}
-          </Button>
+          {/* If a page provides customLeft (e.g., logo + text), render it here; otherwise show hamburger */}
+          {customLeft ? (
+            <div className='flex items-center'>{customLeft}</div>
+          ) : (
+            <Button
+              variant='ghost'
+              size='icon'
+              className='text-gray-500 hover:bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 h-8 w-8 sm:h-10 sm:w-10'
+              onClick={toggleSidebar}
+            >
+              {isSidebarOpen ? <FiX className='h-4 w-4 sm:h-5 sm:w-5' /> : <FiMenu className='h-4 w-4 sm:h-5 sm:w-5' />}
+            </Button>
+          )}
 
           {/* Projects Dropdown */}
           <DropdownMenu>

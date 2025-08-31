@@ -105,7 +105,16 @@ export default function ProjectList() {
   return (
     <div className='flex h-screen bg-gray-100'>
       <div className='flex-1 overflow-hidden'>
-        <Navbar isSidebarOpen={false} toggleSidebar={() => {}} />
+        <Navbar
+          isSidebarOpen={false}
+          toggleSidebar={() => {}}
+          customLeft={
+            <a href='/' className='flex items-center gap-2'>
+              <img src='/logo.png' alt='TaskFlow logo' className='h-6 w-6 sm:h-8 sm:w-8' />
+              <span className='text-lg sm:text-xl font-semibold text-gray-800'>TaskFlow</span>
+            </a>
+          }
+        />
 
         <div className='p-6'>
           <div className='flex items-center justify-between'>
