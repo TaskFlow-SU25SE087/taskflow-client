@@ -31,6 +31,7 @@ import {
   ChartLegend,
   ChartLegendContent
 } from '@/components/ui/chart'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
   BarChart as ReBarChart,
   Bar,
@@ -100,7 +101,9 @@ const ProjectReports: React.FC = () => {
     if (!showTasks) return []
     return (
       report?.memberActivities
-        .flatMap((m) => m.taskActivities.map((t) => ({ ...t, fullName: m.fullName })))
+        .flatMap((m) =>
+          m.taskActivities.map((t) => ({ ...t, fullName: m.fullName, avatar: m.avatar, userId: m.userId }))
+        )
         .sort(
           (a, b) =>
             new Date(b.assignedAt || b.completedAt || b.deadline || 0).getTime() -
@@ -114,7 +117,9 @@ const ProjectReports: React.FC = () => {
     if (!showComments) return []
     return (
       report?.memberActivities
-        .flatMap((m) => m.commentActivities.map((c) => ({ ...c, fullName: m.fullName })))
+        .flatMap((m) =>
+          m.commentActivities.map((c) => ({ ...c, fullName: m.fullName, avatar: m.avatar, userId: m.userId }))
+        )
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 30) || []
     )
@@ -712,22 +717,41 @@ const ProjectReports: React.FC = () => {
                         </div>
                       ))
                     ) : s.topContributors?.length ? (
-                      s.topContributors.map((tc) => (
-                        <div
-                          key={tc.userId}
-                          className='flex items-center justify-between p-3 border rounded-lg bg-white/60 backdrop-blur-sm'
-                        >
-                          <div>
-                            <p className='font-medium text-sm'>{tc.fullName}</p>
-                            <p className='text-xs text-gray-500'>
-                              Done {tc.completedTasks} • Comments {tc.totalComments} • Effort {tc.completedEffortPoints}
-                            </p>
+                      s.topContributors.map((tc) => {
+                        const tcAvatar = report?.memberActivities?.find((m) => m.userId === tc.userId)?.avatar
+                        return (
+                          <div
+                            key={tc.userId}
+                            className='flex items-center justify-between p-3 border rounded-lg bg-white/60 backdrop-blur-sm'
+                          >
+                            <div className='flex items-center gap-3'>
+                              <Avatar className='h-9 w-9'>
+                                {tcAvatar ? (
+                                  <AvatarImage src={tcAvatar} alt={tc.fullName} />
+                                ) : (
+                                  <AvatarFallback>
+                                    {(tc.fullName || '?')
+                                      .split(' ')
+                                      .map((n) => n[0])
+                                      .slice(0, 2)
+                                      .join('')
+                                      .toUpperCase()}
+                                  </AvatarFallback>
+                                )}
+                              </Avatar>
+                              <div>
+                                <p className='font-medium text-sm'>{tc.fullName}</p>
+                                <p className='text-xs text-gray-500'>
+                                  {`Done ${tc.completedTasks} • Comments ${tc.totalComments} • Effort ${tc.completedEffortPoints}`}
+                                </p>
+                              </div>
+                            </div>
+                            <Badge variant='secondary' className='rounded-full'>
+                              Score {tc.contributionScore}
+                            </Badge>
                           </div>
-                          <Badge variant='secondary' className='rounded-full'>
-                            Score {tc.contributionScore}
-                          </Badge>
-                        </div>
-                      ))
+                        )
+                      })
                     ) : (
                       <p className='text-sm text-gray-500'>No data</p>
                     )}
@@ -760,11 +784,27 @@ const ProjectReports: React.FC = () => {
                       : filteredMembers.map((m) => (
                           <div key={m.projectMemberId} className='p-3 border rounded-lg bg-white/60 backdrop-blur-sm'>
                             <div className='flex items-center justify-between mb-2'>
-                              <div>
-                                <p className='font-medium text-sm'>
-                                  {m.fullName} <span className='text-xs text-gray-500'>• {m.role}</span>
-                                </p>
-                                <p className='text-xs text-gray-500'>{m.email}</p>
+                              <div className='flex items-center gap-3'>
+                                <Avatar className='h-9 w-9'>
+                                  {m.avatar ? (
+                                    <AvatarImage src={m.avatar} alt={m.fullName} />
+                                  ) : (
+                                    <AvatarFallback>
+                                      {(m.fullName || '?')
+                                        .split(' ')
+                                        .map((n) => n[0])
+                                        .slice(0, 2)
+                                        .join('')
+                                        .toUpperCase()}
+                                    </AvatarFallback>
+                                  )}
+                                </Avatar>
+                                <div>
+                                  <p className='font-medium text-sm'>
+                                    {m.fullName} <span className='text-xs text-gray-500'>• {m.role}</span>
+                                  </p>
+                                  <p className='text-xs text-gray-500'>{m.email}</p>
+                                </div>
                               </div>
                               <div className='flex items-center gap-1.5 text-[10px] flex-wrap'>
                                 <Badge className='rounded-full'>Assigned {m.taskStats.totalAssigned}</Badge>
@@ -838,9 +878,25 @@ const ProjectReports: React.FC = () => {
                               className='p-3 border rounded-lg bg-white/60 backdrop-blur-sm'
                             >
                               <div className='flex items-center justify-between'>
-                                <p className='font-medium text-sm'>
-                                  {t.taskTitle} <span className='text-xs text-gray-500'>• {t.status}</span>
-                                </p>
+                                <div className='flex items-center gap-3'>
+                                  <Avatar className='h-8 w-8'>
+                                    {t.avatar ? (
+                                      <AvatarImage src={t.avatar} alt={t.fullName} />
+                                    ) : (
+                                      <AvatarFallback>
+                                        {(t.fullName || '?')
+                                          .split(' ')
+                                          .map((n) => n[0])
+                                          .slice(0, 2)
+                                          .join('')
+                                          .toUpperCase()}
+                                      </AvatarFallback>
+                                    )}
+                                  </Avatar>
+                                  <p className='font-medium text-sm'>
+                                    {t.taskTitle} <span className='text-xs text-gray-500'>• {t.status}</span>
+                                  </p>
+                                </div>
                                 <Badge variant='outline' className='rounded-full'>
                                   {t.priority}
                                 </Badge>
@@ -903,7 +959,23 @@ const ProjectReports: React.FC = () => {
                         : recentCommentActivities.map((c) => (
                             <div key={c.commentId} className='p-3 border rounded-lg bg-white/60 backdrop-blur-sm'>
                               <div className='flex items-center justify-between'>
-                                <p className='font-medium text-sm'>{c.taskTitle}</p>
+                                <div className='flex items-center gap-3'>
+                                  <Avatar className='h-8 w-8'>
+                                    {c.avatar ? (
+                                      <AvatarImage src={c.avatar} alt={c.fullName} />
+                                    ) : (
+                                      <AvatarFallback>
+                                        {(c.fullName || '?')
+                                          .split(' ')
+                                          .map((n) => n[0])
+                                          .slice(0, 2)
+                                          .join('')
+                                          .toUpperCase()}
+                                      </AvatarFallback>
+                                    )}
+                                  </Avatar>
+                                  <p className='font-medium text-sm'>{c.taskTitle}</p>
+                                </div>
                                 <span className='inline-flex items-center gap-1 text-[11px] text-gray-500'>
                                   <MessageSquare className='h-3.5 w-3.5' /> {fmt(c.createdAt)}
                                 </span>
