@@ -12,7 +12,9 @@ import { Sidebar } from '@/components/Sidebar'
 import { DroppableBoard } from '@/components/tasks/DroppableBoard'
 import { SortableBoardColumn, SortableTaskColumn } from '@/components/tasks/SortableTaskColumn'
 import TaskBoardCreateMenu from '@/components/tasks/TaskBoardCreateMenu'
+import { TaskFilterDialog } from '@/components/tasks/TaskFilterDialog'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
@@ -24,7 +26,6 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { useAuth } from '@/hooks/useAuth'
@@ -232,13 +233,28 @@ export default function ProjectBoard() {
   const [isSprintLoading, setIsSprintLoading] = useState<boolean>(true)
   // One-time hydration flag to avoid flicker when background refresh flags toggle
   const [hasHydrated, setHasHydrated] = useState(false)
-  const [filterStatus, setFilterStatus] = useState<string>('all')
   const [isLockDialogOpen, setIsLockDialogOpen] = useState(false)
   const [lockedColumns, setLockedColumns] = useState<string[]>([])
   const [lockAll, setLockAll] = useState(false)
   const [movingTaskId, setMovingTaskId] = useState<string | null>(null)
   const [showStatsCards, setShowStatsCards] = useState(false)
   const [isConfirmLeaveDialogOpen, setIsConfirmLeaveDialogOpen] = useState(false)
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false)
+  const [taskFilters, setTaskFilters] = useState<{
+    status: string[]
+    priority: string[]
+    assigneeIds: string[]
+    tagIds: string[]
+    deadlineFilter: string
+    effortPointsFilter: string
+  }>({
+    status: [],
+    priority: [],
+    assigneeIds: [],
+    tagIds: [],
+    deadlineFilter: 'all',
+    effortPointsFilter: 'all'
+  })
 
   const { showToast } = useToastContext()
   const { user } = useAuth()
@@ -733,13 +749,100 @@ export default function ProjectBoard() {
       ).filter((task) => task.boardId === board.id)
     }
 
-    const filteredTasks = boardTasks.filter(
-      (task) =>
-        (!searchQuery ||
-          (task.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (task.description || '').toLowerCase().includes(searchQuery.toLowerCase())) &&
-        (filterStatus === 'all' || (task.status || '').toLowerCase() === filterStatus.toLowerCase())
-    )
+    const filteredTasks = boardTasks.filter((task) => {
+      // Search filter
+      const matchesSearch =
+        !searchQuery ||
+        (task.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (task.description || '').toLowerCase().includes(searchQuery.toLowerCase())
+
+      // Status filter
+      const matchesStatus =
+        taskFilters.status.length === 0 ||
+        taskFilters.status.some((status) => (task.status || '').toLowerCase() === status.toLowerCase())
+
+      // Priority filter
+      const matchesPriority =
+        taskFilters.priority.length === 0 || taskFilters.priority.includes(task.priority?.toString() || '')
+
+      // Assignee filter
+      const matchesAssignee =
+        taskFilters.assigneeIds.length === 0 ||
+        taskFilters.assigneeIds.includes(task.assigneeId || '') ||
+        taskFilters.assigneeIds.includes(task.assignee?.id || '')
+
+      // Tags filter
+      const matchesTags =
+        taskFilters.tagIds.length === 0 ||
+        (task.tags && task.tags.some((tag) => taskFilters.tagIds.includes(typeof tag === 'string' ? tag : tag.id)))
+
+      // Deadline filter
+      let matchesDeadline = true
+      if (taskFilters.deadlineFilter !== 'all') {
+        if (!task.deadline) {
+          // If task has no deadline, only show it when filtering for "No Deadline"
+          matchesDeadline = taskFilters.deadlineFilter === 'no_deadline'
+        } else {
+          const now = new Date()
+          const deadline = new Date(task.deadline)
+          const today = new Date()
+          today.setHours(0, 0, 0, 0)
+          const weekFromNow = new Date(today)
+          weekFromNow.setDate(today.getDate() + 7)
+          const monthFromNow = new Date(today)
+          monthFromNow.setMonth(today.getMonth() + 1)
+
+          switch (taskFilters.deadlineFilter) {
+            case 'overdue':
+              matchesDeadline = deadline < now
+              break
+            case 'due_today':
+              matchesDeadline = deadline.toDateString() === today.toDateString()
+              break
+            case 'due_week':
+              matchesDeadline = deadline >= today && deadline <= weekFromNow
+              break
+            case 'due_month':
+              matchesDeadline = deadline >= today && deadline <= monthFromNow
+              break
+            case 'no_deadline':
+              matchesDeadline = false // This case is handled above
+              break
+          }
+        }
+      }
+
+      // Effort points filter
+      let matchesEffort = true
+      if (taskFilters.effortPointsFilter !== 'all') {
+        const effort = task.effortPoints || 0
+        switch (taskFilters.effortPointsFilter) {
+          case 'no_effort':
+            matchesEffort = effort === 0 || effort === null
+            break
+          case '1-3':
+            matchesEffort = effort >= 1 && effort <= 3
+            break
+          case '4-8':
+            matchesEffort = effort >= 4 && effort <= 8
+            break
+          case '9+':
+            matchesEffort = effort >= 9
+            break
+        }
+      }
+
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesPriority &&
+        matchesAssignee &&
+        matchesTags &&
+        matchesDeadline &&
+        matchesEffort
+      )
+    })
+
     return { ...board, tasks: filteredTasks || [] }
   })
 
@@ -906,7 +1009,6 @@ export default function ProjectBoard() {
   console.log('DEBUG filteredBoards:', filteredBoards)
   console.log('DEBUG sprintTasks:', sprintTasks)
   console.log('DEBUG searchQuery:', searchQuery)
-  console.log('DEBUG filterStatus:', filterStatus)
 
   return (
     <div className='flex bg-gray-50 h-screen overflow-hidden'>
@@ -1010,27 +1112,31 @@ export default function ProjectBoard() {
 
             <div className='flex items-center justify-between'>
               <div className='flex items-center gap-3 flex-wrap'>
-                <Button variant='outline' className='hover:bg-gray-50 border-gray-300'>
+                <Button
+                  variant='outline'
+                  className='hover:bg-gray-50 border-gray-300'
+                  onClick={() => setIsFilterDialogOpen(true)}
+                >
                   <Filter className='mr-2 h-4 w-4' />
                   Filter
+                  {taskFilters.status.length +
+                    taskFilters.priority.length +
+                    taskFilters.assigneeIds.length +
+                    taskFilters.tagIds.length +
+                    (taskFilters.deadlineFilter !== 'all' ? 1 : 0) +
+                    (taskFilters.effortPointsFilter !== 'all' ? 1 : 0) >
+                    0 && (
+                    <Badge variant='secondary' className='ml-2 h-5 w-5 p-0 text-xs'>
+                      {taskFilters.status.length +
+                        taskFilters.priority.length +
+                        taskFilters.assigneeIds.length +
+                        taskFilters.tagIds.length +
+                        (taskFilters.deadlineFilter !== 'all' ? 1 : 0) +
+                        (taskFilters.effortPointsFilter !== 'all' ? 1 : 0)}
+                    </Badge>
+                  )}
                   <ChevronDown className='ml-2 h-4 w-4' />
                 </Button>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className='w-[160px] border-gray-300'>
-                    <SelectValue placeholder='Filter status' />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value='all'>All</SelectItem>
-                    <SelectItem value='in progress'>In Progress</SelectItem>
-                    <SelectItem value='done'>Done</SelectItem>
-                    <SelectItem value='not started'>Not Started</SelectItem>
-                    <SelectItem value='completed'>Completed</SelectItem>
-                    <SelectItem value='blocked'>Blocked</SelectItem>
-                    <SelectItem value='review'>Review</SelectItem>
-                    <SelectItem value='on hold'>On Hold</SelectItem>
-                    <SelectItem value='cancelled'>Cancelled</SelectItem>
-                  </SelectContent>
-                </Select>
                 <div className='relative'>
                   <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
                   <Input
@@ -1313,6 +1419,19 @@ export default function ProjectBoard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Task Filter Dialog */}
+      {currentProject && (
+        <TaskFilterDialog
+          isOpen={isFilterDialogOpen}
+          onClose={() => setIsFilterDialogOpen(false)}
+          filters={taskFilters}
+          onFiltersChange={setTaskFilters}
+          projectMembers={projectMembers}
+          projectId={currentProject.id}
+          boards={boards}
+        />
+      )}
     </div>
   )
 }
