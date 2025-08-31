@@ -768,6 +768,8 @@ export default function ProjectBoard() {
       // Assignee filter
       const matchesAssignee =
         taskFilters.assigneeIds.length === 0 ||
+        (task.taskAssignees &&
+          task.taskAssignees.some((assignee) => taskFilters.assigneeIds.includes(assignee.projectMemberId))) ||
         taskFilters.assigneeIds.includes(task.assigneeId || '') ||
         taskFilters.assigneeIds.includes(task.assignee?.id || '')
 

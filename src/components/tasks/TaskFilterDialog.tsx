@@ -228,7 +228,7 @@ export function TaskFilterDialog({
                   <Label className='text-sm font-medium mb-3 block'>Assignees</Label>
                   <div className='grid grid-cols-2 gap-3 max-h-40 overflow-y-auto'>
                     {projectMembers.map((member, idx) => {
-                      const id = member.userId || member.id || ''
+                      const id = member.id || member.userId || ''
                       const name = member.fullName || member.email || 'Unknown'
                       return (
                         <label
