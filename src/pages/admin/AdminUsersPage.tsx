@@ -995,6 +995,14 @@ export default function AdminUsersPage() {
                     <span>Semester</span>
                   </div>
                 </th>
+                <th className='px-4 py-2 text-left text-xs font-medium text-blue-600 uppercase bg-blue-50'>
+                  <div className='flex items-center space-x-1'>
+                    <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' />
+                    </svg>
+                    <span>Past Semesters</span>
+                  </div>
+                </th>
                 <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Status</th>
                 <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>Role</th>
                 <th className='px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase'>
@@ -1037,6 +1045,22 @@ export default function AdminUsersPage() {
                         </span>
                       ) : (
                         <span className='text-gray-500 text-sm'>Not provided</span>
+                      )}
+                    </td>
+                    <td className='px-4 py-2'>
+                      {user.pastTerms ? (
+                        <div className='flex flex-wrap gap-1'>
+                          {user.pastTerms.split(/[,;\n]/).map((term, index) => (
+                            <span key={index} className='inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200'>
+                              <svg className='w-3 h-3 mr-1' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' />
+                              </svg>
+                              {term.trim()}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className='text-gray-500 text-sm'>None</span>
                       )}
                     </td>
                     <td className='px-4 py-2'>
