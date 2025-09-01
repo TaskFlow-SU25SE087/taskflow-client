@@ -81,6 +81,11 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const [editDeadline, setEditDeadline] = useState<string>(task.deadline ? task.deadline.split('T')[0] : '')
   const [editEffortPoints, setEditEffortPoints] = useState<string>(task.effortPoints?.toString() || '')
   const [effortPointsError, setEffortPointsError] = useState<string>('')
+  // Separate effort points input for the "assign member" section so it doesn't
+  // interfere with the main editEffortPoints field. It uses the same
+  // validation logic but maintains independent state and error.
+  const [assignEffortPoints, setAssignEffortPoints] = useState<string>('')
+  const [assignEffortPointsError, setAssignEffortPointsError] = useState<string>('')
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false)
 
   // State cho edit mode
@@ -136,6 +141,9 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const [showRemoveConfirm, setShowRemoveConfirm] = useState(false)
   const [selectedAssignee, setSelectedAssignee] = useState<string | null>(null)
   const [localTaskData, setLocalTaskData] = useState<TaskP>(task)
+  // Keep a short-lived map of recent optimistic assignments to prevent transient
+  // server-side zeros from overwriting the UI immediately after assign.
+  const [recentAssignments, setRecentAssignments] = useState<Record<string, { points: number; ts: number }>>({})
 
   const getPriorityChevron = (priority: number) => {
     switch (priority) {
@@ -454,6 +462,56 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       await taskApi.assignTask(currentProject!.id, task.id, implementerId, points ?? null)
       console.log('✅ API call successful')
 
+      // Optimistic UI update: immediately reflect assigned effort points so the user sees it
+      try {
+        setLocalTaskData((prev) => {
+          if (!prev) return prev
+          const prevAssignees = Array.isArray(prev.taskAssignees) ? prev.taskAssignees.slice() : []
+
+          const updatedAssignees = (() => {
+            const foundIndex = prevAssignees.findIndex((x) => x.projectMemberId === implementerId)
+            if (foundIndex !== -1) {
+              // Update existing assignee's assignedEffortPoints
+              type AssigneeWithPoints = { assignedEffortPoints?: number | null }
+              const prevAssigned = (prevAssignees[foundIndex] as AssigneeWithPoints).assignedEffortPoints
+              const a = {
+                ...prevAssignees[foundIndex],
+                assignedEffortPoints: points ?? prevAssigned
+              }
+              const copy = prevAssignees.slice()
+              copy[foundIndex] = a
+              return copy
+            }
+            // If not found, add a minimal assignee entry so UI shows points immediately
+            const newAssignee = {
+              projectMemberId: implementerId,
+              executor: member?.fullName || member?.email || implementerId,
+              avatar: member?.avatar || '',
+              role: member?.role || 'Member',
+              assignedEffortPoints: points ?? null
+            }
+            return [...prevAssignees, newAssignee]
+          })()
+
+          return { ...prev, taskAssignees: updatedAssignees }
+        })
+        // Remember this optimistic assignment briefly so we can prefer it over
+        // a transient server 0 that might arrive in the next immediate refresh.
+        if (typeof points === 'number') {
+          setRecentAssignments((prev) => ({ ...prev, [implementerId]: { points: points!, ts: Date.now() } }))
+          // Auto-clear after 3s
+          setTimeout(() => {
+            setRecentAssignments((prev) => {
+              const copy = { ...prev }
+              delete copy[implementerId]
+              return copy
+            })
+          }, 3000)
+        }
+      } catch (e) {
+        console.warn('Optimistic UI update failed:', e)
+      }
+
       // 2. Force reload toàn bộ dialog data từ server
       console.log('🔄 Force reloading all dialog data...')
 
@@ -463,10 +521,75 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       console.log('📋 Updated task data:', updatedTask)
 
       if (updatedTask) {
-        // Cập nhật local task data từ server
-        setLocalTaskData(updatedTask)
+        // Merge server response with optimistic local data so we don't overwrite
+        // recently-set assignedEffortPoints with a transient server value.
+        setLocalTaskData((prev) => {
+          // If no previous local data, just use server task
+          if (!prev) return updatedTask
 
-        // Cập nhật task assignees từ server data
+          // Define a richer assignee type that matches our UI usage
+          type AssigneeFull = {
+            projectMemberId: string
+            executor: string
+            avatar: string
+            role: string
+            assignedEffortPoints?: number | null
+          }
+
+          // Build a map of previous assignedEffortPoints by projectMemberId
+          const prevMap: Record<string, number | null | undefined> = {}
+          ;((prev.taskAssignees || []) as AssigneeFull[]).forEach((pa) => {
+            prevMap[pa.projectMemberId] = pa.assignedEffortPoints
+          })
+
+          const mergedAssignees = ((updatedTask.taskAssignees || []) as AssigneeFull[]).map((sa) => {
+            const serverVal = sa.assignedEffortPoints
+            const prevVal = prevMap[sa.projectMemberId]
+
+            // If we just assigned points to this implementer, prefer that optimistic value
+            // to avoid temporary server-side zeroes overwriting the UI.
+            if (sa.projectMemberId === implementerId && typeof points === 'number') {
+              return { ...sa, assignedEffortPoints: points }
+            }
+
+            // If we have a recent optimistic assignment recorded and the server
+            // value is 0 (or missing) within a short window, prefer the
+            // optimistic value.
+            const recent = recentAssignments[sa.projectMemberId]
+            if (
+              recent &&
+              Date.now() - recent.ts < 3000 &&
+              (serverVal === 0 || serverVal === null || serverVal === undefined)
+            ) {
+              return { ...sa, assignedEffortPoints: recent.points }
+            }
+
+            let assignedEffortPoints: number | null
+
+            // If server didn't provide a value, fall back to previous optimistic value
+            if (serverVal === null || serverVal === undefined) {
+              assignedEffortPoints = typeof prevVal === 'number' ? prevVal : (serverVal ?? null)
+            } else if (typeof serverVal === 'number') {
+              // Server provided a number (could be 0). Prefer server unless we have a
+              // previous optimistic value that is different and appears more accurate
+              // (e.g. optimistic assignment > server's transient 0).
+              if (typeof prevVal === 'number' && prevVal !== serverVal && prevVal > serverVal) {
+                assignedEffortPoints = prevVal
+              } else {
+                assignedEffortPoints = serverVal
+              }
+            } else {
+              assignedEffortPoints = serverVal ?? null
+            }
+
+            return { ...sa, assignedEffortPoints }
+          })
+
+          const merged = { ...updatedTask, taskAssignees: mergedAssignees }
+          return merged as TaskP
+        })
+
+        // Cập nhật task assignees từ server data (keep single-assignee state in sync)
         if (updatedTask.taskAssignees) {
           const assigneeFromTask =
             Array.isArray(updatedTask.taskAssignees) && updatedTask.taskAssignees.length > 0
@@ -717,6 +840,14 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setEditEffortPoints(value)
     const error = validateEffortPoints(value)
     setEffortPointsError(error)
+  }
+
+  // Handle assign-section effort points change with same validation but
+  // independent state so editing it won't change the main editEffortPoints.
+  const handleAssignEffortPointsChange = (value: string) => {
+    setAssignEffortPoints(value)
+    const error = validateEffortPoints(value)
+    setAssignEffortPointsError(error)
   }
 
   // Handle effort points blur for validation
@@ -1524,6 +1655,19 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                                 </span>
                                 <span className='text-xs text-gray-400'>•</span>
                                 <span className='text-xs text-gray-500'>Assigned</span>
+                                {/* Show assigned effort points if available */}
+                                {(() => {
+                                  const assignedPoints = (a as { assignedEffortPoints?: number }).assignedEffortPoints
+                                  const display =
+                                    typeof assignedPoints === 'number' && assignedPoints >= 0
+                                      ? `${assignedPoints} pts`
+                                      : '0 pts'
+                                  return (
+                                    <span className='ml-2 text-xs bg-gray-50 text-gray-700 px-2 py-0.5 rounded-md font-semibold'>
+                                      {display}
+                                    </span>
+                                  )
+                                })()}
                               </div>
                             </div>
                           </div>
@@ -1592,8 +1736,12 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                       <Select
                         onValueChange={async (memberId) => {
                           // When selecting a member, call assign with optional effort if provided
-                          const points = editEffortPoints.trim() ? Number(editEffortPoints) : null
+                          // Use the assign-specific input (`assignEffortPoints`) instead of the main edit field
+                          const points = assignEffortPoints.trim() ? Number(assignEffortPoints) : null
                           await handleAssignMember(memberId, points)
+                          // Clear the assign input and any error after assigning
+                          setAssignEffortPoints('')
+                          setAssignEffortPointsError('')
                           setTimeout(() => {
                             onTaskUpdated()
                           }, 500)
@@ -1654,14 +1802,24 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
                     {/* Input to provide effort points when assigning (single assign) */}
                     <div className='w-36'>
-                      <input
-                        type='text'
-                        className='w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-lavender-500'
-                        placeholder='Effort pts'
-                        value={editEffortPoints}
-                        onChange={(e) => handleEffortPointsChange(e.target.value)}
-                        disabled={isUpdating}
-                      />
+                      <div className='relative'>
+                        <input
+                          type='text'
+                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-lavender-500 ${
+                            assignEffortPointsError ? 'border-red-500 focus:ring-red-400' : 'border-gray-300'
+                          }`}
+                          placeholder='Effort pts'
+                          value={assignEffortPoints}
+                          onChange={(e) => handleAssignEffortPointsChange(e.target.value)}
+                          onBlur={() => setAssignEffortPointsError(validateEffortPoints(assignEffortPoints))}
+                          disabled={isUpdating}
+                        />
+                        {assignEffortPointsError && (
+                          <div className='absolute left-0 top-full mt-2 text-sm text-red-600 bg-white border border-red-200 rounded-lg px-3 py-2 shadow-sm z-10'>
+                            {assignEffortPointsError}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
