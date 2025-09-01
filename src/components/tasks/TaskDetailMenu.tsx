@@ -81,6 +81,11 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   const [editDeadline, setEditDeadline] = useState<string>(task.deadline ? task.deadline.split('T')[0] : '')
   const [editEffortPoints, setEditEffortPoints] = useState<string>(task.effortPoints?.toString() || '')
   const [effortPointsError, setEffortPointsError] = useState<string>('')
+  // Separate effort points input for the "assign member" section so it doesn't
+  // interfere with the main editEffortPoints field. It uses the same
+  // validation logic but maintains independent state and error.
+  const [assignEffortPoints, setAssignEffortPoints] = useState<string>('')
+  const [assignEffortPointsError, setAssignEffortPointsError] = useState<string>('')
   const [isTagManagerOpen, setIsTagManagerOpen] = useState(false)
 
   // State cho edit mode
@@ -717,6 +722,14 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setEditEffortPoints(value)
     const error = validateEffortPoints(value)
     setEffortPointsError(error)
+  }
+
+  // Handle assign-section effort points change with same validation but
+  // independent state so editing it won't change the main editEffortPoints.
+  const handleAssignEffortPointsChange = (value: string) => {
+    setAssignEffortPoints(value)
+    const error = validateEffortPoints(value)
+    setAssignEffortPointsError(error)
   }
 
   // Handle effort points blur for validation
@@ -1654,14 +1667,24 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
 
                     {/* Input to provide effort points when assigning (single assign) */}
                     <div className='w-36'>
-                      <input
-                        type='text'
-                        className='w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-lavender-500'
-                        placeholder='Effort pts'
-                        value={editEffortPoints}
-                        onChange={(e) => handleEffortPointsChange(e.target.value)}
-                        disabled={isUpdating}
-                      />
+                      <div className='relative'>
+                        <input
+                          type='text'
+                          className={`w-full rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-lavender-500 ${
+                            assignEffortPointsError ? 'border-red-500 focus:ring-red-400' : 'border-gray-300'
+                          }`}
+                          placeholder='Effort pts'
+                          value={assignEffortPoints}
+                          onChange={(e) => handleAssignEffortPointsChange(e.target.value)}
+                          onBlur={() => setAssignEffortPointsError(validateEffortPoints(assignEffortPoints))}
+                          disabled={isUpdating}
+                        />
+                        {assignEffortPointsError && (
+                          <div className='absolute left-0 top-full mt-2 text-sm text-red-600 bg-white border border-red-200 rounded-lg px-3 py-2 shadow-sm z-10'>
+                            {assignEffortPointsError}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
