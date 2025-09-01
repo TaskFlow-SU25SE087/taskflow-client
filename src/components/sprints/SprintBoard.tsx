@@ -2,6 +2,7 @@ import { taskApi } from '@/api/tasks'
 import { Button } from '@/components/ui/button'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { useSprints } from '@/hooks/useSprints'
+import { APIResponse } from '@/types/api'
 import { Board } from '@/types/board'
 import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
@@ -182,7 +183,7 @@ export function SprintBoard({
       </div>
       {isExpanded && (
         <div className='overflow-x-auto transition-all duration-200 bg-white rounded-b-lg'>
-          {loadingTasks && <div className='p-4 text-center text-gray-500'>Đang tải tasks...</div>}
+          {loadingTasks && <div className='p-4 text-center text-gray-500'>Loading tasks...</div>}
           {/* Column header for consistency with Backlog */}
           {!loadingTasks && (
             <div className='px-4 pt-4'>
@@ -207,36 +208,37 @@ export function SprintBoard({
                     size='xs'
                     variant='destructive'
                     onClick={async () => {
-                      if (!window.confirm('Bạn có chắc muốn xóa các task đã chọn?')) return
+                      if (!window.confirm('Are you sure you want to delete the selected tasks?')) return
                       setLoadingBatch(true)
                       try {
-                        let lastRes = null
+                        let lastRes: APIResponse<boolean> | null = null
                         for (const id of selectedTaskIds) {
                           lastRes = await taskApi.deleteTask(projectId, id)
                         }
-                        if (lastRes && typeof lastRes === 'object' && 'code' in (lastRes as any)) {
-                          const r: any = lastRes
-                          showToast({
-                            title: r.code === 200 ? 'Success' : 'Error',
-                            description: r.message || 'Deleted selected tasks!',
-                            variant: r.code === 200 ? 'success' : 'destructive'
-                          })
-                        } else if (
-                          lastRes &&
-                          typeof lastRes === 'object' &&
-                          'data' in lastRes &&
-                          lastRes.data === true
-                        ) {
-                          showToast({ title: 'Success', description: 'Deleted selected tasks!' })
+                        if (lastRes) {
+                          if (lastRes.code === 200 || lastRes.data === true) {
+                            showToast({
+                              title: 'Success',
+                              description: lastRes.message || 'Deleted selected tasks!',
+                              variant: 'success'
+                            })
+                          } else {
+                            showToast({
+                              title: 'Error',
+                              description: lastRes.message || 'Failed to delete tasks',
+                              variant: 'destructive'
+                            })
+                          }
                         } else {
                           showToast({ title: 'Error', description: 'Failed to delete tasks', variant: 'destructive' })
                         }
                         setSelectedTaskIds([])
                         onTaskUpdate()
-                      } catch (err: any) {
+                      } catch (err: unknown) {
+                        const error = err as { response?: { data?: { message?: string } }; message?: string }
                         showToast({
                           title: 'Error',
-                          description: err.response?.data?.message || err.message || 'Failed to delete tasks',
+                          description: error.response?.data?.message || error.message || 'Failed to delete tasks',
                           variant: 'destructive'
                         })
                       } finally {
