@@ -115,7 +115,13 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
         section: 2,
         path: '/all-parts'
       },
-      { id: 'settings', icon: <FiSettings className='h-5 w-5' />, label: 'Settings', section: 3, path: '/settings' }
+      {
+        id: 'settings',
+        icon: <FiSettings className='h-5 w-5' />,
+        label: 'Settings',
+        section: 3,
+        path: activeProjectId ? `/projects/${activeProjectId}/settings` : '/settings'
+      }
     ],
     [activeProjectId]
   )
@@ -278,6 +284,22 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
           }
         } catch (error) {
           console.error('Failed to get projects for activity log:', error)
+        }
+        navigate('/projects')
+        return
+      }
+
+      // Special handling for settings when no project is selected
+      if (tabId === 'settings' && !activeProjectId) {
+        try {
+          const response = await projectApi.getProjects()
+          if (response.data && response.data.length > 0) {
+            const firstProject = response.data[0]
+            navigate(`/projects/${firstProject.id}/settings`)
+            return
+          }
+        } catch (error) {
+          console.error('Failed to get projects for settings:', error)
         }
         navigate('/projects')
         return

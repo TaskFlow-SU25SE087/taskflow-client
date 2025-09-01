@@ -40,6 +40,7 @@ import ProjectList from '@/pages/projects/ProjectList'
 import ProjectMembers from '@/pages/projects/ProjectMembers'
 import ProjectMemberVerify from '@/pages/projects/ProjectMemberVerify'
 import ProjectReports from '@/pages/projects/ProjectReports'
+import ProjectSettings from '@/pages/projects/ProjectSettings'
 import ProjectTimeline from '@/pages/projects/ProjectTimeline'
 import SimpleReports from '@/pages/projects/SimpleReports'
 import SprintMeetings from '@/pages/projects/SprintMeetings'
@@ -48,6 +49,7 @@ import React from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 const AuthRedirect = ({ children }: { children: React.ReactNode }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { isAuthenticated, authLoading, user } = useAuth() as any
   const location = useLocation()
 
@@ -352,6 +354,14 @@ const AppContent: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path='/projects/:projectId/settings'
+          element={
+            <ProtectedRoute>
+              <ProjectSettings />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Admin routes */}
         <Route
@@ -386,6 +396,15 @@ const AppContent: React.FC = () => {
           element={
             <ProtectedRoute>
               <SecurityPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path='/settings'
+          element={
+            <ProtectedRoute>
+              <Navigate to='/projects' replace />
             </ProtectedRoute>
           }
         />
