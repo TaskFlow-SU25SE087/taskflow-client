@@ -48,6 +48,7 @@ export default function AdminUsersPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [totalUsersCount, setTotalUsersCount] = useState<number | null>(null)
   const [isCountingTotal, setIsCountingTotal] = useState(false)
+  const [refreshTrigger, setRefreshTrigger] = useState(0) // Force refresh trigger
   const [totalStats, setTotalStats] = useState({
     total: 0,
     active: 0,
@@ -379,17 +380,24 @@ export default function AdminUsersPage() {
         variant: 'success'
       })
       
-      // Clear selection if it was a bulk action
-      if (pendingAction.userCount > 1) {
-        setSelectedUsers(new Set())
-        setSelectAll(false)
-      }
+      // Always clear selection after successful action
+      setSelectedUsers(new Set())
+      setSelectAll(false)
       
       // Refresh current page data
       await fetchUsers(pagination.pageNumber, pageSize)
       
+      // If we're showing all users (search mode), refresh that too
+      if (allUsersForSearch) {
+        const freshAllUsers = await fetchAllUsers()
+        setAllUsersForSearch(freshAllUsers)
+      }
+      
       // Auto-refresh total statistics after ban/unban
       await refreshTotalStats()
+      
+      // Force UI refresh to ensure filtered results update
+      setRefreshTrigger(prev => prev + 1)
     } catch (err) {
       console.error('Ban failed', err)
       const actionText = pendingAction.userCount > 1 ? 'Bulk Ban' : 'Ban'
@@ -443,17 +451,24 @@ export default function AdminUsersPage() {
         variant: 'success'
       })
       
-      // Clear selection if it was a bulk action
-      if (pendingAction.userCount > 1) {
-        setSelectedUsers(new Set())
-        setSelectAll(false)
-      }
+      // Always clear selection after successful action
+      setSelectedUsers(new Set())
+      setSelectAll(false)
       
       // Refresh current page data
       await fetchUsers(pagination.pageNumber, pageSize)
       
+      // If we're showing all users (search mode), refresh that too
+      if (allUsersForSearch) {
+        const freshAllUsers = await fetchAllUsers()
+        setAllUsersForSearch(freshAllUsers)
+      }
+      
       // Auto-refresh total statistics after ban/unban
       await refreshTotalStats()
+      
+      // Force UI refresh to ensure filtered results update
+      setRefreshTrigger(prev => prev + 1)
     } catch (err) {
       console.error('Unban failed', err)
       const actionText = pendingAction.userCount > 1 ? 'Bulk Unban' : 'Unban'
@@ -547,7 +562,7 @@ export default function AdminUsersPage() {
         selectedSemester === 'all' || userSemesters.includes(normalizedSelectedSemester)
       return matchesSearch && matchesRole && matchesStatus && matchesSemester
     })
-  }, [baseUsers, searchTerm, selectedRole, selectedStatus, selectedSemester, allUsersForSearch])
+  }, [baseUsers, searchTerm, selectedRole, selectedStatus, selectedSemester, allUsersForSearch, refreshTrigger])
 
   const roles = Array.from(new Set(users.map((user) => user.role)))
   
@@ -737,7 +752,7 @@ export default function AdminUsersPage() {
         {/* Enhanced Search and Filter Bar */}
         <div className='bg-white rounded-2xl p-6 shadow-lg border border-gray-100'>
           <div className='flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6'>
-            <div className='flex flex-1 gap-2 items-center'>
+            <div className='flex flex-1 items-center'>
               <div className='relative flex-1 max-w-md'>
                 <Input
                   placeholder='Search by name, email, or student ID...'
@@ -770,7 +785,7 @@ export default function AdminUsersPage() {
                 )}
               </Button>
               
-              <div className='flex items-center gap-3'>
+              <div className='flex items-center gap-3 ml-6'>
                 <Filter className='text-gray-500 w-5 h-5' />
                 
                 <select
