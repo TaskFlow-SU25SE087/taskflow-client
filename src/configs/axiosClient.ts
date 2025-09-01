@@ -1,5 +1,6 @@
-import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
-import { ENV_CONFIG } from './env';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
+import { ENV_CONFIG } from './env'
 
 const axiosClient = axios.create({
   // Set immediately from env to avoid race conditions on first requests
@@ -16,7 +17,7 @@ console.log('[AXIOS] Initial configuration:', {
   baseURL: ENV_CONFIG.API_BASE_URL,
   timeout: ENV_CONFIG.API_TIMEOUT,
   isDevelopment: ENV_CONFIG.IS_DEVELOPMENT
-});
+})
 
 // Prevent multiple simultaneous 401 redirects causing reload loops
 let isHandlingUnauthorized = false
@@ -61,6 +62,26 @@ axiosClient.interceptors.request.use(
       if (ENV_CONFIG.IS_DEVELOPMENT) {
         console.log('⚠️ [axiosClient] No access token found in storage')
       }
+    }
+
+    // If request payload is FormData, remove any existing Content-Type header
+    // so the browser/axios can set the proper multipart boundary header.
+    // This prevents sending 'application/json' for form-data requests which
+    // can cause the backend to fail parsing multipart requests (500 errors).
+    try {
+      if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+        if (config.headers) {
+          delete (config.headers as any)['Content-Type']
+          delete (config.headers as any)['content-type']
+        }
+        if (ENV_CONFIG.IS_DEVELOPMENT) {
+          console.log(
+            '📤 [axiosClient] Detected FormData payload - removed Content-Type header to allow multipart boundary'
+          )
+        }
+      }
+    } catch {
+      // Silently ignore failures here; it's non-critical and environment-dependent
     }
 
     if (ENV_CONFIG.IS_DEVELOPMENT) {
@@ -164,7 +185,9 @@ axiosClient.interceptors.response.use(
             isHandlingUnauthorized = true
             try {
               delete axiosClient.defaults.headers.common['Authorization']
-            } catch {}
+            } catch {
+              /* empty */
+            }
             localStorage.removeItem('accessToken')
             localStorage.removeItem('refreshToken')
             localStorage.removeItem('currentProjectId')

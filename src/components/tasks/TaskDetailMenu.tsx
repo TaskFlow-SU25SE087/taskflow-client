@@ -420,7 +420,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
   })
 
   // Cải thiện hàm handleAssignMember để refresh ngay lập tức
-  const handleAssignMember = async (memberId: string) => {
+  const handleAssignMember = async (memberId: string, assignedEffortPoints?: number | null) => {
     console.log('🎯 Assign memberId:', memberId)
     console.log('📋 Available projectMembers:', projectMembers)
 
@@ -449,7 +449,9 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     try {
       // 1. Thực hiện assign task API trước
       console.log('🚀 Calling assignTask API...')
-      await taskApi.assignTask(currentProject!.id, task.id, implementerId)
+      const points =
+        assignedEffortPoints !== undefined && assignedEffortPoints !== null ? Number(assignedEffortPoints) : undefined
+      await taskApi.assignTask(currentProject!.id, task.id, implementerId, points ?? null)
       console.log('✅ API call successful')
 
       // 2. Force reload toàn bộ dialog data từ server
@@ -532,8 +534,50 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
       })
     } catch (error) {
       console.error('❌ Error in assign task:', error)
-      const message = error instanceof Error ? error.message : 'Failed to assign task.'
+      const message = extractBackendErrorMessage(error)
       showToast({ title: 'Error', description: message, variant: 'destructive' })
+    }
+  }
+
+  // Bulk assign effort points to selected assignees (does not change assignments)
+  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([])
+  const [bulkEffortPoints, setBulkEffortPoints] = useState<string>('')
+
+  const handleToggleAssigneeSelection = (id: string) => {
+    setSelectedAssigneeIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
+  }
+
+  const validateBulkEffort = (v: string) => {
+    if (!v.trim()) return 'Effort is required'
+    if (!/^\d+$/.test(v)) return 'Must be a positive integer'
+    return ''
+  }
+
+  const handleApplyBulkEffort = async () => {
+    if (!currentProject) return
+    const err = validateBulkEffort(bulkEffortPoints)
+    if (err) {
+      showToast({ title: 'Error', description: err, variant: 'destructive' })
+      return
+    }
+    if (selectedAssigneeIds.length === 0) {
+      showToast({ title: 'Error', description: 'No assignees selected', variant: 'destructive' })
+      return
+    }
+
+    try {
+      const points = Number(bulkEffortPoints)
+      const payload = selectedAssigneeIds.map((id) => ({ implementerId: id, assignedEffortPoints: points }))
+      await taskApi.bulkAssignEffortPoints(currentProject.id, task.id, payload)
+      showToast({ title: 'Success', description: 'Effort points applied to selected assignees', variant: 'success' })
+      // Refresh data
+      await reloadDialogData()
+      onTaskUpdated()
+      setSelectedAssigneeIds([])
+      setBulkEffortPoints('')
+    } catch (error) {
+      const errorMessage = extractBackendErrorMessage(error)
+      showToast({ title: 'Error', description: errorMessage, variant: 'destructive' })
     }
   }
 
@@ -1543,65 +1587,127 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                   <div className='mb-3'>
                     <span className='text-sm font-semibold text-gray-900'>Add Team Member</span>
                   </div>
-                  <Select
-                    onValueChange={async (memberId) => {
-                      await handleAssignMember(memberId)
-                      setTimeout(() => {
-                        onTaskUpdated()
-                      }, 500)
-                    }}
-                    value={assignee ? ('id' in assignee ? assignee.id : assignee.userId) || '' : ''}
-                    disabled={!user?.id}
-                  >
-                    <SelectTrigger className='w-full bg-white border-gray-300 hover:border-gray-400 focus:border-lavender-500 focus:ring-lavender-500/20 h-10'>
-                      <SelectValue placeholder='Select a team member...'>
-                        {assignee ? (
-                          <div className='flex items-center gap-3 min-w-0'>
-                            <Avatar className='w-6 h-6 flex-shrink-0'>
-                              <AvatarImage src={assignee.avatar} alt={assignee.fullName || 'Member'} />
-                              <AvatarFallback className='text-xs bg-gray-100 text-gray-700'>
-                                {(assignee.fullName || assignee.userId || '?')[0]?.toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className='text-sm truncate'>{assignee.fullName || assignee.userId}</span>
-                          </div>
-                        ) : (
-                          'Select a team member...'
-                        )}
-                      </SelectValue>
-                    </SelectTrigger>
-                    {user?.id && (
-                      <SelectContent className='max-h-48'>
-                        {projectMembers.map((member) => {
-                          const memberId = ('id' in member ? member.id : member.userId) || ''
-                          const displayName =
-                            member.fullName?.trim() ||
-                            member.email?.trim() ||
-                            (memberId ? memberId.slice(0, 6) : 'Unknown')
-                          const avatarChar = (
-                            member.fullName?.[0] ||
-                            member.email?.[0] ||
-                            memberId?.[0] ||
-                            '?'
-                          ).toUpperCase()
-
-                          return (
-                            <SelectItem key={memberId} value={memberId} className='py-2'>
+                  <div className='flex gap-2 items-center'>
+                    <div className='flex-1'>
+                      <Select
+                        onValueChange={async (memberId) => {
+                          // When selecting a member, call assign with optional effort if provided
+                          const points = editEffortPoints.trim() ? Number(editEffortPoints) : null
+                          await handleAssignMember(memberId, points)
+                          setTimeout(() => {
+                            onTaskUpdated()
+                          }, 500)
+                        }}
+                        value={assignee ? ('id' in assignee ? assignee.id : assignee.userId) || '' : ''}
+                        disabled={!user?.id}
+                      >
+                        <SelectTrigger className='w-full bg-white border-gray-300 hover:border-gray-400 focus:border-lavender-500 focus:ring-lavender-500/20 h-10'>
+                          <SelectValue placeholder='Select a team member...'>
+                            {assignee ? (
                               <div className='flex items-center gap-3 min-w-0'>
                                 <Avatar className='w-6 h-6 flex-shrink-0'>
-                                  <AvatarImage src={member.avatar} alt={displayName} />
+                                  <AvatarImage src={assignee.avatar} alt={assignee.fullName || 'Member'} />
                                   <AvatarFallback className='text-xs bg-gray-100 text-gray-700'>
-                                    {avatarChar}
+                                    {(assignee.fullName || assignee.userId || '?')[0]?.toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
-                                <span className='text-sm truncate'>{displayName}</span>
+                                <span className='text-sm truncate'>{assignee.fullName || assignee.userId}</span>
                               </div>
-                            </SelectItem>
-                          )
-                        })}
-                      </SelectContent>
-                    )}
-                  </Select>
+                            ) : (
+                              'Select a team member...'
+                            )}
+                          </SelectValue>
+                        </SelectTrigger>
+                        {user?.id && (
+                          <SelectContent className='max-h-48'>
+                            {projectMembers.map((member) => {
+                              const memberId = ('id' in member ? member.id : member.userId) || ''
+                              const displayName =
+                                member.fullName?.trim() ||
+                                member.email?.trim() ||
+                                (memberId ? memberId.slice(0, 6) : 'Unknown')
+                              const avatarChar = (
+                                member.fullName?.[0] ||
+                                member.email?.[0] ||
+                                memberId?.[0] ||
+                                '?'
+                              ).toUpperCase()
+
+                              return (
+                                <SelectItem key={memberId} value={memberId} className='py-2'>
+                                  <div className='flex items-center gap-3 min-w-0'>
+                                    <Avatar className='w-6 h-6 flex-shrink-0'>
+                                      <AvatarImage src={member.avatar} alt={displayName} />
+                                      <AvatarFallback className='text-xs bg-gray-100 text-gray-700'>
+                                        {avatarChar}
+                                      </AvatarFallback>
+                                    </Avatar>
+                                    <span className='text-sm truncate'>{displayName}</span>
+                                  </div>
+                                </SelectItem>
+                              )
+                            })}
+                          </SelectContent>
+                        )}
+                      </Select>
+                    </div>
+
+                    {/* Input to provide effort points when assigning (single assign) */}
+                    <div className='w-36'>
+                      <input
+                        type='text'
+                        className='w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-lavender-500'
+                        placeholder='Effort pts'
+                        value={editEffortPoints}
+                        onChange={(e) => handleEffortPointsChange(e.target.value)}
+                        disabled={isUpdating}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Bulk effort assignment section */}
+                  <div className='mt-3 border-t pt-3'>
+                    <div className='flex items-center justify-between mb-2'>
+                      <div className='text-sm font-medium text-gray-700'>Bulk assign effort points</div>
+                      <div className='text-xs text-gray-400'>Select assignees then apply points</div>
+                    </div>
+                    <div className='flex gap-2 items-center'>
+                      <div className='flex-1 max-h-36 overflow-y-auto pr-2'>
+                        {localTaskData.taskAssignees && localTaskData.taskAssignees.length > 0 ? (
+                          localTaskData.taskAssignees.map((a) => (
+                            <label key={a.projectMemberId} className='flex items-center gap-2 text-sm mb-1'>
+                              <input
+                                type='checkbox'
+                                checked={selectedAssigneeIds.includes(a.projectMemberId)}
+                                onChange={() => handleToggleAssigneeSelection(a.projectMemberId)}
+                                className='form-checkbox h-4 w-4 text-lavender-600'
+                              />
+                              <span className='truncate'>{a.executor}</span>
+                            </label>
+                          ))
+                        ) : (
+                          <div className='text-xs text-gray-400'>No assignees to select</div>
+                        )}
+                      </div>
+                      <div className='w-32'>
+                        <input
+                          type='text'
+                          className='w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-lavender-500'
+                          placeholder='Points'
+                          value={bulkEffortPoints}
+                          onChange={(e) => setBulkEffortPoints(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <Button
+                          onClick={handleApplyBulkEffort}
+                          className='bg-lavender-600 hover:bg-lavender-700 text-white'
+                        >
+                          Apply
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

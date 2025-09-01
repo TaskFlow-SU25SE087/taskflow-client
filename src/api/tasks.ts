@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import axiosClient from '@/configs/axiosClient'
 import { APIResponse } from '@/types/api'
 import { TaskP } from '@/types/task'
@@ -82,16 +83,61 @@ export const taskApi = {
     return response.data.data === true
   },
 
-  // Assign a task to a user
-  assignTask: async (projectId: string, taskId: string, implementerId: string): Promise<APIResponse<boolean>> => {
-    console.log('Assign action:', { projectId, taskId, implementerId })
+  // Assign a task to a user. Optionally include AssignedEffortPoints.
+  assignTask: async (
+    projectId: string,
+    taskId: string,
+    implementerId: string,
+    assignedEffortPoints?: number | null
+  ): Promise<APIResponse<boolean>> => {
+    console.log('Assign action:', { projectId, taskId, implementerId, assignedEffortPoints })
+
+    // Backend Swagger shows form-data for this endpoint. Use FormData to match.
     const formData = new FormData()
-    formData.append('implementerId', implementerId)
-    const response = await axiosClient.post(`/projects/${projectId}/tasks/${taskId}/assignments/assign`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
-    })
-    console.log('Assign response:', response)
-    return response.data
+    formData.append('ImplementerId', implementerId)
+    if (assignedEffortPoints !== undefined && assignedEffortPoints !== null) {
+      formData.append('AssignedEffortPoints', String(assignedEffortPoints))
+    }
+
+    // Do not set Content-Type header for FormData; the browser will add the correct boundary
+    const response = await axiosClient.post(`/projects/${projectId}/tasks/${taskId}/assignments/assign`, formData)
+
+    // Standardize error handling: backend returns { code, message, data }
+    const data = response.data as APIResponse<boolean>
+    console.log('Assign response data:', data)
+
+    // Backend historically sometimes returns { code: 200, message: 'Success', data: true }
+    // while other endpoints use code: 0 for success. Accept either as success.
+    const apiCode = data && typeof data.code === 'number' ? data.code : undefined
+    const isSuccess =
+      apiCode === 0 || apiCode === 200 || (response.status >= 200 && response.status < 300 && data?.data === true)
+
+    if (!isSuccess) {
+      // Throw so callers can catch and show proper UI errors, include backend message when available
+      throw new Error(data?.message || 'Failed to assign task')
+    }
+
+    return data
+  },
+
+  // Bulk assign effort points to existing assignees (does not create assignments)
+  bulkAssignEffortPoints: async (
+    projectId: string,
+    taskId: string,
+    assignees: { implementerId: string; assignedEffortPoints: number }[]
+  ): Promise<APIResponse<boolean>> => {
+    const payload = {
+      assignees: assignees.map((a) => ({
+        implementerId: a.implementerId,
+        assignedEffortPoints: a.assignedEffortPoints
+      }))
+    }
+    const response = await axiosClient.post(`/projects/${projectId}/tasks/${taskId}/bulk-assign`, payload)
+    const data = response.data as APIResponse<boolean>
+    if (!data || (typeof data.code === 'number' && data.code !== 0)) {
+      throw new Error(data?.message || 'Failed to bulk assign effort points')
+    }
+    return data
   },
 
   // Remove an assignment from a task
