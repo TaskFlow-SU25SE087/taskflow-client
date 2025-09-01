@@ -184,7 +184,7 @@ export default function AdminUsersPage() {
   // Removed handleFileUpload function (no longer needed)
 
   // Xử lý filter changes
-  const handleFilterChange = (filterType: string, value: string) => {
+  const handleFilterChange = async (filterType: string, value: string) => {
     switch (filterType) {
       case 'role':
         setSelectedRole(value)
@@ -197,8 +197,28 @@ export default function AdminUsersPage() {
         break
     }
     
-    // Reset về page 1 khi thay đổi filter
-    fetchUsers(1, pageSize)
+    // If any filter is not 'all', switch to search mode to show all matching results
+    const newRole = filterType === 'role' ? value : selectedRole
+    const newStatus = filterType === 'status' ? value : selectedStatus
+    const newSemester = filterType === 'semester' ? value : selectedSemester
+    
+    const hasActiveFilter = newRole !== 'all' || newStatus !== 'all' || newSemester !== 'all'
+    
+    if (hasActiveFilter) {
+      // Switch to "view all" mode to show filtered results across all pages
+      try {
+        const allUsers = await fetchAllUsers()
+        setAllUsersForSearch(allUsers)
+      } catch (error) {
+        console.error('Failed to fetch all users for filtering:', error)
+        // Fallback to normal pagination
+        fetchUsers(1, pageSize)
+      }
+    } else {
+      // All filters are 'all', switch back to normal pagination
+      setAllUsersForSearch(null)
+      fetchUsers(1, pageSize)
+    }
   }
 
   // Clear cache khi cần thiết
@@ -970,7 +990,31 @@ export default function AdminUsersPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className='overflow-x-auto'>
+        <div>
+          {/* Show indicator when viewing all filtered results */}
+          {allUsersForSearch && (selectedRole !== 'all' || selectedStatus !== 'all' || selectedSemester !== 'all') && (
+            <div className='mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg'>
+              <div className='flex items-center space-x-2 text-blue-700'>
+                <Filter className='h-4 w-4' />
+                <span className='text-sm font-medium'>
+                  Showing all {memoizedFilteredUsers.length} filtered results across all pages
+                </span>
+                <button
+                  onClick={() => {
+                    setSelectedRole('all')
+                    setSelectedStatus('all') 
+                    setSelectedSemester('all')
+                    setAllUsersForSearch(null)
+                    fetchUsers(1, pageSize)
+                  }}
+                  className='ml-auto text-blue-600 hover:text-blue-800 text-sm underline'
+                >
+                  Clear filters
+                </button>
+              </div>
+            </div>
+          )}
+          <div className='overflow-x-auto'>
           <table className='min-w-full divide-y divide-gray-200 bg-white'>
             <thead className='bg-gray-50'>
               <tr>
@@ -1100,9 +1144,10 @@ export default function AdminUsersPage() {
               })}
             </tbody>
           </table>
+          </div>
         </div>
       )}
-      {pagination.totalPages > 1 && !error && (
+      {pagination.totalPages > 1 && !error && !allUsersForSearch && (
         <div className='flex justify-center mt-8'>
           <AdminPagination
             currentPage={pagination.pageNumber}

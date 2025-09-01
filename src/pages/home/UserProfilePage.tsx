@@ -63,7 +63,7 @@ export default function UserProfilePage() {
       })
       .catch((err) => {
         if (err.response?.status === 404) {
-          showToast({ title: 'Not found', description: 'Không tìm thấy profile người dùng.', variant: 'destructive' })
+          showToast({ title: 'Not found', description: 'User profile not found.', variant: 'destructive' })
         } else {
           showToast({ title: 'Error', description: 'Failed to load profile', variant: 'destructive' })
         }

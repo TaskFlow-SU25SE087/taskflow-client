@@ -31,7 +31,7 @@ function AllParts() {
   useEffect(() => {
     async function fetchPartsAndGitMembers() {
       if (!currentProject?.id) {
-        setError('Không có project hiện tại')
+        setError('No current project')
         setLoading(false)
         return
       }
@@ -80,7 +80,7 @@ function AllParts() {
                 </li>
               ))
             ) : (
-              <li>Không có git member</li>
+              <li>No git member</li>
             )}
           </ul>
         </div>
