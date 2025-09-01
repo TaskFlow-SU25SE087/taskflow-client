@@ -17,8 +17,10 @@ interface UserProfileData {
   phoneNumber: string
   studentId: string
   term: string
-  termSeason?: string
-  termYear?: number
+  season?: string
+  year?: number
+  termSeason?: string  // For API response compatibility
+  termYear?: number    // For API response compatibility
   pastTerms?: string
 }
 
@@ -43,11 +45,19 @@ export default function UserProfilePage() {
     axiosClient
       .get(`/user/${user.id}`)
       .then((res) => {
-        setProfile(res.data.data)
+        // Handle field mapping for initial load
+        const profileData = res.data.data
+        const normalizedProfile = {
+          ...profileData,
+          season: profileData.season || profileData.termSeason,
+          year: profileData.year || profileData.termYear
+        }
+        
+        setProfile(normalizedProfile)
         setEditData({
-          fullName: res.data.data.fullName || '',
-          phoneNumber: res.data.data.phoneNumber || '',
-          avatar: res.data.data.avatar || ''
+          fullName: profileData.fullName || '',
+          phoneNumber: profileData.phoneNumber || '',
+          avatar: profileData.avatar || ''
         })
       })
       .catch((err) => {
@@ -102,7 +112,19 @@ export default function UserProfilePage() {
           'Content-Type': 'multipart/form-data'
         }
       })
-      setProfile(res.data.data)
+      // Preserve existing profile data and merge with new data
+      // Handle field mapping: termSeason -> season, termYear -> year
+      const updatedData = res.data.data
+      const normalizedData = {
+        ...updatedData,
+        season: updatedData.termSeason || updatedData.season,
+        year: updatedData.termYear || updatedData.year
+      }
+      
+      setProfile((prevProfile) => ({
+        ...prevProfile,
+        ...normalizedData
+      }))
       setEditData({
         fullName: res.data.data.fullName || '',
         phoneNumber: res.data.data.phoneNumber || '',
@@ -172,19 +194,15 @@ export default function UserProfilePage() {
           <Input value={profile.studentId} disabled />
         </div>
         <div>
-          <Label>Term</Label>
-          <Input value={profile.term} disabled />
+          <Label>Semester Season</Label>
+          <Input value={profile.season || ''} disabled />
         </div>
         <div>
-          <Label>Term Season</Label>
-          <Input value={profile.termSeason || ''} disabled />
+          <Label>Semester Year</Label>
+          <Input value={profile.year || ''} disabled />
         </div>
         <div>
-          <Label>Term Year</Label>
-          <Input value={profile.termYear || ''} disabled />
-        </div>
-        <div>
-          <Label>Past Terms</Label>
+          <Label>Past Semesters</Label>
           <Input value={profile.pastTerms || ''} disabled />
         </div>
         <Button type='submit' disabled={saving} className='bg-blue-600 hover:bg-blue-700 text-white w-full'>

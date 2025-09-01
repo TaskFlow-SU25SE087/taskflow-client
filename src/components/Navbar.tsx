@@ -219,9 +219,12 @@ export function Navbar({ isSidebarOpen, toggleSidebar, customLeft }: NavbarProps
                 <User className='h-4 w-4' />
                 Profile
               </DropdownMenuItem>
-              <DropdownMenuItem className='gap-2 text-gray-600 hover:text-gray-900'>
+              <DropdownMenuItem
+                onClick={() => navigate('/security')}
+                className='gap-2 text-gray-600 hover:text-gray-900'
+              >
                 <Settings className='h-4 w-4' />
-                Settings
+                Security
               </DropdownMenuItem>
               {(user?.role === 'Admin' || user?.role === 'admin' || user?.role === 0 || user?.role === '0') && (
                 <>

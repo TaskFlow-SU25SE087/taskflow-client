@@ -25,6 +25,7 @@ import ResetPasswordPage from '@/pages/home/ResetPasswordPage'
 import AdminNotFoundPage from '@/pages/admin/AdminNotFoundPage'
 import UserProfilePage from '@/pages/home/UserProfilePage'
 import VerifyEmailPage from '@/pages/home/VerifyEmailPage'
+import SecurityPage from '@/pages/SecurityPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import AllProjectParts from '@/pages/projects/AllProjectParts'
 import LegacyProjectMemberVerify from '@/pages/projects/LegacyProjectMemberVerify'
@@ -376,6 +377,15 @@ const AppContent: React.FC = () => {
           element={
             <ProtectedRoute>
               <UserProfilePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path='/security'
+          element={
+            <ProtectedRoute>
+              <SecurityPage />
             </ProtectedRoute>
           }
         />
