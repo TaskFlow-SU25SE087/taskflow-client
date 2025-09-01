@@ -427,7 +427,7 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     currentUserMember
   })
 
-  // Cải thiện hàm handleAssignMember để refresh ngay lập tức
+  // Cải thiện hàm handleAssignMember để tránh race condition
   const handleAssignMember = async (memberId: string, assignedEffortPoints?: number | null) => {
     console.log('🎯 Assign memberId:', memberId)
     console.log('📋 Available projectMembers:', projectMembers)
@@ -435,35 +435,23 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     // Tìm member bằng userId hoặc id (để xử lý cả hai trường hợp)
     const member = projectMembers.find((m) => m.userId === memberId || (m.id || m.userId) === memberId)
     console.log('👤 Assign member object:', member)
-    console.log('🔑 Member keys:', member ? Object.keys(member) : 'No member found')
 
     if (!member) {
       console.error('❌ Member not found for ID:', memberId)
-      console.log(
-        '📝 Available member IDs:',
-        projectMembers.map((m) => ({
-          userId: m.userId,
-          id: m.id || m.userId,
-          fullName: m.fullName
-        }))
-      )
       return
     }
 
     // Sử dụng member.userId hoặc member.id cho implementerId
     const implementerId = member.userId || member.id || ''
     console.log('🆔 Assign implementerId:', implementerId)
+    const points =
+      assignedEffortPoints !== undefined && assignedEffortPoints !== null ? Number(assignedEffortPoints) : undefined
 
     try {
-      // 1. Thực hiện assign task API trước
       console.log('🚀 Calling assignTask API...')
-      const points =
-        assignedEffortPoints !== undefined && assignedEffortPoints !== null ? Number(assignedEffortPoints) : undefined
-      await taskApi.assignTask(currentProject!.id, task.id, implementerId, points ?? null)
-      console.log('✅ API call successful')
 
-      // Optimistic UI update: immediately reflect assigned effort points so the user sees it
-      try {
+      // Optimistic UI update: immediately reflect assigned effort points
+      if (typeof points === 'number') {
         setLocalTaskData((prev) => {
           if (!prev) return prev
           const prevAssignees = Array.isArray(prev.taskAssignees) ? prev.taskAssignees.slice() : []
@@ -472,11 +460,9 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
             const foundIndex = prevAssignees.findIndex((x) => x.projectMemberId === implementerId)
             if (foundIndex !== -1) {
               // Update existing assignee's assignedEffortPoints
-              type AssigneeWithPoints = { assignedEffortPoints?: number | null }
-              const prevAssigned = (prevAssignees[foundIndex] as AssigneeWithPoints).assignedEffortPoints
               const a = {
                 ...prevAssignees[foundIndex],
-                assignedEffortPoints: points ?? prevAssigned
+                assignedEffortPoints: points
               }
               const copy = prevAssignees.slice()
               copy[foundIndex] = a
@@ -488,175 +474,129 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
               executor: member?.fullName || member?.email || implementerId,
               avatar: member?.avatar || '',
               role: member?.role || 'Member',
-              assignedEffortPoints: points ?? null
+              assignedEffortPoints: points
             }
             return [...prevAssignees, newAssignee]
           })()
 
           return { ...prev, taskAssignees: updatedAssignees }
         })
-        // Remember this optimistic assignment briefly so we can prefer it over
-        // a transient server 0 that might arrive in the next immediate refresh.
-        if (typeof points === 'number') {
-          setRecentAssignments((prev) => ({ ...prev, [implementerId]: { points: points!, ts: Date.now() } }))
-          // Auto-clear after 3s
-          setTimeout(() => {
-            setRecentAssignments((prev) => {
-              const copy = { ...prev }
-              delete copy[implementerId]
-              return copy
-            })
-          }, 3000)
-        }
-      } catch (e) {
-        console.warn('Optimistic UI update failed:', e)
+
+        // Remember this optimistic assignment for longer to handle race conditions
+        setRecentAssignments((prev) => ({
+          ...prev,
+          [implementerId]: { points: points!, ts: Date.now() }
+        }))
       }
 
-      // 2. Force reload toàn bộ dialog data từ server
-      console.log('🔄 Force reloading all dialog data...')
+      // Call the API
+      await taskApi.assignTask(currentProject!.id, task.id, implementerId, points ?? null)
+      console.log('✅ API call successful')
 
-      // Refresh task data từ server
-      const updatedTasks = await taskApi.getTasksFromProject(currentProject!.id)
-      const updatedTask = updatedTasks?.find((t) => t.id === task.id)
-      console.log('📋 Updated task data:', updatedTask)
+      // Set assignee for single-assignee state
+      setAssignee({
+        userId: implementerId,
+        fullName: member.fullName || member.email || implementerId,
+        avatar: member.avatar || '',
+        role: member.role || 'Member'
+      })
 
-      if (updatedTask) {
-        // Merge server response with optimistic local data so we don't overwrite
-        // recently-set assignedEffortPoints with a transient server value.
-        setLocalTaskData((prev) => {
-          // If no previous local data, just use server task
-          if (!prev) return updatedTask
-
-          // Define a richer assignee type that matches our UI usage
-          type AssigneeFull = {
-            projectMemberId: string
-            executor: string
-            avatar: string
-            role: string
-            assignedEffortPoints?: number | null
-          }
-
-          // Build a map of previous assignedEffortPoints by projectMemberId
-          const prevMap: Record<string, number | null | undefined> = {}
-          ;((prev.taskAssignees || []) as AssigneeFull[]).forEach((pa) => {
-            prevMap[pa.projectMemberId] = pa.assignedEffortPoints
-          })
-
-          const mergedAssignees = ((updatedTask.taskAssignees || []) as AssigneeFull[]).map((sa) => {
-            const serverVal = sa.assignedEffortPoints
-            const prevVal = prevMap[sa.projectMemberId]
-
-            // If we just assigned points to this implementer, prefer that optimistic value
-            // to avoid temporary server-side zeroes overwriting the UI.
-            if (sa.projectMemberId === implementerId && typeof points === 'number') {
-              return { ...sa, assignedEffortPoints: points }
-            }
-
-            // If we have a recent optimistic assignment recorded and the server
-            // value is 0 (or missing) within a short window, prefer the
-            // optimistic value.
-            const recent = recentAssignments[sa.projectMemberId]
-            if (
-              recent &&
-              Date.now() - recent.ts < 3000 &&
-              (serverVal === 0 || serverVal === null || serverVal === undefined)
-            ) {
-              return { ...sa, assignedEffortPoints: recent.points }
-            }
-
-            let assignedEffortPoints: number | null
-
-            // If server didn't provide a value, fall back to previous optimistic value
-            if (serverVal === null || serverVal === undefined) {
-              assignedEffortPoints = typeof prevVal === 'number' ? prevVal : (serverVal ?? null)
-            } else if (typeof serverVal === 'number') {
-              // Server provided a number (could be 0). Prefer server unless we have a
-              // previous optimistic value that is different and appears more accurate
-              // (e.g. optimistic assignment > server's transient 0).
-              if (typeof prevVal === 'number' && prevVal !== serverVal && prevVal > serverVal) {
-                assignedEffortPoints = prevVal
-              } else {
-                assignedEffortPoints = serverVal
-              }
-            } else {
-              assignedEffortPoints = serverVal ?? null
-            }
-
-            return { ...sa, assignedEffortPoints }
-          })
-
-          const merged = { ...updatedTask, taskAssignees: mergedAssignees }
-          return merged as TaskP
-        })
-
-        // Cập nhật task assignees từ server data (keep single-assignee state in sync)
-        if (updatedTask.taskAssignees) {
-          const assigneeFromTask =
-            Array.isArray(updatedTask.taskAssignees) && updatedTask.taskAssignees.length > 0
-              ? updatedTask.taskAssignees[0]
-              : null
-
-          if (assigneeFromTask) {
-            const newAssignee = {
-              userId: assigneeFromTask.projectMemberId,
-              fullName: assigneeFromTask.executor,
-              avatar: assigneeFromTask.avatar,
-              role: assigneeFromTask.role
-            }
-            console.log('✅ Setting new assignee from server:', newAssignee)
-            setAssignee(newAssignee)
-          } else {
-            console.log('❌ No assignee found in server data')
-            setAssignee(null)
-          }
-        }
-
-        // Refresh comments từ server
-        setComments(updatedTask.commnets || [])
-      }
-
-      // Refresh members list từ server
-      const updatedMembers = await projectMemberApi.getMembersByProjectId(currentProject!.id)
-      setProjectMembers(updatedMembers)
-
-      // 3. Refresh parent component ngay lập tức
-      onTaskUpdated()
-
-      // 4. Force refresh parent component sau 500ms
-      setTimeout(() => {
-        console.log('🔄 Force refreshing parent component...')
-        onTaskUpdated()
-      }, 500)
-
-      // 5. Trigger một reload bổ sung sau 1s để đảm bảo
-      setTimeout(async () => {
-        console.log('🔄 Additional reload after 1s...')
-        const finalTasks = await taskApi.getTasksFromProject(currentProject!.id)
-        const finalTask = finalTasks?.find((t) => t.id === task.id)
-        if (finalTask?.taskAssignees) {
-          const finalAssignee =
-            Array.isArray(finalTask.taskAssignees) && finalTask.taskAssignees.length > 0
-              ? finalTask.taskAssignees[0]
-              : null
-          if (finalAssignee) {
-            setAssignee({
-              userId: finalAssignee.projectMemberId,
-              fullName: finalAssignee.executor,
-              avatar: finalAssignee.avatar,
-              role: finalAssignee.role
-            })
-          }
-        }
-        onTaskUpdated()
-      }, 1000)
-
+      // Show success message
       showToast({
         title: 'Success',
         description: `Task assigned to ${member.fullName || member.email || member.userId || member.id}`,
         variant: 'success'
       })
+
+      // Single refresh after a short delay to allow backend to process
+      setTimeout(async () => {
+        try {
+          console.log('🔄 Refreshing data after assignment...')
+          const updatedTasks = await taskApi.getTasksFromProject(currentProject!.id)
+          const updatedTask = updatedTasks?.find((t) => t.id === task.id)
+
+          if (updatedTask) {
+            // Merge with optimistic data to prevent flickering
+            setLocalTaskData((prev) => {
+              if (!prev) return updatedTask
+
+              // Preserve optimistic effort points if they're recent
+              const mergedAssignees = (updatedTask.taskAssignees || []).map(
+                (serverAssignee: {
+                  projectMemberId: string
+                  executor: string
+                  avatar: string
+                  role: string
+                  assignedEffortPoints?: number | null
+                }) => {
+                  const recent = recentAssignments[serverAssignee.projectMemberId]
+                  if (recent && Date.now() - recent.ts < 5000) {
+                    // If server has 0/null but we recently set a value, prefer our optimistic value
+                    const serverVal = serverAssignee.assignedEffortPoints
+                    if ((serverVal === 0 || serverVal === null || serverVal === undefined) && recent.points > 0) {
+                      return { ...serverAssignee, assignedEffortPoints: recent.points }
+                    }
+                  }
+                  return serverAssignee
+                }
+              )
+
+              return { ...updatedTask, taskAssignees: mergedAssignees }
+            })
+
+            // Update assignee state
+            if (updatedTask.taskAssignees) {
+              const assigneeFromTask =
+                Array.isArray(updatedTask.taskAssignees) && updatedTask.taskAssignees.length > 0
+                  ? updatedTask.taskAssignees[0]
+                  : null
+
+              if (assigneeFromTask) {
+                setAssignee({
+                  userId: assigneeFromTask.projectMemberId,
+                  fullName: assigneeFromTask.executor,
+                  avatar: assigneeFromTask.avatar,
+                  role: assigneeFromTask.role
+                })
+              }
+            }
+
+            setComments(updatedTask.commnets || [])
+          }
+
+          // Refresh parent component
+          onTaskUpdated()
+        } catch (error) {
+          console.error('❌ Error refreshing after assignment:', error)
+        }
+      }, 800) // Increased delay to allow backend processing
+
+      // Clear optimistic assignment after 8 seconds
+      setTimeout(() => {
+        setRecentAssignments((prev) => {
+          const copy = { ...prev }
+          delete copy[implementerId]
+          return copy
+        })
+      }, 8000)
     } catch (error) {
       console.error('❌ Error in assign task:', error)
+
+      // Revert optimistic UI update on error
+      if (typeof points === 'number') {
+        setLocalTaskData((prev) => {
+          if (!prev) return prev
+          const updatedAssignees = prev.taskAssignees?.filter((a) => a.projectMemberId !== implementerId) || []
+          return { ...prev, taskAssignees: updatedAssignees }
+        })
+
+        setRecentAssignments((prev) => {
+          const copy = { ...prev }
+          delete copy[implementerId]
+          return copy
+        })
+      }
+
       const message = extractBackendErrorMessage(error)
       showToast({ title: 'Error', description: message, variant: 'destructive' })
     }
@@ -1658,12 +1598,27 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                                 {/* Show assigned effort points if available */}
                                 {(() => {
                                   const assignedPoints = (a as { assignedEffortPoints?: number }).assignedEffortPoints
+
+                                  // Check if we have a recent optimistic assignment for this member
+                                  const recent = recentAssignments[a.projectMemberId]
+                                  const shouldUseRecent =
+                                    recent &&
+                                    Date.now() - recent.ts < 5000 &&
+                                    (assignedPoints === 0 || assignedPoints === null || assignedPoints === undefined) &&
+                                    recent.points > 0
+
+                                  const displayPoints = shouldUseRecent ? recent.points : assignedPoints
                                   const display =
-                                    typeof assignedPoints === 'number' && assignedPoints >= 0
-                                      ? `${assignedPoints} pts`
+                                    typeof displayPoints === 'number' && displayPoints >= 0
+                                      ? `${displayPoints} pts`
                                       : '0 pts'
+
                                   return (
-                                    <span className='ml-2 text-xs bg-gray-50 text-gray-700 px-2 py-0.5 rounded-md font-semibold'>
+                                    <span
+                                      className={`ml-2 text-xs px-2 py-0.5 rounded-md font-semibold ${
+                                        shouldUseRecent ? 'bg-blue-50 text-blue-700' : 'bg-gray-50 text-gray-700'
+                                      }`}
+                                    >
                                       {display}
                                     </span>
                                   )
