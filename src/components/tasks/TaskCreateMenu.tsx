@@ -114,26 +114,51 @@ export default function TaskCreateMenu({
       const res = await taskApi.createTask(projectId, formData)
       if (res.code === 200) {
         showToast({ title: 'Success', description: 'Task created successfully', variant: 'success' })
-      } else {
-        showToast({ title: 'Error', description: 'Failed to create task', variant: 'destructive' })
-      }
-      // After create: locate the task and ensure sprint/tag assignments (and optional board move later)
-      const tasks = await taskApi.getTasksFromProject(projectId)
-      const createdTask = tasks.find((t) => t.title === title && t.description === description)
-      if (createdTask) {
-        try {
-          for (const tagId of selectedTagIds) {
-            await taskApi.addTagToTask(projectId, createdTask.id, tagId)
+
+        // Give the backend a moment to fully save the task before searching for it
+        await new Promise((resolve) => setTimeout(resolve, 100))
+
+        // After create: locate the task and ensure sprint/tag assignments (and optional board move later)
+        const tasks = await taskApi.getTasksFromProject(projectId)
+        // Improved task lookup: sort by creation time and find most recent task with matching title
+        // This is more reliable than matching both title and description, especially when description is empty
+        const sortedTasks = tasks.sort(
+          (a, b) =>
+            new Date(b.createdAt || b.created || 0).getTime() - new Date(a.createdAt || a.created || 0).getTime()
+        )
+        // Find the most recently created task with matching title (and description if provided)
+        const createdTask = sortedTasks.find((t) => {
+          const titleMatches = t.title === title
+          // If description is empty, just match by title; otherwise match both
+          const descriptionMatches = description.trim() === '' || t.description === description
+          return titleMatches && descriptionMatches
+        })
+
+        if (createdTask) {
+          try {
+            // Apply tags if any were selected
+            if (selectedTagIds.length > 0) {
+              for (const tagId of selectedTagIds) {
+                await taskApi.addTagToTask(projectId, createdTask.id, tagId)
+              }
+            }
+            // Ensure sprint assignment if sprintId was provided
+            if (sprintId && createdTask.sprintId !== sprintId) {
+              // enforce sprint assignment in case backend ignored SprintId
+              await sprintApi.assignTasksToSprint(projectId, sprintId, [createdTask.id])
+            }
+          } catch (error) {
+            // If tagging or sprint assignment fails, show a more specific warning
+            console.warn('Failed to apply tags or sprint assignment:', error)
           }
-          if (sprintId && createdTask.sprintId !== sprintId) {
-            // enforce sprint assignment in case backend ignored SprintId
-            await sprintApi.assignTasksToSprint(projectId, sprintId, [createdTask.id])
+        } else {
+          // Only show warning if we actually have tags or sprint assignment to do
+          if (selectedTagIds.length > 0 || sprintId) {
+            showToast({ title: 'Warning', description: 'Task created but not found for tagging.', variant: 'warning' })
           }
-        } catch {
-          // Best-effort assignment
         }
       } else {
-        showToast({ title: 'Warning', description: 'Task created but not found for tagging.', variant: 'warning' })
+        showToast({ title: 'Error', description: 'Failed to create task', variant: 'destructive' })
       }
       await refreshTasks()
       onTaskCreated()
@@ -170,7 +195,10 @@ export default function TaskCreateMenu({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{trigger || defaultTrigger}</DialogTrigger>
-      <DialogContent className='w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto scrollbar-transparent' data-prevent-dnd>
+      <DialogContent
+        className='w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto scrollbar-transparent'
+        data-prevent-dnd
+      >
         <DialogHeader>
           <DialogTitle className='text-center'>
             <div className='flex flex-col items-center gap-4'>

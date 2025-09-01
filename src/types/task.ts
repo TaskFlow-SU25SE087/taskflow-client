@@ -48,6 +48,7 @@ export interface TaskP {
     executor: string
     avatar: string
     role: string
+    assignedEffortPoints?: number | null
   }>
   effortPoints?: number | null
 }
