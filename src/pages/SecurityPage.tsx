@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Navbar } from '@/components/Navbar'
 import { userApi, type ChangePasswordRequest } from '@/api/user'
+import { useAuth } from '@/hooks/useAuth'
 import { Shield, Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -13,6 +14,7 @@ import { useToastContext } from '@/components/ui/ToastContext'
 export default function SecurityPage() {
   const navigate = useNavigate()
   const { showToast } = useToastContext()
+  const { logout } = useAuth()
   const [passwords, setPasswords] = useState({
     currentPassword: '',
     newPassword: '',
@@ -184,7 +186,7 @@ export default function SecurityPage() {
         console.log('🎉 [SECURITY PAGE] SUCCESS - Showing success toast') // Debug log
         showToast({
           title: 'Success',
-          description: 'Password changed successfully.',
+          description: 'Password changed successfully. You will be logged out for security.',
           variant: 'success'
         })
         
@@ -194,6 +196,13 @@ export default function SecurityPage() {
           newPassword: '',
           confirmNewPassword: ''
         })
+
+        // Logout after password change for security
+        setTimeout(() => {
+          console.log('🔓 [SECURITY PAGE] Auto-logout after password change') // Debug log
+          logout()
+          navigate('/login')
+        }, 2000) // Wait 2 seconds to show the success toast
       } else {
         console.log('❌ [SECURITY PAGE] ERROR - Processing error response') // Debug log
         // Handle specific error codes
@@ -421,15 +430,11 @@ export default function SecurityPage() {
                         <span className={`w-2 h-2 rounded-full ${/(?=.*\d)/.test(passwords.newPassword) ? 'bg-green-500' : 'bg-gray-400'}`} />
                         At least one number
                       </li>
-                      <li className={`flex items-center gap-2 ${passwords.newPassword && passwords.newPassword !== passwords.currentPassword ? 'text-green-600' : 'text-gray-600'}`}>
-                        <span className={`w-2 h-2 rounded-full ${passwords.newPassword && passwords.newPassword !== passwords.currentPassword ? 'bg-green-500' : 'bg-gray-400'}`} />
-                        Different from current password
-                      </li>
                     </ul>
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button type='submit' disabled={isLoading} className='w-full'>
+                  <Button type='submit' disabled={isLoading} className='w-full bg-blue-600 hover:bg-blue-700 text-white'>
                     {isLoading ? 'Changing Password...' : 'Change Password'}
                   </Button>
                 </CardFooter>

@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useToastContext } from '@/components/ui/ToastContext'
+import { Navbar } from '@/components/Navbar'
 import axiosClient from '@/configs/axiosClient'
 import { useAuth } from '@/hooks/useAuth'
 import { ArrowLeft, Camera } from 'lucide-react'
@@ -143,15 +144,29 @@ export default function UserProfilePage() {
   if (!profile) return <div className='text-center'>No profile data found.</div>
 
   return (
-    <div className='max-w-lg mx-auto mt-10 p-6 bg-white rounded shadow'>
-      <button
-        type='button'
-        onClick={() => navigate(-1)}
-        className='flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-4'
-      >
-        <ArrowLeft className='w-5 h-5' />
-        Back
-      </button>
+    <div className='flex min-h-screen bg-gray-100'>
+      <div className='flex-1'>
+        <Navbar
+          isSidebarOpen={false}
+          toggleSidebar={() => {}}
+          customLeft={
+            <a href='/' className='flex items-center gap-2'>
+              <img src='/logo.png' alt='TaskFlow logo' className='h-6 w-6 sm:h-8 sm:w-8' />
+              <span className='text-lg sm:text-xl font-semibold text-gray-800'>TaskFlow</span>
+            </a>
+          }
+        />
+
+        <div className='container mx-auto py-6 max-w-4xl overflow-y-auto'>
+          <div className='max-w-lg mx-auto mt-10 p-6 bg-white rounded shadow'>
+            <button
+              type='button'
+              onClick={() => navigate(-1)}
+              className='flex items-center gap-2 text-gray-600 hover:text-blue-600 mb-4'
+            >
+              <ArrowLeft className='w-5 h-5' />
+              Back
+            </button>
       <h2 className='text-2xl font-bold mb-6'>User Profile</h2>
       <div className='flex flex-col items-center mb-6'>
         <div className='relative w-24 h-24 mb-2'>
@@ -209,6 +224,9 @@ export default function UserProfilePage() {
           {saving ? 'Saving...' : 'Save Changes'}
         </Button>
       </form>
+    </div>
+        </div>
+      </div>
     </div>
   )
 }
