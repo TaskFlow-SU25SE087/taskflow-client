@@ -6,7 +6,6 @@ import { taskApi } from '@/api/tasks'
 import { NoDragPointerSensor } from '@/components/dnd/NoDragPointerSensor'
 import { Navbar } from '@/components/Navbar'
 import ProjectGroupManager from '@/components/ProjectGroupManager'
-import { ProjectEditMenu } from '@/components/projects/ProjectEditMenu'
 import { ProjectInviteDialog } from '@/components/projects/ProjectInviteDialog'
 import { Sidebar } from '@/components/Sidebar'
 import { DroppableBoard } from '@/components/tasks/DroppableBoard'
@@ -42,19 +41,7 @@ import {
   SortableContext,
   verticalListSortingStrategy
 } from '@dnd-kit/sortable'
-import {
-  CheckCircle,
-  ChevronDown,
-  Clock,
-  Filter,
-  Link2,
-  Loader2,
-  Pencil,
-  Plus,
-  Search,
-  Settings,
-  TrendingUp
-} from 'lucide-react'
+import { CheckCircle, ChevronDown, Clock, Filter, Loader2, Plus, Search, Settings, TrendingUp } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
@@ -361,15 +348,6 @@ export default function ProjectBoard() {
       if (!hasProjectContext) navigate('/projects')
     }
   }, [currentProject, isLoading, urlProjectId, navigate])
-
-  const handleCopyProjectId = () => {
-    if (!currentProject?.id) return
-    navigator.clipboard.writeText(currentProject.id)
-    showToast({
-      title: 'Success',
-      description: 'Project ID copied to clipboard'
-    })
-  }
 
   const handleMemberAdded = async () => {
     if (!currentProject?.id) return
@@ -1044,31 +1022,6 @@ export default function ProjectBoard() {
               </div>
 
               <div className='flex items-center gap-2 lg:gap-3'>
-                {currentProject && !isMember && (
-                  <ProjectEditMenu
-                    project={currentProject}
-                    onProjectUpdated={refreshBoards}
-                    trigger={
-                      <Button
-                        type='button'
-                        className='bg-lavender-100 hover:bg-lavender-200 rounded-lg p-2 shadow-none border-none'
-                        style={{ minWidth: 0, minHeight: 0, height: '36px', width: '36px' }}
-                        title='Edit project'
-                      >
-                        <Pencil className='h-5 w-5 text-lavender-600' />
-                      </Button>
-                    }
-                  />
-                )}
-                <Button
-                  type='button'
-                  className='bg-lavender-100 hover:bg-lavender-200 rounded-lg p-2 shadow-none border-none'
-                  style={{ minWidth: 0, minHeight: 0, height: '36px', width: '36px' }}
-                  onClick={handleCopyProjectId}
-                  title='Copy Project ID'
-                >
-                  <Link2 className='h-5 w-5 text-lavender-600' />
-                </Button>
                 <Button
                   type='button'
                   className='bg-lavender-100 hover:bg-lavender-200 rounded-lg p-2 shadow-none border-none'
