@@ -602,48 +602,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     }
   }
 
-  // Bulk assign effort points to selected assignees (does not change assignments)
-  const [selectedAssigneeIds, setSelectedAssigneeIds] = useState<string[]>([])
-  const [bulkEffortPoints, setBulkEffortPoints] = useState<string>('')
-
-  const handleToggleAssigneeSelection = (id: string) => {
-    setSelectedAssigneeIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
-  }
-
-  const validateBulkEffort = (v: string) => {
-    if (!v.trim()) return 'Effort is required'
-    if (!/^\d+$/.test(v)) return 'Must be a positive integer'
-    return ''
-  }
-
-  const handleApplyBulkEffort = async () => {
-    if (!currentProject) return
-    const err = validateBulkEffort(bulkEffortPoints)
-    if (err) {
-      showToast({ title: 'Error', description: err, variant: 'destructive' })
-      return
-    }
-    if (selectedAssigneeIds.length === 0) {
-      showToast({ title: 'Error', description: 'No assignees selected', variant: 'destructive' })
-      return
-    }
-
-    try {
-      const points = Number(bulkEffortPoints)
-      const payload = selectedAssigneeIds.map((id) => ({ implementerId: id, assignedEffortPoints: points }))
-      await taskApi.bulkAssignEffortPoints(currentProject.id, task.id, payload)
-      showToast({ title: 'Success', description: 'Effort points applied to selected assignees', variant: 'success' })
-      // Refresh data
-      await reloadDialogData()
-      onTaskUpdated()
-      setSelectedAssigneeIds([])
-      setBulkEffortPoints('')
-    } catch (error) {
-      const errorMessage = extractBackendErrorMessage(error)
-      showToast({ title: 'Error', description: errorMessage, variant: 'destructive' })
-    }
-  }
-
   const handleAttach = () => {
     // Trigger file input for attachment
     attachFileInputRef.current?.click()
@@ -1774,50 +1732,6 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
                             {assignEffortPointsError}
                           </div>
                         )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bulk effort assignment section */}
-                  <div className='mt-3 border-t pt-3'>
-                    <div className='flex items-center justify-between mb-2'>
-                      <div className='text-sm font-medium text-gray-700'>Bulk assign effort points</div>
-                      <div className='text-xs text-gray-400'>Select assignees then apply points</div>
-                    </div>
-                    <div className='flex gap-2 items-center'>
-                      <div className='flex-1 max-h-36 overflow-y-auto pr-2'>
-                        {localTaskData.taskAssignees && localTaskData.taskAssignees.length > 0 ? (
-                          localTaskData.taskAssignees.map((a) => (
-                            <label key={a.projectMemberId} className='flex items-center gap-2 text-sm mb-1'>
-                              <input
-                                type='checkbox'
-                                checked={selectedAssigneeIds.includes(a.projectMemberId)}
-                                onChange={() => handleToggleAssigneeSelection(a.projectMemberId)}
-                                className='form-checkbox h-4 w-4 text-lavender-600'
-                              />
-                              <span className='truncate'>{a.executor}</span>
-                            </label>
-                          ))
-                        ) : (
-                          <div className='text-xs text-gray-400'>No assignees to select</div>
-                        )}
-                      </div>
-                      <div className='w-32'>
-                        <input
-                          type='text'
-                          className='w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-lavender-500 focus:border-lavender-500'
-                          placeholder='Points'
-                          value={bulkEffortPoints}
-                          onChange={(e) => setBulkEffortPoints(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Button
-                          onClick={handleApplyBulkEffort}
-                          className='bg-lavender-600 hover:bg-lavender-700 text-white'
-                        >
-                          Apply
-                        </Button>
                       </div>
                     </div>
                   </div>
