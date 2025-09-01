@@ -13,7 +13,7 @@ import { useAuth } from '@/hooks/useAuth'
 import type { User as AuthUser } from '@/types/auth'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjects } from '@/hooks/useProjects'
-import { ChevronDown, FolderKanban, HelpCircle, Layout, LogOut, Plus, Settings, Shield, User } from 'lucide-react'
+import { ChevronDown, FolderKanban, HelpCircle, Layout, Lock, LogOut, Plus, Shield, User } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { FiMenu, FiX } from 'react-icons/fi'
 import { useNavigate } from 'react-router-dom'
@@ -223,7 +223,7 @@ export function Navbar({ isSidebarOpen, toggleSidebar, customLeft }: NavbarProps
                 onClick={() => navigate('/security')}
                 className='gap-2 text-gray-600 hover:text-gray-900'
               >
-                <Settings className='h-4 w-4' />
+                <Lock className='h-4 w-4' />
                 Security
               </DropdownMenuItem>
               {(user?.role === 'Admin' || user?.role === 'admin' || user?.role === 0 || user?.role === '0') && (
