@@ -1,16 +1,16 @@
 import { format } from 'date-fns'
 import {
-    AlertTriangle,
-    BarChart3,
-    Bug,
-    CheckCircle,
-    Code,
-    Minus,
-    RefreshCw,
-    Shield,
-    TrendingDown,
-    TrendingUp,
-    XCircle
+  AlertTriangle,
+  BarChart3,
+  Bug,
+  CheckCircle,
+  Code,
+  Minus,
+  RefreshCw,
+  Shield,
+  TrendingDown,
+  TrendingUp,
+  XCircle
 } from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { useWebhooks } from '../../hooks/useWebhooks'
@@ -18,8 +18,8 @@ import { CodeQualityResult } from '../../types/webhook'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
-import { Loader } from '../ui/loader'
 import { Progress } from '../ui/progress'
+import { Skeleton } from '../ui/skeleton'
 
 interface CodeQualityDashboardProps {
   projectId: string
@@ -160,8 +160,53 @@ export default function CodeQualityDashboard({ projectId, partId }: CodeQualityD
 
   if (qualityLoading && qualityResults.length === 0) {
     return (
-      <div className='flex items-center justify-center p-8'>
-        <Loader />
+      <div className='space-y-6'>
+        {/* Header skeleton */}
+        <div className='flex items-center justify-between'>
+          <div>
+            <Skeleton className='h-8 w-64 mb-2' />
+            <Skeleton className='h-4 w-80' />
+          </div>
+
+          <div className='flex items-center gap-2'>
+            <Skeleton className='h-9 w-24 rounded-md' />
+            <Skeleton className='h-9 w-32 rounded-md' />
+          </div>
+        </div>
+
+        {/* Quality overview skeleton */}
+        <Card>
+          <CardHeader>
+            <Skeleton className='h-6 w-40' />
+          </CardHeader>
+          <CardContent>
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4'>
+              {Array.from({ length: 4 }, (_, i) => (
+                <Card key={i}>
+                  <CardContent className='p-4'>
+                    <div className='flex items-center gap-2'>
+                      <Skeleton className='h-5 w-5' />
+                      <div>
+                        <Skeleton className='h-4 w-20 mb-1' />
+                        <Skeleton className='h-8 w-12' />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Quality trend chart skeleton */}
+        <Card>
+          <CardHeader>
+            <Skeleton className='h-6 w-32' />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className='h-64 w-full rounded-md' />
+          </CardContent>
+        </Card>
       </div>
     )
   }

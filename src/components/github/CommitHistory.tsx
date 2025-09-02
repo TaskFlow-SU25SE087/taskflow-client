@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback } from '../ui/avatar'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Card, CardContent } from '../ui/card'
-import { Loader } from '../ui/loader'
+import { Skeleton } from '../ui/skeleton'
 
 interface CommitHistoryProps {
   projectId: string
@@ -16,6 +16,48 @@ interface CommitHistoryProps {
 
 interface CommitCardProps {
   commit: CommitRecord
+}
+
+function CommitCardSkeleton() {
+  return (
+    <Card className='hover:shadow-md transition-shadow'>
+      <CardContent className='p-4'>
+        <div className='flex items-start gap-4'>
+          <Skeleton className='h-10 w-10 rounded-full' />
+
+          <div className='flex-1 min-w-0'>
+            <div className='flex items-center gap-2 mb-2'>
+              <Skeleton className='h-4 w-32' />
+              <Skeleton className='h-4 w-16' />
+              <Skeleton className='h-4 w-24' />
+              <Skeleton className='h-4 w-4' />
+            </div>
+
+            <Skeleton className='h-5 w-3/4 mb-2' />
+
+            <div className='flex items-center gap-4 text-sm'>
+              <div className='flex items-center gap-1.5'>
+                <Skeleton className='h-4 w-4' />
+                <Skeleton className='h-4 w-16' />
+              </div>
+
+              <Skeleton className='h-5 w-16 rounded-full' />
+
+              <div className='flex items-center gap-1'>
+                <Skeleton className='h-4 w-20' />
+                <Skeleton className='h-4 w-8' />
+              </div>
+
+              <div className='flex items-center gap-1'>
+                <Skeleton className='h-4 w-12' />
+                <Skeleton className='h-4 w-6' />
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
 }
 
 function CommitCard({ commit }: CommitCardProps) {
@@ -138,8 +180,52 @@ export default function CommitHistory({ projectId, partId }: CommitHistoryProps)
 
   if (commitsLoading && commits.length === 0) {
     return (
-      <div className='flex items-center justify-center p-8'>
-        <Loader />
+      <div className='space-y-6'>
+        {/* Header skeleton */}
+        <div className='flex items-center justify-between'>
+          <div>
+            <Skeleton className='h-8 w-48 mb-2' />
+            <Skeleton className='h-4 w-64' />
+          </div>
+
+          <div className='flex items-center gap-2'>
+            <Skeleton className='h-9 w-24 rounded-md' />
+          </div>
+        </div>
+
+        {/* Stats skeleton */}
+        <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
+          {Array.from({ length: 4 }, (_, i) => (
+            <Card key={i}>
+              <CardContent className='p-4'>
+                <div className='flex items-center gap-2'>
+                  <Skeleton className='h-5 w-5' />
+                  <div>
+                    <Skeleton className='h-4 w-20 mb-1' />
+                    <Skeleton className='h-8 w-12' />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Filter skeleton */}
+        <div className='flex items-center gap-4'>
+          <Skeleton className='h-4 w-32' />
+          <div className='flex gap-2'>
+            {Array.from({ length: 4 }, (_, i) => (
+              <Skeleton key={i} className='h-8 w-16 rounded-md' />
+            ))}
+          </div>
+        </div>
+
+        {/* Commits list skeleton */}
+        <div className='space-y-4'>
+          {Array.from({ length: 3 }, (_, i) => (
+            <CommitCardSkeleton key={i} />
+          ))}
+        </div>
       </div>
     )
   }

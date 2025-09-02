@@ -4,8 +4,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Loader } from '@/components/ui/loader'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useIssues } from '@/hooks/useIssues'
 import { cn } from '@/lib/utils'
@@ -66,6 +66,49 @@ interface GitHubIssue {
   issueAttachmentUrls?: string[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   taskAssignees?: any[]
+}
+
+// IssueCardSkeleton Component
+function IssueCardSkeleton() {
+  return (
+    <div className='bg-white rounded-lg p-4 shadow-sm border border-gray-100'>
+      <div className='flex items-start gap-4'>
+        <div className='flex flex-col items-center gap-2'>
+          <Skeleton className='h-10 w-10 rounded-full' />
+          <Skeleton className='h-8 w-8 rounded-full' />
+        </div>
+
+        <div className='flex-1 min-w-0'>
+          <div className='flex items-center gap-2 mb-2'>
+            <Skeleton className='h-5 w-16 rounded-full' />
+            <Skeleton className='h-4 w-12' />
+            <Skeleton className='h-4 w-20' />
+          </div>
+
+          <Skeleton className='h-5 w-3/4 mb-2' />
+
+          <Skeleton className='h-5 w-32 rounded-full mb-2' />
+
+          <Skeleton className='h-4 w-full mb-1' />
+          <Skeleton className='h-4 w-2/3 mb-3' />
+
+          <div className='flex items-center gap-4 text-sm mb-3'>
+            <Skeleton className='h-4 w-24' />
+            <Skeleton className='h-4 w-32' />
+            <Skeleton className='h-4 w-16' />
+          </div>
+
+          <div className='flex items-center gap-2'>
+            <Skeleton className='h-5 w-20 rounded-full' />
+            <Skeleton className='h-5 w-24 rounded-full' />
+            <Skeleton className='h-5 w-16 rounded-full' />
+          </div>
+        </div>
+
+        <Skeleton className='h-8 w-8 rounded-lg' />
+      </div>
+    </div>
+  )
 }
 
 interface IssueCardProps {
@@ -221,6 +264,10 @@ export default function GitIssues() {
   const [filteredIssues, setFilteredIssues] = useState<GitHubIssue[]>([])
   const [loadingTimeout, setLoadingTimeout] = useState(false)
 
+  // Page readiness state to prevent flashing
+  const [isPageReady, setIsPageReady] = useState(false)
+  const [didInitialLoad, setDidInitialLoad] = useState(false)
+
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen)
   }
@@ -261,17 +308,28 @@ export default function GitIssues() {
           setLoadingTimeout(false)
           setIssues(projectIssues || [])
           setFilteredIssues(projectIssues || [])
+          setDidInitialLoad(true)
         } catch (error) {
           console.error('Error loading issues:', error)
           setLoadingTimeout(false)
           setIssues([])
           setFilteredIssues([])
+          setDidInitialLoad(true)
         }
       }
     }
 
-    loadIssues()
-  }, [projectId, getProjectIssues])
+    if (!didInitialLoad) {
+      loadIssues()
+    }
+  }, [projectId, getProjectIssues, didInitialLoad])
+
+  // Set page ready when initial load completes and not loading
+  useEffect(() => {
+    if (!isPageReady && didInitialLoad && !projectLoading) {
+      setIsPageReady(true)
+    }
+  }, [isPageReady, didInitialLoad, projectLoading])
 
   // Filter issues based on search query
   useEffect(() => {
@@ -287,13 +345,47 @@ export default function GitIssues() {
     }
   }, [searchQuery, issues])
 
-  if (projectLoading || !currentProject) {
+  if (!isPageReady) {
     return (
-      <div className='flex h-screen bg-gray-100'>
+      <div className='flex h-screen bg-gradient-to-br from-lavender-50 via-white to-blue-50'>
         <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
         <div className='flex-1 flex flex-col overflow-hidden'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-          <Loader />
+
+          <div className='flex flex-col h-full p-8'>
+            {/* Header skeleton */}
+            <div className='flex-none w-full flex items-center justify-between pb-8 border-b-2 border-lavender-200 mb-6 shadow-sm'>
+              <div className='flex items-center gap-3'>
+                <Skeleton className='h-10 w-10 rounded-full' />
+                <Skeleton className='h-10 w-32' />
+                <div className='flex items-center gap-2 ml-4'>
+                  <Skeleton className='h-5 w-5' />
+                  <Skeleton className='h-4 w-20' />
+                  <Skeleton className='h-6 w-40' />
+                </div>
+              </div>
+            </div>
+
+            {/* Controls skeleton */}
+            <div className='pb-8 flex items-center justify-between'>
+              <div className='flex items-center gap-4 bg-white/80 rounded-2xl shadow-md px-6 py-3'>
+                <Skeleton className='h-9 w-20 rounded-lg' />
+                <Skeleton className='h-9 w-[280px] rounded-lg' />
+                <Skeleton className='h-9 w-24 rounded-lg' />
+              </div>
+              <div className='flex gap-2 bg-white/80 rounded-2xl shadow-md px-6 py-3'>
+                <Skeleton className='h-9 w-32 rounded-lg' />
+                <Skeleton className='h-9 w-[180px] rounded-lg' />
+              </div>
+            </div>
+
+            {/* Issues list skeleton */}
+            <div className='space-y-6 overflow-y-auto'>
+              {Array.from({ length: 4 }, (_, i) => (
+                <IssueCardSkeleton key={i} />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -316,7 +408,7 @@ export default function GitIssues() {
               <div className='flex items-center gap-2 ml-4'>
                 <GitBranch className='w-5 h-5 text-blue-600' />
                 <span className='text-base text-blue-700 font-semibold'>Repository:</span>
-                <span className='font-bold text-purple-700'>{currentProject.title}</span>
+                <span className='font-bold text-purple-700'>{currentProject?.title}</span>
               </div>
             </div>
           </div>
