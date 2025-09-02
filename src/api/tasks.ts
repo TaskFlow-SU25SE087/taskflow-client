@@ -234,5 +234,15 @@ export const taskApi = {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
     return response.data.data === true
+  },
+
+  // Move task to sprint (or backlog if sprintId is empty)
+  moveTaskToSprint: async (projectId: string, taskId: string, sprintId?: string): Promise<APIResponse<boolean>> => {
+    const url = sprintId
+      ? `/projects/${projectId}/tasks/${taskId}/move-sprint?sprintId=${sprintId}`
+      : `/projects/${projectId}/tasks/${taskId}/move-sprint`
+
+    const response = await axiosClient.put(url)
+    return response.data
   }
 }
