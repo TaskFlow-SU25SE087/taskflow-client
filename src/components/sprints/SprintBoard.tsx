@@ -1,5 +1,4 @@
 import { taskApi } from '@/api/tasks'
-import { sprintApi } from '@/api/sprints'
 import { Button } from '@/components/ui/button'
 import { useToastContext } from '@/components/ui/ToastContext'
 import {
@@ -98,20 +97,26 @@ export function SprintBoard({
 
     setLoadingBatch(true)
     try {
-      const response = await sprintApi.assignTasksToSprint(projectId, targetSprintId, selectedTaskIds)
+      // Use the new moveTaskToSprint API for each selected task
+      const results = await Promise.all(
+        selectedTaskIds.map((taskId) => taskApi.moveTaskToSprint(projectId, taskId, targetSprintId))
+      )
 
-      if (response && typeof response === 'object' && 'code' in response) {
-        const res = response as APIResponse<boolean>
-        showToast({
-          title: res.code === 200 || res.code === 0 ? 'Success' : 'Error',
-          description: res.message || 'Tasks moved to sprint successfully!',
-          variant: res.code === 200 || res.code === 0 ? 'success' : 'destructive'
-        })
-      } else {
+      // Check if all operations were successful
+      const allSuccessful = results.every((result) => result.code === 200 || result.code === 0)
+
+      if (allSuccessful) {
         showToast({
           title: 'Success',
           description: 'Tasks moved to sprint successfully!',
           variant: 'success'
+        })
+      } else {
+        const failedCount = results.filter((result) => result.code !== 200 && result.code !== 0).length
+        showToast({
+          title: 'Partial Success',
+          description: `${selectedTaskIds.length - failedCount} tasks moved successfully, ${failedCount} failed.`,
+          variant: 'destructive'
         })
       }
 
@@ -137,25 +142,24 @@ export function SprintBoard({
 
     setLoadingBatch(true)
     try {
-      // Since there's no direct API to remove tasks from sprint, we'll try to assign them to a special sprint
-      // or use a null/empty sprint ID. Let's try assigning to '00000000-0000-0000-0000-000000000000' which
-      // appears to be used for backlog tasks based on the ProjectBacklog filtering logic
-      const backlogSprintId = '00000000-0000-0000-0000-000000000000'
+      // Use the new moveTaskToSprint API without sprintId to move to backlog
+      const results = await Promise.all(selectedTaskIds.map((taskId) => taskApi.moveTaskToSprint(projectId, taskId)))
 
-      const response = await sprintApi.assignTasksToSprint(projectId, backlogSprintId, selectedTaskIds)
+      // Check if all operations were successful
+      const allSuccessful = results.every((result) => result.code === 200 || result.code === 0)
 
-      if (response && typeof response === 'object' && 'code' in response) {
-        const res = response as APIResponse<boolean>
-        showToast({
-          title: res.code === 200 || res.code === 0 ? 'Success' : 'Error',
-          description: res.message || 'Tasks moved to backlog successfully!',
-          variant: res.code === 200 || res.code === 0 ? 'success' : 'destructive'
-        })
-      } else {
+      if (allSuccessful) {
         showToast({
           title: 'Success',
           description: 'Tasks moved to backlog successfully!',
           variant: 'success'
+        })
+      } else {
+        const failedCount = results.filter((result) => result.code !== 200 && result.code !== 0).length
+        showToast({
+          title: 'Partial Success',
+          description: `${selectedTaskIds.length - failedCount} tasks moved successfully, ${failedCount} failed.`,
+          variant: 'destructive'
         })
       }
 

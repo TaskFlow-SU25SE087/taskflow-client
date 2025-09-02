@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { sprintApi } from '@/api/sprints'
 import { taskApi } from '@/api/tasks'
 import { Button } from '@/components/ui/button'
 import { useToastContext } from '@/components/ui/ToastContext'
@@ -272,23 +271,29 @@ export function SprintBacklog({
                   onSprintSelect={async (sprintId) => {
                     setLoadingBatch(true)
                     try {
-                      const res = await sprintApi.assignTasksToSprint(projectId, sprintId, selectedTaskIds)
-                      if (typeof res === 'object' && res !== null && 'code' in (res as any)) {
-                        const r: any = res
-                        showToast({
-                          title: r.code === 200 ? 'Success' : 'Error',
-                          description: r.message || 'Tasks moved to sprint successfully!',
-                          variant: r.code === 200 ? 'success' : 'destructive'
-                        })
-                      } else if (res && typeof res === 'object' && 'data' in res && res.data === true) {
+                      // Use the new moveTaskToSprint API for each selected task
+                      const results = await Promise.all(
+                        selectedTaskIds.map((taskId) => taskApi.moveTaskToSprint(projectId, taskId, sprintId))
+                      )
+
+                      // Check if all operations were successful
+                      const allSuccessful = results.every((result) => result.code === 200 || result.code === 0)
+
+                      if (allSuccessful) {
                         showToast({
                           title: 'Success',
                           description: 'Tasks moved to sprint successfully!',
                           variant: 'success'
                         })
                       } else {
-                        showToast({ title: 'Error', description: 'Failed to move tasks', variant: 'destructive' })
+                        const failedCount = results.filter((result) => result.code !== 200 && result.code !== 0).length
+                        showToast({
+                          title: 'Partial Success',
+                          description: `${selectedTaskIds.length - failedCount} tasks moved successfully, ${failedCount} failed.`,
+                          variant: 'destructive'
+                        })
                       }
+
                       setSelectedTaskIds([])
                       setShowSprintSelector(false)
                       await refreshSprints()
