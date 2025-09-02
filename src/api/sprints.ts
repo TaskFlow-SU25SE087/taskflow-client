@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import axiosClient from '@/configs/axiosClient'
 import { APIResponse } from '@/types/api'
 import { Sprint, SprintMeeting, SprintMeetingDetail, SprintMeetingUpdateRequest, TaskUpdate } from '@/types/sprint'
@@ -10,13 +11,13 @@ const retryRequest = async <T>(
   baseDelay: number = 1000
 ): Promise<T> => {
   let lastError: any
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await requestFn()
     } catch (error: any) {
       lastError = error
-      
+
       // Check if it's a timeout error
       if (error.isTimeout || (error.code === 'ECONNABORTED' && error.message.includes('timeout'))) {
         if (attempt === maxRetries) {
@@ -26,18 +27,18 @@ const retryRequest = async <T>(
             isTimeout: true
           }
         }
-        
+
         // Exponential backoff for timeout errors
         const delay = baseDelay * Math.pow(2, attempt - 1)
-        await new Promise(resolve => setTimeout(resolve, delay))
+        await new Promise((resolve) => setTimeout(resolve, delay))
         continue
       }
-      
+
       // For other errors, don't retry
       throw lastError
     }
   }
-  
+
   throw lastError
 }
 
@@ -59,6 +60,7 @@ export const sprintApi = {
     sprint: { name: string; description: string; startDate: string; endDate: string; status?: string }
   ): Promise<boolean> => {
     // Chỉ gửi các field cần thiết, không gửi status
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { status, ...sprintData } = sprint
     const response = await axiosClient.post(`/projects/${projectId}/sprints`, sprintData)
     return response.data.data
@@ -80,16 +82,30 @@ export const sprintApi = {
     return response.data.data
   },
 
+  // Xóa sprint
+  deleteSprint: async (projectId: string, sprintId: string): Promise<boolean> => {
+    const response = await axiosClient.delete(`/projects/${projectId}/sprints/${sprintId}`)
+    return response.data.data
+  },
+
   // Lấy tasks của 1 sprint (cần cả projectId và sprintId) - với retry logic cải thiện
   getSprintTasks: async (projectId: string, sprintId: string): Promise<TaskP[]> => {
-    return retryRequest(async () => {
-      const response = await axiosClient.get(`/projects/${projectId}/sprints/${sprintId}/tasks`)
-      return response.data.data
-    }, 3, 2000) // 3 retries, 2 second base delay
+    return retryRequest(
+      async () => {
+        const response = await axiosClient.get(`/projects/${projectId}/sprints/${sprintId}/tasks`)
+        return response.data.data
+      },
+      3,
+      2000
+    ) // 3 retries, 2 second base delay
   },
 
   // Gán nhiều task vào sprint
-  assignTasksToSprint: async (projectId: string, sprintId: string, taskIds: string[]): Promise<APIResponse<boolean>> => {
+  assignTasksToSprint: async (
+    projectId: string,
+    sprintId: string,
+    taskIds: string[]
+  ): Promise<APIResponse<boolean>> => {
     const response = await axiosClient.post(`/projects/${projectId}/sprints/${sprintId}/tasks/assign`, taskIds)
     return response.data
   },
@@ -107,10 +123,14 @@ export const sprintApi = {
 
   // Lấy sprint hiện tại (active sprint)(inprogess) của project - với retry logic cải thiện
   getCurrentSprint: async (projectId: string): Promise<Sprint> => {
-    return retryRequest(async () => {
-      const response = await axiosClient.get(`/projects/${projectId}/sprints/current`)
-      return response.data.data
-    }, 3, 2000) // 3 retries, 2 second base delay
+    return retryRequest(
+      async () => {
+        const response = await axiosClient.get(`/projects/${projectId}/sprints/current`)
+        return response.data.data
+      },
+      3,
+      2000
+    ) // 3 retries, 2 second base delay
   },
 
   // Sprint Meeting APIs
@@ -151,22 +171,26 @@ export const sprintApi = {
       // Backend only supports updating reason field
       // Title, description, and priority updates are not supported
       const url = `/projects/${projectId}/sprint-meetings/${sprintMeetingId}?taskId=${taskId}&itemVersion=${itemVersion}&reason=${encodeURIComponent(taskData.reason)}`
-      
+
       const response = await axiosClient.patch(url)
-      
+
       // Check if response contains a version conflict message
-      if (response.data.code === 200 && typeof response.data.data === 'string' && response.data.data.includes('Someone has updated')) {
+      if (
+        response.data.code === 200 &&
+        typeof response.data.data === 'string' &&
+        response.data.data.includes('Someone has updated')
+      ) {
         // Extract new item version from message
         const versionMatch = response.data.data.match(/New ItemVersion: (\d+)/)
         const newItemVersion = versionMatch ? parseInt(versionMatch[1]) : undefined
-        
+
         return {
           success: false,
           message: response.data.data,
           newItemVersion
         }
       }
-      
+
       // Check API response code - both 0 and 200 are considered success
       if (response.data.code === 0 || response.data.code === 200) {
         return {
@@ -174,10 +198,9 @@ export const sprintApi = {
           message: response.data.data || response.data.message || 'Task updated successfully'
         }
       }
-      
+
       // If we reach here, it's an error
       throw new Error(response.data.message || 'Failed to update task')
-      
     } catch (error: any) {
       // Prefer server-provided message when available
       const serverMessage: string | undefined = error?.response?.data?.message
@@ -200,12 +223,12 @@ export const sprintApi = {
   ): Promise<string> => {
     try {
       const response = await axiosClient.put(`/projects/${projectId}/sprint-meetings/${sprintMeetingId}`, data)
-      
+
       // Check API response code (treat 0 and 200 as success for backend variants)
       if (response.data.code !== 0 && response.data.code !== 200) {
         throw new Error(response.data.message || 'Failed to update sprint meeting')
       }
-      
+
       return response.data.data
     } catch (error: any) {
       // Handle specific API error codes and surface server messages
@@ -228,12 +251,12 @@ export const sprintApi = {
         `/projects/${projectId}/sprint-meetings/${sprintMeetingId}/next-plan`,
         nextPlan
       )
-      
+
       // Check API response code (treat 0 and 200 as success for backend variants)
       if (response.data.code !== 0 && response.data.code !== 200) {
         throw new Error(response.data.message || 'Failed to update next plan')
       }
-      
+
       return response.data.data
     } catch (error: any) {
       // Handle specific API error codes and surface server messages

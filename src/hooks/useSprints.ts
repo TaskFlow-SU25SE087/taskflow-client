@@ -74,6 +74,7 @@ export const useSprints = () => {
       })
       if (ok) await fetchSprints()
       return { ok: true }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       setError(err as Error)
       const message = err?.response?.data?.message || 'Failed to create sprint. Please try again.'
@@ -145,6 +146,21 @@ export const useSprints = () => {
     return sprintApi.assignTasksToSprint(currentProject.id, sprintId, [taskId])
   }
 
+  const deleteSprint = async (sprintId: string) => {
+    if (!currentProject || !currentProject.id) return false
+    setIsLoading(true)
+    try {
+      const ok = await sprintApi.deleteSprint(currentProject.id, sprintId)
+      if (ok) await fetchSprints()
+      return ok
+    } catch (err) {
+      setError(err as Error)
+      return false
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   // Alias fetchSprints cho bên ngoài sử dụng (có thể truyền projectId nếu cần)
   const fetchSprintsPublic = async (projectId?: string) => {
     const pid = projectId || currentProject?.id
@@ -180,6 +196,7 @@ export const useSprints = () => {
     updateSprintStatus,
     getSprintTasks,
     addTaskToSprint,
+    deleteSprint,
     fetchSprints: fetchSprintsPublic
   }
 }
