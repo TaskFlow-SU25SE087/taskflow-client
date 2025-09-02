@@ -150,5 +150,11 @@ export const adminApi = {
   getTeamById: async (projectId: string) => {
     const response = await axiosClient.get(`/admin/teams/${projectId}`)
     return response.data
+  },
+
+  // Transfer team leadership
+  transferLeadership: async (newLeaderId: string) => {
+    const response = await axiosClient.post(`/admin/users/change-leader/${newLeaderId}`)
+    return response.data
   }
 }

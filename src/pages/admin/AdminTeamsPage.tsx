@@ -1,7 +1,17 @@
 import AdminLayout from '@/components/admin/AdminLayout'
 import { adminApi } from '@/api/admin'
 import { useEffect, useState } from 'react'
-import { Search, Users, Calendar, Filter, ChevronDown, User, Mail, Hash } from 'lucide-react'
+import { Search, Users, Calendar, Filter, ChevronDown, User, Mail, Hash, Crown, ArrowRight } from 'lucide-react'
+import { useToastContext } from '@/components/ui/ToastContext'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 
 export default function AdminTeamsPage() {
   const [teams, setTeams] = useState<any[]>([])
@@ -12,6 +22,13 @@ export default function AdminTeamsPage() {
   const [selectedSemester, setSelectedSemester] = useState('all')
   const [sortBy, setSortBy] = useState('name')
   const [showFilters, setShowFilters] = useState(false)
+  
+  // Transfer leadership states
+  const [showTransferDialog, setShowTransferDialog] = useState(false)
+  const [transferTarget, setTransferTarget] = useState<any | null>(null)
+  const [isTransferring, setIsTransferring] = useState(false)
+  
+  const { showToast } = useToastContext()
 
 
   useEffect(() => {
@@ -40,6 +57,40 @@ export default function AdminTeamsPage() {
       setSelected(res.data || null)
     } catch (e: any) {
       console.error(e)
+    }
+  }
+
+  const handleTransferLeadership = (member: any) => {
+    setTransferTarget(member)
+    setShowTransferDialog(true)
+  }
+
+  const confirmTransferLeadership = async () => {
+    if (!selected || !transferTarget) return
+    
+    try {
+      setIsTransferring(true)
+      await adminApi.transferLeadership(transferTarget.id)
+      
+      showToast({
+        title: 'Leadership Transferred',
+        description: `${transferTarget.fullName} is now the team leader.`,
+        variant: 'success'
+      })
+      
+      // Refresh team data
+      await openTeam(selected.projectId)
+      
+    } catch (error: any) {
+      showToast({
+        title: 'Transfer Failed',
+        description: error.response?.data?.message || 'Failed to transfer leadership. Please try again.',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsTransferring(false)
+      setShowTransferDialog(false)
+      setTransferTarget(null)
     }
   }
 
@@ -392,6 +443,19 @@ export default function AdminTeamsPage() {
                                 </span>
                               </div>
                             </div>
+                            
+                            {/* Transfer Leadership Button - Only show for non-leaders */}
+                            {member.role !== 'Leader' && (
+                              <Button
+                                onClick={() => handleTransferLeadership(member)}
+                                size="sm"
+                                variant="outline"
+                                className='flex items-center gap-2 text-xs bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300'
+                              >
+                                <Crown className='h-3 w-3' />
+                                Make Leader
+                              </Button>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -408,6 +472,58 @@ export default function AdminTeamsPage() {
           </div>
         </div>
       </div>
+      
+      {/* Transfer Leadership Confirmation Dialog */}
+      <Dialog open={showTransferDialog} onOpenChange={setShowTransferDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Transfer Team Leadership</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to transfer leadership to{' '}
+              <span className='font-semibold text-gray-900'>{transferTarget?.fullName}</span>?
+              {' '}This action will make them the new team leader and remove leadership from the current leader.
+            </DialogDescription>
+          </DialogHeader>
+          
+          {transferTarget && (
+            <div className='flex items-center gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200'>
+              <img
+                src={transferTarget.avatar}
+                alt={transferTarget.fullName}
+                className='w-10 h-10 rounded-full object-cover border-2 border-white'
+              />
+              <div>
+                <h4 className='font-semibold text-gray-900'>{transferTarget.fullName}</h4>
+                <p className='text-sm text-gray-600'>{transferTarget.email}</p>
+              </div>
+              <div className='ml-auto'>
+                <ArrowRight className='h-5 w-5 text-blue-600' />
+              </div>
+              <div className='flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-medium'>
+                <Crown className='h-3 w-3' />
+                New Leader
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button
+              variant='outline'
+              onClick={() => setShowTransferDialog(false)}
+              disabled={isTransferring}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={confirmTransferLeadership}
+              disabled={isTransferring}
+              className='bg-blue-600 hover:bg-blue-700'
+            >
+              {isTransferring ? 'Transferring...' : 'Transfer Leadership'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   )
 }
