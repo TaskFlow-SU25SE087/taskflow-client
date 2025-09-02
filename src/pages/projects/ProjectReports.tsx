@@ -32,18 +32,7 @@ import {
   ChartLegendContent
 } from '@/components/ui/chart'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import {
-  BarChart as ReBarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  PieChart,
-  Pie,
-  LineChart,
-  Line,
-  Cell
-} from 'recharts'
+import { BarChart as ReBarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, Cell } from 'recharts'
 
 const ProjectReports: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>()
@@ -149,56 +138,6 @@ const ProjectReports: React.FC = () => {
     ]
   }, [s])
 
-  const priorityDistribution = useMemo(() => {
-    if (!report?.memberActivities?.length) return []
-    const totals = report.memberActivities.reduce(
-      (acc, m) => {
-        acc.high += m.taskStats.highPriorityTasks
-        acc.medium += m.taskStats.mediumPriorityTasks
-        acc.low += m.taskStats.lowPriorityTasks
-        acc.urgent += m.taskStats.urgentPriorityTasks
-        return acc
-      },
-      { high: 0, medium: 0, low: 0, urgent: 0 }
-    )
-    const entries = [
-      { key: 'urgent', label: 'Urgent', value: totals.urgent },
-      { key: 'high', label: 'High', value: totals.high },
-      { key: 'medium', label: 'Medium', value: totals.medium },
-      { key: 'low', label: 'Low', value: totals.low }
-    ]
-    return entries.filter((e) => e.value > 0)
-  }, [report])
-
-  const topContribChartData = useMemo(() => {
-    if (!s?.topContributors) return []
-    return s.topContributors.map((c) => ({
-      key: c.userId,
-      name: c.fullName,
-      completed: c.completedTasks,
-      comments: c.totalComments,
-      effortPoints: c.completedEffortPoints
-    }))
-  }, [s])
-
-  const dailyCompletions = useMemo(() => {
-    if (!report?.memberActivities) return []
-    const map = new Map<string, number>()
-    for (const m of report.memberActivities) {
-      for (const t of m.taskActivities) {
-        if (t.completedAt) {
-          const d = new Date(t.completedAt).toISOString().slice(0, 10) // YYYY-MM-DD
-          map.set(d, (map.get(d) || 0) + 1)
-        }
-      }
-    }
-    const arr = Array.from(map.entries())
-      .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-      .map(([date, count]) => ({ date, count }))
-    // Limit points for readability (keep last 30)
-    return arr.slice(-30)
-  }, [report])
-
   const burndownChartData = useMemo(() => {
     if (!burndownData) return []
     const combinedData = burndownData.dailyProgress.map((progress, index) => ({
@@ -219,8 +158,6 @@ const ProjectReports: React.FC = () => {
     medium: { label: 'Medium', color: '#f59e0b' },
     low: { label: 'Low', color: '#60a5fa' },
     urgent: { label: 'Urgent', color: '#7c3aed' },
-    comments: { label: 'Comments', color: '#9333ea' },
-    effortPoints: { label: 'Effort Points', color: '#f97316' },
     remainingEffort: { label: 'Remaining Effort', color: '#6366f1' },
     idealEffort: { label: 'Ideal Burndown', color: '#dc2626' }
   }
@@ -389,83 +326,247 @@ const ProjectReports: React.FC = () => {
               </div>
             </div>
 
-            {/* Summary Cards */}
-            <div className='px-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-4'>
-              {showSkeleton || !s
-                ? Array.from({ length: 8 }).map((_, i) => (
-                    <Card key={i} className='rounded-xl border border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
-                      <CardContent className='p-4'>
-                        <div className='space-y-2'>
-                          <Skeleton className='h-3 w-20' />
-                          <Skeleton className='h-7 w-16' />
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                : [
-                    {
-                      label: 'Total Tasks',
-                      value: s.totalTasks,
-                      icon: <BarChart3 className='h-5 w-5 text-blue-600' />
-                    },
-                    {
-                      label: 'Completed',
-                      value: s.totalCompletedTasks,
-                      icon: <TrendingUp className='h-5 w-5 text-green-600' />
-                    },
-                    {
-                      label: 'In Progress',
-                      value: s.totalInProgressTasks,
-                      icon: <BarChart3 className='h-5 w-5 text-purple-600' />
-                    },
-                    {
-                      label: 'Overdue',
-                      value: s.totalOverdueTasks,
-                      icon: <AlertCircle className='h-5 w-5 text-red-600' />
-                    },
-                    {
-                      label: 'Total Effort Points',
-                      value: s.totalAssignedEffortPoints,
-                      icon: <Timer className='h-5 w-5 text-indigo-600' />
-                    },
-                    {
-                      label: 'Completed Effort',
-                      value: s.totalCompletedEffortPoints,
-                      icon: <TrendingUp className='h-5 w-5 text-emerald-600' />
-                    },
-                    {
-                      label: 'Effort Completion Rate',
-                      value: `${s.overallEffortPointCompletionRate.toFixed(1)}%`,
-                      icon: <BarChart3 className='h-5 w-5 text-cyan-600' />
-                    },
-                    {
-                      label: 'Avg Effort/Member',
-                      value: s.averageEffortPointsPerMember.toFixed(1),
-                      icon: <Users className='h-5 w-5 text-orange-600' />
-                    }
-                  ].map((c) => (
-                    <Card
-                      key={c.label}
-                      className='rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition bg-white/80 backdrop-blur'
-                    >
-                      <CardContent className='p-4'>
-                        <div className='flex items-center justify-between'>
-                          <div>
-                            <p className='text-xs font-medium text-gray-500 tracking-wide uppercase'>{c.label}</p>
-                            <p className='mt-1 text-2xl font-bold text-gray-900'>{c.value}</p>
+            {/* Executive Summary */}
+            <div className='px-6 space-y-6'>
+              {/* Key Performance Indicators - Top Row */}
+              <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4'>
+                {showSkeleton || !s
+                  ? Array.from({ length: 4 }).map((_, i) => (
+                      <Card key={i} className='rounded-xl border border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
+                        <CardContent className='p-6'>
+                          <div className='space-y-2'>
+                            <Skeleton className='h-4 w-24' />
+                            <Skeleton className='h-8 w-16' />
+                            <Skeleton className='h-3 w-20' />
                           </div>
-                          {c.icon}
+                        </CardContent>
+                      </Card>
+                    ))
+                  : [
+                      {
+                        label: 'Task Progress',
+                        value: `${((s.totalCompletedTasks / s.totalTasks) * 100).toFixed(1)}%`,
+                        subvalue: `${s.totalCompletedTasks}/${s.totalTasks} tasks completed`,
+                        icon: <TrendingUp className='h-6 w-6 text-green-600' />,
+                        trend: 'positive'
+                      },
+                      {
+                        label: 'Effort Utilization',
+                        value: `${s.overallEffortPointCompletionRate.toFixed(1)}%`,
+                        subvalue: `${s.totalCompletedEffortPoints}/${s.totalAssignedEffortPoints} points`,
+                        icon: <Timer className='h-6 w-6 text-blue-600' />,
+                        trend:
+                          s.overallEffortPointCompletionRate >= 75
+                            ? 'positive'
+                            : s.overallEffortPointCompletionRate >= 50
+                              ? 'neutral'
+                              : 'negative'
+                      },
+                      {
+                        label: 'Team Activity',
+                        value: s.totalComments.toString(),
+                        subvalue: `${s.averageCommentsPerTask.toFixed(1)} avg per task`,
+                        icon: <MessageSquare className='h-6 w-6 text-purple-600' />,
+                        trend: 'neutral'
+                      },
+                      {
+                        label: 'Workload Balance',
+                        value: s.averageTasksPerMember.toFixed(1),
+                        subvalue: `${s.averageEffortPointsPerMember.toFixed(0)} effort/member`,
+                        icon: <Users className='h-6 w-6 text-orange-600' />,
+                        trend: 'neutral'
+                      }
+                    ].map((kpi) => (
+                      <Card
+                        key={kpi.label}
+                        className='rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition bg-white/80 backdrop-blur'
+                      >
+                        <CardContent className='p-6'>
+                          <div className='flex items-start justify-between'>
+                            <div className='flex-1'>
+                              <div className='flex items-center gap-2 mb-2'>
+                                {kpi.icon}
+                                <p className='text-sm font-semibold text-gray-700'>{kpi.label}</p>
+                              </div>
+                              <p className='text-3xl font-bold text-gray-900 mb-1'>{kpi.value}</p>
+                              <p className='text-xs text-gray-500'>{kpi.subvalue}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+              </div>
+
+              {/* Detailed Breakdown - Second Row */}
+              <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
+                {/* Task Status Breakdown */}
+                <Card className='rounded-xl border border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
+                  <CardHeader className='pb-3'>
+                    {showSkeleton ? (
+                      <Skeleton className='h-6 w-32' />
+                    ) : (
+                      <CardTitle className='text-lg font-semibold flex items-center gap-2'>
+                        <BarChart3 className='h-5 w-5 text-blue-600' />
+                        Task Status
+                      </CardTitle>
+                    )}
+                  </CardHeader>
+                  <CardContent className='pt-0'>
+                    {showSkeleton || !s ? (
+                      <div className='space-y-3'>
+                        {Array.from({ length: 4 }).map((_, i) => (
+                          <div key={i} className='flex items-center justify-between'>
+                            <Skeleton className='h-4 w-20' />
+                            <Skeleton className='h-4 w-8' />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className='space-y-3'>
+                        <div className='flex items-center justify-between p-3 bg-green-50 rounded-lg'>
+                          <span className='text-sm font-medium text-green-800'>Completed</span>
+                          <span className='text-lg font-bold text-green-900'>{s.totalCompletedTasks}</span>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                        <div className='flex items-center justify-between p-3 bg-blue-50 rounded-lg'>
+                          <span className='text-sm font-medium text-blue-800'>In Progress</span>
+                          <span className='text-lg font-bold text-blue-900'>{s.totalInProgressTasks}</span>
+                        </div>
+                        <div className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'>
+                          <span className='text-sm font-medium text-gray-800'>Todo</span>
+                          <span className='text-lg font-bold text-gray-900'>{s.totalTodoTasks}</span>
+                        </div>
+                        {s.totalOverdueTasks > 0 && (
+                          <div className='flex items-center justify-between p-3 bg-red-50 rounded-lg'>
+                            <span className='text-sm font-medium text-red-800'>Overdue</span>
+                            <span className='text-lg font-bold text-red-900'>{s.totalOverdueTasks}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Effort Points Breakdown */}
+                <Card className='rounded-xl border border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
+                  <CardHeader className='pb-3'>
+                    {showSkeleton ? (
+                      <Skeleton className='h-6 w-40' />
+                    ) : (
+                      <CardTitle className='text-lg font-semibold flex items-center gap-2'>
+                        <Timer className='h-5 w-5 text-indigo-600' />
+                        Effort Distribution
+                      </CardTitle>
+                    )}
+                  </CardHeader>
+                  <CardContent className='pt-0'>
+                    {showSkeleton || !s ? (
+                      <div className='space-y-3'>
+                        {Array.from({ length: 3 }).map((_, i) => (
+                          <div key={i} className='flex items-center justify-between'>
+                            <Skeleton className='h-4 w-20' />
+                            <Skeleton className='h-4 w-8' />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className='space-y-3'>
+                        <div className='flex items-center justify-between p-3 bg-emerald-50 rounded-lg'>
+                          <span className='text-sm font-medium text-emerald-800'>Completed</span>
+                          <span className='text-lg font-bold text-emerald-900'>{s.totalCompletedEffortPoints}</span>
+                        </div>
+                        <div className='flex items-center justify-between p-3 bg-blue-50 rounded-lg'>
+                          <span className='text-sm font-medium text-blue-800'>In Progress</span>
+                          <span className='text-lg font-bold text-blue-900'>{s.totalInProgressEffortPoints}</span>
+                        </div>
+                        <div className='flex items-center justify-between p-3 bg-gray-50 rounded-lg'>
+                          <span className='text-sm font-medium text-gray-800'>Todo</span>
+                          <span className='text-lg font-bold text-gray-900'>{s.totalTodoEffortPoints}</span>
+                        </div>
+                        <div className='mt-4 pt-3 border-t border-gray-200'>
+                          <div className='flex items-center justify-between text-xs text-gray-600'>
+                            <span>Avg per task</span>
+                            <span className='font-medium'>{s.averageEffortPointsPerTask.toFixed(1)}</span>
+                          </div>
+                          <div className='flex items-center justify-between text-xs text-gray-600 mt-1'>
+                            <span>Tasks with effort</span>
+                            <span className='font-medium'>
+                              {s.totalTasksWithEffortPoints}/{s.totalTasks}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Team Performance */}
+                <Card className='rounded-xl border border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
+                  <CardHeader className='pb-3'>
+                    {showSkeleton ? (
+                      <Skeleton className='h-6 w-32' />
+                    ) : (
+                      <CardTitle className='text-lg font-semibold flex items-center gap-2'>
+                        <Users className='h-5 w-5 text-purple-600' />
+                        Team Metrics
+                      </CardTitle>
+                    )}
+                  </CardHeader>
+                  <CardContent className='pt-0'>
+                    {showSkeleton || !s ? (
+                      <div className='space-y-3'>
+                        {Array.from({ length: 4 }).map((_, i) => (
+                          <div key={i} className='flex items-center justify-between'>
+                            <Skeleton className='h-4 w-20' />
+                            <Skeleton className='h-4 w-8' />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className='space-y-4'>
+                        <div className='space-y-2'>
+                          <div className='flex items-center justify-between'>
+                            <span className='text-sm text-gray-600'>Total Members</span>
+                            <span className='text-lg font-bold text-gray-900'>{s.totalMembers}</span>
+                          </div>
+                          <div className='flex items-center justify-between'>
+                            <span className='text-sm text-gray-600'>Tasks per Member</span>
+                            <span className='text-lg font-bold text-gray-900'>
+                              {s.averageTasksPerMember.toFixed(1)}
+                            </span>
+                          </div>
+                          <div className='flex items-center justify-between'>
+                            <span className='text-sm text-gray-600'>Comments per Task</span>
+                            <span className='text-lg font-bold text-gray-900'>
+                              {s.averageCommentsPerTask.toFixed(1)}
+                            </span>
+                          </div>
+                          <div className='flex items-center justify-between'>
+                            <span className='text-sm text-gray-600'>Effort per Member</span>
+                            <span className='text-lg font-bold text-gray-900'>
+                              {s.averageEffortPointsPerMember.toFixed(0)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className='pt-3 border-t border-gray-200'>
+                          <div className='flex items-center justify-between'>
+                            <span className='text-xs text-gray-500'>Overall Completion</span>
+                            <span className='text-sm font-semibold text-green-600'>
+                              {((s.totalCompletedTasks / s.totalTasks) * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             {/* Visual Analytics */}
-            <div className='p-6 pt-2'>
-              <div className='grid grid-cols-1 xl:grid-cols-4 gap-6'>
+            <div className='p-6'>
+              <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
                 {/* Task Status Bar */}
-                <Card className='xl:col-span-2 rounded-xl border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
+                <Card className='rounded-xl border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
                   <CardHeader className='pb-2'>
                     {showSkeleton ? (
                       <Skeleton className='h-4 w-40' />
@@ -493,125 +594,6 @@ const ProjectReports: React.FC = () => {
                       </ChartContainer>
                     ) : (
                       <p className='text-xs text-gray-500'>No status data</p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Priority Pie */}
-                <Card className='rounded-xl border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
-                  <CardHeader className='pb-2'>
-                    {showSkeleton ? (
-                      <Skeleton className='h-4 w-32' />
-                    ) : (
-                      <CardTitle className='text-sm font-semibold'>Priority Breakdown</CardTitle>
-                    )}
-                  </CardHeader>
-                  <CardContent className='h-[260px]'>
-                    {showSkeleton ? (
-                      <Skeleton className='h-full w-full rounded-lg' />
-                    ) : priorityDistribution.length ? (
-                      <ChartContainer config={chartConfig} className='aspect-auto h-full'>
-                        <PieChart>
-                          <Pie
-                            data={priorityDistribution}
-                            dataKey='value'
-                            nameKey='label'
-                            innerRadius={45}
-                            outerRadius={80}
-                            paddingAngle={3}
-                          >
-                            {priorityDistribution.map((p) => (
-                              <Cell key={p.key} fill={`var(--color-${p.key})`} />
-                            ))}
-                          </Pie>
-                          <ChartTooltip content={<ChartTooltipContent nameKey='label' />} />
-                          <ChartLegend content={<ChartLegendContent />} />
-                        </PieChart>
-                      </ChartContainer>
-                    ) : (
-                      <p className='text-xs text-gray-500'>No priority data</p>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Daily Completions Line */}
-                <Card className='rounded-xl border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
-                  <CardHeader className='pb-2'>
-                    {showSkeleton ? (
-                      <Skeleton className='h-4 w-44' />
-                    ) : (
-                      <CardTitle className='text-sm font-semibold'>Daily Task Completions</CardTitle>
-                    )}
-                  </CardHeader>
-                  <CardContent className='h-[260px]'>
-                    {showSkeleton ? (
-                      <Skeleton className='h-full w-full rounded-lg' />
-                    ) : dailyCompletions.length ? (
-                      <ChartContainer config={chartConfig} className='aspect-auto h-full'>
-                        <LineChart data={dailyCompletions}>
-                          <CartesianGrid strokeDasharray='3 3' />
-                          <XAxis dataKey='date' tickLine={false} axisLine={false} tickFormatter={(d) => d.slice(5)} />
-                          <YAxis allowDecimals={false} width={30} />
-                          <ChartTooltip content={<ChartTooltipContent labelKey='date' />} />
-                          <Line
-                            type='monotone'
-                            dataKey='count'
-                            stroke='var(--color-completed)'
-                            strokeWidth={2}
-                            dot={false}
-                            activeDot={{ r: 4 }}
-                          />
-                        </LineChart>
-                      </ChartContainer>
-                    ) : (
-                      <p className='text-xs text-gray-500'>No completion activity</p>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Top Contributors Stacked Bar and Burndown Chart */}
-              <div className='mt-6 grid grid-cols-1 xl:grid-cols-2 gap-6'>
-                {/* Top Contributors Stacked Bar */}
-                <Card className='rounded-xl border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
-                  <CardHeader className='pb-2'>
-                    {showSkeleton ? (
-                      <Skeleton className='h-4 w-48' />
-                    ) : (
-                      <CardTitle className='text-sm font-semibold'>Top Contributors (Tasks vs Comments)</CardTitle>
-                    )}
-                  </CardHeader>
-                  <CardContent className='h-[320px]'>
-                    {showSkeleton ? (
-                      <Skeleton className='h-full w-full rounded-lg' />
-                    ) : topContribChartData.length ? (
-                      <ChartContainer config={chartConfig} className='aspect-auto h-full'>
-                        <ReBarChart data={topContribChartData}>
-                          <CartesianGrid strokeDasharray='3 3' vertical={false} />
-                          <XAxis
-                            dataKey='name'
-                            tickLine={false}
-                            axisLine={false}
-                            interval={0}
-                            angle={-20}
-                            dy={10}
-                            height={60}
-                          />
-                          <YAxis allowDecimals={false} width={30} />
-                          <ChartTooltip content={<ChartTooltipContent />} />
-                          <Bar dataKey='completed' stackId='a' fill='var(--color-completed)' radius={[4, 4, 0, 0]} />
-                          <Bar dataKey='comments' stackId='a' fill='var(--color-comments)' radius={[4, 4, 0, 0]} />
-                          <Bar
-                            dataKey='effortPoints'
-                            stackId='a'
-                            fill='var(--color-effortPoints)'
-                            radius={[4, 4, 0, 0]}
-                          />
-                          <ChartLegend content={<ChartLegendContent />} />
-                        </ReBarChart>
-                      </ChartContainer>
-                    ) : (
-                      <p className='text-xs text-gray-500'>No contributor data</p>
                     )}
                   </CardContent>
                 </Card>
@@ -893,9 +875,12 @@ const ProjectReports: React.FC = () => {
                                       </AvatarFallback>
                                     )}
                                   </Avatar>
-                                  <p className='font-medium text-sm'>
-                                    {t.taskTitle} <span className='text-xs text-gray-500'>• {t.status}</span>
-                                  </p>
+                                  <div>
+                                    <p className='font-medium text-sm'>
+                                      {t.taskTitle} <span className='text-xs text-gray-500'>• {t.status}</span>
+                                    </p>
+                                    <p className='text-xs text-gray-500'>{t.fullName}</p>
+                                  </div>
                                 </div>
                                 <Badge variant='outline' className='rounded-full'>
                                   {t.priority}
@@ -974,7 +959,10 @@ const ProjectReports: React.FC = () => {
                                       </AvatarFallback>
                                     )}
                                   </Avatar>
-                                  <p className='font-medium text-sm'>{c.taskTitle}</p>
+                                  <div>
+                                    <p className='font-medium text-sm'>{c.taskTitle}</p>
+                                    <p className='text-xs text-gray-500'>{c.fullName}</p>
+                                  </div>
                                 </div>
                                 <span className='inline-flex items-center gap-1 text-[11px] text-gray-500'>
                                   <MessageSquare className='h-3.5 w-3.5' /> {fmt(c.createdAt)}
