@@ -5,8 +5,8 @@ import { Sidebar } from '@/components/Sidebar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Loader } from '@/components/ui/loader'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useToastContext } from '@/components/ui/ToastContext'
 import axiosClient from '@/configs/axiosClient'
 import { useGitHubStatus } from '@/contexts/GitHubStatusContext'
@@ -38,7 +38,7 @@ export default function ProjectGitHub() {
   const [oauthLoading, setOauthLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  
+
   // UI States
   const [newPart, setNewPart] = useState({ name: '', programmingLanguage: '' })
   const [creatingPart, setCreatingPart] = useState(false)
@@ -57,23 +57,23 @@ export default function ProjectGitHub() {
       const status = res.data.data
       setConnectionStatus(status)
       updateConnectionStatus(status)
-      
+
       if (status) {
         const repoRes = await axiosClient.get('/api/github/repos')
         setRepos(repoRes.data.data)
       }
-      
+
       if (projectId) {
         try {
           const partsRes = await axiosClient.get(`/projects/${projectId}/parts`)
-          let partsData = partsRes.data.data || partsRes.data || []
+          const partsData = partsRes.data.data || partsRes.data || []
           const processedParts = processPartsData(partsData)
           setParts(processedParts)
-        } catch (err) {
+        } catch {
           setParts([])
         }
       }
-    } catch (err) {
+    } catch {
       setError('Error loading data')
       updateConnectionStatus(null)
     } finally {
@@ -83,6 +83,7 @@ export default function ProjectGitHub() {
 
   useEffect(() => {
     fetchData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 
   const handleConnectGitHub = async () => {
@@ -91,7 +92,7 @@ export default function ProjectGitHub() {
     try {
       const res = await axiosClient.get('/api/github/login-url')
       window.location.href = res.data.data
-    } catch (err) {
+    } catch {
       setError('Error getting GitHub login URL')
     } finally {
       setOauthLoading(false)
@@ -101,53 +102,55 @@ export default function ProjectGitHub() {
   const handleCreatePart = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!newPart.name.trim() || !newPart.programmingLanguage) {
-      showToast({ title: 'Error', description: 'Please fill in all required fields (Name and Programming Language)', variant: 'destructive' })
+      showToast({
+        title: 'Error',
+        description: 'Please fill in all required fields (Name and Programming Language)',
+        variant: 'destructive'
+      })
       return
     }
-    
+
     setCreatingPart(true)
     setError(null)
     try {
       const response = await createProjectPart(projectId!, {
         name: newPart.name,
         programmingLanguage: newPart.programmingLanguage,
-        framework: 'None',
+        framework: 'None'
       })
-      
+
       const partId = extractPartId(response.data)
-      
+
       if (!partId && response.data && typeof response.data === 'string' && response.data.includes('successfully')) {
         // Success case - refresh data to get the latest parts list
         showToast({ title: 'Success', description: 'Project part created successfully!' })
         setNewPart({ name: '', programmingLanguage: '' })
-        
+
         // Fetch fresh data to get the newly created part
         await fetchData()
-        
+
         setSuccess(`✅ Project part "${newPart.name}" created successfully!`)
         return
       }
-      
+
       if (!partId) {
         setError('Failed to create project part. Please try again.')
         setSuccess(null)
         return
       }
-      
+
       // Success with valid partId
       const partName = newPart.name
       setNewPart({ name: '', programmingLanguage: '' })
       showToast({ title: 'Success', description: 'Project part created successfully!' })
       setSuccess(`✅ Project part "${partName}" created successfully!`)
-      
+
       // Fetch fresh data to ensure consistency
       await fetchData()
-      
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 
-                          err.response?.data?.error || 
-                          err.message || 
-                          'Error creating project part'
+      const errorMessage =
+        err.response?.data?.message || err.response?.data?.error || err.message || 'Error creating project part'
       setError(`Error creating project part: ${errorMessage}`)
     } finally {
       setCreatingPart(false)
@@ -159,41 +162,42 @@ export default function ProjectGitHub() {
       setError('Please select both repository and project part')
       return
     }
-    
+
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
     if (!uuidRegex.test(selectedPart)) {
       setError('Invalid project part ID format. Please select a valid project part.')
       return
     }
-    
+
     if (!validatePartId(selectedPart, parts)) {
       setError('Invalid project part selected. Please try again.')
       return
     }
-    
+
     setConnecting(true)
     setError(null)
     setSuccess(null)
     try {
-      await connectRepoToPart(projectId!, selectedPart, { 
+      await connectRepoToPart(projectId!, selectedPart, {
         repoUrl: selectedRepo
       })
-      
+
       setSuccess('Repository connected successfully!')
       setSelectedRepo('')
       setSelectedPart('')
       setCurrentStep('select')
-      
+
       // Reset newly created part ID after successful connection
       setNewlyCreatedPartId(null)
-      
+
       await fetchData()
-      
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 
-                          err.response?.data?.error || 
-                          err.message || 
-                          'Error connecting repository to Project Part'
+      const errorMessage =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        'Error connecting repository to Project Part'
       setError(errorMessage)
     } finally {
       setConnecting(false)
@@ -205,28 +209,26 @@ export default function ProjectGitHub() {
       setError('Repository URL is required for webhook deletion')
       return
     }
-    
+
     setWebhookToDelete(repoUrl)
   }
 
   const confirmDeleteWebhook = async () => {
     if (!webhookToDelete) return
-    
+
     setDeletingWebhook(webhookToDelete)
     setError(null)
     setSuccess(null)
-    
+
     try {
       await deleteProjectPartWebhook(projectId!, webhookToDelete)
-      
+
       setSuccess('Webhook deleted successfully!')
       await fetchData()
-      
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 
-                          err.response?.data?.error || 
-                          err.message || 
-                          'Error deleting webhook'
+      const errorMessage =
+        err.response?.data?.message || err.response?.data?.error || err.message || 'Error deleting webhook'
       setError(errorMessage)
     } finally {
       setDeletingWebhook(null)
@@ -243,7 +245,7 @@ export default function ProjectGitHub() {
   // Check if no project is selected
   if (!projectId) {
     return (
-      <div className='flex h-screen bg-gray-100'>
+      <div className='flex h-screen bg-gray-50'>
         <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
         <div className='flex-1 flex flex-col overflow-hidden'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
@@ -267,12 +269,70 @@ export default function ProjectGitHub() {
 
   if (isLoading || !currentProject || loading) {
     return (
-      <div className='flex h-screen bg-gray-100'>
+      <div className='flex h-screen bg-gray-50'>
         <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
         <div className='flex-1 flex flex-col overflow-hidden'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-          <div className='flex items-center justify-center flex-1'>
-            <Loader />
+          <div className='flex-1 overflow-y-auto p-6'>
+            <div className='max-w-4xl mx-auto'>
+              {/* Header skeleton */}
+              <div className='text-center mb-8'>
+                <div className='flex items-center justify-center gap-3 mb-2'>
+                  <Skeleton className='h-8 w-8 rounded-lg' />
+                  <Skeleton className='h-8 w-48' />
+                </div>
+                <Skeleton className='h-4 w-64 mx-auto' />
+              </div>
+
+              {/* Connection status skeleton */}
+              <Card className='mb-6'>
+                <CardHeader>
+                  <div className='flex items-center gap-2'>
+                    <Skeleton className='h-5 w-5 rounded-full' />
+                    <Skeleton className='h-5 w-32' />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className='text-center space-y-4'>
+                    <Skeleton className='h-4 w-80 mx-auto' />
+                    <Skeleton className='h-10 w-40 mx-auto' />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Main content skeleton */}
+              <Card className='mb-6'>
+                <CardHeader>
+                  <div className='flex items-center gap-2'>
+                    <Skeleton className='h-6 w-6 rounded-full' />
+                    <Skeleton className='h-6 w-48' />
+                  </div>
+                </CardHeader>
+                <CardContent className='space-y-6'>
+                  <div className='space-y-3'>
+                    <Skeleton className='h-4 w-32' />
+                    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3'>
+                      {[1, 2, 3].map((i) => (
+                        <div key={i} className='p-4 border border-gray-200 rounded-lg'>
+                          <div className='flex items-start gap-3'>
+                            <Skeleton className='h-10 w-10 rounded-lg' />
+                            <div className='flex-1 space-y-2'>
+                              <Skeleton className='h-5 w-24' />
+                              <Skeleton className='h-4 w-full' />
+                            </div>
+                            <Skeleton className='h-4 w-4' />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className='text-center pt-4 border-t border-gray-200'>
+                    <Skeleton className='h-10 w-48 mx-auto' />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
       </div>
@@ -280,7 +340,7 @@ export default function ProjectGitHub() {
   }
 
   return (
-    <div className='flex h-screen bg-gray-100'>
+    <div className='flex h-screen bg-gray-50'>
       <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
       <div className='flex-1 flex flex-col overflow-hidden'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
@@ -300,7 +360,9 @@ export default function ProjectGitHub() {
               <div className='bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6'>{error}</div>
             )}
             {success && (
-              <div className='bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6'>{success}</div>
+              <div className='bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-6'>
+                {success}
+              </div>
             )}
 
             {/* Webhook Deletion Confirmation Dialog */}
@@ -316,12 +378,12 @@ export default function ProjectGitHub() {
                       <p className='text-sm text-gray-600'>This action cannot be undone</p>
                     </div>
                   </div>
-                  
+
                   <div className='mb-6'>
                     <p className='text-gray-700 mb-2'>Are you sure you want to delete the webhook for:</p>
                     <p className='text-sm bg-gray-50 p-3 rounded border font-mono break-all'>{webhookToDelete}</p>
                   </div>
-                  
+
                   <div className='flex gap-3 justify-end'>
                     <Button
                       variant='outline'
@@ -350,147 +412,245 @@ export default function ProjectGitHub() {
             )}
 
             {/* Recently Created Project Part */}
-            {success && success.includes('created successfully') && (() => {
-              // Extract project part name from success message
-              const match = success.match(/Project part "([^"]+)" created successfully/)
-              const projectPartName = match ? match[1] : null
-              
-              if (!projectPartName) {
-                return null
-              }
-              
-              // Find the project part by name (either temporary or real)
-              const foundPart = parts.find(part => part.name === projectPartName)
-              
-              return (
-                <Card className='mb-6 border-green-200 bg-green-50'>
-                  <CardHeader>
-                    <CardTitle className='flex items-center gap-2 text-green-800'>
-                      <span className='bg-green-200 text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold'>🎉</span>
-                      Recently Created Project Part
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {foundPart ? (
-                      // Found the part, display it
-                      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                        <div key={foundPart.id} className='p-4 bg-white rounded-lg border-2 border-green-300 shadow-sm'>
-                          <div className='flex items-start gap-3'>
-                            <div className='w-12 h-12 bg-green-200 rounded-lg flex items-center justify-center flex-shrink-0'>
-                              <span className='text-2xl'>📁</span>
-                            </div>
-                            <div className='flex-1 min-w-0'>
-                              <h4 className='font-bold text-green-900 text-lg mb-2 truncate max-w-full' title={foundPart.name}>{foundPart.name}</h4>
-                              <div className='space-y-2'>
-                                {foundPart.programmingLanguage !== 'None' && (
-                                  <div className='flex items-center gap-2'>
-                                    <span className='text-sm text-gray-600 flex items-center gap-2'>
-                                      {foundPart.programmingLanguage === 'Java' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" alt="Java" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.programmingLanguage === 'Csharp' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg" alt="C#" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.programmingLanguage === 'JavaScript' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg" alt="JavaScript" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.programmingLanguage === 'TypeScript' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg" alt="TypeScript" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.programmingLanguage === 'Python' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" alt="Python" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.programmingLanguage === 'PHP' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg" alt="PHP" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.programmingLanguage === 'Go' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg" alt="Go" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.programmingLanguage === 'Ruby' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg" alt="Ruby" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.programmingLanguage === 'CPlusPlus' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg" alt="C++" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.programmingLanguage === 'Swift' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg" alt="Swift" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.programmingLanguage === 'Kotlin' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg" alt="Kotlin" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.programmingLanguage}
-                                    </span>
+            {success &&
+              success.includes('created successfully') &&
+              (() => {
+                // Extract project part name from success message
+                const match = success.match(/Project part "([^"]+)" created successfully/)
+                const projectPartName = match ? match[1] : null
+
+                if (!projectPartName) {
+                  return null
+                }
+
+                // Find the project part by name (either temporary or real)
+                const foundPart = parts.find((part) => part.name === projectPartName)
+
+                return (
+                  <Card className='mb-6 border-green-200 bg-green-50'>
+                    <CardHeader>
+                      <CardTitle className='flex items-center gap-2 text-green-800'>
+                        <span className='bg-green-200 text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold'>
+                          🎉
+                        </span>
+                        Recently Created Project Part
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {foundPart ? (
+                        // Found the part, display it
+                        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+                          <div
+                            key={foundPart.id}
+                            className='p-4 bg-white rounded-lg border-2 border-green-300 shadow-sm'
+                          >
+                            <div className='flex items-start gap-3'>
+                              <div className='w-12 h-12 bg-green-200 rounded-lg flex items-center justify-center flex-shrink-0'>
+                                <span className='text-2xl'>📁</span>
+                              </div>
+                              <div className='flex-1 min-w-0'>
+                                <h4
+                                  className='font-bold text-green-900 text-lg mb-2 truncate max-w-full'
+                                  title={foundPart.name}
+                                >
+                                  {foundPart.name}
+                                </h4>
+                                <div className='space-y-2'>
+                                  {foundPart.programmingLanguage !== 'None' && (
+                                    <div className='flex items-center gap-2'>
+                                      <span className='text-sm text-gray-600 flex items-center gap-2'>
+                                        {foundPart.programmingLanguage === 'Java' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg'
+                                            alt='Java'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.programmingLanguage === 'Csharp' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg'
+                                            alt='C#'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.programmingLanguage === 'JavaScript' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg'
+                                            alt='JavaScript'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.programmingLanguage === 'TypeScript' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg'
+                                            alt='TypeScript'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.programmingLanguage === 'Python' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg'
+                                            alt='Python'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.programmingLanguage === 'PHP' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg'
+                                            alt='PHP'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.programmingLanguage === 'Go' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg'
+                                            alt='Go'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.programmingLanguage === 'Ruby' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg'
+                                            alt='Ruby'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.programmingLanguage === 'CPlusPlus' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg'
+                                            alt='C++'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.programmingLanguage === 'Swift' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg'
+                                            alt='Swift'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.programmingLanguage === 'Kotlin' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg'
+                                            alt='Kotlin'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.programmingLanguage}
+                                      </span>
+                                    </div>
+                                  )}
+                                  {foundPart.framework !== 'None' && (
+                                    <div className='flex items-center gap-2'>
+                                      <span className='text-sm text-gray-600 flex items-center gap-2'>
+                                        {foundPart.framework === 'React' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg'
+                                            alt='React'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.framework === 'Angular' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg'
+                                            alt='Angular'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.framework === 'VueJs' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg'
+                                            alt='Vue.js'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.framework === 'DotNetCore' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg'
+                                            alt='.NET Core'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.framework === 'SpringBoot' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg'
+                                            alt='Spring Boot'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.framework === 'Django' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg'
+                                            alt='Django'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.framework === 'ExpressJs' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg'
+                                            alt='Express.js'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.framework === 'Laravel' && (
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg'
+                                            alt='Laravel'
+                                            className='w-4 h-4'
+                                          />
+                                        )}
+                                        {foundPart.framework}
+                                      </span>
+                                    </div>
+                                  )}
+                                  <div className='pt-2'>
+                                    <Button
+                                      size='sm'
+                                      onClick={() => {
+                                        setSelectedPart(foundPart.id)
+                                        setCurrentStep('connect')
+                                      }}
+                                      className='bg-green-600 hover:bg-green-700 text-white w-full'
+                                    >
+                                      <span className='flex items-center gap-2'>
+                                        <span className='text-sm'>🔗</span>
+                                        <span className='truncate'>Connect Repository</span>
+                                      </span>
+                                    </Button>
                                   </div>
-                                )}
-                                {foundPart.framework !== 'None' && (
-                                  <div className='flex items-center gap-2'>
-                                    <span className='text-sm text-gray-600 flex items-center gap-2'>
-                                      {foundPart.framework === 'React' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg" alt="React" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.framework === 'Angular' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg" alt="Angular" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.framework === 'VueJs' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg" alt="Vue.js" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.framework === 'DotNetCore' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg" alt=".NET Core" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.framework === 'SpringBoot' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg" alt="Spring Boot" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.framework === 'Django' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg" alt="Django" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.framework === 'ExpressJs' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg" alt="Express.js" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.framework === 'Laravel' && (
-                                        <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg" alt="Laravel" className='w-4 h-4' />
-                                      )}
-                                      {foundPart.framework}
-                                    </span>
-                                  </div>
-                                )}
-                                <div className='pt-2'>
-                                  <Button
-                                    size='sm'
-                                    onClick={() => {
-                                      setSelectedPart(foundPart.id)
-                                      setCurrentStep('connect')
-                                    }}
-                                    className='bg-green-600 hover:bg-green-700 text-white w-full'
-                                  >
-                                    <span className='flex items-center gap-2'>
-                                      <span className='text-sm'>🔗</span>
-                                      <span className='truncate'>Connect Repository</span>
-                                    </span>
-                                  </Button>
                                 </div>
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    ) : (
-                      // Part not found yet, show loading state with extracted name
-                      <div className='text-center py-8 text-gray-500'>
-                        <div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3'>
-                          <span className='text-2xl'>⏳</span>
+                      ) : (
+                        // Part not found yet, show loading state with extracted name
+                        <div className='text-center py-8 text-gray-500'>
+                          <div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3'>
+                            <span className='text-2xl'>⏳</span>
+                          </div>
+                          <p className='text-sm'>
+                            Loading project part:{' '}
+                            <strong className='truncate block max-w-full' title={projectPartName}>
+                              {projectPartName}
+                            </strong>
+                          </p>
+                          <p className='text-xs text-gray-400 mt-1'>Please wait while we fetch the latest data</p>
+                          <div className='mt-4 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700'>
+                            <p>
+                              ⏳ Project part name:{' '}
+                              <span className='truncate block max-w-full' title={projectPartName}>
+                                {projectPartName}
+                              </span>
+                            </p>
+                            <p>⏳ Waiting for server response...</p>
+                          </div>
                         </div>
-                        <p className='text-sm'>Loading project part: <strong className='truncate block max-w-full' title={projectPartName}>{projectPartName}</strong></p>
-                        <p className='text-xs text-gray-400 mt-1'>Please wait while we fetch the latest data</p>
-                        <div className='mt-4 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700'>
-                          <p>⏳ Project part name: <span className='truncate block max-w-full' title={projectPartName}>{projectPartName}</span></p>
-                          <p>⏳ Waiting for server response...</p>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )
-            })()}
+                      )}
+                    </CardContent>
+                  </Card>
+                )
+              })()}
 
             {/* GitHub Connection Status */}
             <Card className='mb-6'>
@@ -536,7 +696,9 @@ export default function ProjectGitHub() {
                   <Card className='mb-6'>
                     <CardHeader>
                       <CardTitle className='flex items-center gap-2'>
-                        <span className='bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold'>1</span>
+                        <span className='bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold'>
+                          1
+                        </span>
                         Select or Create Project Part
                       </CardTitle>
                     </CardHeader>
@@ -561,44 +723,91 @@ export default function ProjectGitHub() {
                                       <span className='text-blue-600 text-lg font-bold'>📁</span>
                                     </div>
                                     <div className='flex-1 min-w-0 overflow-hidden'>
-                                      <h4 className='font-medium text-gray-900 group-hover:text-blue-700 transition-colors truncate max-w-full' title={part.name}>
+                                      <h4
+                                        className='font-medium text-gray-900 group-hover:text-blue-700 transition-colors truncate max-w-full'
+                                        title={part.name}
+                                      >
                                         {part.name}
                                       </h4>
                                       <p className='text-sm text-gray-500 mt-1'>
                                         {part.programmingLanguage !== 'None' && (
                                           <span className='flex items-center gap-1'>
                                             {part.programmingLanguage === 'Java' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" alt="Java" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg'
+                                                alt='Java'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.programmingLanguage === 'Csharp' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg" alt="C#" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg'
+                                                alt='C#'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.programmingLanguage === 'JavaScript' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg" alt="JavaScript" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg'
+                                                alt='JavaScript'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.programmingLanguage === 'TypeScript' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg" alt="TypeScript" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg'
+                                                alt='TypeScript'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.programmingLanguage === 'Python' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" alt="Python" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg'
+                                                alt='Python'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.programmingLanguage === 'PHP' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg" alt="PHP" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg'
+                                                alt='PHP'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.programmingLanguage === 'Go' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg" alt="Go" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg'
+                                                alt='Go'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.programmingLanguage === 'Ruby' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg" alt="Ruby" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg'
+                                                alt='Ruby'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.programmingLanguage === 'CPlusPlus' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg" alt="C++" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg'
+                                                alt='C++'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.programmingLanguage === 'Swift' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg" alt="Swift" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg'
+                                                alt='Swift'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.programmingLanguage === 'Kotlin' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg" alt="Kotlin" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg'
+                                                alt='Kotlin'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.programmingLanguage}
                                           </span>
@@ -607,33 +816,67 @@ export default function ProjectGitHub() {
                                         {part.framework !== 'None' && (
                                           <span className='flex items-center gap-1'>
                                             {part.framework === 'React' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg" alt="React" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg'
+                                                alt='React'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.framework === 'Angular' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg" alt="Angular" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg'
+                                                alt='Angular'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.framework === 'VueJs' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg" alt="Vue.js" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg'
+                                                alt='Vue.js'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.framework === 'DotNetCore' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg" alt=".NET Core" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg'
+                                                alt='.NET Core'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.framework === 'SpringBoot' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg" alt="Spring Boot" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg'
+                                                alt='Spring Boot'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.framework === 'Django' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg" alt="Django" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg'
+                                                alt='Django'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.framework === 'ExpressJs' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg" alt="Express.js" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg'
+                                                alt='Express.js'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.framework === 'Laravel' && (
-                                              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg" alt="Laravel" className='w-3 h-3' />
+                                              <img
+                                                src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg'
+                                                alt='Laravel'
+                                                className='w-3 h-3'
+                                              />
                                             )}
                                             {part.framework}
                                           </span>
                                         )}
-                                        {(part.programmingLanguage === 'None' && part.framework === 'None') && 'No tech stack specified'}
+                                        {part.programmingLanguage === 'None' &&
+                                          part.framework === 'None' &&
+                                          'No tech stack specified'}
                                       </p>
                                     </div>
                                     <ArrowRight className='w-4 h-4 text-gray-400 group-hover:text-blue-500 transition-colors flex-shrink-0' />
@@ -641,18 +884,21 @@ export default function ProjectGitHub() {
                                 </button>
                               ))}
                           </div>
-                          {parts.filter((part) => !(part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl)).length === 0 && (
+                          {parts.filter((part) => !(part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl))
+                            .length === 0 && (
                             <div className='text-center py-8 text-gray-500'>
                               <div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3'>
                                 <span className='text-2xl'>📂</span>
                               </div>
                               <p className='text-sm'>No project parts available</p>
-                              <p className='text-xs text-gray-400 mt-1'>Create your first project part to get started</p>
+                              <p className='text-xs text-gray-400 mt-1'>
+                                Create your first project part to get started
+                              </p>
                             </div>
                           )}
                         </div>
                       )}
-                      
+
                       <div className='text-center pt-4 border-t border-gray-200'>
                         <Button
                           onClick={() => setCurrentStep('create')}
@@ -671,7 +917,9 @@ export default function ProjectGitHub() {
                   <Card className='mb-6'>
                     <CardHeader>
                       <CardTitle className='flex items-center gap-2'>
-                        <span className='bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold'>2</span>
+                        <span className='bg-blue-100 text-blue-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold'>
+                          2
+                        </span>
                         Create New Project Part
                       </CardTitle>
                     </CardHeader>
@@ -687,78 +935,125 @@ export default function ProjectGitHub() {
                             className='w-full'
                           />
                         </div>
-                        
+
                         <div className='grid grid-cols-2 gap-4'>
                           <div>
                             <label className='block text-sm font-medium text-gray-700 mb-1'>Programming Language</label>
-                            <Select value={newPart.programmingLanguage} onValueChange={(value) => setNewPart({ ...newPart, programmingLanguage: value })}>
+                            <Select
+                              value={newPart.programmingLanguage}
+                              onValueChange={(value) => setNewPart({ ...newPart, programmingLanguage: value })}
+                            >
                               <SelectTrigger>
-                                <SelectValue placeholder="Select language" />
+                                <SelectValue placeholder='Select language' />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="Java">
+                                <SelectItem value='Java'>
                                   <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" alt="Java" className='w-5 h-5' />
+                                    <img
+                                      src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg'
+                                      alt='Java'
+                                      className='w-5 h-5'
+                                    />
                                     <span>Java</span>
                                   </div>
                                 </SelectItem>
-                                <SelectItem value="Csharp">
+                                <SelectItem value='Csharp'>
                                   <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg" alt="C#" className='w-5 h-5' />
+                                    <img
+                                      src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg'
+                                      alt='C#'
+                                      className='w-5 h-5'
+                                    />
                                     <span>C#</span>
                                   </div>
                                 </SelectItem>
-                                <SelectItem value="JavaScript">
+                                <SelectItem value='JavaScript'>
                                   <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg" alt="JavaScript" className='w-5 h-5' />
+                                    <img
+                                      src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg'
+                                      alt='JavaScript'
+                                      className='w-5 h-5'
+                                    />
                                     <span>JavaScript</span>
                                   </div>
                                 </SelectItem>
-                                <SelectItem value="TypeScript">
+                                <SelectItem value='TypeScript'>
                                   <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg" alt="TypeScript" className='w-5 h-5' />
+                                    <img
+                                      src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg'
+                                      alt='TypeScript'
+                                      className='w-5 h-5'
+                                    />
                                     <span>TypeScript</span>
                                   </div>
                                 </SelectItem>
-                                <SelectItem value="Python">
+                                <SelectItem value='Python'>
                                   <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" alt="Python" className='w-5 h-5' />
+                                    <img
+                                      src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg'
+                                      alt='Python'
+                                      className='w-5 h-5'
+                                    />
                                     <span>Python</span>
                                   </div>
                                 </SelectItem>
-                                <SelectItem value="PHP">
+                                <SelectItem value='PHP'>
                                   <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg" alt="PHP" className='w-5 h-5' />
+                                    <img
+                                      src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg'
+                                      alt='PHP'
+                                      className='w-5 h-5'
+                                    />
                                     <span>PHP</span>
                                   </div>
                                 </SelectItem>
-                                <SelectItem value="Go">
+                                <SelectItem value='Go'>
                                   <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg" alt="Go" className='w-5 h-5' />
+                                    <img
+                                      src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg'
+                                      alt='Go'
+                                      className='w-5 h-5'
+                                    />
                                     <span>Go</span>
                                   </div>
                                 </SelectItem>
-                                <SelectItem value="Ruby">
+                                <SelectItem value='Ruby'>
                                   <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg" alt="Ruby" className='w-5 h-5' />
+                                    <img
+                                      src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg'
+                                      alt='Ruby'
+                                      className='w-5 h-5'
+                                    />
                                     <span>Ruby</span>
                                   </div>
                                 </SelectItem>
-                                <SelectItem value="CPlusPlus">
+                                <SelectItem value='CPlusPlus'>
                                   <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg" alt="C++" className='w-5 h-5' />
+                                    <img
+                                      src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg'
+                                      alt='C++'
+                                      className='w-5 h-5'
+                                    />
                                     <span>C++</span>
                                   </div>
                                 </SelectItem>
-                                <SelectItem value="Swift">
+                                <SelectItem value='Swift'>
                                   <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg" alt="Swift" className='w-5 h-5' />
+                                    <img
+                                      src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg'
+                                      alt='Swift'
+                                      className='w-5 h-5'
+                                    />
                                     <span>Swift</span>
                                   </div>
                                 </SelectItem>
-                                <SelectItem value="Kotlin">
+                                <SelectItem value='Kotlin'>
                                   <div className='flex items-center gap-2'>
-                                    <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg" alt="Kotlin" className='w-5 h-5' />
+                                    <img
+                                      src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg'
+                                      alt='Kotlin'
+                                      className='w-5 h-5'
+                                    />
                                     <span>Kotlin</span>
                                   </div>
                                 </SelectItem>
@@ -766,20 +1061,12 @@ export default function ProjectGitHub() {
                             </Select>
                           </div>
                         </div>
-                        
+
                         <div className='flex gap-3 justify-end pt-4'>
-                          <Button
-                            type='button'
-                            variant='outline'
-                            onClick={() => setCurrentStep('select')}
-                          >
+                          <Button type='button' variant='outline' onClick={() => setCurrentStep('select')}>
                             Cancel
                           </Button>
-                          <Button
-                            type='submit'
-                            disabled={creatingPart}
-                            className='bg-blue-600 hover:bg-blue-700'
-                          >
+                          <Button type='submit' disabled={creatingPart} className='bg-blue-600 hover:bg-blue-700'>
                             {creatingPart ? 'Creating...' : 'Create Part'}
                           </Button>
                         </div>
@@ -793,99 +1080,180 @@ export default function ProjectGitHub() {
                   <Card className='mb-6'>
                     <CardHeader>
                       <CardTitle className='flex items-center gap-2'>
-                        <span className='bg-green-100 text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold'>3</span>
+                        <span className='bg-green-100 text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold'>
+                          3
+                        </span>
                         Connect Repository
                       </CardTitle>
                     </CardHeader>
                     <CardContent className='space-y-4'>
                       {/* Selected Part Info */}
-                      {selectedPart && (() => {
-                        const selectedPartData = parts.find(p => p.id === selectedPart)
-                        if (!selectedPartData) return null
-                        
-                        return (
-                        <div className='bg-gray-50 p-4 rounded-lg'>
-                          <h4 className='font-medium text-gray-900 mb-2'>Selected Project Part:</h4>
-                            <div className='text-gray-700 space-y-2'>
-                              <p><strong>Name:</strong> {selectedPartData.name}</p>
-                              {selectedPartData.programmingLanguage !== 'None' && (
-                                <p className='flex items-center gap-2'>
-                                  <strong>Language:</strong> 
-                                  <span className='flex items-center gap-2'>
-                                    {selectedPartData.programmingLanguage === 'Java' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" alt="Java" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.programmingLanguage === 'Csharp' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg" alt="C#" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.programmingLanguage === 'JavaScript' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg" alt="JavaScript" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.programmingLanguage === 'TypeScript' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg" alt="TypeScript" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.programmingLanguage === 'Python' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" alt="Python" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.programmingLanguage === 'PHP' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg" alt="PHP" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.programmingLanguage === 'Go' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg" alt="Go" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.programmingLanguage === 'Ruby' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg" alt="Ruby" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.programmingLanguage === 'CPlusPlus' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg" alt="C++" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.programmingLanguage === 'Swift' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg" alt="Swift" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.programmingLanguage === 'Kotlin' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg" alt="Kotlin" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.programmingLanguage}
-                                  </span>
+                      {selectedPart &&
+                        (() => {
+                          const selectedPartData = parts.find((p) => p.id === selectedPart)
+                          if (!selectedPartData) return null
+
+                          return (
+                            <div className='bg-gray-50 p-4 rounded-lg'>
+                              <h4 className='font-medium text-gray-900 mb-2'>Selected Project Part:</h4>
+                              <div className='text-gray-700 space-y-2'>
+                                <p>
+                                  <strong>Name:</strong> {selectedPartData.name}
                                 </p>
-                              )}
-                              {selectedPartData.framework !== 'None' && (
-                                <p className='flex items-center gap-2'>
-                                  <strong>Framework:</strong> 
-                                  <span className='flex items-center gap-2'>
-                                    {selectedPartData.framework === 'React' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg" alt="React" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.framework === 'Angular' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg" alt="Angular" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.framework === 'VueJs' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg" alt="Vue.js" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.framework === 'DotNetCore' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg" alt=".NET Core" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.framework === 'SpringBoot' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg" alt="Spring Boot" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.framework === 'Django' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg" alt="Django" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.framework === 'ExpressJs' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg" alt="Express.js" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.framework === 'Laravel' && (
-                                      <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg" alt="Laravel" className='w-4 h-4' />
-                                    )}
-                                    {selectedPartData.framework}
-                                  </span>
-                                </p>
-                              )}
-                          </div>
-                        </div>
-                        )
-                      })()}
-                      
+                                {selectedPartData.programmingLanguage !== 'None' && (
+                                  <p className='flex items-center gap-2'>
+                                    <strong>Language:</strong>
+                                    <span className='flex items-center gap-2'>
+                                      {selectedPartData.programmingLanguage === 'Java' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg'
+                                          alt='Java'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.programmingLanguage === 'Csharp' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg'
+                                          alt='C#'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.programmingLanguage === 'JavaScript' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg'
+                                          alt='JavaScript'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.programmingLanguage === 'TypeScript' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg'
+                                          alt='TypeScript'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.programmingLanguage === 'Python' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg'
+                                          alt='Python'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.programmingLanguage === 'PHP' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg'
+                                          alt='PHP'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.programmingLanguage === 'Go' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg'
+                                          alt='Go'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.programmingLanguage === 'Ruby' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg'
+                                          alt='Ruby'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.programmingLanguage === 'CPlusPlus' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg'
+                                          alt='C++'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.programmingLanguage === 'Swift' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg'
+                                          alt='Swift'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.programmingLanguage === 'Kotlin' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg'
+                                          alt='Kotlin'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.programmingLanguage}
+                                    </span>
+                                  </p>
+                                )}
+                                {selectedPartData.framework !== 'None' && (
+                                  <p className='flex items-center gap-2'>
+                                    <strong>Framework:</strong>
+                                    <span className='flex items-center gap-2'>
+                                      {selectedPartData.framework === 'React' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg'
+                                          alt='React'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.framework === 'Angular' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg'
+                                          alt='Angular'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.framework === 'VueJs' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg'
+                                          alt='Vue.js'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.framework === 'DotNetCore' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg'
+                                          alt='.NET Core'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.framework === 'SpringBoot' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg'
+                                          alt='Spring Boot'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.framework === 'Django' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg'
+                                          alt='Django'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.framework === 'ExpressJs' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg'
+                                          alt='Express.js'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.framework === 'Laravel' && (
+                                        <img
+                                          src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg'
+                                          alt='Laravel'
+                                          className='w-4 h-4'
+                                        />
+                                      )}
+                                      {selectedPartData.framework}
+                                    </span>
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          )
+                        })()}
+
                       {/* Repository Selection */}
                       <div>
                         <label className='block text-sm font-medium text-gray-700 mb-2'>Select Repository *</label>
@@ -902,7 +1270,7 @@ export default function ProjectGitHub() {
                           ))}
                         </select>
                       </div>
-                      
+
                       {/* Action Buttons */}
                       <div className='flex gap-3 justify-between pt-4'>
                         <Button
@@ -915,7 +1283,7 @@ export default function ProjectGitHub() {
                         >
                           ← Back to Selection
                         </Button>
-                        
+
                         <Button
                           onClick={handleConnectRepo}
                           disabled={!selectedRepo || connecting}
@@ -939,7 +1307,8 @@ export default function ProjectGitHub() {
                 )}
 
                 {/* Connected Parts Summary */}
-                {parts.filter(part => part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl).length > 0 && (
+                {parts.filter((part) => part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl).length >
+                  0 && (
                   <Card>
                     <CardHeader>
                       <CardTitle>Connected Parts</CardTitle>
@@ -947,7 +1316,7 @@ export default function ProjectGitHub() {
                     <CardContent>
                       <div className='space-y-3'>
                         {parts
-                          .filter(part => part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl)
+                          .filter((part) => part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl)
                           .map((part) => (
                             <div key={part.id} className='flex items-center justify-between p-3 bg-green-50 rounded-lg'>
                               <div className='flex-1'>
@@ -988,35 +1357,46 @@ export default function ProjectGitHub() {
                   <Card className='mt-6'>
                     <CardHeader>
                       <CardTitle className='flex items-center gap-2'>
-                        <span className='bg-purple-100 text-purple-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold'>📋</span>
+                        <span className='bg-purple-100 text-purple-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold'>
+                          📋
+                        </span>
                         All Project Parts ({parts.length})
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
                         {parts.map((part, index) => (
-                          <div key={part.id} className={`p-4 rounded-lg border transition-all ${
-                            part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl
-                              ? 'bg-green-50 border-green-200'
-                              : 'bg-blue-50 border-blue-200 hover:border-blue-300'
-                          } ${index === parts.length - 1 ? 'ring-2 ring-green-300 ring-opacity-50' : ''}`}>
+                          <div
+                            key={part.id}
+                            className={`p-4 rounded-lg border transition-all ${
+                              part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl
+                                ? 'bg-green-50 border-green-200'
+                                : 'bg-blue-50 border-blue-200 hover:border-blue-300'
+                            } ${index === parts.length - 1 ? 'ring-2 ring-green-300 ring-opacity-50' : ''}`}
+                          >
                             <div className='flex items-start gap-3'>
-                              <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                                part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl
-                                  ? 'bg-green-100'
-                                  : 'bg-blue-100'
-                              }`}>
-                                <span className={`text-lg ${
+                              <div
+                                className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
                                   part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl
-                                    ? 'text-green-600'
-                                    : 'text-blue-600'
-                                }`}>
+                                    ? 'bg-green-100'
+                                    : 'bg-blue-100'
+                                }`}
+                              >
+                                <span
+                                  className={`text-lg ${
+                                    part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl
+                                      ? 'text-green-600'
+                                      : 'text-blue-600'
+                                  }`}
+                                >
                                   {part.repoUrl && part.ownerId && part.ownerName && part.avatrarUrl ? '🔗' : '📁'}
                                 </span>
                               </div>
                               <div className='flex-1 min-w-0 overflow-hidden'>
                                 <div className='flex items-center gap-2 mb-1'>
-                                  <h4 className='font-medium text-gray-900 truncate max-w-full' title={part.name}>{part.name}</h4>
+                                  <h4 className='font-medium text-gray-900 truncate max-w-full' title={part.name}>
+                                    {part.name}
+                                  </h4>
                                   {newlyCreatedPartId === part.id && (
                                     <span className='bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium flex-shrink-0'>
                                       NEW
@@ -1028,37 +1408,81 @@ export default function ProjectGitHub() {
                                     <div className='flex items-center gap-2'>
                                       <span className='text-sm text-gray-600 flex items-center gap-2'>
                                         {part.programmingLanguage === 'Java' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg" alt="Java" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/java/java-original.svg'
+                                            alt='Java'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.programmingLanguage === 'Csharp' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg" alt="C#" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/csharp/csharp-original.svg'
+                                            alt='C#'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.programmingLanguage === 'JavaScript' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg" alt="JavaScript" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/javascript/javascript-original.svg'
+                                            alt='JavaScript'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.programmingLanguage === 'TypeScript' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg" alt="TypeScript" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/typescript/typescript-original.svg'
+                                            alt='TypeScript'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.programmingLanguage === 'Python' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" alt="Python" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg'
+                                            alt='Python'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.programmingLanguage === 'PHP' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg" alt="PHP" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/php/php-original.svg'
+                                            alt='PHP'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.programmingLanguage === 'Go' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg" alt="Go" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/go/go-original.svg'
+                                            alt='Go'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.programmingLanguage === 'Ruby' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg" alt="Ruby" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/ruby/ruby-original.svg'
+                                            alt='Ruby'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.programmingLanguage === 'CPlusPlus' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg" alt="C++" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/cplusplus/cplusplus-original.svg'
+                                            alt='C++'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.programmingLanguage === 'Swift' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg" alt="Swift" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/swift/swift-original.svg'
+                                            alt='Swift'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.programmingLanguage === 'Kotlin' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg" alt="Kotlin" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/kotlin/kotlin-original.svg'
+                                            alt='Kotlin'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.programmingLanguage}
                                       </span>
@@ -1068,49 +1492,77 @@ export default function ProjectGitHub() {
                                     <div className='flex items-center gap-2'>
                                       <span className='text-sm text-gray-600 flex items-center gap-2'>
                                         {part.framework === 'React' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg" alt="React" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/react/react-original.svg'
+                                            alt='React'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.framework === 'Angular' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg" alt="Angular" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/angularjs/angularjs-original.svg'
+                                            alt='Angular'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.framework === 'VueJs' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg" alt="Vue.js" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/vuejs/vuejs-original.svg'
+                                            alt='Vue.js'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.framework === 'DotNetCore' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg" alt=".NET Core" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/dotnetcore/dotnetcore-original.svg'
+                                            alt='.NET Core'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.framework === 'SpringBoot' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg" alt="Spring Boot" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/spring/spring-original.svg'
+                                            alt='Spring Boot'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.framework === 'Django' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg" alt="Django" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/django/django-original.svg'
+                                            alt='Django'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.framework === 'ExpressJs' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg" alt="Express.js" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/express/express-original.svg'
+                                            alt='Express.js'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.framework === 'Laravel' && (
-                                          <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg" alt="Laravel" className='w-4 h-4' />
+                                          <img
+                                            src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/laravel/laravel-original.svg'
+                                            alt='Laravel'
+                                            className='w-4 h-4'
+                                          />
                                         )}
                                         {part.framework}
                                       </span>
                                     </div>
                                   )}
                                   {part.repoUrl && (
-                                    <p className='text-sm text-green-600 font-medium'>
-                                      ✓ Connected to GitHub
-                                    </p>
+                                    <p className='text-sm text-green-600 font-medium'>✓ Connected to GitHub</p>
                                   )}
                                   {!part.repoUrl && (
-                                    <p className='text-sm text-blue-600 font-medium'>
-                                      ⚠️ Not connected
-                                    </p>
+                                    <p className='text-sm text-blue-600 font-medium'>⚠️ Not connected</p>
                                   )}
                                 </div>
                                 {part.repoUrl && (
-                                  <a 
-                                    href={part.repoUrl} 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
+                                  <a
+                                    href={part.repoUrl}
+                                    target='_blank'
+                                    rel='noopener noreferrer'
                                     className='text-xs text-blue-600 hover:text-blue-800 underline truncate block mt-2'
                                     title={part.repoUrl}
                                   >
@@ -1119,7 +1571,7 @@ export default function ProjectGitHub() {
                                 )}
                               </div>
                             </div>
-                            
+
                             {part.repoUrl ? (
                               <div className='mt-3 pt-3 border-t border-green-200'>
                                 <Button
@@ -1170,7 +1622,7 @@ export default function ProjectGitHub() {
                           </div>
                         ))}
                       </div>
-                      
+
                       {parts.length === 0 && (
                         <div className='text-center py-8 text-gray-500'>
                           <div className='w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3'>

@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Loader } from '@/components/ui/loader'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjectParts } from '@/hooks/useProjectParts'
@@ -27,7 +27,50 @@ import {
   Search,
   User
 } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+
+// CommitCardSkeleton Component
+function CommitCardSkeleton() {
+  return (
+    <div className='bg-white rounded-lg p-6 shadow-sm border border-gray-200'>
+      <div className='flex flex-col gap-4'>
+        <div className='flex items-center gap-3'>
+          <Skeleton className='h-8 w-8 rounded-full' />
+          <Skeleton className='h-4 w-24' />
+          <Skeleton className='h-4 w-16' />
+          <Skeleton className='h-4 w-20' />
+        </div>
+        <Skeleton className='h-5 w-3/4' />
+
+        {/* Quality Score Section Skeleton */}
+        <div className='bg-gray-50 p-3 rounded-lg border border-gray-200'>
+          <div className='flex items-center gap-4'>
+            <div className='flex items-center gap-2'>
+              <Skeleton className='h-3 w-3 rounded-full' />
+              <Skeleton className='h-4 w-24' />
+              <Skeleton className='h-6 w-16' />
+            </div>
+            <Skeleton className='h-4 w-20' />
+          </div>
+        </div>
+
+        <div className='flex flex-wrap gap-2'>
+          {Array.from({ length: 11 }, (_, i) => (
+            <Skeleton key={i} className='h-5 w-20 rounded-full' />
+          ))}
+        </div>
+
+        <div className='space-y-1'>
+          <Skeleton className='h-4 w-full' />
+          <Skeleton className='h-4 w-2/3' />
+          <Skeleton className='h-4 w-1/2' />
+        </div>
+
+        <Skeleton className='h-8 w-24' />
+      </div>
+    </div>
+  )
+}
 
 // IssueCard Component
 interface IssueCardProps {
@@ -225,20 +268,10 @@ const renderQualityScoreSection = (commit: CommitListItem) => {
 }
 
 export default function GitCommits() {
-  console.log('[GitCommits] Component rendered')
-
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const { currentProject, isLoading } = useCurrentProject()
   const projectPartsHook = useProjectParts()
-
-  console.log('[GitCommits] currentProject:', currentProject?.id)
-  console.log('[GitCommits] isLoading:', isLoading)
-
-  const fetchPartsRef = useRef(projectPartsHook.fetchParts)
-  fetchPartsRef.current = projectPartsHook.fetchParts
-
-  console.log('[GitCommits] fetchPartsRef updated')
 
   const [parts, setParts] = useState<ProjectPart[]>([])
   const [selectedPartId, setSelectedPartId] = useState<string>('')
@@ -253,23 +286,16 @@ export default function GitCommits() {
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date())
 
-  // Debug state changes
-  useEffect(() => {
-    console.log('[GitCommits] State changed - parts:', parts.length, 'selectedPartId:', selectedPartId)
-  }, [parts, selectedPartId])
-
-  useEffect(() => {
-    console.log('[GitCommits] State changed - commits:', commits.length, 'page:', page, 'totalPages:', totalPages)
-  }, [commits, page, totalPages])
+  // Page readiness state to prevent flashing
+  const [isPageReady, setIsPageReady] = useState(false)
+  const [didInitialLoad, setDidInitialLoad] = useState(false)
 
   const fetchCommits = useCallback(async () => {
     if (!currentProject?.id || !selectedPartId) return
 
-    console.log('[GitCommits] Fetching commits for part:', selectedPartId, 'page:', page)
     setLoadingCommits(true)
     try {
       const res = await getProjectPartCommitsV2(currentProject.id, selectedPartId, page)
-      console.log('[GitCommits] Commits fetched successfully:', res.data?.items?.length || 0, 'commits')
       setCommits(res.data?.items || [])
       setTotalPages(res.data?.totalPages || 1)
     } catch (error) {
@@ -281,35 +307,45 @@ export default function GitCommits() {
     }
   }, [currentProject?.id, selectedPartId, page])
 
-  // Memoize fetchParts to prevent infinite loop
-  const memoizedFetchParts = useCallback(async (projectId: string) => {
-    console.log('[GitCommits] memoizedFetchParts called with projectId:', projectId)
-    try {
-      console.log('[GitCommits] Fetching parts for project:', projectId)
-      const res = await fetchPartsRef.current(projectId)
-      console.log('[GitCommits] Parts fetched successfully:', res.data?.length || 0, 'parts')
-      setParts(res.data || [])
-      if (res.data && res.data.length > 0) {
-        console.log('[GitCommits] Setting selectedPartId to:', res.data[0].id)
-        setSelectedPartId(res.data[0].id)
+  // Consolidated initial data loading
+  useEffect(() => {
+    const loadInitialData = async () => {
+      if (!currentProject?.id || didInitialLoad) return
+
+      try {
+        const res = await projectPartsHook.fetchParts(currentProject.id)
+        setParts(res.data || [])
+        if (res.data && res.data.length > 0) {
+          setSelectedPartId(res.data[0].id)
+        }
+        setDidInitialLoad(true)
+      } catch (error) {
+        console.error('Error fetching parts:', error)
+        setParts([])
+        setDidInitialLoad(true)
       }
-    } catch (error) {
-      console.error('Error fetching parts:', error)
-      setParts([])
     }
-  }, [])
 
+    loadInitialData()
+  }, [currentProject?.id, didInitialLoad, projectPartsHook])
+
+  // Set page ready when initial load completes and not loading
   useEffect(() => {
-    console.log('[GitCommits] useEffect triggered - currentProject?.id:', currentProject?.id)
-    if (currentProject?.id) {
-      console.log('[GitCommits] Calling memoizedFetchParts')
-      memoizedFetchParts(currentProject.id)
+    if (!isPageReady && didInitialLoad && !isLoading && !loadingCommits) {
+      setIsPageReady(true)
     }
-  }, [currentProject?.id, memoizedFetchParts])
+  }, [isPageReady, didInitialLoad, isLoading, loadingCommits])
 
-  // Smart auto-refresh based on commit status
+  // Fetch commits when selectedPartId or page changes
   useEffect(() => {
-    if (!autoRefresh || !currentProject?.id || !selectedPartId) return
+    if (currentProject?.id && selectedPartId && didInitialLoad) {
+      fetchCommits()
+    }
+  }, [currentProject?.id, selectedPartId, page, fetchCommits, didInitialLoad])
+
+  // Smart auto-refresh based on commit status (only when page is ready)
+  useEffect(() => {
+    if (!autoRefresh || !currentProject?.id || !selectedPartId || !isPageReady) return
 
     // Check if any commits are pending or processing
     const hasPendingOrProcessing = commits.some((commit) => {
@@ -317,35 +353,16 @@ export default function GitCommits() {
       return ['pending', 'queued', 'processing', 'scanning', 'checking'].includes(status)
     })
 
-    // Use shorter interval (10s) if there are pending/processing commits, longer (30s) otherwise
-    const interval = hasPendingOrProcessing ? 10000 : 30000
-
-    console.log(
-      `[GitCommits] Auto-refresh setup - hasPendingOrProcessing: ${hasPendingOrProcessing}, interval: ${interval}ms`
-    )
+    // Use shorter interval (15s) if there are pending/processing commits, longer (60s) otherwise
+    const interval = hasPendingOrProcessing ? 15000 : 60000
 
     const refreshInterval = setInterval(() => {
-      console.log('[GitCommits] Auto-refreshing commits...')
       fetchCommits()
       setLastRefresh(new Date())
     }, interval)
 
     return () => clearInterval(refreshInterval)
-  }, [autoRefresh, currentProject?.id, selectedPartId, fetchCommits, commits])
-
-  useEffect(() => {
-    console.log(
-      '[GitCommits] Commits useEffect triggered - currentProject?.id:',
-      currentProject?.id,
-      'selectedPartId:',
-      selectedPartId,
-      'page:',
-      page
-    )
-    if (currentProject?.id && selectedPartId) {
-      fetchCommits()
-    }
-  }, [currentProject?.id, selectedPartId, page, fetchCommits])
+  }, [autoRefresh, currentProject?.id, selectedPartId, fetchCommits, commits, isPageReady])
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen)
@@ -378,13 +395,51 @@ export default function GitCommits() {
     setLastRefresh(new Date())
   }
 
-  if (isLoading || !currentProject) {
+  if (!isPageReady) {
     return (
       <div className='flex h-screen bg-gray-50'>
         <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
         <div className='flex-1 flex flex-col overflow-hidden'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-          <Loader />
+          <div className='flex flex-col h-full p-6'>
+            {/* Header skeleton */}
+            <div className='flex-none w-full flex items-center justify-between pb-6'>
+              <div className='flex items-center gap-4'>
+                <div className='flex items-center gap-2'>
+                  <Skeleton className='h-10 w-10 rounded-lg' />
+                  <div>
+                    <Skeleton className='h-6 w-60' />
+                    <Skeleton className='h-4 w-40 mt-1' />
+                  </div>
+                </div>
+                <div className='flex items-center gap-3 ml-4'>
+                  <Skeleton className='h-4 w-4' />
+                  <Skeleton className='h-9 w-[220px] rounded-md' />
+                </div>
+              </div>
+              <div className='flex items-center gap-4'>
+                <Skeleton className='h-8 w-32 rounded-lg' />
+                <Skeleton className='h-8 w-24 rounded-lg' />
+                <Skeleton className='h-8 w-20 rounded-lg' />
+              </div>
+            </div>
+
+            {/* Search and filters skeleton */}
+            <div className='pb-6 flex items-center justify-between'>
+              <div className='flex items-center gap-4'>
+                <Skeleton className='h-9 w-20 rounded-md' />
+                <Skeleton className='h-9 w-[280px] rounded-md' />
+              </div>
+              <Skeleton className='h-9 w-32 rounded-md' />
+            </div>
+
+            {/* Commits list skeleton */}
+            <div className='space-y-4 overflow-y-auto'>
+              {Array.from({ length: 3 }, (_, i) => (
+                <CommitCardSkeleton key={i} />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -535,7 +590,7 @@ export default function GitCommits() {
 
           <div className='space-y-4 overflow-y-auto'>
             {loadingCommits ? (
-              <Loader />
+              Array.from({ length: 3 }, (_, i) => <CommitCardSkeleton key={i} />)
             ) : filteredCommits.length > 0 ? (
               filteredCommits.map((commit) => (
                 <div
@@ -663,9 +718,76 @@ export default function GitCommits() {
           </DialogHeader>
 
           {loadingDetail ? (
-            <div className='flex items-center justify-center py-12'>
-              <Loader />
-              <span className='ml-2 font-medium text-gray-700'>Loading commit details...</span>
+            <div className='space-y-6'>
+              {/* Commit Summary Skeleton */}
+              <Card className='bg-gray-50 border-gray-200'>
+                <CardHeader className='pb-3'>
+                  <CardTitle className='text-xl font-bold text-gray-900'>
+                    <Skeleton className='h-6 w-40' />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className='pt-0'>
+                  <div className='grid grid-cols-2 md:grid-cols-4 gap-4 text-sm'>
+                    <div className='flex items-center gap-2'>
+                      <Skeleton className='h-4 w-4' />
+                      <Skeleton className='h-4 w-20' />
+                    </div>
+                    <div className='flex items-center gap-2'>
+                      <Skeleton className='h-4 w-4' />
+                      <Skeleton className='h-4 w-24' />
+                    </div>
+                    <div className='flex items-center gap-2'>
+                      <Skeleton className='h-4 w-12' />
+                      <Skeleton className='h-5 w-16 rounded-full' />
+                    </div>
+                    <div className='flex items-center gap-2'>
+                      <Skeleton className='h-4 w-14' />
+                      <Skeleton className='h-5 w-16 rounded-full' />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Tabs Skeleton */}
+              <div className='w-full'>
+                <div className='grid w-full grid-cols-4 bg-gray-100 rounded-lg p-1'>
+                  {Array.from({ length: 4 }, (_, i) => (
+                    <Skeleton key={i} className='h-8 rounded-md' />
+                  ))}
+                </div>
+
+                <div className='mt-6 space-y-4 max-h-96'>
+                  {Array.from({ length: 3 }, (_, i) => (
+                    <Card key={i} className='border-l-4 border-gray-200'>
+                      <CardContent className='p-6'>
+                        <div className='flex items-start justify-between gap-4'>
+                          <div className='flex-1 space-y-4'>
+                            <div className='flex items-center gap-3'>
+                              <Skeleton className='h-6 w-20 rounded-full' />
+                              <Skeleton className='h-4 w-24 rounded' />
+                            </div>
+                            <Skeleton className='h-5 w-3/4' />
+                            <div className='flex items-center gap-4'>
+                              <div className='flex items-center gap-2 bg-gray-50 px-3 py-2 rounded'>
+                                <Skeleton className='h-4 w-4' />
+                                <Skeleton className='h-4 w-32' />
+                              </div>
+                              <div className='flex items-center gap-2 bg-gray-50 px-3 py-2 rounded'>
+                                <Skeleton className='h-4 w-8' />
+                                <Skeleton className='h-4 w-8' />
+                              </div>
+                            </div>
+                            <div className='bg-gray-50 p-4 rounded-lg border-l-4 border-gray-200'>
+                              <Skeleton className='h-3 w-20 mb-2' />
+                              <Skeleton className='h-12 w-full rounded' />
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             </div>
           ) : commitDetail && commitDetail.length > 0 ? (
             <div className='space-y-6'>

@@ -1,13 +1,14 @@
 import { projectApi } from '@/api/projects'
 import { useProjectParts } from '@/hooks/useProjectParts'
 import { ProjectMember } from '@/types/project'
-import { CheckCircle, ExternalLink, Github, Plus, Settings, Users, XCircle } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { Boxes, CheckCircle, ExternalLink, Github, Plus, Settings, Users, XCircle } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
 import GitHubProjectPartIntegration from '../github/GitHubProjectPartIntegration'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
+import { Skeleton } from '../ui/skeleton'
 import { GitMemberLocalDialog } from './GitMemberLocalDialog'
 
 interface ProjectPart {
@@ -33,7 +34,7 @@ export default function ProjectPartsList({ projectId }: ProjectPartsListProps) {
   const [selectedPartForGitMembers, setSelectedPartForGitMembers] = useState<string | null>(null)
   const { fetchParts } = useProjectParts()
 
-  const fetchPartsFromApi = async () => {
+  const fetchPartsFromApi = useCallback(async () => {
     try {
       setLoading(true)
       const res = await fetchParts(projectId)
@@ -44,20 +45,21 @@ export default function ProjectPartsList({ projectId }: ProjectPartsListProps) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [projectId, fetchParts])
 
-  const fetchProjectMembers = async () => {
+  const fetchProjectMembers = useCallback(async () => {
     try {
       const members = await projectApi.getProjectMembers(projectId)
       setProjectMembers(members)
     } catch (error) {
       console.error('Error fetching project members:', error)
     }
-  }
+  }, [projectId])
 
   useEffect(() => {
     fetchPartsFromApi()
     fetchProjectMembers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 
   const handleGitMemberDialogOpen = (partId: string) => {
@@ -97,27 +99,42 @@ export default function ProjectPartsList({ projectId }: ProjectPartsListProps) {
 
   if (loading) {
     return (
-      <div className='space-y-4'>
-        <div className='flex items-center justify-between'>
-          <h2 className='text-2xl font-bold'>Project Parts</h2>
-          <Button disabled>
-            <Plus className='h-4 w-4 mr-2' />
-            Add Part
-          </Button>
+      <div className='space-y-6'>
+        {/* Header */}
+        <div className='mb-6'>
+          <div className='flex items-center space-x-3 mb-2'>
+            <div className='p-2 bg-lavender-100 rounded-lg'>
+              <Boxes className='h-6 w-6 text-lavender-600' />
+            </div>
+            <h1 className='text-2xl font-semibold text-gray-900'>Project Parts</h1>
+          </div>
+          <p className='text-gray-600'>Manage your project components and their GitHub connections</p>
         </div>
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-          {[1, 2, 3].map((i) => (
-            <Card key={i} className='animate-pulse'>
-              <CardHeader className='pb-3'>
-                <div className='h-6 bg-gray-200 rounded w-3/4'></div>
-              </CardHeader>
-              <CardContent className='space-y-3'>
+
+        {/* Actions skeleton */}
+        <div className='flex justify-end mb-6 space-x-2'>
+          <Skeleton className='h-10 w-40' />
+          <Skeleton className='h-10 w-24' />
+        </div>
+
+        {/* Parts grid skeleton */}
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className='bg-white rounded-lg border border-gray-200 p-6 shadow-sm'>
+              <Skeleton className='h-6 w-3/4 mb-4' />
+              <div className='flex gap-2 mb-4'>
+                <Skeleton className='h-6 w-20' />
+                <Skeleton className='h-6 w-24' />
+              </div>
+              <Skeleton className='h-4 w-full mb-2' />
+              <div className='flex justify-between items-center pt-4'>
                 <div className='flex gap-2'>
-                  <div className='h-6 bg-gray-200 rounded w-20'></div>
-                  <div className='h-6 bg-gray-200 rounded w-24'></div>
+                  <Skeleton className='h-8 w-20' />
+                  <Skeleton className='h-8 w-24' />
                 </div>
-              </CardContent>
-            </Card>
+                <Skeleton className='h-8 w-8' />
+              </div>
+            </div>
           ))}
         </div>
       </div>
@@ -126,69 +143,83 @@ export default function ProjectPartsList({ projectId }: ProjectPartsListProps) {
 
   return (
     <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
-        <div>
-          <h2 className='text-2xl font-bold'>Project Parts</h2>
-          <p className='text-gray-600'>Manage your project components and their GitHub connections</p>
+      {/* Header */}
+      <div className='mb-6'>
+        <div className='flex items-center space-x-3 mb-2'>
+          <div className='p-2 bg-lavender-100 rounded-lg'>
+            <Boxes className='h-6 w-6 text-lavender-600' />
+          </div>
+          <h1 className='text-2xl font-semibold text-gray-900'>Project Parts</h1>
         </div>
-
-        <div className='flex items-center gap-2'>
-          <Dialog open={showGitHubIntegration} onOpenChange={setShowGitHubIntegration}>
-            <DialogTrigger asChild>
-              <Button>
-                <Github className='h-4 w-4 mr-2' />
-                Connect with GitHub
-              </Button>
-            </DialogTrigger>
-            <DialogContent className='max-w-4xl max-h-[80vh] overflow-y-auto'>
-              <DialogHeader>
-                <DialogTitle>GitHub Integration</DialogTitle>
-              </DialogHeader>
-              <GitHubProjectPartIntegration projectId={projectId} partId={selectedPartId || undefined} />
-            </DialogContent>
-          </Dialog>
-
-          <Button variant='outline'>
-            <Plus className='h-4 w-4 mr-2' />
-            Add Part
-          </Button>
-        </div>
+        <p className='text-gray-600'>Manage your project components and their GitHub connections</p>
       </div>
 
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+      {/* Actions */}
+      <div className='flex items-center justify-end space-x-2'>
+        <Dialog open={showGitHubIntegration} onOpenChange={setShowGitHubIntegration}>
+          <DialogTrigger asChild>
+            <Button className='bg-lavender-600 hover:bg-lavender-700 text-white'>
+              <Github className='h-4 w-4 mr-2' />
+              Connect with GitHub
+            </Button>
+          </DialogTrigger>
+          <DialogContent className='max-w-4xl max-h-[80vh] overflow-y-auto'>
+            <DialogHeader>
+              <DialogTitle>GitHub Integration</DialogTitle>
+            </DialogHeader>
+            <GitHubProjectPartIntegration projectId={projectId} partId={selectedPartId || undefined} />
+          </DialogContent>
+        </Dialog>
+
+        <Button variant='outline' className='border-lavender-200 text-lavender-700 hover:bg-lavender-50'>
+          <Plus className='h-4 w-4 mr-2' />
+          Add Part
+        </Button>
+      </div>
+
+      {/* Parts Grid */}
+      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
         {parts.map((part) => (
-          <Card key={part.id} className='hover:shadow-lg transition-shadow'>
-            <CardHeader className='pb-3'>
+          <Card key={part.id} className='bg-white border-gray-200 shadow-sm hover:shadow-md transition-shadow'>
+            <CardHeader className='pb-4'>
               <div className='flex items-start justify-between'>
-                <CardTitle className='text-lg'>{part.name}</CardTitle>
+                <CardTitle className='text-lg font-semibold text-gray-900'>{part.name}</CardTitle>
                 <div className='flex items-center gap-1'>
                   {part.isConnected ? (
-                    <CheckCircle className='h-4 w-4 text-green-500' />
+                    <div className='flex items-center space-x-1'>
+                      <CheckCircle className='h-4 w-4 text-emerald-500' />
+                      <span className='text-xs text-emerald-600 font-medium'>Connected</span>
+                    </div>
                   ) : (
-                    <XCircle className='h-4 w-4 text-gray-400' />
+                    <div className='flex items-center space-x-1'>
+                      <XCircle className='h-4 w-4 text-gray-400' />
+                      <span className='text-xs text-gray-500 font-medium'>Disconnected</span>
+                    </div>
                   )}
                 </div>
               </div>
             </CardHeader>
-            <CardContent className='space-y-3'>
+            <CardContent className='space-y-4'>
               <div className='flex flex-wrap gap-2'>
-                <Badge className={getProgrammingLanguageColor(part.programmingLanguage)}>
+                <Badge variant='secondary' className={getProgrammingLanguageColor(part.programmingLanguage)}>
                   {part.programmingLanguage}
                 </Badge>
-                <Badge className={getFrameworkColor(part.framework)}>{part.framework}</Badge>
+                <Badge variant='secondary' className={getFrameworkColor(part.framework)}>
+                  {part.framework}
+                </Badge>
               </div>
 
               {part.repoUrl && (
-                <div className='flex items-center gap-2 text-sm text-gray-600'>
-                  <Github className='h-4 w-4' />
-                  <span className='truncate'>{part.repoUrl}</span>
-                  <Button variant='ghost' size='sm' className='h-6 w-6 p-0'>
+                <div className='flex items-center gap-2 p-2 bg-gray-50 rounded-md'>
+                  <Github className='h-4 w-4 text-gray-500' />
+                  <span className='text-sm text-gray-600 truncate flex-1'>{part.repoUrl}</span>
+                  <Button variant='ghost' size='sm' className='h-6 w-6 p-0 hover:bg-gray-200'>
                     <ExternalLink className='h-3 w-3' />
                   </Button>
                 </div>
               )}
 
-              <div className='flex items-center justify-between pt-2'>
+              <div className='flex items-center justify-between pt-2 border-t border-gray-100'>
                 <div className='flex items-center gap-2'>
                   <Button
                     variant='outline'
@@ -197,22 +228,24 @@ export default function ProjectPartsList({ projectId }: ProjectPartsListProps) {
                       setSelectedPartId(part.id)
                       setShowGitHubIntegration(true)
                     }}
+                    className='text-xs border-lavender-200 text-lavender-700 hover:bg-lavender-50'
                   >
                     <Github className='h-3 w-3 mr-1' />
                     {part.isConnected ? 'Manage' : 'Connect'}
                   </Button>
-                  
+
                   <Button
                     variant='outline'
                     size='sm'
                     onClick={() => handleGitMemberDialogOpen(part.id)}
+                    className='text-xs'
                   >
                     <Users className='h-3 w-3 mr-1' />
                     Git Members
                   </Button>
                 </div>
 
-                <Button variant='ghost' size='sm'>
+                <Button variant='ghost' size='sm' className='h-8 w-8 p-0'>
                   <Settings className='h-3 w-3' />
                 </Button>
               </div>
@@ -221,13 +254,21 @@ export default function ProjectPartsList({ projectId }: ProjectPartsListProps) {
         ))}
       </div>
 
+      {/* Empty State */}
       {parts.length === 0 && (
-        <Card>
+        <Card className='bg-white border-gray-200 shadow-sm'>
           <CardContent className='text-center py-12'>
-            <Github className='h-12 w-12 mx-auto mb-4 text-gray-300' />
-            <h3 className='text-lg font-medium mb-2'>No Project Parts</h3>
-            <p className='text-gray-600 mb-4'>Create your first project part and connect it to a GitHub repository</p>
-            <Button onClick={() => setShowGitHubIntegration(true)}>
+            <div className='p-3 bg-gray-100 rounded-full w-fit mx-auto mb-4'>
+              <Boxes className='h-8 w-8 text-gray-400' />
+            </div>
+            <h3 className='text-lg font-semibold text-gray-900 mb-2'>No Project Parts</h3>
+            <p className='text-gray-600 mb-6 max-w-md mx-auto'>
+              Create your first project part and connect it to a GitHub repository to start managing your codebase.
+            </p>
+            <Button
+              onClick={() => setShowGitHubIntegration(true)}
+              className='bg-lavender-600 hover:bg-lavender-700 text-white'
+            >
               <Github className='h-4 w-4 mr-2' />
               Connect with GitHub
             </Button>

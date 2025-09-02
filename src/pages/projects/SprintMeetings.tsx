@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
 import { SprintMeetingDetail } from '@/components/sprints/SprintMeetingDetail'
@@ -154,7 +155,7 @@ const SprintMeetings: React.FC = () => {
     // Determine sprintMeetingId source: prefer selected meeting; fallback to taskUpdates mapping
     let sprintMeetingId: string | null = selectedMeetingId
     if (!sprintMeetingId) {
-      const task = taskUpdates.find(t => t.id === taskId)
+      const task = taskUpdates.find((t) => t.id === taskId)
       sprintMeetingId = task?.sprintMeetingId || null
     }
     if (!sprintMeetingId) {
@@ -239,6 +240,7 @@ const SprintMeetings: React.FC = () => {
         description: 'Data refreshed successfully',
         variant: 'success'
       })
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       showToast({
         title: 'Error',
@@ -289,7 +291,7 @@ const SprintMeetings: React.FC = () => {
       <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
       <div className='flex-1 flex flex-col overflow-hidden'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-        <div className='flex-1 overflow-y-auto bg-white'>
+        <div className='flex-1 overflow-y-auto'>
           <div className='p-6 pb-10'>
             {!isPageReady && (
               <div className='animate-pulse'>
