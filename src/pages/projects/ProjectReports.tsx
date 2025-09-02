@@ -154,6 +154,10 @@ const ProjectReports: React.FC = () => {
     inProgress: { label: 'In Progress', color: '#6366f1' },
     todo: { label: 'Todo', color: '#94a3b8' },
     overdue: { label: 'Overdue', color: '#dc2626' },
+    high: { label: 'High', color: '#dc2626' },
+    medium: { label: 'Medium', color: '#f59e0b' },
+    low: { label: 'Low', color: '#60a5fa' },
+    urgent: { label: 'Urgent', color: '#7c3aed' },
     remainingEffort: { label: 'Remaining Effort', color: '#6366f1' },
     idealEffort: { label: 'Ideal Burndown', color: '#dc2626' }
   }
@@ -340,9 +344,9 @@ const ProjectReports: React.FC = () => {
                     ))
                   : [
                       {
-                        label: 'Project Completion',
+                        label: 'Task Progress',
                         value: `${((s.totalCompletedTasks / s.totalTasks) * 100).toFixed(1)}%`,
-                        subvalue: `${s.totalCompletedTasks}/${s.totalTasks} tasks`,
+                        subvalue: `${s.totalCompletedTasks}/${s.totalTasks} tasks completed`,
                         icon: <TrendingUp className='h-6 w-6 text-green-600' />,
                         trend: 'positive'
                       },
@@ -560,7 +564,7 @@ const ProjectReports: React.FC = () => {
 
             {/* Visual Analytics */}
             <div className='p-6'>
-              <div className='grid grid-cols-1 xl:grid-cols-2 gap-6'>
+              <div className='grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6'>
                 {/* Task Status Bar */}
                 <Card className='rounded-xl border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
                   <CardHeader className='pb-2'>
@@ -594,7 +598,7 @@ const ProjectReports: React.FC = () => {
                   </CardContent>
                 </Card>
 
-                {/* Burndown Chart - moved up since we removed other charts */}
+                {/* Burndown Chart */}
                 <Card className='rounded-xl border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
                   <CardHeader className='pb-2'>
                     <div className='flex items-center justify-between'>
