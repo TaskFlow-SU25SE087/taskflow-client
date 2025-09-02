@@ -1,16 +1,29 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
-
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useIssues } from '@/hooks/useIssues'
 import { Issue, IssuePriority, IssueStatus, IssueType } from '@/types/issue'
-import { AlertCircle, Bug, ChevronDown, ChevronUp, ExternalLink, FileText, GitBranch, Lightbulb, MessageSquare, RefreshCw, Share2 } from 'lucide-react'
+import {
+  AlertCircle,
+  Bug,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
+  FileText,
+  GitBranch,
+  Lightbulb,
+  MessageSquare,
+  RefreshCw,
+  Search,
+  Share2
+} from 'lucide-react'
 import React, { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 
@@ -31,10 +44,34 @@ const boardTypeOptions = [
 
 const typeOptions = [
   { value: IssueType.Bug, label: 'Bug', icon: Bug, color: 'bg-red-100 text-red-800', stringValue: 'Bug' },
-  { value: IssueType.FeatureRequest, label: 'Feature Request', icon: Lightbulb, color: 'bg-green-100 text-green-800', stringValue: 'FeatureRequest' },
-  { value: IssueType.Improvement, label: 'Improvement', icon: FileText, color: 'bg-blue-100 text-blue-800', stringValue: 'Improvement' },
-  { value: IssueType.Task, label: 'Task', icon: MessageSquare, color: 'bg-purple-100 text-purple-800', stringValue: 'Task' },
-  { value: IssueType.Documentation, label: 'Documentation', icon: AlertCircle, color: 'bg-purple-100 text-purple-800', stringValue: 'Documentation' },
+  {
+    value: IssueType.FeatureRequest,
+    label: 'Feature Request',
+    icon: Lightbulb,
+    color: 'bg-green-100 text-green-800',
+    stringValue: 'FeatureRequest'
+  },
+  {
+    value: IssueType.Improvement,
+    label: 'Improvement',
+    icon: FileText,
+    color: 'bg-blue-100 text-blue-800',
+    stringValue: 'Improvement'
+  },
+  {
+    value: IssueType.Task,
+    label: 'Task',
+    icon: MessageSquare,
+    color: 'bg-purple-100 text-purple-800',
+    stringValue: 'Task'
+  },
+  {
+    value: IssueType.Documentation,
+    label: 'Documentation',
+    icon: AlertCircle,
+    color: 'bg-purple-100 text-purple-800',
+    stringValue: 'Documentation'
+  },
   { value: IssueType.Other, label: 'Other', icon: Bug, color: 'bg-gray-100 text-gray-800', stringValue: 'Other' }
 ]
 
@@ -59,16 +96,15 @@ export const ProjectIssues: React.FC = () => {
   const [search, setSearch] = useState('')
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
   const [openIndexes, setOpenIndexes] = useState<{ [key: string]: boolean }>({})
-  
+
   // URL parameters handling
   const [searchParams] = useSearchParams()
   // const navigate = useNavigate()
   const issueIdFromUrl = searchParams.get('issue')
 
-  const [loadingTimeout, setLoadingTimeout] = useState(false)
   const [selectedImage, setSelectedImage] = useState<{ url: string; fileName: string } | null>(null)
   const toggleOpen = (id: string) => {
-    setOpenIndexes(prev => ({ ...prev, [id]: !prev[id] }))
+    setOpenIndexes((prev) => ({ ...prev, [id]: !prev[id] }))
   }
 
   const toggleSidebar = () => setIsSidebarOpen((v) => !v)
@@ -77,14 +113,15 @@ export const ProjectIssues: React.FC = () => {
     if (projectId) {
       loadIssues()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 
   // Auto-expand issue when URL parameter is present
   useEffect(() => {
     if (issueIdFromUrl && issues.length > 0) {
-      const issue = issues.find(i => i.id === issueIdFromUrl)
+      const issue = issues.find((i) => i.id === issueIdFromUrl)
       if (issue) {
-        setOpenIndexes(prev => ({ ...prev, [issueIdFromUrl]: true }))
+        setOpenIndexes((prev) => ({ ...prev, [issueIdFromUrl]: true }))
         // Scroll to issue
         setTimeout(() => {
           const element = document.getElementById(`issue-${issueIdFromUrl}`)
@@ -132,19 +169,10 @@ export const ProjectIssues: React.FC = () => {
   const loadIssues = async (forceRefresh = false) => {
     if (!projectId) return
     try {
-      // Set timeout to show loading timeout message after 8 seconds
-      const timeoutId = setTimeout(() => {
-        setLoadingTimeout(true)
-      }, 8000)
-      
       const projectIssues = await getProjectIssues(projectId, forceRefresh)
-      
-      clearTimeout(timeoutId)
-      setLoadingTimeout(false)
       setIssues(projectIssues || [])
     } catch (error) {
       console.error('Error loading issues:', error)
-      setLoadingTimeout(false)
     }
   }
 
@@ -210,89 +238,112 @@ export const ProjectIssues: React.FC = () => {
 
   if (!currentProject) {
     return (
-      <div className='flex items-center justify-center h-64'>
-        <div className='text-center'>
-          <AlertCircle className='h-12 w-12 text-gray-400 mx-auto mb-4' />
-          <h3 className='text-lg font-medium text-gray-900 mb-2'>No Project Selected</h3>
-          <p className='text-gray-500'>Please select a project to view issues.</p>
+      <div className='flex h-screen bg-gray-50'>
+        <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
+        <div className='flex-1 flex flex-col overflow-hidden'>
+          <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
+          <div className='flex-1 flex items-center justify-center'>
+            <Card>
+              <CardContent className='flex items-center justify-center h-64'>
+                <div className='text-center'>
+                  <AlertCircle className='h-12 w-12 text-gray-400 mx-auto mb-4' />
+                  <h3 className='text-lg font-medium text-gray-900 mb-2'>No Project Selected</h3>
+                  <p className='text-gray-500'>Please select a project to view issues.</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     )
   }
 
   // Thêm component con cho từng issue
-  function IssueCard({ issue, isOpen, onToggle }: { issue: any, isOpen: boolean, onToggle: () => void }) {
+  function IssueCard({ issue, isOpen, onToggle }: { issue: any; isOpen: boolean; onToggle: () => void }) {
     const priorityInfo = getPriorityInfo(issue.priority)
     const typeInfo = getTypeInfo(issue.type)
     const statusInfo = getStatusInfo(issue.status)
     const TypeIcon = typeInfo.icon
     const issueAny = issue as any
     return (
-      <div
-        id={`issue-${issue.id}`}
-        className={`rounded-2xl border border-gray-200 bg-white shadow-lg overflow-hidden transition-transform duration-200 hover:scale-[1.015] hover:shadow-2xl group ${isOpen ? 'ring-2 ring-lavender-400' : ''}`}
-        style={{ transition: 'box-shadow 0.2s, transform 0.2s' }}
+      <Card
+        className={`w-full transition-all duration-200 hover:shadow-md ${isOpen ? 'ring-2 ring-lavender-400' : ''}`}
       >
-        {/* Task name instead of file name */}
-        <div className='flex items-center gap-2 px-6 pt-6'>
-          <span className='text-base font-semibold text-indigo-700'>{issueAny.titleTask || 'No Task'}</span>
-          <Separator className='flex-1 mx-2' />
-          <div className='flex items-center gap-2'>
-            {/* Share button */}
-            <Button 
-              variant='ghost' 
-              size='icon' 
-              onClick={() => copyIssueLink(issue.id)} 
-              className='transition-all duration-200 hover:bg-blue-50 hover:text-blue-600'
-              title='Copy issue link'
-            >
-              <Share2 className='w-4 h-4' />
-            </Button>
-            {/* External link button */}
-            <Button 
-              variant='ghost' 
-              size='icon' 
-              onClick={() => window.open(generateIssueLink(issue.id), '_blank')}
-              className='transition-all duration-200 hover:bg-green-50 hover:text-green-600'
-              title='Open in new tab'
-            >
-              <ExternalLink className='w-4 h-4' />
-            </Button>
-            <Button variant='ghost' size='icon' onClick={onToggle} className='transition-transform duration-200 group-hover:rotate-180'>
-              {isOpen ? <ChevronUp className='w-5 h-5' /> : <ChevronDown className='w-5 h-5' />}
-            </Button>
-          </div>
-        </div>
-        {/* Title */}
-        <div className='px-6 pt-2 pb-1'>
-          <h2 className='text-xl font-bold text-gray-900 flex items-center gap-2'>
-            <TypeIcon className={`inline w-6 h-6 ${typeInfo.color} p-1 rounded-full`} />
-            {issue.title}
-          </h2>
-          
-          {/* Hiển thị tên task nếu có */}
-          {issueAny.titleTask && (
-            <div className='mt-2'>
-              <Badge variant='outline' className='text-xs bg-blue-50 text-blue-700 border-blue-200 flex items-center gap-1 w-fit'>
-                <GitBranch className='w-3 h-3' />
-                Task: {issueAny.titleTask}
-              </Badge>
-              {/* Hiển thị priority task number */}
-              {issueAny.priorityTask !== undefined && (
-                <Badge 
-                  variant='outline' 
-                  className={`text-xs border-2 flex items-center gap-1 w-fit ml-2 ${getBoardTypeInfo(issueAny.priorityTask).color}`}
-                >
-                  <GitBranch className='w-3 h-3' />
-                  {getBoardTypeInfo(issueAny.priorityTask).label}
-                </Badge>
-              )}
+        <CardContent className='p-6'>
+          {/* Header */}
+          <div className='flex items-center justify-between mb-4'>
+            <div className='flex items-center gap-3'>
+              <div className={`p-2 rounded-lg ${typeInfo.color}`}>
+                <TypeIcon className='h-5 w-5' />
+              </div>
+              <div>
+                <h3 className='text-lg font-semibold text-gray-900'>{issue.title}</h3>
+                {issueAny.titleTask && (
+                  <div className='flex items-center gap-2 mt-1'>
+                    <GitBranch className='w-3 h-3 text-gray-500' />
+                    <span className='text-sm text-gray-600'>Task: {issueAny.titleTask}</span>
+                  </div>
+                )}
+              </div>
             </div>
-          )}
-          
+            <div className='flex items-center gap-2'>
+              {/* Share button */}
+              <Button
+                variant='ghost'
+                size='icon'
+                onClick={() => copyIssueLink(issue.id)}
+                className='transition-all duration-200 hover:bg-blue-50 hover:text-blue-600'
+                title='Copy issue link'
+              >
+                <Share2 className='w-4 h-4' />
+              </Button>
+              {/* External link button */}
+              <Button
+                variant='ghost'
+                size='icon'
+                onClick={() => window.open(generateIssueLink(issue.id), '_blank')}
+                className='transition-all duration-200 hover:bg-green-50 hover:text-green-600'
+                title='Open in new tab'
+              >
+                <ExternalLink className='w-4 h-4' />
+              </Button>
+              <Button variant='ghost' size='icon' onClick={onToggle} className='transition-transform duration-200'>
+                {isOpen ? <ChevronUp className='w-5 h-5' /> : <ChevronDown className='w-5 h-5' />}
+              </Button>
+            </div>
+          </div>
+
+          {/* Description */}
+          <p className='text-gray-600 mb-4'>{issueAny.shortDescription || issue.description}</p>
+
+          {/* Meta information */}
+          <div className='flex flex-wrap items-center gap-3 text-sm text-gray-500 mb-4'>
+            {issueAny.avatarCreate && (
+              <img
+                src={issueAny.avatarCreate}
+                alt='avatar'
+                className='w-8 h-8 rounded-full border-2 border-lavender-400 shadow'
+                title={issueAny.nameCreate}
+              />
+            )}
+            <span className='font-medium text-gray-800'>{issueAny.nameCreate}</span>
+            {issueAny.roleCreate && <span className='text-xs text-gray-500'>({issueAny.roleCreate})</span>}
+            <span>• {issueAny.createdAt ? new Date(issueAny.createdAt).toLocaleDateString() : ''}</span>
+          </div>
+
+          {/* Priority, Type, and Status badges */}
+          <div className='flex flex-wrap items-center gap-2 mb-4'>
+            <Badge className={`${priorityInfo.color} font-medium`}>Priority: {priorityInfo.label}</Badge>
+            <Badge className={`${typeInfo.color} font-medium flex items-center gap-1`}>
+              <TypeIcon className='w-3 h-3' />
+              {typeInfo.label}
+            </Badge>
+            <Badge className={`${statusInfo.color} font-medium`}>{statusInfo.label}</Badge>
+          </div>
+
           {/* Task Information Section */}
           {(issueAny.titleTask || issueAny.priorityTask !== undefined) && (
-            <div className='mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200'>
+            <div className='mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200'>
               <h4 className='text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2'>
                 <GitBranch className='w-4 h-4' />
                 Task Information
@@ -307,10 +358,7 @@ export const ProjectIssues: React.FC = () => {
                 {issueAny.priorityTask !== undefined && (
                   <div className='flex items-center gap-2'>
                     <span className='text-blue-700 font-medium'>Task Status:</span>
-                    <Badge 
-                      variant='outline' 
-                      className={`text-xs ${getBoardTypeInfo(issueAny.priorityTask).color}`}
-                    >
+                    <Badge variant='outline' className={`text-xs ${getBoardTypeInfo(issueAny.priorityTask).color}`}>
                       {getBoardTypeInfo(issueAny.priorityTask).label}
                     </Badge>
                   </div>
@@ -318,249 +366,248 @@ export const ProjectIssues: React.FC = () => {
               </div>
             </div>
           )}
-          
-          <p className='text-gray-600 mt-1'>{issueAny.shortDescription || issue.description}</p>
-        </div>
-        {/* Người tạo, tag, thời gian, ... */}
-        <div className='flex flex-wrap items-center gap-3 px-6 pb-2 text-sm text-gray-500'>
-          {issueAny.avatarCreate && (
-            <img src={issueAny.avatarCreate} alt='avatar' className='w-8 h-8 rounded-full border-2 border-lavender-400 shadow hover:scale-110 transition-transform' title={issueAny.nameCreate} />
-          )}
-          <span className='font-medium text-gray-800'>{issueAny.nameCreate}</span>
-          {issueAny.roleCreate && <span className='text-xs text-gray-500'>({issueAny.roleCreate})</span>}
-          {/* Hiển thị createdBy UUID */}
-          {issueAny.createdBy && (
-            <span className='text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded'>ID: {issueAny.createdBy.slice(0, 8)}...</span>
-          )}
-          <span>• {issueAny.createdAt ? new Date(issueAny.createdAt).toLocaleDateString() : ''}</span>
-          {issueAny.reportedBy && <span className='bg-gray-100 rounded px-2 py-0.5 ml-2'>Reported by {issueAny.reportedBy}</span>}
-          {issueAny.timeToFix && <span className='bg-gray-100 rounded px-2 py-0.5'>Time to fix: {issueAny.timeToFix}</span>}
-          
-          {/* Priority và Status badges với visual hierarchy rõ ràng */}
-          <div className='flex items-center gap-2 ml-2'>
-            <Badge className={`${priorityInfo.color} font-bold shadow-sm border border-white`}>
-              Priority: {priorityInfo.label}
-            </Badge>
-            <Badge className={`${typeInfo.color} font-bold shadow-sm border border-white flex items-center gap-1`}>
-              <TypeIcon className='w-4 h-4' />
-              {typeInfo.label}
-            </Badge>
-            <Badge className={`${statusInfo.color} font-bold shadow-sm border border-white`}>
-              {statusInfo.label}
-            </Badge>
-          </div>
-        </div>
-        {/* Collapse content */}
-        <div
-          className={`transition-all duration-300 ease-in-out ${isOpen ? 'max-h-[1000px] opacity-100 py-4' : 'max-h-0 opacity-0 py-0'} overflow-hidden px-6`}
-        >
-          {isOpen && (
-            <>
-              {/* Code block */}
-              {issueAny.code && (
-                <div className='my-4 rounded-lg overflow-x-auto bg-gradient-to-br from-gray-50 to-gray-200 border border-gray-200 relative'>
-                  <button
-                    className='absolute top-2 right-2 text-xs bg-lavender-200 hover:bg-lavender-300 rounded px-2 py-1 shadow'
-                    onClick={() => navigator.clipboard.writeText(issueAny.code)}
-                    title='Copy code'
-                  >Copy</button>
-                  <pre className='p-4 text-sm font-mono text-gray-800 whitespace-pre-wrap'><code>{issueAny.code}</code></pre>
-                </div>
-              )}
-              {/* Explanation */}
-              {issue.explanation && (
-                <div className='mb-2'>
-                  <h4 className='font-semibold text-gray-900 mb-1'>Explanation</h4>
-                  <p className='text-gray-700'>{issue.explanation}</p>
-                </div>
-              )}
-              {/* Example */}
-              {issue.example && (
-                <div className='mb-2'>
-                  <h4 className='font-semibold text-gray-900 mb-1'>Example</h4>
-                  <p className='text-gray-700'>{issue.example}</p>
-                </div>
-              )}
-              {/* File đính kèm */}
-              {issueAny.issueAttachmentUrls && issueAny.issueAttachmentUrls.length > 0 && (
-                <div className='mb-2'>
-                  <h4 className='font-semibold text-gray-900 mb-1'>Attachments</h4>
-                  <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                    {issueAny.issueAttachmentUrls.map((url: string, idx: number) => {
-                      const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url)
-                      const isVideo = /\.(mp4|webm|ogg|mov)$/i.test(url)
-                      const isAudio = /\.(mp3|wav|ogg|m4a)$/i.test(url)
-                      const isPdf = /\.pdf$/i.test(url)
-                      const fileName = url.split('/').pop() || `File ${idx + 1}`
-                      
-                      return (
-                        <div key={idx} className='border border-gray-200 rounded-lg overflow-hidden bg-gray-50 hover:shadow-md transition-shadow'>
-                          {isImage ? (
-                            <div className='relative group'>
-                              <img 
-                                src={url} 
-                                alt={fileName}
-                                className='w-full h-32 object-cover cursor-pointer hover:scale-105 transition-transform'
-                                onClick={() => setSelectedImage({ url, fileName })}
-                                title='Click to view full size'
-                              />
-                              <div className='absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center'>
-                                <span className='text-white opacity-0 group-hover:opacity-100 text-xs font-medium'>Click to enlarge</span>
+
+          {/* Collapsible content */}
+          <div
+            className={`transition-all duration-300 ease-in-out ${
+              isOpen ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
+            } overflow-hidden`}
+          >
+            {isOpen && (
+              <div className='space-y-4 pt-4 border-t border-gray-200'>
+                {/* Code block */}
+                {issueAny.code && (
+                  <div className='rounded-lg overflow-hidden bg-gray-50 border border-gray-200 relative'>
+                    <button
+                      className='absolute top-2 right-2 text-xs bg-white hover:bg-gray-100 rounded px-2 py-1 shadow border'
+                      onClick={() => navigator.clipboard.writeText(issueAny.code)}
+                      title='Copy code'
+                    >
+                      Copy
+                    </button>
+                    <pre className='p-4 text-sm font-mono text-gray-800 whitespace-pre-wrap overflow-x-auto'>
+                      <code>{issueAny.code}</code>
+                    </pre>
+                  </div>
+                )}
+
+                {/* Explanation */}
+                {issue.explanation && (
+                  <div>
+                    <h4 className='font-semibold text-gray-900 mb-2'>Explanation</h4>
+                    <p className='text-gray-700'>{issue.explanation}</p>
+                  </div>
+                )}
+
+                {/* Example */}
+                {issue.example && (
+                  <div>
+                    <h4 className='font-semibold text-gray-900 mb-2'>Example</h4>
+                    <p className='text-gray-700'>{issue.example}</p>
+                  </div>
+                )}
+
+                {/* File attachments */}
+                {issueAny.issueAttachmentUrls && issueAny.issueAttachmentUrls.length > 0 && (
+                  <div>
+                    <h4 className='font-semibold text-gray-900 mb-3'>Attachments</h4>
+                    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+                      {issueAny.issueAttachmentUrls.map((url: string, idx: number) => {
+                        const isImage = /\.(jpg|jpeg|png|gif|webp|svg)$/i.test(url)
+                        const isVideo = /\.(mp4|webm|ogg|mov)$/i.test(url)
+                        const isAudio = /\.(mp3|wav|ogg|m4a)$/i.test(url)
+                        const isPdf = /\.pdf$/i.test(url)
+                        const fileName = url.split('/').pop() || `File ${idx + 1}`
+
+                        return (
+                          <div
+                            key={idx}
+                            className='border border-gray-200 rounded-lg overflow-hidden bg-white hover:shadow-md transition-shadow'
+                          >
+                            {isImage ? (
+                              <div className='relative group'>
+                                <img
+                                  src={url}
+                                  alt={fileName}
+                                  className='w-full h-32 object-cover cursor-pointer hover:scale-105 transition-transform'
+                                  onClick={() => setSelectedImage({ url, fileName })}
+                                  title='Click to view full size'
+                                />
+                                <div className='absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all flex items-center justify-center'>
+                                  <span className='text-white opacity-0 group-hover:opacity-100 text-xs font-medium'>
+                                    Click to enlarge
+                                  </span>
+                                </div>
                               </div>
-                            </div>
-                          ) : isVideo ? (
-                            <div className='relative'>
-                              <video 
-                                src={url} 
-                                className='w-full h-32 object-cover'
-                                controls
-                                preload='metadata'
-                              />
-                            </div>
-                          ) : isAudio ? (
-                            <div className='p-4'>
-                              <audio 
-                                src={url} 
-                                controls
-                                className='w-full'
-                                preload='metadata'
-                              />
-                            </div>
-                          ) : isPdf ? (
-                            <div className='p-4 text-center'>
-                              <div className='w-16 h-16 mx-auto mb-2 bg-red-100 rounded-lg flex items-center justify-center'>
-                                <FileText className='w-8 h-8 text-red-600' />
+                            ) : isVideo ? (
+                              <div className='relative'>
+                                <video src={url} className='w-full h-32 object-cover' controls preload='metadata' />
                               </div>
-                              <span className='text-xs text-gray-600 block truncate'>{fileName}</span>
-                            </div>
-                          ) : (
-                            <div className='p-4 text-center'>
-                              <div className='w-16 h-16 mx-auto mb-2 bg-gray-100 rounded-lg flex items-center justify-center'>
-                                <FileText className='w-8 h-8 text-gray-600' />
+                            ) : isAudio ? (
+                              <div className='p-4'>
+                                <audio src={url} controls className='w-full' preload='metadata' />
                               </div>
-                              <span className='text-xs text-gray-600 block truncate'>{fileName}</span>
-                            </div>
-                          )}
-                          
-                          <div className='p-3 bg-white'>
-                            <div className='flex items-center justify-between gap-2'>
-                              <span className='text-xs text-gray-600 truncate flex-1' title={fileName}>
-                                {fileName}
-                              </span>
-                              <div className='flex gap-1'>
-                                <Button
-                                  variant='ghost'
-                                  size='sm'
-                                  className='h-6 px-2 text-xs'
-                                  onClick={() => window.open(url, '_blank')}
-                                  title='Open in new tab'
-                                >
-                                  <ExternalLink className='w-3 h-3' />
-                                </Button>
-                                <Button
-                                  variant='ghost'
-                                  size='sm'
-                                  className='h-6 px-2 text-xs'
-                                  onClick={() => navigator.clipboard.writeText(url)}
-                                  title='Copy URL'
-                                >
-                                  <Share2 className='w-3 h-3' />
-                                </Button>
+                            ) : isPdf ? (
+                              <div className='p-4 text-center'>
+                                <div className='w-16 h-16 mx-auto mb-2 bg-red-100 rounded-lg flex items-center justify-center'>
+                                  <FileText className='w-8 h-8 text-red-600' />
+                                </div>
+                                <span className='text-xs text-gray-600 block truncate'>{fileName}</span>
+                              </div>
+                            ) : (
+                              <div className='p-4 text-center'>
+                                <div className='w-16 h-16 mx-auto mb-2 bg-gray-100 rounded-lg flex items-center justify-center'>
+                                  <FileText className='w-8 h-8 text-gray-600' />
+                                </div>
+                                <span className='text-xs text-gray-600 block truncate'>{fileName}</span>
+                              </div>
+                            )}
+
+                            <div className='p-3 bg-gray-50'>
+                              <div className='flex items-center justify-between gap-2'>
+                                <span className='text-xs text-gray-600 truncate flex-1' title={fileName}>
+                                  {fileName}
+                                </span>
+                                <div className='flex gap-1'>
+                                  <Button
+                                    variant='ghost'
+                                    size='sm'
+                                    className='h-6 px-2 text-xs'
+                                    onClick={() => window.open(url, '_blank')}
+                                    title='Open in new tab'
+                                  >
+                                    <ExternalLink className='w-3 h-3' />
+                                  </Button>
+                                  <Button
+                                    variant='ghost'
+                                    size='sm'
+                                    className='h-6 px-2 text-xs'
+                                    onClick={() => navigator.clipboard.writeText(url)}
+                                    title='Copy URL'
+                                  >
+                                    <Share2 className='w-3 h-3' />
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Assignees */}
+                {issueAny.taskAssignees && issueAny.taskAssignees.length > 0 && (
+                  <div>
+                    <h4 className='font-semibold text-gray-900 mb-2'>Assignees</h4>
+                    <div className='flex flex-wrap gap-2'>
+                      {issueAny.taskAssignees.map((assignee: any) => (
+                        <div
+                          key={assignee.projectMemberId}
+                          className='flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1 shadow-sm'
+                        >
+                          {assignee.avatar && (
+                            <img
+                              src={assignee.avatar}
+                              alt='assignee'
+                              className='w-6 h-6 rounded-full border border-gray-300'
+                              title={assignee.executor}
+                            />
+                          )}
+                          <span className='text-sm font-medium'>{assignee.executor}</span>
+                          {assignee.role && <span className='text-xs text-gray-500'>({assignee.role})</span>}
                         </div>
-                      )
-                    })}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-              {/* Danh sách assignees */}
-              {issueAny.taskAssignees && issueAny.taskAssignees.length > 0 && (
-                <div className='mb-2'>
-                  <h4 className='font-semibold text-gray-900 mb-1'>Assignees</h4>
-                  <div className='flex flex-wrap gap-2'>
-                    {issueAny.taskAssignees.map((assignee: any) => (
-                      <span key={assignee.projectMemberId} className='flex items-center gap-1 bg-gray-100 rounded px-2 py-1 shadow-sm'>
-                        {assignee.avatar && (
-                          <img src={assignee.avatar} alt='assignee' className='w-6 h-6 rounded-full border-2 border-lavender-400' title={assignee.executor} />
-                        )}
-                        <span className='text-xs'>{assignee.executor}</span>
-                        {assignee.role && <span className='text-xs text-gray-400'>({assignee.role})</span>}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     )
   }
 
   return (
-    <div className='flex h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50 min-h-screen'>
+    <div className='flex h-screen bg-gray-50'>
       <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
       <div className='flex-1 flex flex-col overflow-hidden'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-        <div className='flex flex-col flex-1 overflow-y-auto bg-white/90'>
+        <div className='flex flex-col flex-1 overflow-y-auto'>
           {/* Header */}
-          <div className='flex flex-col gap-4 px-4 md:px-8 pt-8 pb-4 border-b border-gray-200 bg-white/80 sticky top-0 z-10 shadow-sm'>
-                         <div className='flex flex-col md:flex-row items-start md:items-center justify-between gap-2'>
-                               <div className='flex items-center gap-4'>
-                  <h1 className='text-3xl md:text-4xl font-extrabold text-gray-900 mb-2'>Task Issues</h1>
+          <div className='flex-none w-full p-6 pb-4'>
+            <div className='flex items-center justify-between mb-6'>
+              <div className='flex items-center gap-4'>
+                <div className='p-2 bg-lavender-100 rounded-lg'>
+                  <AlertCircle className='h-6 w-6 text-lavender-600' />
                 </div>
-               <div className='flex gap-2'>
-                 <Button
-                   variant='outline'
-                   className='bg-white hover:bg-gray-50 text-gray-700 border-gray-300 font-semibold rounded-lg px-4 py-2 text-base shadow flex items-center gap-2'
-                   onClick={() => loadIssues(true)}
-                   disabled={isLoading}
-                 >
-                   <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-                   Refresh
-                 </Button>
-               </div>
-             </div>
-            <div className='flex flex-wrap gap-3 items-center'>
+                <div>
+                  <h1 className='text-3xl font-bold text-gray-900'>Issues</h1>
+                  <p className='text-sm text-gray-600'>Project: {currentProject?.title || ''}</p>
+                </div>
+                <div className='ml-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-full px-3 py-1 border border-gray-200'>
+                  {issues.length} {issues.length === 1 ? 'issue' : 'issues'}
+                </div>
+              </div>
+
+              <div className='flex items-center gap-3'>
+                <Button
+                  variant='outline'
+                  className='hover:bg-gray-50 border-gray-300 flex items-center gap-2'
+                  onClick={() => loadIssues(true)}
+                  disabled={isLoading}
+                >
+                  <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
+            </div>
+
+            <div className='flex items-center gap-3 flex-wrap'>
               <Select value={filterStatus} onValueChange={handleStatusChange}>
-                <SelectTrigger className='w-32'>
+                <SelectTrigger className='w-32 border-gray-300'>
                   <SelectValue placeholder='Status' />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value='all'>All Statuses</SelectItem>
                   {statusOptions.map((s) => (
-                    <SelectItem key={s.value} value={s.stringValue}>{s.label}</SelectItem>
+                    <SelectItem key={s.value} value={s.stringValue}>
+                      {s.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Select value={filterType} onValueChange={handleTypeChange}>
-                <SelectTrigger className='w-32'>
+                <SelectTrigger className='w-32 border-gray-300'>
                   <SelectValue placeholder='Type' />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value='all'>All Types</SelectItem>
                   {typeOptions.map((t) => (
                     <SelectItem key={t.value} value={t.stringValue} className='flex items-center gap-2'>
-                      <t.icon className={`inline w-4 h-4 mr-1 ${t.color}`} />{t.label}
+                      <t.icon className={`inline w-4 h-4 mr-1 ${t.color}`} />
+                      {t.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Select value={filterPriority} onValueChange={handlePriorityChange}>
-                <SelectTrigger className='w-32'>
+                <SelectTrigger className='w-32 border-gray-300'>
                   <SelectValue placeholder='Priority' />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value='all'>All Priorities</SelectItem>
                   {priorityOptions.map((p) => (
-                    <SelectItem key={p.value} value={p.stringValue}>{p.label}</SelectItem>
+                    <SelectItem key={p.value} value={p.stringValue}>
+                      {p.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Select value='today' onValueChange={() => {}}>
-                <SelectTrigger className='w-32'>
+                <SelectTrigger className='w-32 border-gray-300'>
                   <SelectValue placeholder='Today' />
                 </SelectTrigger>
                 <SelectContent>
@@ -569,43 +616,47 @@ export const ProjectIssues: React.FC = () => {
                   <SelectItem value='month'>This month</SelectItem>
                 </SelectContent>
               </Select>
-              <Input
-                className='w-64 h-10 rounded-md border border-gray-300 px-3 text-base shadow-sm focus:border-lavender-400 focus:ring-lavender-200'
-                placeholder='Search For Issue'
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
+              <div className='relative'>
+                <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-gray-400' />
+                <Input
+                  className='w-[300px] pl-10 border-gray-300'
+                  placeholder='Search issues...'
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
-          <div className='flex-1 flex flex-col gap-6 p-8'>
-                         {isLoading ? (
-               <div className='flex items-center justify-center h-64'>
-                 <div className='text-center'>
-                   <div className='animate-spin rounded-full h-8 w-8 border-b-2 border-lavender-600 mx-auto mb-4'></div>
-                   <p className='text-lavender-600 font-medium'>
-                     {loadingTimeout ? 'Loading is taking longer than expected...' : 'Loading issues...'}
-                   </p>
-                   {loadingTimeout && (
-                     <div className='mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg'>
-                       <p className='text-sm text-orange-700 mb-2'>
-                         ⚠️ Server response is slow. This might be due to:
-                       </p>
-                       <ul className='text-xs text-orange-600 space-y-1'>
-                         <li>• Large amount of data</li>
-                         <li>• Server performance issues</li>
-                         <li>• Network connectivity problems</li>
-                       </ul>
-                       <button 
-                         onClick={() => loadIssues(true)}
-                         className='mt-3 text-xs bg-orange-100 hover:bg-orange-200 text-orange-800 px-3 py-1 rounded'
-                       >
-                         Try refreshing
-                       </button>
-                     </div>
-                   )}
-                 </div>
-               </div>
+          <div className='flex-1 flex flex-col gap-6 p-6 pt-0'>
+            {isLoading ? (
+              <div className='space-y-4'>
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Card key={i} className='w-full'>
+                    <CardContent className='p-6'>
+                      <div className='space-y-4'>
+                        <div className='flex items-center justify-between'>
+                          <div className='flex items-center gap-3'>
+                            <Skeleton className='h-8 w-8 rounded-full' />
+                            <div className='space-y-2'>
+                              <Skeleton className='h-4 w-48' />
+                              <Skeleton className='h-3 w-32' />
+                            </div>
+                          </div>
+                          <Skeleton className='h-8 w-8 rounded' />
+                        </div>
+                        <Skeleton className='h-4 w-full' />
+                        <Skeleton className='h-4 w-3/4' />
+                        <div className='flex gap-2'>
+                          <Skeleton className='h-6 w-16 rounded-full' />
+                          <Skeleton className='h-6 w-20 rounded-full' />
+                          <Skeleton className='h-6 w-14 rounded-full' />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             ) : issues.length === 0 ? (
               <Card>
                 <CardContent className='flex items-center justify-center h-64'>
@@ -613,38 +664,30 @@ export const ProjectIssues: React.FC = () => {
                     <AlertCircle className='h-12 w-12 text-gray-400 mx-auto mb-4' />
                     <h3 className='text-lg font-medium text-gray-900 mb-2'>No Issues Found</h3>
                     <p className='text-gray-500 mb-4'>There are no issues reported for this project yet.</p>
-
                   </div>
                 </CardContent>
               </Card>
             ) : (
               issues
-                .filter(issue => {
+                .filter((issue) => {
                   const q = search.toLowerCase()
                   return (
-                    (issue.title?.toLowerCase().includes(q) || (issue as any).titleTask?.toLowerCase().includes(q) || '')
+                    issue.title?.toLowerCase().includes(q) || (issue as any).titleTask?.toLowerCase().includes(q) || ''
                   )
                 })
                 .map((issue, idx) => {
                   const id = issue.id ?? String(idx)
                   const isOpen = openIndexes[id] ?? idx === 0
-                  return (
-                    <IssueCard
-                      key={id}
-                      issue={issue}
-                      isOpen={isOpen}
-                      onToggle={() => toggleOpen(id)}
-                    />
-                  )
+                  return <IssueCard key={id} issue={issue} isOpen={isOpen} onToggle={() => toggleOpen(id)} />
                 })
             )}
           </div>
         </div>
       </div>
-      
+
       {/* Image Modal */}
       {selectedImage && (
-        <div 
+        <div
           className='fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[10003] p-4'
           onClick={() => setSelectedImage(null)}
         >
