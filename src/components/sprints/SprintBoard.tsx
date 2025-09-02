@@ -189,6 +189,7 @@ export function SprintBoard({
                   })
                   onSprintUpdate()
                 }}
+                onSprintDeleted={onSprintUpdate}
                 isMember={isMember}
               />
             </div>
