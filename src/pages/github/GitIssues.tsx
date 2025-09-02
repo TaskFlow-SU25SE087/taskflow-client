@@ -347,7 +347,7 @@ export default function GitIssues() {
 
   if (!isPageReady) {
     return (
-      <div className='flex h-screen bg-gradient-to-br from-lavender-50 via-white to-blue-50'>
+      <div className='flex h-screen bg-gray-50'>
         <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
         <div className='flex-1 flex flex-col overflow-hidden'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
@@ -392,7 +392,7 @@ export default function GitIssues() {
   }
 
   return (
-    <div className='flex h-screen bg-gradient-to-br from-lavender-50 via-white to-blue-50'>
+    <div className='flex h-screen bg-gray-50'>
       <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
 
       <div className='flex-1 flex flex-col overflow-hidden'>
