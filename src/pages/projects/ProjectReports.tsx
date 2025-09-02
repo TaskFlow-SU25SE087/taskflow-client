@@ -564,7 +564,7 @@ const ProjectReports: React.FC = () => {
 
             {/* Visual Analytics */}
             <div className='p-6'>
-              <div className='grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6'>
+              <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
                 {/* Task Status Bar */}
                 <Card className='rounded-xl border-gray-200 shadow-sm bg-white/80 backdrop-blur'>
                   <CardHeader className='pb-2'>
