@@ -27,7 +27,6 @@ import UserProfilePage from '@/pages/home/UserProfilePage'
 import VerifyEmailPage from '@/pages/home/VerifyEmailPage'
 import SecurityPage from '@/pages/SecurityPage'
 import NotFoundPage from '@/pages/NotFoundPage'
-import AllProjectParts from '@/pages/projects/AllProjectParts'
 import LegacyProjectMemberVerify from '@/pages/projects/LegacyProjectMemberVerify'
 import { ProjectActivityLog } from '@/pages/projects/ProjectActivityLog'
 import ProjectBacklog from '@/pages/projects/ProjectBacklog'
@@ -39,6 +38,7 @@ import { ProjectIssues } from '@/pages/projects/ProjectIssues'
 import ProjectList from '@/pages/projects/ProjectList'
 import ProjectMembers from '@/pages/projects/ProjectMembers'
 import ProjectMemberVerify from '@/pages/projects/ProjectMemberVerify'
+import ProjectParts from '@/pages/projects/ProjectParts'
 import ProjectReports from '@/pages/projects/ProjectReports'
 import ProjectSettings from '@/pages/projects/ProjectSettings'
 import ProjectTimeline from '@/pages/projects/ProjectTimeline'
@@ -362,6 +362,14 @@ const AppContent: React.FC = () => {
             </ProtectedRoute>
           }
         />
+        <Route
+          path='/projects/:projectId/parts'
+          element={
+            <ProtectedRoute>
+              <ProjectParts />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Admin routes */}
         <Route
@@ -455,14 +463,6 @@ const AppContent: React.FC = () => {
         <Route path='/project' element={<Navigate to='/projects/' />} />
 
         {/* Additional protected routes */}
-        <Route
-          path='/all-parts'
-          element={
-            <ProtectedRoute>
-              <AllProjectParts />
-            </ProtectedRoute>
-          }
-        />
         <Route
           path='/code-quality-commits'
           element={

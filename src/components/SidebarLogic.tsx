@@ -113,7 +113,7 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
         icon: <FiLayers className='h-5 w-5' />,
         label: 'All Parts',
         section: 2,
-        path: '/all-parts'
+        path: activeProjectId ? `/projects/${activeProjectId}/parts` : '/projects'
       },
       {
         id: 'settings',
@@ -153,7 +153,8 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
         const pathEnd = path.split('/').pop() || ''
         // Map special slugs to ids
         const slugToId: Record<string, string> = {
-          'all-parts': 'allparts'
+          'all-parts': 'allparts',
+          parts: 'allparts'
         }
         const candidateId = slugToId[pathEnd] ?? pathEnd
         activeItem = navItems.find((item) => item.id === candidateId)
@@ -300,6 +301,22 @@ export const SidebarLogic = ({ projectId }: { projectId?: string }) => {
           }
         } catch (error) {
           console.error('Failed to get projects for settings:', error)
+        }
+        navigate('/projects')
+        return
+      }
+
+      // Special handling for allparts when no project is selected
+      if (tabId === 'allparts' && !activeProjectId) {
+        try {
+          const response = await projectApi.getProjects()
+          if (response.data && response.data.length > 0) {
+            const firstProject = response.data[0]
+            navigate(`/projects/${firstProject.id}/parts`)
+            return
+          }
+        } catch (error) {
+          console.error('Failed to get projects for parts:', error)
         }
         navigate('/projects')
         return
