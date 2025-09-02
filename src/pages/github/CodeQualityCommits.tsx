@@ -3,14 +3,36 @@ import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Loader } from '@/components/ui/loader'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjectParts } from '@/hooks/useProjectParts'
 import { CommitListItem, ProjectPart } from '@/types/commits'
 import { format } from 'date-fns'
 import { Calendar, ChevronDown, Filter, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
+
+// CommitCardSkeleton Component
+function CommitCardSkeleton() {
+  return (
+    <div className='bg-white rounded-lg p-4 shadow-sm border border-gray-100'>
+      <div className='flex flex-col gap-2'>
+        <div className='flex items-center gap-2'>
+          <Skeleton className='h-4 w-24' />
+          <Skeleton className='h-4 w-16' />
+          <Skeleton className='h-4 w-20' />
+        </div>
+        <Skeleton className='h-4 w-3/4' />
+
+        {/* Quality Score Section Skeleton */}
+        <div className='flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-2 rounded-lg'>
+          <Skeleton className='h-2 w-2 rounded-full' />
+          <Skeleton className='h-4 w-16' />
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // Helper functions for status handling
 const renderQualityScoreSection = (commit: CommitListItem) => {
@@ -77,47 +99,99 @@ export default function CodeQualityCommits() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
-  useEffect(() => {
-    if (currentProject?.id) {
-      fetchParts(currentProject.id).then((res) => {
-        setParts(res.data || []);
-        if (res.data && res.data.length > 0) {
-          setSelectedPartId(res.data[0].id);
-        }
-      });
-    }
-  }, [currentProject?.id]);
+  // Page readiness state to prevent flashing
+  const [isPageReady, setIsPageReady] = useState(false)
+  const [didInitialLoad, setDidInitialLoad] = useState(false)
 
+  // Consolidated initial data loading
   useEffect(() => {
-    if (currentProject?.id && selectedPartId) {
-      setLoadingCommits(true);
+    const loadInitialData = async () => {
+      if (!currentProject?.id || didInitialLoad) return
+
+      try {
+        const res = await fetchParts(currentProject.id)
+        setParts(res.data || [])
+        if (res.data && res.data.length > 0) {
+          setSelectedPartId(res.data[0].id)
+        }
+        setDidInitialLoad(true)
+      } catch (error) {
+        console.error('Error fetching parts:', error)
+        setParts([])
+        setDidInitialLoad(true)
+      }
+    }
+
+    loadInitialData()
+  }, [currentProject?.id, didInitialLoad, fetchParts])
+
+  // Set page ready when initial load completes and not loading
+  useEffect(() => {
+    if (!isPageReady && didInitialLoad && !isLoading && !loadingCommits) {
+      setIsPageReady(true)
+    }
+  }, [isPageReady, didInitialLoad, isLoading, loadingCommits])
+
+  // Fetch commits when selectedPartId or page changes
+  useEffect(() => {
+    if (currentProject?.id && selectedPartId && didInitialLoad) {
+      setLoadingCommits(true)
       getProjectPartCommitsV2(currentProject.id, selectedPartId, page)
         .then((res) => {
-          setCommits(res.data?.items || []);
-          setTotalPages(res.data?.totalPages || 1);
+          setCommits(res.data?.items || [])
+          setTotalPages(res.data?.totalPages || 1)
         })
-        .finally(() => setLoadingCommits(false));
+        .catch((error) => {
+          console.error('Error fetching commits:', error)
+          setCommits([])
+          setTotalPages(1)
+        })
+        .finally(() => setLoadingCommits(false))
     }
-  }, [currentProject?.id, selectedPartId, page]);
+  }, [currentProject?.id, selectedPartId, page, didInitialLoad])
 
   const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
+    setIsSidebarOpen(!isSidebarOpen)
+  }
 
   const filteredCommits = commits.filter((commit) =>
     commit.commitMessage?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  )
 
-  if (isLoading || !currentProject) {
+  if (!isPageReady) {
     return (
       <div className='flex h-screen bg-gray-100'>
         <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
         <div className='flex-1 flex flex-col overflow-hidden'>
           <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-          <Loader />
+          <div className='flex flex-col h-full p-6'>
+            {/* Header skeleton */}
+            <div className='flex-none w-full flex items-center justify-between pb-6'>
+              <div className='flex items-center gap-2'>
+                <Skeleton className='h-6 w-48' />
+                <Skeleton className='h-9 w-[220px] rounded-md' />
+              </div>
+            </div>
+
+            {/* Search and filters skeleton */}
+            <div className='pb-6 flex items-center justify-between'>
+              <div className='flex items-center gap-4'>
+                <Skeleton className='h-9 w-20 rounded-md' />
+                <Skeleton className='h-9 w-[280px] rounded-md' />
+              </div>
+              <Skeleton className='h-9 w-32 rounded-md' />
+            </div>
+
+            {/* Commits list skeleton */}
+            <div className='space-y-4 overflow-y-auto'>
+              {Array.from({ length: 5 }, (_, i) => (
+                <CommitCardSkeleton key={i} />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -172,75 +246,78 @@ export default function CodeQualityCommits() {
           </div>
           <div className='space-y-4 overflow-y-auto'>
             {loadingCommits ? (
-              <Loader />
+              Array.from({ length: 5 }, (_, i) => <CommitCardSkeleton key={i} />)
             ) : filteredCommits.length > 0 ? (
               filteredCommits.map((commit) => (
-                <div key={commit.commitId} className='bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:border-lavender-200 transition-colors'>
-                    <div className='flex flex-col gap-2'>
-                      <div className='flex items-center gap-2'>
-                        <span className='font-medium text-gray-900'>{commit.pusher}</span>
-                        <span className='text-gray-500'>committed</span>
-                        <span className='text-sm text-gray-500'>
-                          {commit.pushedAt ? format(new Date(commit.pushedAt), 'MMM d, yyyy') : ''}
-                        </span>
-                      </div>
-                      <div className='text-gray-900 font-medium'>{commit.commitMessage}</div>
-
-                      {/* Quality Score Section */}
-                      {renderQualityScoreSection(commit)}
-
-                      <div className='flex flex-wrap gap-2 text-xs'>
-                        <span className='bg-blue-100 text-blue-700 px-2 py-1 rounded'>Status: {commit.status}</span>
-                        <span className='bg-green-100 text-green-700 px-2 py-1 rounded'>
-                          Quality: {commit.qualityGateStatus}
-                        </span>
-                        <span className='bg-yellow-100 text-yellow-700 px-2 py-1 rounded'>
-                          Bugs: {commit.bugs}
-                        </span>
-                        <span className='bg-red-100 text-red-700 px-2 py-1 rounded'>Vuln: {commit.vulnerabilities}</span>
-                        <span className='bg-gray-100 text-gray-700 px-2 py-1 rounded'>
-                          Code Smells: {commit.codeSmells}
-                        </span>
-                        <span className='bg-orange-100 text-orange-700 px-2 py-1 rounded'>
-                          Security Hotspots: {commit.securityHotspots}
-                        </span>
-                        <span className='bg-purple-100 text-purple-700 px-2 py-1 rounded'>
-                          Dup Lines: {commit.duplicatedLines}
-                        </span>
-                        <span className='bg-pink-100 text-pink-700 px-2 py-1 rounded'>
-                          Dup Blocks: {commit.duplicatedBlocks}
-                        </span>
-                        <span className='bg-cyan-100 text-cyan-700 px-2 py-1 rounded'>Coverage: {commit.coverage}%</span>
-                        <span className='bg-indigo-100 text-indigo-700 px-2 py-1 rounded'>
-                          Dup Density: {commit.duplicatedLinesDensity}%
-                        </span>
-                        <span className='bg-emerald-100 text-emerald-700 px-2 py-1 rounded'>
-                          Quality Score: {commit.qualityScore}
-                        </span>
-                        <span className='bg-teal-100 text-teal-700 px-2 py-1 rounded'>Duration: {commit.scanDuration}</span>
-                      </div>
-                      <div className='flex flex-col gap-1 text-xs text-gray-500 mt-2'>
-                        <div>Result: {commit.resultSummary}</div>
-                        <div>
-                          Expected Finish:{' '}
-                          {commit.expectedFinishAt
-                            ? format(new Date(commit.expectedFinishAt), 'MMM d, yyyy HH:mm')
-                            : 'N/A'}
-                        </div>
-                        {commit.commitUrl && (
-                          <div>
-                            <a
-                              href={commit.commitUrl}
-                              target='_blank'
-                              rel='noopener noreferrer'
-                              className='text-blue-600 hover:underline'
-                            >
-                              View on GitHub
-                            </a>
-                          </div>
-                        )}
-                      </div>
+                <div
+                  key={commit.commitId}
+                  className='bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:border-lavender-200 transition-colors'
+                >
+                  <div className='flex flex-col gap-2'>
+                    <div className='flex items-center gap-2'>
+                      <span className='font-medium text-gray-900'>{commit.pusher}</span>
+                      <span className='text-gray-500'>committed</span>
+                      <span className='text-sm text-gray-500'>
+                        {commit.pushedAt ? format(new Date(commit.pushedAt), 'MMM d, yyyy') : ''}
+                      </span>
                     </div>
+                    <div className='text-gray-900 font-medium'>{commit.commitMessage}</div>
+
+                    {/* Quality Score Section */}
+                    {renderQualityScoreSection(commit)}
+
+                    <div className='flex flex-wrap gap-2 text-xs'>
+                      <span className='bg-blue-100 text-blue-700 px-2 py-1 rounded'>Status: {commit.status}</span>
+                      <span className='bg-green-100 text-green-700 px-2 py-1 rounded'>
+                        Quality: {commit.qualityGateStatus}
+                      </span>
+                      <span className='bg-yellow-100 text-yellow-700 px-2 py-1 rounded'>Bugs: {commit.bugs}</span>
+                      <span className='bg-red-100 text-red-700 px-2 py-1 rounded'>Vuln: {commit.vulnerabilities}</span>
+                      <span className='bg-gray-100 text-gray-700 px-2 py-1 rounded'>
+                        Code Smells: {commit.codeSmells}
+                      </span>
+                      <span className='bg-orange-100 text-orange-700 px-2 py-1 rounded'>
+                        Security Hotspots: {commit.securityHotspots}
+                      </span>
+                      <span className='bg-purple-100 text-purple-700 px-2 py-1 rounded'>
+                        Dup Lines: {commit.duplicatedLines}
+                      </span>
+                      <span className='bg-pink-100 text-pink-700 px-2 py-1 rounded'>
+                        Dup Blocks: {commit.duplicatedBlocks}
+                      </span>
+                      <span className='bg-cyan-100 text-cyan-700 px-2 py-1 rounded'>Coverage: {commit.coverage}%</span>
+                      <span className='bg-indigo-100 text-indigo-700 px-2 py-1 rounded'>
+                        Dup Density: {commit.duplicatedLinesDensity}%
+                      </span>
+                      <span className='bg-emerald-100 text-emerald-700 px-2 py-1 rounded'>
+                        Quality Score: {commit.qualityScore}
+                      </span>
+                      <span className='bg-teal-100 text-teal-700 px-2 py-1 rounded'>
+                        Duration: {commit.scanDuration}
+                      </span>
+                    </div>
+                    <div className='flex flex-col gap-1 text-xs text-gray-500 mt-2'>
+                      <div>Result: {commit.resultSummary}</div>
+                      <div>
+                        Expected Finish:{' '}
+                        {commit.expectedFinishAt
+                          ? format(new Date(commit.expectedFinishAt), 'MMM d, yyyy HH:mm')
+                          : 'N/A'}
+                      </div>
+                      {commit.commitUrl && (
+                        <div>
+                          <a
+                            href={commit.commitUrl}
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='text-blue-600 hover:underline'
+                          >
+                            View on GitHub
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ))
             ) : (
@@ -263,5 +340,5 @@ export default function CodeQualityCommits() {
         </div>
       </div>
     </div>
-  );
-} 
+  )
+}
