@@ -103,11 +103,15 @@ export const useSprints = () => {
       }
       const payload = { ...sprint, status: mapStatus(sprint.status) }
       const ok = await sprintApi.updateSprint(currentProject.id, sprintId, payload)
-      if (ok) await fetchSprints()
-      return ok
+      if (ok) {
+        await fetchSprints()
+        return ok
+      } else {
+        throw new Error('Failed to update sprint')
+      }
     } catch (err) {
       setError(err as Error)
-      return false
+      throw err // Re-throw to allow component to handle with toast
     } finally {
       setIsLoading(false)
     }

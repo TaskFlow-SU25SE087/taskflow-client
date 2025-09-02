@@ -81,14 +81,28 @@ export function SprintEditMenu({ sprint, onUpdateSprint, onSprintDeleted, isMemb
     e.preventDefault()
     if (!name.trim()) return
 
-    await onUpdateSprint({
-      name,
-      description,
-      startDate: toISOString(startDate),
-      endDate: toISOString(endDate),
-      status // send canonical textual status
-    })
-    setIsEditOpen(false)
+    try {
+      await onUpdateSprint({
+        name,
+        description,
+        startDate: toISOString(startDate),
+        endDate: toISOString(endDate),
+        status // send canonical textual status
+      })
+
+      showToast({
+        title: 'Success',
+        description: `Sprint "${name}" was updated successfully.`,
+        variant: 'success'
+      })
+      setIsEditOpen(false)
+    } catch {
+      showToast({
+        title: 'Error',
+        description: 'Failed to update sprint. Please try again.',
+        variant: 'destructive'
+      })
+    }
   }
 
   const handleDelete = async () => {
