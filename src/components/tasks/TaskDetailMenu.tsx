@@ -759,10 +759,23 @@ export function TaskDetailMenu({ task, isOpen, onClose, onTaskUpdated }: TaskDet
     setIsUpdating(true)
     try {
       const effortPointsValue = editEffortPoints.trim() ? Number(editEffortPoints) : null
+
+      // Convert numeric priority to string
+      const priorityString =
+        editPriority === 1
+          ? 'Low'
+          : editPriority === 2
+            ? 'Medium'
+            : editPriority === 3
+              ? 'High'
+              : editPriority === 4
+                ? 'Urgent'
+                : 'Medium'
+
       const res = await taskApi.updateTask(currentProject.id, task.id, {
         title: editTitle,
         description: editDescription,
-        priority: editPriority.toString(),
+        priority: priorityString,
         deadline: editDeadline || null,
         effortPoints: effortPointsValue
       })

@@ -99,13 +99,7 @@ export default function TaskCreateMenu({
       const formData = new FormData()
       formData.append('Title', title)
       formData.append('Description', description)
-      const priorityMap = {
-        Low: 0,
-        Medium: 10000,
-        High: 20000,
-        Urgent: 30000
-      }
-      formData.append('Priority', String(priorityMap[priority as 'Low' | 'Medium' | 'High' | 'Urgent']))
+      formData.append('Priority', priority) // Send priority as string directly
       formData.append('Deadline', deadline || '')
       if (file) formData.append('File', file)
       if (effortPoints.trim()) formData.append('EffortPoints', effortPoints.trim())

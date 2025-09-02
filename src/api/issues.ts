@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import axiosClient from '@/configs/axiosClient'
 import { CreateIssueRequest, IssueResponse, IssueStatus } from '@/types/issue'
 
@@ -15,7 +16,20 @@ export const issueApi = {
     // Add all the required fields to FormData
     formData.append('Title', issueData.title)
     formData.append('Description', issueData.description)
-    formData.append('Priority', issueData.priority.toString())
+
+    // Convert numeric priority to string
+    const priorityString =
+      issueData.priority === 0
+        ? 'Low'
+        : issueData.priority === 10000
+          ? 'Medium'
+          : issueData.priority === 20000
+            ? 'High'
+            : issueData.priority === 30000
+              ? 'Urgent'
+              : 'Medium'
+    formData.append('Priority', priorityString)
+
     formData.append('Type', issueData.type.toString())
     formData.append('Status', IssueStatus.Open.toString()) // Default status is Open
 
@@ -90,7 +104,20 @@ export const issueApi = {
     // Add all the required fields to FormData
     formData.append('Title', issueData.title)
     formData.append('Description', issueData.description)
-    formData.append('Priority', issueData.priority.toString())
+
+    // Convert numeric priority to string
+    const priorityString2 =
+      issueData.priority === 0
+        ? 'Low'
+        : issueData.priority === 10000
+          ? 'Medium'
+          : issueData.priority === 20000
+            ? 'High'
+            : issueData.priority === 30000
+              ? 'Urgent'
+              : 'Medium'
+    formData.append('Priority', priorityString2)
+
     formData.append('Type', issueData.type.toString())
     formData.append('Status', IssueStatus.Open.toString()) // Default status is Open
 
@@ -155,7 +182,7 @@ export const issueApi = {
   getProjectIssues: async (projectId: string) => {
     console.log('🔍 [issueApi] getProjectIssues called with:', { projectId })
     const startTime = Date.now()
-    
+
     try {
       const response = await axiosClient.get(`/projects/${projectId}/issues`, {
         timeout: 5000 // Reduced to 5 seconds for much faster feedback
@@ -163,18 +190,18 @@ export const issueApi = {
       const endTime = Date.now()
       const loadTime = endTime - startTime
       console.log(`✅ [issueApi] getProjectIssues response in ${loadTime}ms:`, response.data)
-      
+
       // Log performance warning if too slow
       if (loadTime > 3000) {
         console.warn(`⚠️ [issueApi] Slow response: ${loadTime}ms. Consider optimizing backend.`)
       }
-      
+
       return response.data.data
     } catch (error: any) {
       const endTime = Date.now()
       const loadTime = endTime - startTime
       console.error(`❌ [issueApi] getProjectIssues error after ${loadTime}ms:`, error)
-      
+
       // Handle specific error types
       if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
         console.error('⏰ [issueApi] Request timeout after 5s. Server is very slow.')
@@ -185,14 +212,17 @@ export const issueApi = {
       } else if (error.response?.status >= 500) {
         console.error('🚨 [issueApi] Server error. Backend may be down.')
       }
-      
+
       // Return empty array instead of throwing to prevent loading state issues
       return []
     }
   },
 
   // Get filtered issues for a project
-  getFilteredProjectIssues: async (projectId: string, filters: { status?: string; type?: string; priority?: string }) => {
+  getFilteredProjectIssues: async (
+    projectId: string,
+    filters: { status?: string; type?: string; priority?: string }
+  ) => {
     console.log('🔍 [issueApi] getFilteredProjectIssues called with:', { projectId, ...filters })
     try {
       const params: any = {}
