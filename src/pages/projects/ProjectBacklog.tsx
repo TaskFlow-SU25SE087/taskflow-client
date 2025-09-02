@@ -219,7 +219,8 @@ const ProjectBacklog = () => {
         if (result.ok) {
           showToast({
             title: 'Success',
-            description: 'Sprint created successfully'
+            description: 'Sprint created successfully',
+            variant: 'success'
           })
           return true
         } else {

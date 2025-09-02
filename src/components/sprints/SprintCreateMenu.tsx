@@ -33,10 +33,12 @@ export function SprintCreateMenu({ onCreateSprint, isMember = false }: SprintCre
 
   const handleCreateSprint = async () => {
     try {
-      // Format date đúng chuẩn ISO 8601
+      // Format date đúng chuẩn ISO 8601 với thời gian 00:00:00Z
       const formatDate = (date: Date | null): string => {
         if (!date) return ''
-        return date.toISOString().split('.')[0] + 'Z' // Loại bỏ milliseconds và thêm Z
+        // Tạo một Date mới với thời gian là 00:00:00 UTC
+        const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0))
+        return utcDate.toISOString()
       }
       
       const res = await onCreateSprint({ 
@@ -48,7 +50,7 @@ export function SprintCreateMenu({ onCreateSprint, isMember = false }: SprintCre
       
       // Chỉ hiển thị toast nếu tạo thành công
       if (res) {
-        showToast({ title: 'Success', description: 'Sprint created successfully', variant: 'success' })
+        // Toast sẽ được hiển thị bởi component cha (ProjectBacklog)
         setIsOpen(false)
         setName('')
         setDescription('')
