@@ -135,8 +135,6 @@ export function SprintBoard({
   const handleMoveToBacklog = async () => {
     if (selectedTaskIds.length === 0) return
 
-    if (!window.confirm('Are you sure you want to move the selected tasks back to backlog?')) return
-
     setLoadingBatch(true)
     try {
       // Since there's no direct API to remove tasks from sprint, we'll try to assign them to a special sprint
@@ -429,7 +427,6 @@ export function SprintBoard({
                     size='xs'
                     variant='destructive'
                     onClick={async () => {
-                      if (!window.confirm('Are you sure you want to delete the selected tasks?')) return
                       setLoadingBatch(true)
                       try {
                         let lastRes: APIResponse<boolean> | null = null

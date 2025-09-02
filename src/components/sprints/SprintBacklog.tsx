@@ -310,7 +310,6 @@ export function SprintBacklog({
                 size='xs'
                 variant='destructive'
                 onClick={async () => {
-                  if (!window.confirm('Are you sure you want to delete the selected tasks?')) return
                   setLoadingBatch(true)
                   try {
                     let lastRes = null

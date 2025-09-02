@@ -413,7 +413,6 @@ export const BacklogTaskRow: React.FC<BacklogTaskRowProps> = ({
                 onClick={async (e) => {
                   e.stopPropagation()
                   if (!currentProject?.id) return
-                  if (!window.confirm('Are you sure you want to delete this task?')) return
                   try {
                     const res = await taskApi.deleteTask(currentProject.id, task.id)
                     if (res && typeof res === 'object' && 'code' in res && 'message' in res) {
