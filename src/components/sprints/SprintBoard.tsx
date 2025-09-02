@@ -7,7 +7,7 @@ import { Board } from '@/types/board'
 import { Sprint } from '@/types/sprint'
 import { TaskP } from '@/types/task'
 import { format } from 'date-fns'
-import { ChevronDown, ChevronRight, PlayCircle, Plus } from 'lucide-react'
+import { ChevronDown, ChevronRight, Play, Plus, Square } from 'lucide-react'
 import { useState } from 'react'
 import TaskCreateMenu from '../tasks/TaskCreateMenu'
 import { BacklogTaskRow } from './BacklogTaskRow'
@@ -49,10 +49,11 @@ export function SprintBoard({
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
   const [isStartDialogOpen, setIsStartDialogOpen] = useState(false)
   // Sửa destructuring useSprints chỉ lấy các property thực sự có
-  const { updateSprint } = useSprints()
+  const { updateSprint, updateSprintStatus } = useSprints()
   const { showToast } = useToastContext()
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
   const [loadingBatch, setLoadingBatch] = useState(false)
+  const [isUpdatingSprintStatus, setIsUpdatingSprintStatus] = useState(false)
 
   // Map backend status string to UI status
   // const _statusMap: Record<string, { label: string; color: string }> = {
@@ -73,6 +74,76 @@ export function SprintBoard({
   const handleCheck = (taskId: string, checked: boolean) => {
     setSelectedTaskIds((prev) => (checked ? [...prev, taskId] : prev.filter((id) => id !== taskId)))
   }
+
+  // Sprint control functions
+  const handleStartSprint = async () => {
+    setIsUpdatingSprintStatus(true)
+    try {
+      const success = await updateSprintStatus(sprint.id, '10000') // In Progress
+      if (success) {
+        showToast({
+          title: 'Success',
+          description: `Sprint "${sprint.name}" has been started!`,
+          variant: 'success'
+        })
+        onSprintUpdate()
+      } else {
+        showToast({
+          title: 'Error',
+          description: 'Failed to start sprint. Please try again.',
+          variant: 'destructive'
+        })
+      }
+    } catch (error: unknown) {
+      const err = error as { message?: string }
+      showToast({
+        title: 'Error',
+        description: err.message || 'Failed to start sprint. Please try again.',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsUpdatingSprintStatus(false)
+    }
+  }
+
+  const handleEndSprint = async () => {
+    const confirmEnd = window.confirm(
+      `Are you sure you want to end sprint "${sprint.name}"? This action cannot be undone.`
+    )
+    if (!confirmEnd) return
+
+    setIsUpdatingSprintStatus(true)
+    try {
+      const success = await updateSprintStatus(sprint.id, '20000') // Completed
+      if (success) {
+        showToast({
+          title: 'Success',
+          description: `Sprint "${sprint.name}" has been completed!`,
+          variant: 'success'
+        })
+        onSprintUpdate()
+      } else {
+        showToast({
+          title: 'Error',
+          description: 'Failed to end sprint. Please try again.',
+          variant: 'destructive'
+        })
+      }
+    } catch (error: unknown) {
+      const err = error as { message?: string }
+      showToast({
+        title: 'Error',
+        description: err.message || 'Failed to end sprint. Please try again.',
+        variant: 'destructive'
+      })
+    } finally {
+      setIsUpdatingSprintStatus(false)
+    }
+  }
+
+  // Check if sprint can be started/ended
+  const canStartSprint = String(sprint.status) === '0' || String(sprint.status) === 'NotStarted'
+  const canEndSprint = String(sprint.status) === '10000' || String(sprint.status) === 'InProgress'
 
   return (
     <div className='bg-white border border-gray-200 rounded-lg shadow-sm transition-all duration-200 hover:shadow-md'>
@@ -135,6 +206,47 @@ export function SprintBoard({
           </div>
         </div>
         <div className='flex items-center gap-2'>
+          {/* Sprint Control Buttons */}
+          {!isMember && (
+            <div className='flex items-center gap-3 mr-4'>
+              {canStartSprint && (
+                <button
+                  onClick={handleStartSprint}
+                  disabled={isUpdatingSprintStatus}
+                  className='flex items-center gap-2 px-3 py-2 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed group'
+                  title='Start Sprint'
+                >
+                  <div className='flex items-center justify-center w-8 h-8 rounded-full border-2 border-gray-300 bg-white group-hover:border-lavender-400'>
+                    <Play
+                      className='h-3.5 w-3.5 text-gray-600 group-hover:text-lavender-600 ml-0.5'
+                      fill='currentColor'
+                    />
+                  </div>
+                  <span className='text-sm font-medium text-gray-700 group-hover:text-gray-900'>Start Sprint</span>
+                </button>
+              )}
+              {canEndSprint && (
+                <button
+                  onClick={handleEndSprint}
+                  disabled={isUpdatingSprintStatus}
+                  className='flex items-center gap-2 px-3 py-2 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed group'
+                  title='End Sprint'
+                >
+                  <div className='flex items-center justify-center w-8 h-8 rounded-full border-2 border-gray-300 bg-white group-hover:border-lavender-400'>
+                    <Square className='h-3 w-3 text-gray-600 group-hover:text-lavender-600' fill='currentColor' />
+                  </div>
+                  <span className='text-sm font-medium text-gray-700 group-hover:text-gray-900'>End Sprint</span>
+                </button>
+              )}
+              {isUpdatingSprintStatus && (
+                <div className='flex items-center gap-2 text-sm text-gray-600 px-3 py-2'>
+                  <div className='w-4 h-4 border-2 border-gray-300 border-t-lavender-600 rounded-full animate-spin' />
+                  <span>Updating...</span>
+                </div>
+              )}
+            </div>
+          )}
+
           <TaskCreateMenu
             isOpen={isCreateTaskOpen}
             onOpenChange={setIsCreateTaskOpen}
@@ -156,29 +268,6 @@ export function SprintBoard({
               ) : null
             }
           />
-          {!sprint.startDate && !isMember && (
-            <Button
-              variant='default'
-              size='sm'
-              className='gap-2 bg-lavender-600 hover:bg-lavender-700 text-white'
-              onClick={() => setIsStartDialogOpen(true)}
-            >
-              <PlayCircle className='h-4 w-4' />
-              Start Sprint
-            </Button>
-          )}
-          {/* {isActiveSprint() && (
-            <Button
-              variant="default"
-              size="sm"
-              className="gap-2 bg-green-500 hover:bg-green-700 text-white"
-              onClick={handleCompleteSprint}
-              disabled
-            >
-              <CheckCircle className="h-4 w-4" />
-              Complete Sprint
-            </Button>
-          )} */}
         </div>
       </div>
       {isExpanded && (
