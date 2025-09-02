@@ -20,7 +20,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useCurrentProject } from '@/hooks/useCurrentProject'
 import { useProjectMembers } from '@/hooks/useProjectMembers'
 import { ProjectMember } from '@/types/project'
-import { Loader2, LogOut, Users } from 'lucide-react'
+import { Loader2, LogOut, Users, Crown } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import UserProfileDialog from '../../components/UserProfileDialog'
@@ -38,9 +38,12 @@ export default function ProjectMembers() {
   const [isInviteOpen, setIsInviteOpen] = useState<boolean>(false)
   const [isConfirmLeaveDialogOpen, setIsConfirmLeaveDialogOpen] = useState(false)
   const [isLeaving, setIsLeaving] = useState<boolean>(false)
+  const [isChangeLeaderDialogOpen, setIsChangeLeaderDialogOpen] = useState(false)
+  const [selectedNewLeader, setSelectedNewLeader] = useState<ProjectMember | null>(null)
+  const [isChangingLeader, setIsChangingLeader] = useState<boolean>(false)
   const { user } = useAuth()
   const { showToast } = useToastContext()
-  const { leaveProject, removeMember } = useProjectMembers()
+  const { leaveProject, removeMember, changeLeader } = useProjectMembers()
   const fetchSeq = useRef(0)
   
   console.log('🔄 ProjectMembers component rendered, members count:', members.length, 'loading:', isLoading)
@@ -136,6 +139,45 @@ export default function ProjectMembers() {
       showToast({ title: 'Error', description: 'Failed to leave project', variant: 'destructive' })
     } finally {
       setIsLeaving(false)
+    }
+  }
+
+  const handleChangeLeader = (member: ProjectMember) => {
+    console.log('🔄 handleChangeLeader called with member:', member)
+    console.log('🔄 member.userId:', member.userId)
+    console.log('🔄 member.id:', member.id)
+    console.log('🔄 member object keys:', Object.keys(member))
+    setSelectedNewLeader(member)
+    setIsChangeLeaderDialogOpen(true)
+  }
+
+  const handleConfirmChangeLeader = async () => {
+    if (!currentProject?.id || !selectedNewLeader || isChangingLeader) return
+    
+    const newLeaderId = selectedNewLeader.userId || selectedNewLeader.id
+    console.log('🔄 handleConfirmChangeLeader called')
+    console.log('🔄 selectedNewLeader:', selectedNewLeader)
+    console.log('🔄 newLeaderId:', newLeaderId)
+    
+    if (!newLeaderId) {
+      showToast({
+        title: 'Error',
+        description: 'Unable to identify the selected member. Please try again.',
+        variant: 'destructive'
+      })
+      return
+    }
+    
+    setIsChangingLeader(true)
+    try {
+      await changeLeader(currentProject.id, newLeaderId)
+      await fetchMembers() // Refresh the members list
+    } catch (err: any) {
+      // Error handling is done in the hook
+    } finally {
+      setIsChangingLeader(false)
+      setIsChangeLeaderDialogOpen(false)
+      setSelectedNewLeader(null)
     }
   }
 
@@ -255,30 +297,49 @@ export default function ProjectMembers() {
                       </div>
                     </div>
                     {isLeader && !isSelf && (
-                      <Button
-                        variant='destructive'
-                        size='icon'
-                        className='absolute right-2.5 top-2.5 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-red-100 hover:bg-red-200 text-red-600 border-none shadow-none w-6 h-6 flex items-center justify-center p-0 rounded-full hover:scale-110'
-                                                 onClick={(e) => {
-                           e.stopPropagation()
-                           const memberId = m.userId || m.id
-                           if (memberId) {
-                             setPendingRemove(memberId)
-                           }
-                         }}
-                        title='Remove member'
-                        style={{ zIndex: 10 }}
-                      >
-                        <svg
-                          xmlns='http://www.w3.org/2000/svg'
-                          className='w-4 h-4'
-                          fill='none'
-                          viewBox='0 0 24 24'
-                          stroke='currentColor'
+                      <div className='absolute right-2.5 top-2.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200'>
+                        {/* Make Leader Button - Only show for non-leaders */}
+                        {(m.role || '').toLowerCase() !== 'leader' && (
+                          <Button
+                            variant='outline'
+                            size='icon'
+                            className='bg-blue-50 hover:bg-blue-100 text-blue-600 border-blue-200 hover:border-blue-300 w-6 h-6 flex items-center justify-center p-0 rounded-full hover:scale-110'
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleChangeLeader(m)
+                            }}
+                            title='Make leader'
+                            style={{ zIndex: 10 }}
+                          >
+                            <Crown className='w-3 h-3' />
+                          </Button>
+                        )}
+                        {/* Remove Button */}
+                        <Button
+                          variant='destructive'
+                          size='icon'
+                          className='bg-red-100 hover:bg-red-200 text-red-600 border-none shadow-none w-6 h-6 flex items-center justify-center p-0 rounded-full hover:scale-110'
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            const memberId = m.userId || m.id
+                            if (memberId) {
+                              setPendingRemove(memberId)
+                            }
+                          }}
+                          title='Remove member'
+                          style={{ zIndex: 10 }}
                         >
-                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M6 18L18 6M6 6l12 12' />
-                        </svg>
-                      </Button>
+                          <svg
+                            xmlns='http://www.w3.org/2000/svg'
+                            className='w-4 h-4'
+                            fill='none'
+                            viewBox='0 0 24 24'
+                            stroke='currentColor'
+                          >
+                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M6 18L18 6M6 6l12 12' />
+                          </svg>
+                        </Button>
+                      </div>
                     )}
                   </div>
                 )
@@ -372,6 +433,71 @@ export default function ProjectMembers() {
                   </>
                 ) : (
                   'Leave Project'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Change Leader Confirmation Dialog */}
+        <Dialog open={isChangeLeaderDialogOpen} onOpenChange={setIsChangeLeaderDialogOpen}>
+          <DialogContent className='rounded-2xl border border-violet-100 shadow-2xl'>
+            <DialogHeader>
+              <DialogTitle className='text-violet-700'>Change Project Leader</DialogTitle>
+              <DialogDescription className='text-gray-600'>
+                Are you sure you want to make{' '}
+                <span className='font-semibold text-gray-900'>
+                  {selectedNewLeader?.fullName || selectedNewLeader?.email}
+                </span>{' '}
+                the new project leader? This action will transfer all leadership privileges to them.
+              </DialogDescription>
+            </DialogHeader>
+            
+            {selectedNewLeader && (
+              <div className='flex items-center gap-3 p-4 bg-blue-50 rounded-lg border border-blue-200'>
+                <Avatar className='h-10 w-10'>
+                  {selectedNewLeader.avatar ? (
+                    <img src={selectedNewLeader.avatar} alt={selectedNewLeader.fullName || selectedNewLeader.email} className='h-10 w-10 rounded-full object-cover' />
+                  ) : (
+                    <AvatarFallback className='text-sm font-semibold'>
+                      {(selectedNewLeader.fullName || selectedNewLeader.email)?.[0]?.toUpperCase() || '?'}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div>
+                  <h4 className='font-semibold text-gray-900'>{selectedNewLeader.fullName || selectedNewLeader.email}</h4>
+                  <p className='text-sm text-gray-600'>{selectedNewLeader.email}</p>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter className='flex justify-end gap-3 mt-6'>
+              <Button
+                variant='outline'
+                onClick={() => {
+                  setIsChangeLeaderDialogOpen(false)
+                  setSelectedNewLeader(null)
+                }}
+                disabled={isChangingLeader}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant='default'
+                onClick={handleConfirmChangeLeader}
+                disabled={isChangingLeader}
+                className='bg-blue-600 hover:bg-blue-700'
+              >
+                {isChangingLeader ? (
+                  <>
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    Changing...
+                  </>
+                ) : (
+                  <>
+                    <Crown className='mr-2 h-4 w-4' />
+                    Make Leader
+                  </>
                 )}
               </Button>
             </DialogFooter>

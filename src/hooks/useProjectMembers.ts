@@ -12,10 +12,18 @@ export function useProjectMembers() {
     setError(null)
     try {
       const res = await projectMemberApi.addMember(projectId, email)
-      showToast({ title: 'Success', description: (res as any)?.message || 'Member added successfully' })
+      showToast({ 
+        title: 'Success', 
+        description: (res as any)?.message || 'Member added successfully',
+        variant: 'success'
+      })
     } catch (err) {
       const error = err as any
-      showToast({ title: 'Error', description: error?.response?.data?.message || error?.message || 'Failed to add member', variant: 'destructive' })
+      showToast({ 
+        title: 'Error', 
+        description: error?.response?.data?.message || error?.message || 'Failed to add member', 
+        variant: 'destructive' 
+      })
       throw err
     } finally {
       setLoading(false)
@@ -30,7 +38,11 @@ export function useProjectMembers() {
       console.log('🔄 useProjectMembers: Making API call to leave project')
       const res = await projectMemberApi.leaveProject(projectId)
       console.log('✅ useProjectMembers: API call successful:', res)
-      showToast({ title: 'Success', description: (res as any)?.message || 'Left project successfully' })
+      showToast({ 
+        title: 'Success', 
+        description: (res as any)?.message || 'Left project successfully',
+        variant: 'success'
+      })
       return res
     } catch (err) {
       console.error('❌ useProjectMembers: API call failed:', err)
@@ -66,10 +78,38 @@ export function useProjectMembers() {
     setError(null)
     try {
       const res = await projectMemberApi.joinProject(projectId)
-      showToast({ title: 'Success', description: (res as any)?.message || 'Joined project successfully' })
+      showToast({ 
+        title: 'Success', 
+        description: (res as any)?.message || 'Joined project successfully',
+        variant: 'success'
+      })
     } catch (err) {
       const error = err as any
       showToast({ title: 'Error', description: error?.response?.data?.message || error?.message || 'Failed to join project', variant: 'destructive' })
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const changeLeader = async (projectId: string, newLeaderId: string) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await projectMemberApi.changeLeader(projectId, newLeaderId)
+      showToast({ 
+        title: 'Success', 
+        description: (res as any)?.message || 'Project leader changed successfully',
+        variant: 'success'
+      })
+      return res
+    } catch (err) {
+      const error = err as any
+      showToast({ 
+        title: 'Error', 
+        description: error?.response?.data?.message || error?.message || 'Failed to change project leader', 
+        variant: 'destructive' 
+      })
       throw err
     } finally {
       setLoading(false)
@@ -81,6 +121,7 @@ export function useProjectMembers() {
     leaveProject,
     removeMember,
     verifyJoin,
+    changeLeader,
     loading,
     error
   }

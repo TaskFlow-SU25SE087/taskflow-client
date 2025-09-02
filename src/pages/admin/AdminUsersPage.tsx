@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { useToastContext } from '@/components/ui/ToastContext'
 import { useAdmin } from '@/hooks/useAdmin'
 import { useAdminTerm } from '@/hooks/useAdminTerm'
+import { AdminUser } from '@/types/admin'
 import { debounce } from 'lodash'
 import {
   Calendar,
@@ -31,8 +32,7 @@ import {
   UserX,
   X
 } from 'lucide-react'
-import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
-import { AdminUser } from '@/types/admin'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 export default function AdminUsersPage() {
   const { users, loading, error, pagination, fetchUsers, fetchAllUsers } = useAdmin()

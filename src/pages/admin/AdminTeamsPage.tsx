@@ -1,17 +1,17 @@
-import AdminLayout from '@/components/admin/AdminLayout'
 import { adminApi } from '@/api/admin'
-import { useEffect, useState } from 'react'
-import { Search, Users, Calendar, Filter, ChevronDown, User, Mail, Hash, Crown, ArrowRight } from 'lucide-react'
+import AdminLayout from '@/components/admin/AdminLayout'
 import { useToastContext } from '@/components/ui/ToastContext'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle
+} from '@/components/ui/dialog'
+import { ArrowRight, Calendar, ChevronDown, Crown, Filter, Hash, Mail, Search, User, Users } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 export default function AdminTeamsPage() {
   const [teams, setTeams] = useState<any[]>([])

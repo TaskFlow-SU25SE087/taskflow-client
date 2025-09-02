@@ -53,5 +53,10 @@ export const projectMemberApi = {
   joinProject: async (projectId: string) => {
     const response = await axiosClient.post(`/project/${projectId}/members/join`)
     return response.data
+  },
+
+  changeLeader: async (projectId: string, newLeaderId: string) => {
+    const response = await axiosClient.post(`/project/${projectId}/members/change-leader/${newLeaderId}`)
+    return response.data
   }
 }
