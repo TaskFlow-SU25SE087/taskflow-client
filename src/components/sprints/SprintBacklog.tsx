@@ -3,6 +3,17 @@ import { sprintApi } from '@/api/sprints'
 import { taskApi } from '@/api/tasks'
 import { Button } from '@/components/ui/button'
 import { useToastContext } from '@/components/ui/ToastContext'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '@/components/ui/alert-dialog'
 import { SprintStatusMap } from '@/constants/sprintStatus'
 import { useSprints } from '@/hooks/useSprints'
 import { Board } from '@/types/board'
@@ -45,6 +56,7 @@ export function SprintBacklog({
   const [isExpanded, setIsExpanded] = useState(true)
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
+  const [isEndDialogOpen, setIsEndDialogOpen] = useState(false)
   const { sprints, refreshSprints, updateSprintStatus } = useSprints()
   const { showToast } = useToastContext()
   const [showSprintSelector, setShowSprintSelector] = useState(false)
@@ -91,11 +103,6 @@ export function SprintBacklog({
   const handleEndSprint = async () => {
     if (!currentSprint) return
 
-    const confirmEnd = window.confirm(
-      `Are you sure you want to end sprint "${currentSprint.name}"? This action cannot be undone.`
-    )
-    if (!confirmEnd) return
-
     setIsUpdatingSprintStatus(true)
     try {
       const success = await updateSprintStatus(currentSprint.id, '20000') // Completed
@@ -122,6 +129,7 @@ export function SprintBacklog({
       })
     } finally {
       setIsUpdatingSprintStatus(false)
+      setIsEndDialogOpen(false)
     }
   }
 
@@ -178,16 +186,33 @@ export function SprintBacklog({
                 </button>
               )}
               {canEndSprint && (
-                <button
-                  onClick={handleEndSprint}
-                  disabled={isUpdatingSprintStatus}
-                  className='relative group flex items-center justify-center w-12 h-12 rounded-full border-2 border-red-400 bg-gradient-to-br from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 transition-all duration-300 hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100'
-                  title='End Sprint'
-                >
-                  <div className='absolute inset-0 rounded-full bg-gradient-to-br from-red-400/20 to-red-600/20 group-hover:from-red-400/30 group-hover:to-red-600/30 transition-all duration-300' />
-                  <Square className='h-4 w-4 text-red-600 relative z-10' />
-                  <div className='absolute inset-0 rounded-full border border-red-200 group-hover:border-red-300 transition-colors duration-300' />
-                </button>
+                <AlertDialog open={isEndDialogOpen} onOpenChange={setIsEndDialogOpen}>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      disabled={isUpdatingSprintStatus}
+                      className='relative group flex items-center justify-center w-12 h-12 rounded-full border-2 border-red-400 bg-gradient-to-br from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 transition-all duration-300 hover:scale-105 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100'
+                      title='End Sprint'
+                    >
+                      <div className='absolute inset-0 rounded-full bg-gradient-to-br from-red-400/20 to-red-600/20 group-hover:from-red-400/30 group-hover:to-red-600/30 transition-all duration-300' />
+                      <Square className='h-4 w-4 text-red-600 relative z-10' />
+                      <div className='absolute inset-0 rounded-full border border-red-200 group-hover:border-red-300 transition-colors duration-300' />
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>End Sprint</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to end sprint "{currentSprint?.name}"? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleEndSprint} disabled={isUpdatingSprintStatus}>
+                        {isUpdatingSprintStatus ? 'Ending Sprint...' : 'End Sprint'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
               {isUpdatingSprintStatus && (
                 <div className='flex items-center gap-2 text-sm text-lavender-600'>

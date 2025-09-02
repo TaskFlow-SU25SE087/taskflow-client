@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { projectMemberApi } from '@/api/projectMembers'
 import { Navbar } from '@/components/Navbar'
 import { Sidebar } from '@/components/Sidebar'
@@ -8,12 +9,12 @@ import { SprintCreateMenu } from '@/components/sprints/SprintCreateMenu'
 import { SprintSelector } from '@/components/sprints/SprintSelector'
 import { Button } from '@/components/ui/button'
 import {
-    DropdownMenu,
-    DropdownMenuCheckboxItem,
-    DropdownMenuContent,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -46,7 +47,7 @@ const ProjectBacklog = () => {
   const [highlightSprintId, setHighlightSprintId] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'priority'>('newest')
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
-  
+
   // Project members for role checking
   const [projectMembers, setProjectMembers] = useState<ProjectMember[]>([])
 
@@ -387,7 +388,10 @@ const ProjectBacklog = () => {
     [selectedStatuses, sortBy]
   )
 
-  const visibleBacklogTasks = useMemo(() => sortTasks(backlogTasks as unknown as Array<Record<string, unknown>>) as unknown as TaskP[], [backlogTasks, sortTasks])
+  const visibleBacklogTasks = useMemo(
+    () => sortTasks(backlogTasks as unknown as Array<Record<string, unknown>>) as unknown as TaskP[],
+    [backlogTasks, sortTasks]
+  )
   const visibleSprintTasks = useMemo(() => {
     const result: Record<string, TaskP[]> = {}
     Object.entries(filteredSprintTasks).forEach(([sid, list]) => {
@@ -497,9 +501,7 @@ const ProjectBacklog = () => {
                 <DropdownMenuContent align='start' className='w-56'>
                   <DropdownMenuLabel>Status</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  {availableStatuses.length === 0 && (
-                    <div className='px-3 py-2 text-sm text-gray-500'>No statuses</div>
-                  )}
+                  {availableStatuses.length === 0 && <div className='px-3 py-2 text-sm text-gray-500'>No statuses</div>}
                   {availableStatuses.map((status) => (
                     <DropdownMenuCheckboxItem
                       key={status}
@@ -577,11 +579,11 @@ const ProjectBacklog = () => {
                   boards={boards}
                   refreshBoards={refreshBoards}
                   isMember={isMember}
+                  allSprints={sprints}
                 />
               </div>
             ))}
             <SprintBacklog
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               tasks={visibleBacklogTasks as any as TaskP[]}
               onMoveTask={setSelectedTaskId}
               projectId={currentProject?.id || ''}

@@ -1,6 +1,18 @@
 import { taskApi } from '@/api/tasks'
+import { sprintApi } from '@/api/sprints'
 import { Button } from '@/components/ui/button'
 import { useToastContext } from '@/components/ui/ToastContext'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '@/components/ui/alert-dialog'
 import { useSprints } from '@/hooks/useSprints'
 import { APIResponse } from '@/types/api'
 import { Board } from '@/types/board'
@@ -14,6 +26,7 @@ import { BacklogTaskRow } from './BacklogTaskRow'
 import { SprintEditMenu } from './SprintEditMenu'
 import { SprintStartMenu } from './SprintStartMenu'
 import { SprintStatusDropdown } from './SprintStatusDropdown'
+import { SprintSelector } from './SprintSelector'
 
 interface SprintBoardProps {
   sprint: Sprint
@@ -29,6 +42,7 @@ interface SprintBoardProps {
   boards: Board[]
   refreshBoards: () => Promise<void>
   isMember?: boolean
+  allSprints?: Sprint[] // Add all sprints for moving between sprints
 }
 
 export function SprintBoard({
@@ -43,17 +57,20 @@ export function SprintBoard({
   hasLoadedTasks,
   boards,
   refreshBoards,
-  isMember = false
+  isMember = false,
+  allSprints = []
 }: SprintBoardProps) {
   const [isExpanded, setIsExpanded] = useState(true)
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false)
   const [isStartDialogOpen, setIsStartDialogOpen] = useState(false)
+  const [isEndDialogOpen, setIsEndDialogOpen] = useState(false)
   // Sửa destructuring useSprints chỉ lấy các property thực sự có
   const { updateSprint, updateSprintStatus } = useSprints()
   const { showToast } = useToastContext()
   const [selectedTaskIds, setSelectedTaskIds] = useState<string[]>([])
   const [loadingBatch, setLoadingBatch] = useState(false)
   const [isUpdatingSprintStatus, setIsUpdatingSprintStatus] = useState(false)
+  const [showSprintSelector, setShowSprintSelector] = useState(false)
 
   // Map backend status string to UI status
   // const _statusMap: Record<string, { label: string; color: string }> = {
@@ -73,6 +90,90 @@ export function SprintBoard({
 
   const handleCheck = (taskId: string, checked: boolean) => {
     setSelectedTaskIds((prev) => (checked ? [...prev, taskId] : prev.filter((id) => id !== taskId)))
+  }
+
+  // Handle moving tasks to another sprint
+  const handleMoveToSprint = async (targetSprintId: string) => {
+    if (selectedTaskIds.length === 0) return
+
+    setLoadingBatch(true)
+    try {
+      const response = await sprintApi.assignTasksToSprint(projectId, targetSprintId, selectedTaskIds)
+
+      if (response && typeof response === 'object' && 'code' in response) {
+        const res = response as APIResponse<boolean>
+        showToast({
+          title: res.code === 200 || res.code === 0 ? 'Success' : 'Error',
+          description: res.message || 'Tasks moved to sprint successfully!',
+          variant: res.code === 200 || res.code === 0 ? 'success' : 'destructive'
+        })
+      } else {
+        showToast({
+          title: 'Success',
+          description: 'Tasks moved to sprint successfully!',
+          variant: 'success'
+        })
+      }
+
+      setSelectedTaskIds([])
+      setShowSprintSelector(false)
+      onTaskUpdate()
+      onSprintUpdate()
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string }
+      showToast({
+        title: 'Error',
+        description: err.response?.data?.message || err.message || 'Failed to move tasks',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoadingBatch(false)
+    }
+  }
+
+  // Handle moving tasks back to backlog (remove from sprint)
+  const handleMoveToBacklog = async () => {
+    if (selectedTaskIds.length === 0) return
+
+    if (!window.confirm('Are you sure you want to move the selected tasks back to backlog?')) return
+
+    setLoadingBatch(true)
+    try {
+      // Since there's no direct API to remove tasks from sprint, we'll try to assign them to a special sprint
+      // or use a null/empty sprint ID. Let's try assigning to '00000000-0000-0000-0000-000000000000' which
+      // appears to be used for backlog tasks based on the ProjectBacklog filtering logic
+      const backlogSprintId = '00000000-0000-0000-0000-000000000000'
+
+      const response = await sprintApi.assignTasksToSprint(projectId, backlogSprintId, selectedTaskIds)
+
+      if (response && typeof response === 'object' && 'code' in response) {
+        const res = response as APIResponse<boolean>
+        showToast({
+          title: res.code === 200 || res.code === 0 ? 'Success' : 'Error',
+          description: res.message || 'Tasks moved to backlog successfully!',
+          variant: res.code === 200 || res.code === 0 ? 'success' : 'destructive'
+        })
+      } else {
+        showToast({
+          title: 'Success',
+          description: 'Tasks moved to backlog successfully!',
+          variant: 'success'
+        })
+      }
+
+      setSelectedTaskIds([])
+      onTaskUpdate()
+      onSprintUpdate()
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } }; message?: string }
+      showToast({
+        title: 'Error',
+        description: err.response?.data?.message || err.message || 'Failed to move tasks to backlog',
+        variant: 'destructive'
+      })
+    } finally {
+      setLoadingBatch(false)
+    }
   }
 
   // Sprint control functions
@@ -107,11 +208,6 @@ export function SprintBoard({
   }
 
   const handleEndSprint = async () => {
-    const confirmEnd = window.confirm(
-      `Are you sure you want to end sprint "${sprint.name}"? This action cannot be undone.`
-    )
-    if (!confirmEnd) return
-
     setIsUpdatingSprintStatus(true)
     try {
       const success = await updateSprintStatus(sprint.id, '20000') // Completed
@@ -138,6 +234,7 @@ export function SprintBoard({
       })
     } finally {
       setIsUpdatingSprintStatus(false)
+      setIsEndDialogOpen(false)
     }
   }
 
@@ -227,17 +324,34 @@ export function SprintBoard({
                 </button>
               )}
               {canEndSprint && (
-                <button
-                  onClick={handleEndSprint}
-                  disabled={isUpdatingSprintStatus}
-                  className='flex items-center gap-2 px-3 py-2 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed group'
-                  title='End Sprint'
-                >
-                  <div className='flex items-center justify-center w-8 h-8 rounded-full border-2 border-gray-300 bg-white group-hover:border-lavender-400'>
-                    <Square className='h-3 w-3 text-gray-600 group-hover:text-lavender-600' fill='currentColor' />
-                  </div>
-                  <span className='text-sm font-medium text-gray-700 group-hover:text-gray-900'>End Sprint</span>
-                </button>
+                <AlertDialog open={isEndDialogOpen} onOpenChange={setIsEndDialogOpen}>
+                  <AlertDialogTrigger asChild>
+                    <button
+                      disabled={isUpdatingSprintStatus}
+                      className='flex items-center gap-2 px-3 py-2 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed group'
+                      title='End Sprint'
+                    >
+                      <div className='flex items-center justify-center w-8 h-8 rounded-full border-2 border-gray-300 bg-white group-hover:border-lavender-400'>
+                        <Square className='h-3 w-3 text-gray-600 group-hover:text-lavender-600' fill='currentColor' />
+                      </div>
+                      <span className='text-sm font-medium text-gray-700 group-hover:text-gray-900'>End Sprint</span>
+                    </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>End Sprint</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Are you sure you want to end sprint "{sprint.name}"? This action cannot be undone.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleEndSprint} disabled={isUpdatingSprintStatus}>
+                        {isUpdatingSprintStatus ? 'Ending Sprint...' : 'End Sprint'}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               )}
               {isUpdatingSprintStatus && (
                 <div className='flex items-center gap-2 text-sm text-gray-600 px-3 py-2'>
@@ -294,6 +408,23 @@ export function SprintBoard({
               {selectedTaskIds.length > 0 && (
                 <div className='pt-4 pb-2 px-4 flex items-center gap-2'>
                   <span className='text-[11px] text-gray-600'>{selectedTaskIds.length} selected</span>
+                  <Button
+                    size='xs'
+                    variant='outline'
+                    onClick={() => setShowSprintSelector(true)}
+                    disabled={loadingBatch}
+                  >
+                    Move Tasks
+                  </Button>
+                  {showSprintSelector && (
+                    <SprintSelector
+                      sprints={allSprints.filter((s) => s.id !== sprint.id)} // Exclude current sprint
+                      onSprintSelect={handleMoveToSprint}
+                      onBacklogSelect={handleMoveToBacklog}
+                      showBacklogOption={true}
+                      trigger={null}
+                    />
+                  )}
                   <Button
                     size='xs'
                     variant='destructive'
