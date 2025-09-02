@@ -715,7 +715,7 @@ export default function ProjectTimeline() {
       <div className='flex-1 flex flex-col overflow-hidden min-h-0'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
 
-        <div className='flex flex-col h-full bg-white min-h-0'>
+        <div className='flex flex-col h-full min-h-0'>
           <div className='flex-none w-full p-6 pb-4'>
             <div className='flex items-center justify-between mb-6'>
               <div className='flex items-center gap-4'>

@@ -226,11 +226,11 @@ const ProjectReports: React.FC = () => {
   }
 
   return (
-    <div className='flex h-screen bg-gradient-to-br from-slate-50 via-white to-lavender-50 relative'>
+    <div className='flex h-screen bg-gray-50'>
       <Sidebar isOpen={isSidebarOpen} onToggle={toggleSidebar} currentProject={currentProject} />
       <div className='flex-1 flex flex-col overflow-hidden'>
         <Navbar isSidebarOpen={isSidebarOpen} toggleSidebar={toggleSidebar} />
-        <div className='flex-1 overflow-y-auto bg-gradient-to-br from-white via-slate-50 to-lavender-50/60'>
+        <div className='flex-1 overflow-y-auto'>
           <div className='flex flex-col flex-1 min-h-0'>
             <div className='flex-none w-full p-6 pb-4 bg-transparent'>
               <div className='flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4'>
